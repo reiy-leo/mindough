@@ -136,6 +136,46 @@ describe('Feed 流：迁移旧日记', () => {
   });
 });
 
+describe('新条目的图片附件（Rei 2026-10-29）', () => {
+  it('附件挂在条目自己的 id 上：能读出来、不会建旧日记那一行、条目还是改不了', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 10, 29, 9) });
+    const p = s.addJournalPost({ body_md: '早饭' })!;
+    expect(s.postAttachmentOwnerId(p)).toBe(p.id);
+    s.addAttachment({ owner_type: 'journal', owner_id: p.id, file_name: 'egg.jpg', mime: 'image/jpeg', size: 5 });
+    expect(s.attachmentsOfPost(p).map((a) => a.file_name)).toEqual(['egg.jpg']);
+    // 挂在条目上的附件不碰旧表，也不会再转出一条
+    expect(s.list('journal_entry')).toEqual([]);
+    expect(s.journalPosts()).toHaveLength(1);
+    expect(s.get('journal_post', p.id)?.body_md).toBe('早饭');
+  });
+
+  it('旧日记转来的那条：还用旧日记的 id', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 10, 17, 20) });
+    s.ensureJournal('2026-10-17');
+    s.addAttachment({ owner_type: 'journal', owner_id: journalEntryId('2026-10-17'), file_name: 'a.png', mime: 'image/png', size: 3 });
+    s.setJournal('2026-10-17', { body_md: '带图' });
+    const p = s.journalPosts()[0]!;
+    expect(s.postAttachmentOwnerId(p)).toBe(journalEntryId('2026-10-17'));
+  });
+
+  it('导出写进那天的文件，导入能挂回条目上', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 10, 29, 9) });
+    const p = s.addJournalPost({ body_md: '午饭', mood: 'happy' })!;
+    const a = s.addAttachment({ owner_type: 'journal', owner_id: p.id, file_name: 'noodle.png', mime: 'image/png', size: 3, r2_key: 'h/f/abc' });
+    const { files } = exportArchive(s, {});
+    const day = fromUtf8(files.find((f) => f.path === `journal/2026/10/${p.day}.md`)!.data);
+    expect(day).toContain('noodle.png');
+    const meta = JSON.parse(fromUtf8(files.find((f) => f.path === '_meta/attachments.json')!.data)) as Array<{ id: string; owner_id: string }>;
+    expect(meta.map((m) => m.owner_id)).toEqual([p.id]);
+    const dst = await Store.open(new MemoryAdapter(), { deviceId: 'dev2', now: () => local(2026, 10, 29, 10) });
+    const plan = planImport(dst, files);
+    expect(plan.issues.filter((i) => i.level !== 'info').map((i) => i.message)).toEqual([]);
+    applyImport(dst, plan);
+    const back = dst.get('journal_post', p.id)!;
+    expect(dst.attachmentsOfPost(back).map((x) => x.id)).toEqual([a.id]);
+  });
+});
+
 describe('Feed 流：只追加', () => {
   it('发一条：算在「今天」（5 点前算昨天），id 随机；空的不发', async () => {
     let now = local(2026, 10, 28, 3);

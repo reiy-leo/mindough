@@ -174,6 +174,8 @@ export function exportableAttachments(store: Store): Attachment[] {
   const journal = new Set(store.list('journal_entry').map((e) => e.id));
   // 旧日记转来的那条还在（旧表那行可能不在，比如导入进来的）也算
   for (const p of store.list('journal_post')) {
+    // 新条目的附件挂在条目自己的 id 上（Rei 2026-10-29）
+    journal.add(p.id);
     const e = entryIdOfPost(p.id);
     if (e) journal.add(e);
   }
@@ -362,7 +364,9 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
     const entryId = journalEntryId(day);
     const fm = { id: entryId, date: day, posts: posts.length };
     journalPosts += posts.length;
-    files.push({ path, data: utf8(stringifyFrontMatter(fm) + formatJournalDay(posts, (md) => images.body(md, path)) + block('journal', entryId, path)) });
+    // 附件清单：旧日记那天的，加上这天每条自己的（Rei 2026-10-29）
+    const dayAtt = [entryId, ...posts.map((p) => p.id)].flatMap((id) => attachmentsOf.get(`journal:${id}`) ?? []);
+    files.push({ path, data: utf8(stringifyFrontMatter(fm) + formatJournalDay(posts, (md) => images.body(md, path)) + attachmentBlock(dayAtt, attachmentPath, path, tr('附件'))) });
   }
 
   // ── _meta ──

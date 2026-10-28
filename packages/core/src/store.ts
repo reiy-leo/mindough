@@ -1599,11 +1599,22 @@ export class Store {
     return this.tables.journal_post.get(id);
   }
 
-  /** 旧日记转来的条目，旧日记上的附件跟着它显示（只看第 0 条：正文那条）。 */
+  /**
+   * 这条日记的附件。新发的条目（Rei 2026-10-29 日记也能加图片附件）挂在条目自己的 id 上（owner_type 'journal'，owner_id = post.id）；
+   * 旧日记转来的条目，旧日记上的附件跟着它显示（只看第 0 条：正文那条）。
+   */
   attachmentsOfPost(post: Pick<JournalPost, 'id'>): Attachment[] {
+    const own = this.attachmentsOf('journal', post.id);
     const entryId = entryIdOfPost(post.id);
-    if (!entryId || !post.id.endsWith('-000000000000')) return [];
-    return this.attachmentsOf('journal', entryId);
+    if (!entryId || !post.id.endsWith('-000000000000')) return own;
+    return [...this.attachmentsOf('journal', entryId), ...own];
+  }
+
+  /** 这条日记的附件挂在哪个 id 上：旧日记转来、带着旧附件的那条用旧日记的 id，其余用条目自己的 id。 */
+  postAttachmentOwnerId(post: Pick<JournalPost, 'id'>): string {
+    const entryId = entryIdOfPost(post.id);
+    if (entryId && post.id.endsWith('-000000000000') && this.attachmentsOf('journal', entryId).length) return entryId;
+    return post.id;
   }
 
   private assertPostUnchanged(next: JournalPost) {
@@ -1650,7 +1661,7 @@ export class Store {
 
   // ───────────── 附件 ─────────────
 
-  /** 挂在这件任务 / 这篇日记上的附件（按添加时间）。日记的 owner_id 是 journalEntryId(date)。 */
+  /** 挂在这件任务 / 这篇日记上的附件（按添加时间）。旧日记的 owner_id 是 journalEntryId(date)，新日记条目是 post.id。 */
   attachmentsOf(ownerType: AttachmentOwnerType, ownerId: string): Attachment[] {
     return sortAttachments(this.list('attachment').filter((a) => a.owner_type === ownerType && a.owner_id === ownerId));
   }

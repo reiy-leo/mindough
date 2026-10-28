@@ -630,8 +630,10 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
   }
 
   // 旧日记的附件挂在那天的 id 上：那天的旧日记、或它转来的那条（Feed 流）在这次导入里或库里就行
+  // 新条目的附件挂在条目自己的 id 上（Rei 2026-10-29）
   const journalOwnerOk = (ownerId: string) => {
     if (seen.has(`journal_entry:${ownerId}`) || store.get('journal_entry', ownerId)) return true;
+    if (seen.has(`journal_post:${ownerId}`) || store.get('journal_post', ownerId)) return true;
     const pid = migratedPostId(ownerId);
     return !!pid && (seen.has(`journal_post:${pid}`) || !!store.get('journal_post', pid));
   };
