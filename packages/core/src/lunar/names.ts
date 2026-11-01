@@ -75,3 +75,18 @@ export function lunarYearLabel(year: number): string {
   if (getLocale() !== 'zh') return String(year);
   return `${year} ${ganzhiYear(year).slice(0, 2)}`;
 }
+
+/** 胶囊里的农历：「九月二十」「闰六月初一」。 */
+export function lunarMonthDayName(month: number, day: number, leap = false): string {
+  return `${lunarMonthName(month, leap)}${lunarDayName(day)}`;
+}
+
+/** 农历月历的标题：月「九月」，年「丙午年（2026）」。 */
+export function lunarMonthTitle(year: number, month: number, leap = false): { month: string; year: string } {
+  return { month: lunarMonthName(month, leap), year: `${ganzhiYear(year)}（${year}）` };
+}
+
+/** 农历月历格子下的公历小字：每月 1 号写「11月」，其他写日子「8」（只在中文农历界面出现）。 */
+export function solarDayShort(m: number, d: number): string {
+  return d === 1 ? `${m}月` : String(d);
+}

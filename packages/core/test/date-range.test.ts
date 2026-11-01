@@ -6,7 +6,6 @@ import {
   formatTaskDateRange,
   isDateRange,
   normalizeRange,
-  pickRangeDay,
   rangeCellRole,
   rangeDayIndex,
   rangeLength,
@@ -155,27 +154,7 @@ describe('四种日期显示（formatTaskDateRange）', () => {
   });
 });
 
-describe('选择器：pickRangeDay', () => {
-  it('点起点再点终点', () => {
-    let s = pickRangeDay({ start: null, end: null, editing: 'start' }, '2026-10-26');
-    expect(s).toEqual({ start: '2026-10-26', end: null, editing: 'end', done: false });
-    s = pickRangeDay(s, '2026-10-30');
-    expect(s).toEqual({ start: '2026-10-26', end: '2026-10-30', editing: 'start', done: true });
-  });
-
-  it('等结束时点在开始之前：开始挪过去，继续等结束；点开始当天 = 单日', () => {
-    let s = pickRangeDay({ start: '2026-10-26', end: null, editing: 'end' }, '2026-10-20');
-    expect(s).toEqual({ start: '2026-10-20', end: null, editing: 'end', done: false });
-    s = pickRangeDay(s, '2026-10-20');
-    expect(s).toEqual({ start: '2026-10-20', end: null, editing: 'start', done: true });
-  });
-
-  it('只改一头：改开始不动还在后面的结束；新开始越过结束就去掉结束', () => {
-    expect(pickRangeDay({ start: '2026-10-26', end: '2026-10-30', editing: 'start' }, '2026-10-27')).toMatchObject({ start: '2026-10-27', end: '2026-10-30' });
-    expect(pickRangeDay({ start: '2026-10-26', end: '2026-10-30', editing: 'start' }, '2026-11-01')).toMatchObject({ start: '2026-11-01', end: null });
-    expect(pickRangeDay({ start: '2026-10-26', end: '2026-10-30', editing: 'end' }, '2026-11-03')).toMatchObject({ start: '2026-10-26', end: '2026-11-03', done: true });
-  });
-
+describe('选择器：快捷项和格子角色', () => {
   it('快捷项保持天数；格子角色', () => {
     expect(shiftRangeTo({ start: '2026-10-26', end: '2026-10-30' }, '2026-11-01')).toEqual({ start: '2026-11-01', end: '2026-11-05' });
     expect(shiftRangeTo({ start: '2026-10-26', end: null }, '2026-11-01')).toEqual({ start: '2026-11-01', end: null });

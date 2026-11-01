@@ -100,31 +100,6 @@ export function formatTaskDateRange(start: DateKey, end: DateKey | null | undefi
   }
 }
 
-/** 选择器里的状态：正在改哪一头。 */
-export type RangeEdge = 'start' | 'end';
-
-export interface RangePickState {
-  start: DateKey | null;
-  end: DateKey | null;
-  /** 下一次点格子改哪一头。 */
-  editing: RangeEdge;
-}
-
-/**
- * 日期段选择器点了一天（「点起点再点终点」，也能先点上面的「开始 / 结束」只改一头）：
- * - 改开始：开始 = 这天；原来的结束早于（或等于）新开始就去掉；接着等结束（editing → end）。
- * - 改结束：还没开始就当开始；点在开始之前就把开始挪到这天、继续等结束；点在开始当天或之后就定下结束（当天 = 单日），done。
- * done = 这一段选完了（界面可以关弹层）。
- */
-export function pickRangeDay(state: RangePickState, day: DateKey): RangePickState & { done: boolean } {
-  if (state.editing === 'start' || !state.start) {
-    const end = state.end && state.end > day ? state.end : null;
-    return { start: day, end, editing: 'end', done: false };
-  }
-  if (day < state.start) return { start: day, end: null, editing: 'end', done: false };
-  return { start: state.start, end: day > state.start ? day : null, editing: 'start', done: true };
-}
-
 /** 快捷日期（今天 / 明天…）在日期段模式下：开始挪到那天，长度不变。 */
 export function shiftRangeTo(range: DateRange, start: DateKey): DateRange {
   if (!range.start || !range.end || range.end <= range.start) return { start, end: null };
