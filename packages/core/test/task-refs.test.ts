@@ -153,7 +153,8 @@ describe('迁移：原来的单值搬进新表', () => {
       `INSERT INTO "task" ("id","updated_at","deleted","body_md","status","type_id","type_data","completion_mode","category_id","checkin_category_id","library_item_id","sort","created_at") VALUES ('t1',?,0,'看沙丘','待办',?,'{}','once',?,?,'it1',1,'2026-01-01T00:00:00.000Z')`,
       [OLD, BUILTIN_TYPE_IDS.movie, SPORT, SPORT],
     );
-    expect(await migrate(d, MIGRATIONS)).toBe(12);
+    // 一路升到最新（v12 之后又加了迁移，这里只看 v12 那一步搬没搬对）
+    expect(await migrate(d, MIGRATIONS)).toBe(MIGRATIONS[MIGRATIONS.length - 1]!.version);
     const ad = new SqlAdapter(d);
     const s = await Store.open(ad, { deviceId: 'dev1' });
     expect(s.categoryIdsOfTask('t1')).toEqual([SPORT]);
