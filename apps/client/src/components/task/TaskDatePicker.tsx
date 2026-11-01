@@ -1,7 +1,7 @@
 /**
  * 任务的日期：胶囊行「日期」和详情顶栏的日期快捷按钮（Rei 2026-10-29「任务和日记 editor 要行为一致」）共用这一份。
  * - dateChipState：设没设、过没过期、读屏念什么（胶囊和按钮都用它）；
- * - TaskDatePicker：日期面板 + 存法（单天清掉结束日；日期段选完两头才收起）；
+ * - TaskDatePicker：日期面板 + 存法（点一天就存并收起；日期段见 DatePanel，方案 A）；
  * - DateQuickButton：顶栏左边只有图标的按钮，设了日期高亮，过期变红，点开就是上面那个面板。
  */
 import { useRef, useState, type RefObject } from 'react';
@@ -36,7 +36,7 @@ export function dateChipState(store: Pick<Store, 'now'>, task: Task, today: stri
   return { set: true, danger, text, aria: tr('{label}：{value}', { label: tr('日期'), value: danger ? tr('{date}，已过期', { date: text }) : text }) };
 }
 
-/** 日期面板 + 存法。onDone：选完了（单天点一下；日期段两头都选了）。 */
+/** 日期面板 + 存法。onDone：选完了（点了一天、拖完、点了快捷项；去掉结束日时不收起）。 */
 export function TaskDatePicker({ store, task, today, onDone }: { store: Store; task: Task; today: string; onDone: () => void }) {
   const patch = (p: Partial<Task>) => store.updateTask(task.id, p);
   return (
