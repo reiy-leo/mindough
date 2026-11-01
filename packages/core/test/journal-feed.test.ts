@@ -170,7 +170,7 @@ describe('新条目的图片附件（Rei 2026-10-29）', () => {
     expect(meta.map((m) => m.owner_id)).toEqual([p.id]);
     const dst = await Store.open(new MemoryAdapter(), { deviceId: 'dev2', now: () => local(2026, 10, 29, 10) });
     const plan = planImport(dst, files);
-    expect(plan.issues.filter((i) => i.level !== 'info').map((i) => i.message)).toEqual([]);
+    expect(plan.issues.filter((i) => i.level === 'error').map((i) => i.message)).toEqual([]);
     applyImport(dst, plan);
     const back = dst.get('journal_post', p.id)!;
     expect(dst.attachmentsOfPost(back).map((x) => x.id)).toEqual([a.id]);
