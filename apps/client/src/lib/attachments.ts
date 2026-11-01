@@ -9,7 +9,7 @@
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { attachmentCache } from './attachment-cache';
-import { MAX_ATTACHMENT_BYTES, canThumbnail, formatFileSize, tooLarge, type Attachment, type AttachmentOwnerType, type Store } from '@mindough/core';
+import { MAX_ATTACHMENT_BYTES, canThumbnail, formatFileSize, journalEntryId, tooLarge, type Attachment, type AttachmentOwnerType, type Store } from '@mindough/core';
 import { checkExisting } from './content-hash';
 import { API_BASE, authInit, getAccount, statusZh, subscribeAccount } from './account';
 import { pendingQueue } from './attachments-queue';
@@ -320,11 +320,14 @@ export interface AddResult {
   tooBig: string[];
 }
 
-/** 加附件：建行、文件进本机队列、开始传。日记先确保那天有一行（ensureJournal）。 */
+/**
+ * 加附件：建行、文件进本机队列、开始传。挂在旧日记（那天的 id）上时先确保那天有一行（ensureJournal）；
+ * 挂在新日记条目（post.id，Rei 2026-10-29）上的不用。
+ */
 export async function addAttachments(store: Store, owner: { type: AttachmentOwnerType; id: string; date?: string }, files: readonly File[]): Promise<AddResult> {
   const added: Attachment[] = [];
   const tooBig: string[] = [];
-  if (owner.type === 'journal' && owner.date) store.ensureJournal(owner.date);
+  if (owner.type === 'journal' && owner.date && owner.id === journalEntryId(owner.date)) store.ensureJournal(owner.date);
   for (const f of files) {
     if (tooLarge(f.size)) {
       tooBig.push(f.name);
