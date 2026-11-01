@@ -1,13 +1,14 @@
-/* ───────── 农历（Rei 2026-10-17）：日期格子下的农历小字、放假 / 补班角标、农历选择、日期标题、设置里的订阅区 ───────── */
+/* ───────── 农历（Rei 2026-10-17）：日期格子下的农历小字、放假 / 补班角标、农历月历、日期标题、设置里的订阅区 ───────── */
 /* 只用令牌变量；三皮肤的形状差异写在 skin/skins.css 末尾「农历」一节 */
 
 /* 日期面板：开了农历，格子变成竖排（数字 + 小字），圆形改圆角方块 */
 .date-panel.has-lunar {
-  width: 292px;
+  width: 300px;
 }
 .date-panel.has-lunar .calendar-cell {
   position: relative;
-  width: 38px;
+  width: 100%;
+  max-width: 40px;
   height: 42px;
   display: flex;
   flex-direction: column;
@@ -17,8 +18,23 @@
   border-radius: var(--radius-md);
   line-height: 1.1;
 }
+.date-panel.has-lunar .calendar-td.is-range-start {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.date-panel.has-lunar .calendar-td.is-range-end {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.date-panel.has-lunar .calendar-cell.is-range-middle {
+  max-width: none;
+  border-radius: 0;
+}
 .calendar-num {
   font-size: 14px;
+}
+/* 农历页：大字是农历日子 */
+.is-lunar-page .calendar-num {
+  font-size: 13.5px;
+  letter-spacing: -0.02em;
 }
 .lunar-text {
   max-width: 100%;
@@ -38,7 +54,9 @@
 .lunar-text.is-month {
   color: var(--text-2);
 }
-.calendar-cell[data-selected] .lunar-text {
+.calendar-cell.is-selected .lunar-text,
+.calendar-cell.is-range-middle .lunar-text,
+.calendar-cell.is-range-middle .lunar-badge {
   color: inherit;
   opacity: 0.85;
 }
@@ -54,49 +72,19 @@
 .lunar-badge.is-work {
   color: var(--danger);
 }
-.calendar-cell[data-selected] .lunar-badge {
+.calendar-cell.is-selected .lunar-badge {
   color: inherit;
 }
-
-/* 农历选择模式 */
-.date-panel .segmented {
-  align-self: stretch;
+html[data-layout='mobile'] .date-panel.has-lunar .calendar-cell {
+  max-width: 50px;
+  height: 50px;
 }
-.date-panel .segmented .segmented-item {
-  flex: 1;
+html[data-layout='mobile'] .date-panel.has-lunar .calendar-num {
+  font-size: 16px;
 }
-.lunar-picker {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+html[data-layout='mobile'] .date-panel.has-lunar .lunar-text {
+  font-size: 10.5px;
 }
-.lunar-picker-fields {
-  display: grid;
-  /* 年一整行，月 / 日各占一半：292 宽里三个挤一行会把「闰十一月」「Month 9」截成「Mo…」（Rei 2026-10-25 截图） */
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-}
-.lunar-picker-fields .lunar-year {
-  grid-column: 1 / -1;
-}
-.lunar-picker-fields .field {
-  min-width: 0;
-}
-.lunar-picker-fields .select-btn {
-  min-width: 0;
-}
-.lunar-picker-fields .select-value {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.lunar-picker-solar {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
 
 /* 日期标题（我的一天副标题、列表每天的标题）：农历 + 订阅的节日 */
 .date-lunar {

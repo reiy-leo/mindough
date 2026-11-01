@@ -203,6 +203,7 @@ export function CompletionSentence({ value, onChange, today }: { value: Completi
           <span>{tr('目标日期')}</span>
           <PopoverPanel
             label={tr('目标日期')}
+            className="is-sheet"
             trigger={
               <RacButton className={`input inline-input inline-date${value.target_date ? '' : ' is-empty'}`}>
                 {value.target_date ? formatTaskDate(value.target_date, { mode: dateMode, today }) : tr('选一天')}

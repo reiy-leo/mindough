@@ -78,6 +78,10 @@
 .popover-dialog {
   outline: none;
 }
+/* 日期面板开了农历有 500px 左右高，别在弹层里滚 */
+.popover-panel:has(.date-panel) {
+  max-height: calc(100vh - 24px);
+}
 .pop-section {
   display: flex;
   flex-direction: column;
@@ -521,9 +525,9 @@
   color: var(--text-2);
 }
 
-/* ───────── 日期面板 ───────── */
+/* ───────── 日期面板（Rei 2026-11-01 方案 A：一张月历，点一下就生效）───────── */
 .date-panel {
-  width: 272px;
+  width: 280px;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -559,6 +563,103 @@
   color: var(--accent-soft-text);
   font-weight: 600;
 }
+
+/* 已选胶囊：「10月29日 周四 · 九月二十」「+ 结束日」/「10月29日 周四 → 11月8日 周日 ×  11 天」；放不下就换行，不截字 */
+.date-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+}
+.date-chip[data-focus-visible],
+.date-chip-main[data-focus-visible],
+.date-chip-x[data-focus-visible],
+.lunar-toggle[data-focus-visible] {
+  box-shadow: var(--focus);
+}
+.date-chip-lunar {
+  font-weight: 400;
+}
+.date-chip-lunar::before {
+  content: '·';
+  margin-right: 4px;
+}
+.date-chip.is-end {
+  gap: 0;
+  padding: 0 3px 0 0;
+  cursor: default;
+}
+.date-chip-main {
+  min-height: 26px;
+  padding: 0 4px 0 10px;
+  border: 0;
+  border-radius: 999px 0 0 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.date-chip-x {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.date-chip-x[data-hovered] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.date-chip.is-add {
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+}
+.date-chip.is-add[data-hovered] {
+  background: var(--surface-hover);
+}
+.date-chip.is-waiting {
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+}
+.date-chip-arrow {
+  flex: none;
+  color: var(--text-3);
+}
+.date-chip-days {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* 月历（DateGrid：公历月 / 农历月共用） */
 .calendar-head {
   display: flex;
   align-items: center;
@@ -567,22 +668,54 @@
 }
 .calendar-title {
   flex: 1;
+  min-width: 0;
   margin: 0 0 0 4px;
   font-size: 14px;
   font-weight: 600;
 }
+.calendar-title-sub {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.lunar-toggle {
+  height: 24px;
+  margin-right: 4px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.lunar-toggle[data-hovered] {
+  background: var(--surface-hover);
+}
+.lunar-toggle.is-on {
+  border-color: transparent;
+  background: var(--text);
+  color: var(--surface);
+}
 .calendar-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  table-layout: fixed;
+  outline: none;
 }
 .calendar-dow {
-  height: 26px;
+  height: 24px;
+  padding: 0;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-3);
 }
-.calendar-grid td {
-  padding: 1px 0;
+.calendar-td {
+  padding: 0;
 }
 .calendar-cell {
   width: 34px;
@@ -595,24 +728,63 @@
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   outline: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.calendar-cell[data-outside-month] {
-  visibility: hidden;
+.calendar-cell.is-outside {
+  color: var(--text-3);
+  opacity: 0.6;
 }
-.calendar-cell[data-hovered] {
+.calendar-cell:hover {
   background: var(--surface-hover);
 }
 .calendar-cell.is-today {
   color: var(--accent);
   font-weight: 700;
 }
-.calendar-cell[data-selected] {
+.calendar-cell.is-selected,
+.calendar-cell.is-selected:hover {
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 600;
+  opacity: 1;
 }
-.calendar-cell[data-focus-visible] {
+.calendar-cell.is-hover-end:not(.is-selected) {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.calendar-cell:focus-visible {
   box-shadow: var(--focus);
+}
+/* 日期段：两头实心，中间连成一条浅色带（画在 td 上） */
+.calendar-td.in-range {
+  background: var(--accent-soft);
+}
+.calendar-td.is-range-start {
+  border-radius: 999px 0 0 999px;
+}
+.calendar-td.is-range-end {
+  border-radius: 0 999px 999px 0;
+}
+.calendar-cell.is-range-middle {
+  border-radius: 0;
+  color: var(--accent-soft-text);
+  opacity: 1;
+}
+.calendar-cell.is-range-middle:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.date-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.date-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
 }
 .date-clear {
   align-self: flex-start;
@@ -627,97 +799,29 @@
 .date-clear[data-hovered] {
   color: var(--danger);
 }
+.date-panel .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
-/* ───────── 日期面板：日期段（Rei 2026-10-26）───────── */
-/* 两头的格子实心，中间格子和它们之间连成一条浅色带（画在 td 上，:has 选父格） */
-.calendar-cell.is-range-start,
-.calendar-cell.is-range-end,
-.calendar-cell.is-range-single {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-weight: 600;
+/* 手机：从底部弹出（.is-sheet），撑满宽，格子和按钮更大 */
+html[data-layout='mobile'] .popover.popover-panel.is-sheet .date-panel {
+  width: 100%;
 }
-.calendar-cell.is-range-middle {
-  border-radius: 0;
-  background: transparent;
-  color: var(--accent-soft-text);
+html[data-layout='mobile'] .date-panel .date-quick-item {
+  height: 40px;
 }
-.calendar-cell.is-range-middle[data-hovered] {
-  background: var(--surface-hover);
+html[data-layout='mobile'] .date-panel .calendar-cell {
+  width: 42px;
+  height: 42px;
+  font-size: 15px;
 }
-.calendar-grid td:has(.is-range-middle:not([data-outside-month])),
-.calendar-grid td:has(.is-range-start:not([data-outside-month])),
-.calendar-grid td:has(.is-range-end:not([data-outside-month])) {
-  background: var(--accent-soft);
-}
-.calendar-grid td:has(.is-range-start:not([data-outside-month])) {
-  border-radius: 999px 0 0 999px;
-}
-.calendar-grid td:has(.is-range-end:not([data-outside-month])) {
-  border-radius: 0 999px 999px 0;
-}
-.date-panel.has-lunar .calendar-grid td:has(.is-range-start:not([data-outside-month])) {
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-.date-panel.has-lunar .calendar-grid td:has(.is-range-end:not([data-outside-month])) {
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-.calendar-cell.in-range .lunar-text,
-.calendar-cell.in-range .lunar-badge {
-  color: inherit;
-  opacity: 0.85;
-}
-.range-ends {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-}
-.range-end {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  min-width: 0;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-ctl);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  outline: none;
-}
-.range-end[data-hovered] {
-  background: var(--surface-hover);
-}
-.range-end[data-focus-visible] {
-  box-shadow: var(--focus);
-}
-.range-end.is-editing {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-.range-end-label {
-  font-size: 11px;
-  color: var(--text-3);
-}
-.range-end-value {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.range-end-value.is-empty {
-  font-weight: 400;
-  color: var(--text-3);
-}
-.date-range-sum {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-2);
-  text-align: center;
+html[data-layout='mobile'] .date-panel .date-chip {
+  min-height: 32px;
 }
 
 /* ───────── 日期面板：时区（Rei 2026-10-25） ───────── */

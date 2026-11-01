@@ -79,7 +79,7 @@ export function DateQuickButton({ store, task, today }: { store: Store; task: Ta
         </RacButton>
       </Tip>
       {open && (
-        <Popover triggerRef={ref as RefObject<HTMLElement>} isOpen onOpenChange={(o) => !o && setOpen(false)} className="popover popover-panel" placement="bottom start" offset={6}>
+        <Popover triggerRef={ref as RefObject<HTMLElement>} isOpen onOpenChange={(o) => !o && setOpen(false)} className="popover popover-panel is-sheet" placement="bottom start" offset={6}>
           <Dialog className="popover-dialog" aria-label={tr('日期')}>
             <TaskDatePicker store={store} task={task} today={today} onDone={() => setOpen(false)} />
           </Dialog>

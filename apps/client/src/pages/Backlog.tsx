@@ -58,6 +58,7 @@ export function BacklogPage() {
                 trailing={
                   <PopoverPanel
                     label={tr('安排日期')}
+                    className="is-sheet"
                     trigger={
                       <RacButton className="icon-btn" aria-label={tr('安排日期')}>
                         <CalendarPlus size={17} />

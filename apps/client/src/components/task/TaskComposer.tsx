@@ -325,6 +325,7 @@ function Composer() {
           </PopoverPanel>
           <PopoverPanel
             label={tr('日期')}
+            className="is-sheet"
             trigger={
               <PropChip
                 icon={<CalendarDays size={14} />}

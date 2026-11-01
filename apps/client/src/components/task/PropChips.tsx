@@ -58,7 +58,7 @@ export function propLabel(id: PropId): string {
 /** 弹层要宽一点的（里面是一段句子 / 列表）。 */
 const WIDE: ReadonlySet<PropId> = new Set(['mode', 'repeat', 'category', 'refs']);
 /** 手机上从底部出来的（下拉列表）。 */
-const SHEET: ReadonlySet<PropId> = new Set(['category', 'refs']);
+const SHEET: ReadonlySet<PropId> = new Set(['category', 'refs', 'date']);
 
 interface ChipView {
   icon: ReactNode;

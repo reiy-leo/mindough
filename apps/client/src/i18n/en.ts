@@ -12,6 +12,20 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 日期面板方案 A（Rei 2026-11-01）──
+  "已选的日期": "Selected dates",
+  "加结束日，变成日期段": "Add an end date to make it a range",
+  "结束日": "End Date",
+  "{n} 天": (p) => n(p.n, 'day', 'days'),
+  "点结束那天": "Tap the end date",
+  "点结束那天；按住 Shift 点，或从开始日拖过去也行": "Click the end date. Shift-click or drag from the start date also works",
+  "大字农历、小字公历。存的还是公历日期；要每年按农历重复，去「重复」里选「每年农历」。": "Large numbers are lunar, small numbers are Gregorian. The date is still saved as a Gregorian date; to repeat every year by the lunar calendar, choose “Yearly (Lunar)” in Repeat.",
+  "日期段 {start} 到 {end}，{n} 天": (p) => `Date range ${p.start} to ${p.end}, ${n(p.n, 'day', 'days')}`,
+  "日期设为 {date}": "Date set to {date}",
+  "按农历看月历": "Show lunar calendar",
+  "已选": "selected",
+  "在日期段里": "in range",
+  "，": ", ",
   // ── 日记 Feed 流（2026-10-28）──
   "写日记": "Write in Journal",
   "{n} 条": (p) => n(p.n, 'entry', 'entries'),
@@ -138,10 +152,6 @@ export const EN: Record<string, EnValue> = {
   "编辑类型": "Edit categories",
   // ── 日期段（Rei 2026-10-26）──
   "第 {index}/{total} 天": "Day {index}/{total}",
-  "单日还是日期段": "Single day or date range",
-  "单日": "Single Day",
-  "日期段": "Date Range",
-  "选开始日": "Pick a start date",
   "选结束日": "Pick an end date",
   "去掉结束日": "Remove End Date",
   // ── 计数步长、快捷按钮、手输、撤销（components/CountControls.tsx，Rei 2026-10-26）──
@@ -453,7 +463,6 @@ export const EN: Record<string, EnValue> = {
 
   // ── 日期面板 ──
   不设日期: 'No Date',
-  选择日期: 'Choose date',
   上个月: 'Previous month',
   下个月: 'Next month',
 
@@ -1200,15 +1209,8 @@ export const EN: Record<string, EnValue> = {
   '地址不对：要 http:// 或 https:// 开头的日历地址（webcal:// 也行）': 'That URL doesn’t look right. Use a calendar URL starting with http:// or https:// (webcal:// works too)',
   同步频率: 'Sync Frequency',
   '（先用着上次拉到的）': ' (using the last copy for now)',
-  选日期的方式: 'Calendar',
-  公历: 'Gregorian',
-  年: 'Year',
   月: 'Month',
   日: 'Day',
-  '公历 {date}': (p) => `Gregorian: ${p.date}`,
-  '这天不在 1900–2100 年的范围里': 'This date is outside 1900–2100',
-  已选这天: 'Selected',
-  选这天: 'Choose This Day',
   每年农历: 'Yearly (Lunar)',
   在每年农历的: 'Every year on lunar',
   农历几月: 'Lunar month',
