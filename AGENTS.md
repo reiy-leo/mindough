@@ -42,7 +42,8 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用
   attachments.ts        附件（Rei 2026-10-17）：文件类型（10 种）、大小显示、文件名安全化 / 改名保留扩展名 / 导出去重、50 MB 上限；写入在 Store（attachmentsOf / addAttachment / setAttachmentFile / renameAttachment / removeAttachment / restoreAttachment / ensureJournal）
   lunar/                农历（Rei 2026-10-17）：data.ts（1900–2100 表，scripts/gen-lunar-data.mjs 生成，别手改）、lunar.ts（公历 ⇄ 农历、节气、节日、格子小字）、names.ts（月名日名节气节日，i18n 白名单）、ics.ts（订阅日历解析）、subscription.ts（默认源、偏好 lunar.*、什么时候同步、状态文案）
-  date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、选择器点法 pickRangeDay、Agenda 分组 agendaBuckets
+  date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、Agenda 分组 agendaBuckets
+  date-grid.ts          日期面板的月历格子（Rei 2026-11-01 方案 A）：公历 / 农历月都排 42 格（含闰月）、翻页 stepView、键盘翻页落点 shiftFocus、点格子规则 clickDay、拖选 dragRange
   timezone.ts           任务时区（Rei 2026-10-25）：task.time_zone（IANA，空 = 跟着设备）、常用 / 全部时区、那天的偏移（夏令时）、taskToday / isTaskOverdue / timeZoneBadge；中文城市名在 timezone-names.ts
   journal.ts            日记（Rei 2026-10-17）：日期 → 固定 id、「一天从几点开始」、将来不能写、12 个心情 id、字数、同步保护（两边都改时输家收进折叠块，base_at 判断有没有看到对方）
   merge.ts              资料 / 人物合并：合并后的值与冲突、可能重复的分组、merged_into 解析与成环处理（写入在 Store.mergeLibraryItems / mergePeople）
@@ -60,12 +61,12 @@ apps/client/src/
   skin/                 皮肤层：tokens.css（三套令牌 × 明暗）、skins.css（平台形状）、platform.ts（检测）
   styles/app.css        结构样式（只用令牌变量）
   ui/primitives.tsx     React Aria 包装（Button、Sheet、PopoverPanel、OverflowMenu、ConfirmDialog、InlineNumber、AutoTextarea、Tip…）
-  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页 / 小窗弹窗）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel、挑任务 TaskSearch
+  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页 / 小窗弹窗）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel（月历是 DateGrid，自己画的 role=grid，公历 / 农历月共用）、挑任务 TaskSearch
   components/library/   资料库共用件：占位图 ItemArt、选择框 LibraryPicker、资料编辑 ItemEditor / ItemSheet、资料卡 ItemCard
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
   components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
-  lib/lunar.ts          农历订阅：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DatePanel 的 LunarMark，日期标题用 components/LunarLine，设置在 components/LunarSettings；样式 styles/lunar.css
+  lib/lunar.ts          农历订阅：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DateGrid 的 LunarMark（DatePanel 也导出），日期标题用 components/LunarLine，设置在 components/LunarSettings；样式 styles/lunar.css
   pages/Journal.tsx     日记页（docs/JOURNAL.md）
   pages/Library.tsx     资料库页与资料详情（人物库沿用 pages/People.tsx 的人物详情）
   components/ pages/    业务组件与页面（不写死平台样式）

@@ -526,7 +526,7 @@ Rei 2026-10-25 原话：「拖拽文件到详情页面可以直接添加附件�
 
 ### 农历 ✅（2026-10-17，Rei：「选择日期支持选择中国农历，订阅农历可在设置中看到地址和同步频率」；澄清后确认：从外部订阅一份农历 / 节气日历（ICS），设置里显示源地址和多久同步一次）
 - **换算本地查表，不联网**：core `lunar/`——`data.ts`（农历 1900–2100 月大小 / 闰月 201 个数 + 公历 1900–2100 节气表，约 6 KB）由 `packages/core/scripts/gen-lunar-data.mjs` 从 lunar-javascript 1.7.7（MIT，6tail，寿星天文历算法）生成；它不是依赖，只在生成时用，生成时 1900-01-31 … 2100-12-31 逐日核对过农历和节气（全对）。没用 `Intl` 的 chinese 历：Node / 浏览器的 ICU 在 2027、2030、2012、2018 等年份的初一和官方差一天（如 ICU 说 2027 春节是 2-07，官方 2-06）。`lunar.ts`：`solarToLunar` / `lunarToSolar`（不存在的日子 null）、`lunarYearMonths`、`leapMonthOf`、`solarTermOf`、`lunarFestivalOf`（春节、元宵、龙抬头、端午、七夕、中元、中秋、重阳、腊八、小年、除夕；闰月不算）、`lunarYearlyDate`（每年农历 X 月 X 日落在哪天）、`lunarCellLabel`（格子小字优先级：订阅的节日名 > 传统节日 > 节气 > 初一显示月名「九月」「闰六月」> 日子「初八」）。名字在 `names.ts`（中英文界面格子里都照中文显示，同 Apple 日历；选择器、重复规则的英文说法 Month 9 / Day 8 / Leap Month 6）。
-- **日期选择**：`DatePanel`（新建 / 详情的日期、倒数日目标日、待安排里排日期）格子下显示农历小字 + 订阅的放假「休」/ 调休上班「班」角标；上面「公历 | 农历」切换（这台设备记住上次用的），农历模式按 农历年（「2026 丙午」）- 月（含闰月）- 日 选，下面写出公历，点「选这天」换算成公历存。日记月历同样显示农历。日期都存公历 `YYYY-MM-DD`，不加列、不加迁移。
+- **日期选择**：`DatePanel`（新建 / 详情的日期、倒数日目标日、待安排里排日期）格子下显示农历小字 + 订阅的放假「休」/ 调休上班「班」角标；上面「公历 | 农历」切换（这台设备记住上次用的），农历模式按 农历年（「2026 丙午」）- 月（含闰月）- 日 选，下面写出公历，点「选这天」换算成公历存（2026-11-01 起改成方案 A：月历右上角「农历」开关，见「日期面板方案 A」）。日记月历同样显示农历。日期都存公历 `YYYY-MM-DD`，不加列、不加迁移。
 - **每年农历重复**：重复规则加 `lunarYearly`，存 RFC 7529 写法 `FREQ=YEARLY;RSCALE=CHINESE;BYMONTH=8;BYMONTHDAY=15`（闰月 `BYMONTH=6L`）。闰月规则：那年有同一个闰月就在闰月，没有就按非闰的同一个月；三十碰上小月取廿九。打卡、连续天数、提醒都按它走（`isDueOn` / `periodStart`）。
 - **订阅**：默认源 Apple「中国大陆节假日」`https://calendars.icloud.com/holidays/cn_zh.ics`（macOS / iOS 日历里订阅的同一份；节气、传统节日、法定假日的放假（休）和调休上班（班），简体中文；2026-10-17 实测 246 个事件、2023-12-30 … 2029-12-21，假日安排随国务院公布更新）。备选（没用）：Google 中国节假日 ICS（`calendar.google.com/calendar/ical/zh-cn.china%23holiday%40group.v.calendar.google.com/public/basic.ics`，没有节气）、lanceliao/china-holiday-calender（只有法定假日）、infinet/lunar-calendar（停在 2015、繁体）。Worker `GET /api/calendar/ics?url=…[&fresh=1]`（`apps/server/src/calendar.ts`）代拉避开 CORS：不用登录（没登录也能看节日），只收公网 http(s)、回来的必须是 `BEGIN:VCALENDAR` 开头、≤ 2 MB、10 秒超时，Cache API 6 小时（「立即同步」带 fresh=1 跳过读缓存）；错误附中文状态码（400 请求有误、415 不支持的格式、413 内容太大、502 网关错误 + `upstream_status`、504 网关超时）。客户端 `lib/lunar.ts`：core `parseIcs`（全天 / 多天、DTEND 不含当天、`RRULE:FREQ=YEARLY;COUNT=…`、EXDATE、Apple 的 `X-APPLE-SPECIAL-DAY`、标题里的（休）（班））解析后存这台设备 localStorage（离线可用）；到点自动同步（启动、回到前台、每小时看一眼，按频率；失败隔一小时再试）。订阅的事件只读：显示在日期格子、我的一天副标题、列表每天的标题旁，不成任务；和本地农历冲突时用订阅的名字。
 - **设置 → 农历**：「显示农历」（同步偏好 `lunar.show`，没设过跟界面语言：中文开、英文关；**2026-10-25 起改为本机开关「中国农历」，见下一节**）；「农历订阅」源地址（可复制、可改、webcal:// 自动换成 https://、改了的显示「恢复默认」；同步偏好 `lunar.sub_url`，空 = 默认源）；「同步频率」每天 / 每周 / 每月 / 手动（`lunar.sub_freq`，默认每天）；「上次同步 · 3 分钟前」+ 状态（「同步成功，315 个日子」/「同步失败：订阅源返回 404 未找到」…）+「立即同步」。地址和频率跟账户同步；数据、上次同步时间、状态只在这台设备。
@@ -542,7 +542,7 @@ Rei 2026-10-25 原话：「拖拽文件到详情页面可以直接添加附件�
 Rei 原话：「日期部分，只有在设置中打开中国农历switch才显示。农历只有在简体中文、繁体中文中显示这个设置选项和界面中显示。这个顶部的四个快捷按钮，用图标，hover tooltip显示文本。」
 - **开关**：设置 → 农历 →「中国农历」（Chinese Lunar Calendar），本机设置 `settings.chineseLunar`（localStorage `mindough:settings`，和任务链开关一样不同步），默认关。取代原来的同步偏好「显示农历」`lunar.show`（不再读；旧值留在库里没删）。订阅地址 / 频率仍是同步偏好，只在开关开着时显示。
 - **判断**：core `isChineseLocale(locale)`（`zh`、`zh-Hans`、`zh-Hant`、`zh-TW`、`zh_HK`… 凡 zh 开头都算；现在只有 zh / en，以后加繁体不用改调用方）+ `lunarUiVisible(enabled, locale)`；客户端一律 `lib/lunar.ts` 的 `useLunarUi()`（`useLunar().show` 也由它来）。不是中文界面时设置里整节不渲染，开关开过也不显示农历。
-- **隐藏时**：日期面板没有「公历 | 农历」与农历选择、日历 / 日记月历格子没有农历小字和休 / 班、我的一天副标题和列表日期标题没有农历一行、订阅不自动同步、重复频率里没有「每年农历」。已有每年农历重复的任务：规则和打卡 / 提醒照常按农历算，频率格子写「每年」+「下次：2027年9月15日」，说法 `describeRecurrence(r, { lunar: false, today })` =「每年 · 下次 2027年9月15日」（core `nextLunarYearly`）。
+- **隐藏时**：日期面板没有「农历」开关和农历月历、日历 / 日记月历格子没有农历小字和休 / 班、我的一天副标题和列表日期标题没有农历一行、订阅不自动同步、重复频率里没有「每年农历」。已有每年农历重复的任务：规则和打卡 / 提醒照常按农历算，频率格子写「每年」+「下次：2027年9月15日」，说法 `describeRecurrence(r, { lunar: false, today })` =「每年 · 下次 2027年9月15日」（core `nextLunarYearly`）。
 - **快捷按钮**：`quickDates` 加 `kind`（today / tomorrow / weekend / monday），DatePanel 用 Lucide Sun / Sunrise / Sofa / CalendarArrowUp 的图标按钮，一行四个等宽；新 primitive `TipButton`（React Aria TooltipTrigger + aria-label；触屏按住 500 ms 显示提示、松手不触发、1.5 秒后收起），外观沿用 `.tooltip`（WinUI 皮肤有自己的样子）。
 - **顺手修**：农历选择三个下拉挤一行在 292 宽会截成「Mo…」「Da…」：改成「年」一整行、「月 / 日」各半，值超长时省略号。
 - **待 Rei 确认**：① 原来的同步偏好「显示农历」作废、改本机开关后，之前在中文界面默认看到农历的设备升级后会先看不到（要去设置里打开一次）；② 今天图标用 Sun（和「我的一天」同一个图标）；③ 本周末 / 下周末的提示文字沿用现有说法（Rei 原话写的「下个周末」，周一到周五是「本周末」）。
@@ -892,7 +892,7 @@ Rei 2026-10-26 原话：「新建任务是“类型”对应“资料库”，�
 Rei 2026-10-26 17:26 原话：「现在的日期只是单个日期，要支持日期段」。之前问过项目页时间轴要不要单独的到期日，日期段就是答案。
 
 - **数据**：任务加一列 `end_date`（结束日，可空，SQLite 迁移 v10）。开始日还是 `scheduled_date`。结束日只会晚于开始日：等于开始日、早于开始日、没有开始日时都存空（core `date-range.ts` 的 `normalizeRange`，`store.createTask` / `updateTask` 写之前都过一遍）。空 = 单日，老任务都是单日，打开时内存里补 null。云端存整行 JSON，不用动云端 schema，照行级 LWW 同步。导出导入多一个 `end_date`（docs/EXPORT.md）。Rust 端没有自己的 schema，不用改。
-- **选日期**：日期面板（详情胶囊、新建面板）多一个「单日 / 日期段」切换。日期段下面是两格「开始 10月26日」「结束 10月30日」，点哪格就只改哪一头；默认点起点再点终点，中间一条浅色带。等结束时点在开始之前，就把开始挪过去，继续等结束；点开始当天等于回到单日。选好结束日弹层就关。快捷图标（今天 / 明天 / 本周末 / 下周一）在日期段里把开始挪到那天、天数不变。「去掉结束日」回到单日，「不设日期」两头一起清。农历小字照常，农历选择在日期段里也是改当前那一头。待安排页、倒数日的目标日还是单日。
+- **选日期**：日期面板（详情胶囊、新建面板）多一个「单日 / 日期段」切换。日期段下面是两格「开始 10月26日」「结束 10月30日」，点哪格就只改哪一头；默认点起点再点终点，中间一条浅色带。等结束时点在开始之前，就把开始挪过去，继续等结束；点开始当天等于回到单日。选好结束日弹层就关。快捷图标（今天 / 明天 / 本周末 / 下周一）在日期段里把开始挪到那天、天数不变。「去掉结束日」回到单日，「不设日期」两头一起清。农历小字照常，农历选择在日期段里也是改当前那一头。待安排页、倒数日的目标日还是单日。（2026-11-01 起点法改成方案 A，见「日期面板方案 A」。）
 - **深链**：`new` 多一个 `end=`，写法同 `date`（today / tomorrow / 2026-10-30）；没有 date、或不晚于 date 就当没写。
 - **显示**：单日照旧。日期段写「10月26日 – 30日」「10月30日 – 11月2日」「2026年12月30日 – 2027年1月2日」：同月省掉月份，跨年两头都写年份；不跨年但不在今年时开头带年份。其他语言用 `Intl.DateTimeFormat#formatRange`，省略规则按各语言（英文「Oct 26 – 30」「Dec 30, 2026 – Jan 2, 2027」）。日期段不写「今天 / 明天」，也不写星期。
 - **视图**：
@@ -1056,7 +1056,7 @@ Rei 2026-10-28 原话：「日记还是不好用，我更喜欢Feed流，一天�
 Rei 2026-10-29 原话：「任务和日记 editor 要行为一致」「日记的工具栏保留图标，限制只能是图片」。网页端剪贴板按我的建议做（Rei 同意）：只在已授权时读，只认图片，文件走附件选择或拖进来。详细规则见 JOURNAL.md「2026-10-29：和任务用同一个编辑器」。
 
 - **任务详情顶栏**（`TaskDetail` 的 headerStart，状态胶囊后面）：
-  - `DateQuickButton`（`components/task/TaskDatePicker.tsx`）：和「日期」胶囊共用 `dateChipState` + `TaskDatePicker`（单天清掉结束日，日期段两头选完才收起）。设了日期是强调色（`.is-set`），过期变红（`.is-danger`，做完、关掉的不算）。
+  - `DateQuickButton`（`components/task/TaskDatePicker.tsx`）：和「日期」胶囊共用 `dateChipState` + `TaskDatePicker`（点一天就存并收起，日期段见「日期面板方案 A」）。设了日期是强调色（`.is-set`），过期变红（`.is-danger`，做完、关掉的不算）。
   - `ClipboardButton`（`components/attachments/ClipboardButton.tsx`）：剪贴板里有能加的东西才出现，点了交给 `useAddFiles`（附件上传队列）。
 - **剪贴板**（`lib/clipboard-files.ts`）：挂上、窗口拿到焦点、页面切回来时看，不轮询；加过的内容记签名（localStorage，20 条），同一份不再出。
   - 网页：`clipboard-read` 已是 granted 才读，从不弹框，只认图片；Firefox、Safari 不认这个权限名，按钮不出。
@@ -1071,6 +1071,30 @@ Rei 2026-10-29 原话：「任务和日记 editor 要行为一致」「日记的
   - 原生端附件的 blob: 地址以前留到关 app，现在最多留 32 MB（`BLOB_BUDGET`），从最久没用的开始收回。
   - 量出来的情况：Chromium 里 800 件任务 + 半年日记，JS 一共 17–22 MB，走几圈页面、开 20 个详情也就涨到 22 MB 上下，没有成片的泄漏；编辑器用完都销毁了。Mac 上 `ps` 看到的 RSS（约 600 MB）把可回收的缓存和共享库都算进去了，`footprint` 看真正占的：主进程 55 MB、WebContent 161 MB（WebKit malloc 79 MB、图层 29 MB、JIT 12 MB）、GPU 33 MB、Networking 14 MB，一共约 260 MB；大头是 WebKit 自己。
   - 还能做但没做：Rust 的 clipboard_peek 每次都解整张图，可以先看 macOS 的 changeCount（Windows 的 GetClipboardSequenceNumber）没变就直接用上次的结果；要加 objc2-app-kit 依赖，得在 CI 上编过再说。
+
+### 日期面板方案 A：一张月历，点一下就生效 ✅（2026-11-01）
+Rei 2026-11-01 原话：「当前的 date picker 中：单日、时间段第一层，公历、农历第二层好乱。有什么更好的交互方式么，让我审核」。看了 [DATE-PICKER.md](DATE-PICKER.md) 后定「方案A」。
+
+- **去掉了**：「单日 | 日期段」「公历 | 农历」两个切换、「开始 / 结束」两格、农历的年 / 月 / 日三个下拉和「选这天 / 已选这天」、「去掉结束日」一行。
+- **现在的样子**：从上到下是快捷按钮、已选胶囊、月历、时区和「不设日期」。点一天就存，弹层收起。要日期段就点「+ 结束日」，再点结束那天；桌面上还能拖选、按住 Shift 点（键盘 Shift+Enter）。段设好后点开始之前的日子改开始，点开始之后的（段里面也算）改结束，点开始本身不变。结束日胶囊上的 × 去掉结束日，面板不关。快捷按钮在段里照旧把开始挪到那天，天数不变。
+- **农历**：月历标题右边一个「农历」开关，只在 `useLunarUi()` 为真时出现。开着时按农历月翻页，闰月单独一页；格子大字农历、小字公历。开关记在本机 `mindough:lunar-pick`。存法不变：按农历选的也存公历，每年农历重复还在「重复」里。
+- **代码**：core `date-grid.ts`（公历 / 农历月都排 42 格 `monthCells`、翻页 `stepView` / `stepViewYear` / `canStep`、键盘翻页落点 `shiftFocus`、`viewOf`、点格子规则 `clickDay`、拖选 `dragRange`），删了 `pickRangeDay`。客户端月历是 `components/task/DateGrid.tsx`，自己画的 `role="grid"`：react-aria 的 `Calendar` 和 `@internationalized/date` 都不支持中国农历。胶囊和存法在 `DatePanel.tsx`。`TaskDatePicker`（日期胶囊和顶栏日期按钮共用）接口没变。手机上所有日期弹层都从底部出来（`is-sheet`）。
+- **键盘和读屏**：打开时焦点在已选那天，没选就在今天。方向键换天，Home / End 到这周头尾，PageUp / PageDown 换月（农历页换农历月），加 Shift 换年；Enter 或空格选，Shift+Enter 设结束日。选好后 live region 念一句。
+- **待确认的 8 条 Rei 没单独回，按文档的建议做**：
+  1. 点一下就存并关；要日期段再打开点「+ 结束日」。
+  2. 桌面拖选和 Shift 点都支持，手机只用「+ 结束日」。
+  3. 段设好后：开始之前改开始，开始之后（含段里）改结束。
+  4. 「农历」开关记在本机。
+  5. 四个快捷按钮都留。
+  6. 节气节日照旧用强调色，「休 / 班」留着。
+  7. 一周从哪天开始跟着界面语言，不加设置。
+  8. 方案 C 的输入框先不做。
+- **和方案文档不一样的地方**：
+  - 月历固定 6 行，翻页时面板高度不跳；前后月的日子淡色显示，也能点。
+  - 等结束日时，鼠标悬停那天先预览成一段。
+  - 等结束日时点在开始之前：这天当开始，原来的开始当结束（文档没写这种情况）。
+  - 手机底部弹层没加拖动把手；左右滑动翻月没做（文档里是可选）。
+- **测试**：core `test/date-grid.test.ts`（公历 / 农历月格子、闰月、周日开头、翻页、点格子和拖选的规则）；client `components/task/DatePanel.test.tsx`（点一下生效、「+ 结束日」、×、Shift 点、键盘、农历开关）。截图在 work/shots-datepicker/（脚本 work/shots-tool/datepicker.mjs）。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
