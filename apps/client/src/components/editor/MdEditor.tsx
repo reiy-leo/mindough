@@ -15,7 +15,7 @@
  *   点框外面 = 取消。
  * - 外面的值变了（同步下来）且不是自己刚写的：替换内容。
  * - ⌘ / Ctrl + Enter：给了 onModEnter 就交给它（日记输入框发送，Rei 2026-10-29「任务和日记 editor 要行为一致」），不给照常换行。
- * - 粘贴 / 拖进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。拖到正文外面的文件仍是附件，见 Attachments.tsx useFileDrop。
+ * - 粘贴进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。从外面拖进来的文件（包括图片、落在正文上）都是附件，外框先接住，见 Attachments.tsx attachFileDrop。
  * 内核是 Tiptap 3（@tiptap/react 的 useEditor + EditorContent，Rei 2026-10-25 从 Milkdown 换过来），读写 markdown 见 editor.ts / markdown.ts。
  * 这个文件按需加载（LazyMdEditor），加载完之前显示排好版的预览。
  */

@@ -8,7 +8,7 @@ import { TextSelection } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import fixtures from './markdown.fixtures.json';
 import { createMdEditor, type MdEditorOptions } from './editor';
-import { dropGoesToEditor } from '../attachments/Attachments';
+import { attachFileDrop, isFileDrag } from '../attachments/Attachments';
 
 const setup = (md: string, extra: Partial<MdEditorOptions> = {}) => {
   const root = document.createElement('div');
@@ -163,20 +163,43 @@ describe('图片：正文不收新图片（Rei 2026-10-29）', () => {
     a.done();
   });
 
-  it('dropGoesToEditor：只有图片、落在能改的正文上才交给编辑器', () => {
-    const { view, done } = setup('一段');
-    const ev = (target: Element, files: File[]) => {
-      const e = new Event('drop') as DragEvent;
-      Object.defineProperty(e, 'target', { value: target });
+  it('拖进来的图片落在正文上也当附件：外框在捕获阶段接住，编辑器收不到、不提示', () => {
+    const blocked = vi.fn();
+    const { view, root, h, done } = setup('一段', { onImageBlocked: blocked });
+    // 任务详情的外框包着编辑器（DetailFrame 上挂的 useFileDrop）
+    const frame = document.createElement('div');
+    root.replaceWith(frame);
+    frame.appendChild(root);
+    const got: File[][] = [];
+    const active: boolean[] = [];
+    const off = attachFileDrop(frame, (a) => active.push(a), (f) => got.push(f));
+    const fire = (type: string, target: Element, files: File[]) => {
+      const e = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
       Object.defineProperty(e, 'dataTransfer', { value: transfer({}, files) });
+      target.dispatchEvent(e);
       return e;
     };
     const p = view.dom.querySelector('p')!;
-    expect(dropGoesToEditor(ev(p, [png()]))).toBe(true);
-    expect(dropGoesToEditor(ev(p, [png(), new File(['x'], 'a.pdf', { type: 'application/pdf' })]))).toBe(false);
-    expect(dropGoesToEditor(ev(document.body, [png()]))).toBe(false);
-    view.setProps({ editable: () => false });
-    expect(dropGoesToEditor(ev(view.dom.querySelector('p')!, [png()]))).toBe(false);
+    const img = png();
+    expect(isFileDrag(fire('dragover', p, [img]))).toBe(true);
+    fire('dragenter', p, [img]);
+    const drop = fire('drop', p, [img]);
+    expect(drop.defaultPrevented).toBe(true);
+    expect(got).toEqual([[img]]);
+    expect(active).toEqual([true, false]);
+    expect(blocked).not.toHaveBeenCalled();
+    expect(h.getMarkdown()).toBe('一段\n');
+    // 混着别的文件、落在正文外面，也一样
+    const pdf = new File(['x'], 'a.pdf', { type: 'application/pdf' });
+    fire('drop', frame, [img, pdf]);
+    expect(got[1]).toEqual([img, pdf]);
+    // 拖文字不管
+    const text = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(text, 'dataTransfer', { value: transfer({ 'text/plain': 'x' }) });
+    p.dispatchEvent(text);
+    expect(got).toHaveLength(2);
+    off();
+    frame.remove();
     done();
   });
 });

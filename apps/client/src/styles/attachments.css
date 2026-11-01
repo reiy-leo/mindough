@@ -342,6 +342,19 @@ html:not(:lang(zh)) .att-hint {
   box-shadow: var(--shadow-pop);
   color: var(--accent-soft-text);
 }
+/* 小块区域（日记输入框）：框跟着区域的圆角，提示居中、一行 */
+.drop-overlay.is-compact {
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drop-overlay.is-compact .drop-overlay-box {
+  position: static;
+  margin: 0;
+  flex-direction: row;
+  padding: var(--space-2) var(--space-4);
+}
 .drop-overlay-title {
   font-weight: 650;
   font-size: 15px;

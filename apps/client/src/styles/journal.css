@@ -338,6 +338,7 @@
 
 /* ───────── 输入框 ───────── */
 .jcomposer {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

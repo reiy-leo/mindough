@@ -64,6 +64,8 @@ export async function openMiniWindow(): Promise<void> {
     alwaysOnTop: true,
     resizable: true,
     skipTaskbar: false,
+    // 关掉 Tauri 自己的拖放接管，网页的 HTML5 拖放才收得到文件（拖附件进来要用），见 tauri.conf.json
+    dragDropEnabled: false,
     // 和主窗口同一种材质（macOS 毛玻璃 / Windows 11 Mica），见 lib/vibrancy.ts
     ...material,
   });
@@ -108,6 +110,7 @@ export function openSettingsWindow(opts: { section?: string; title: string; macO
       minHeight: 440,
       resizable: true,
       center: true,
+      dragDropEnabled: false,
       ...material,
       ...(opts.macOverlay ? { titleBarStyle: 'overlay' as const, hiddenTitle: true, trafficLightPosition: new LogicalPosition(16, 18) } : {}),
     });

@@ -6,6 +6,7 @@
  *   标签不做（Rei 2026-10-28「标签不做」），所以没有 # 按钮。
  * - 图片（Rei 2026-10-29「日记的工具栏保留图标，限制只能是图片」）：只收图片，选了先放在编辑器下面的「待发」小图里（能去掉），
  *   发送时跟着这条走，挂成这条的附件（lib/journal-send.ts）。别的文件提示「只能加图片」。
+ *   把图片拖到输入框上（包括正文）也一样进「待发」（Rei 2026-11-01，和任务详情拖附件一致）。
  * - 右边：发送（⌘/Ctrl + Enter 也发）。只放了图片也能发。发了就不能改（Store 拦着），所以发送前不用确认。
  */
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
@@ -19,6 +20,7 @@ import { pickImages } from '../../lib/journal-send';
 import { LazyMdEditor } from '../editor/LazyMdEditor';
 import type { MdEditorHandle } from '../editor/editor';
 import { ClipboardButton } from '../attachments/ClipboardButton';
+import { DropOverlay, useFileDrop } from '../attachments/Attachments';
 import { MoodIcon } from './MoodIcon';
 import { tr } from '../../lib/i18n';
 
@@ -42,6 +44,7 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
   const [pending, setPending] = useState<Pending[]>([]);
   const editor = useRef<MdEditorHandle | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
   const focus = () => editor.current?.focus();
   useImperativeHandle(ref, () => ({ focus }), []);
 
@@ -56,6 +59,7 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
     if (r.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) }, 6000);
     if (r.images.length) setPending((cur) => [...cur, ...r.images.map((f) => ({ id: ++seq, file: f, url: URL.createObjectURL(f) }))]);
   };
+  const dropping = useFileDrop(box, addImages);
   const removeImage = (id: number) =>
     setPending((cur) =>
       cur.filter((p) => {
@@ -82,7 +86,8 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
 
   const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘↩' : 'Ctrl+Enter';
   return (
-    <div className={`jcomposer${mood ? ' has-mood' : ''}`} style={mood ? ({ '--jm': `var(--mood-${mood})` } as CSSProperties) : undefined}>
+    <div ref={box} className={`jcomposer${mood ? ' has-mood' : ''}`} style={mood ? ({ '--jm': `var(--mood-${mood})` } as CSSProperties) : undefined}>
+      <DropOverlay active={dropping} compact title={tr('添加图片')} />
       <LazyMdEditor
         className="jcomposer-input"
         label={tr('写一条日记')}

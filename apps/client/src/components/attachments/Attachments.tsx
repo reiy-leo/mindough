@@ -87,86 +87,90 @@ if (typeof window !== 'undefined') {
   window.addEventListener('drop', () => setTimeout(end, 0), true);
 }
 /**
- * 拖进来的只有图片、又落在能改的正文（编辑器）上：交给编辑器上传、插进正文（Rei 2026-10-25 换 Tiptap 时加的，见 extensions.ts uploadPlugin），
- * 不当附件。拖到正文外面、或者混着别的文件，照旧是附件。
+ * 从页面外面拖进来的文件，不管落在哪里（包括正文）都当附件，马上进队列上传。
+ * 以前（2026-10-25 换 Tiptap 时）只有图片、拖到正文上会交给编辑器插进正文；2026-10-29 正文不收图片以后，
+ * 这条路就成了「拦下、提示正文里不能放图片」，拖进正文的图片既没进正文也没加附件（Rei 2026-11-01「drag 图片到任务详情中后，没有直接开始上传」）。
+ * 现在图片都是附件，不再分给编辑器。
  */
-export function dropGoesToEditor(e: DragEvent): boolean {
-  const t = e.target as Element | null;
-  if (!t?.closest?.('.md-editor-root .ProseMirror[contenteditable="true"]')) return false;
-  const items = [...(e.dataTransfer?.items ?? [])].filter((i) => i.kind === 'file');
-  return items.length > 0 && items.every((i) => i.type.startsWith('image/'));
-}
-const isFileDrag = (e: DragEvent) => !internalDrag && hasFiles(e) && !dropGoesToEditor(e);
+export const isFileDrag = (e: DragEvent) => !internalDrag && hasFiles(e);
 
 /**
- * 拖放：把文件拖到 ref 这块区域上时 active = true（显示高亮层），松手把文件交给 onFiles。
- * 用捕获阶段，免得编辑器先接住（拖进正文的图片除外，见 dropGoesToEditor）。只认文件，拖文字不管。
+ * 在 el 上接住拖进来的文件（捕获阶段，编辑器、浏览器都收不到这次拖放）。
+ * onActive：拖进 / 拖走（显示高亮层）；onFiles：松手时的文件。返回解绑函数。
+ */
+export function attachFileDrop(el: HTMLElement, onActive: (active: boolean) => void, onFiles: (files: File[]) => void): () => void {
+  let depth = 0;
+  const enter = (e: DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    depth++;
+    onActive(true);
+  };
+  const over = (e: DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  };
+  const leave = (e: DragEvent) => {
+    if (!isFileDrag(e)) return;
+    depth = Math.max(0, depth - 1);
+    if (depth === 0) onActive(false);
+  };
+  const drop = (e: DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    depth = 0;
+    onActive(false);
+    const files = [...(e.dataTransfer?.files ?? [])];
+    if (files.length) onFiles(files);
+  };
+  const reset = () => {
+    depth = 0;
+    onActive(false);
+  };
+  el.addEventListener('dragenter', enter, true);
+  el.addEventListener('dragover', over, true);
+  el.addEventListener('dragleave', leave, true);
+  el.addEventListener('drop', drop, true);
+  window.addEventListener('dragend', reset);
+  window.addEventListener('blur', reset);
+  return () => {
+    el.removeEventListener('dragenter', enter, true);
+    el.removeEventListener('dragover', over, true);
+    el.removeEventListener('dragleave', leave, true);
+    el.removeEventListener('drop', drop, true);
+    window.removeEventListener('dragend', reset);
+    window.removeEventListener('blur', reset);
+  };
+}
+
+/**
+ * 拖放：把文件拖到 ref 这块区域上时 active = true（显示高亮层），松手把文件交给 onFiles。只认文件，拖文字不管。
+ * 桌面版要关掉 Tauri 自己的拖放接管（tauri.conf.json 的 dragDropEnabled: false），不然 macOS / Windows 上网页收不到这些事件。
  */
 export function useFileDrop(ref: RefObject<HTMLElement | null>, onFiles: (files: File[]) => void, enabled = true): boolean {
   const [active, setActive] = useState(false);
-  const depth = useRef(0);
   const cb = useRef(onFiles);
   cb.current = onFiles;
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return;
-    const enter = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      depth.current++;
-      setActive(true);
-    };
-    const over = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    };
-    const leave = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      depth.current = Math.max(0, depth.current - 1);
-      if (depth.current === 0) setActive(false);
-    };
-    const drop = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      depth.current = 0;
-      setActive(false);
-      const files = [...(e.dataTransfer?.files ?? [])];
-      if (files.length) cb.current(files);
-    };
-    const reset = () => {
-      depth.current = 0;
-      setActive(false);
-    };
-    el.addEventListener('dragenter', enter, true);
-    el.addEventListener('dragover', over, true);
-    el.addEventListener('dragleave', leave, true);
-    el.addEventListener('drop', drop, true);
-    window.addEventListener('dragend', reset);
-    window.addEventListener('blur', reset);
-    return () => {
-      el.removeEventListener('dragenter', enter, true);
-      el.removeEventListener('dragover', over, true);
-      el.removeEventListener('dragleave', leave, true);
-      el.removeEventListener('drop', drop, true);
-      window.removeEventListener('dragend', reset);
-      window.removeEventListener('blur', reset);
-    };
+    return attachFileDrop(el, setActive, (files) => cb.current(files));
   }, [ref, enabled]);
   return active;
 }
 
-/** 拖放高亮层：盖住整块区域，虚线框 + 「松手添加附件」。 */
-export function DropOverlay({ active }: { active: boolean }) {
+/** 拖放高亮层：盖住整块区域，虚线框 + 「松手添加附件」。compact：小块区域（日记输入框），只写一行 title。 */
+export function DropOverlay({ active, compact, title }: { active: boolean; compact?: boolean; title?: string }) {
   if (!active) return null;
   return (
-    <div className="drop-overlay" aria-hidden>
+    <div className={`drop-overlay${compact ? ' is-compact' : ''}`} aria-hidden>
       <div className="drop-overlay-box">
-        <Upload size={26} />
-        <span className="drop-overlay-title">{tr('松手添加附件')}</span>
-        <span className="drop-overlay-hint">{tr('每个文件不超过 50 MB')}</span>
+        <Upload size={compact ? 18 : 26} />
+        <span className="drop-overlay-title">{title ?? tr('松手添加附件')}</span>
+        {!compact && <span className="drop-overlay-hint">{tr('每个文件不超过 50 MB')}</span>}
       </div>
     </div>
   );
