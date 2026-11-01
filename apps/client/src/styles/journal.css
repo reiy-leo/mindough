@@ -352,24 +352,77 @@
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
+/* 正文是 Tiptap 编辑器（MdEditor，Rei 2026-10-29「任务和日记 editor 要行为一致」）：外层 .md-editor 管高度和滚动 */
 .jcomposer-input {
   display: block;
   width: 100%;
   min-height: 48px;
   max-height: 40vh;
   padding: var(--space-1) 0 0;
-  border: 0;
-  outline: none;
-  resize: none;
   overflow-y: auto;
-  background: transparent;
   color: var(--text);
-  font: inherit;
   font-size: 15px;
   line-height: 1.6;
 }
-.jcomposer-input::placeholder {
+.jcomposer-input .md-editor-content {
+  font-size: inherit;
+  line-height: inherit;
+}
+.jcomposer-input .ProseMirror {
+  min-height: 44px;
+}
+.jcomposer-input .md-placeholder::before {
   color: var(--text-2);
+}
+/* 待发的图片：编辑器下面一排小图，右上角 × 去掉 */
+.jcomposer-pending {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) 0 0;
+  list-style: none;
+}
+.jcomposer-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+.jcomposer-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--jthumb-r, 10px);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.jcomposer-thumb-x {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--jcomp-bg, var(--surface));
+  border-radius: 50%;
+  background: var(--text-2);
+  color: var(--surface);
+  cursor: pointer;
+}
+.jcomposer-thumb-x[data-hovered] {
+  background: var(--text);
+}
+.jcomposer-thumb-x[data-focus-visible] {
+  outline: none;
+  box-shadow: var(--focus);
+}
+/* 剪贴板按钮刚出现时轻轻亮一下，看得出是新来的 */
+.jcomposer-tool.clip-btn {
+  color: var(--accent);
 }
 .jcomposer-bar {
   display: flex;

@@ -1062,6 +1062,7 @@
 [data-skin='winui'] .journal-page.jf {
   --jcell-r: 2px;
   --jcomp-r: 8px;
+  --jthumb-r: 4px;
 }
 [data-skin='winui'] .jcomposer-send {
   border-radius: 4px;
@@ -1081,6 +1082,7 @@
 [data-skin='material'] .journal-page.jf {
   --jcell-r: 4px;
   --jcomp-r: 24px;
+  --jthumb-r: 12px;
   --jcomp-bg: var(--surface-2);
 }
 [data-skin='material'] .jf-heat,
