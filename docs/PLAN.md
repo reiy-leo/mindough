@@ -1066,6 +1066,11 @@ Rei 2026-10-29 原话：「任务和日记 editor 要行为一致」「日记的
 - **发出去的条目**：`JournalFeed` 用 `Attachments readOnly`（菜单只有下载、缓存，上传中不能取消），owner 是 `store.postAttachmentOwnerId(post)`。
 - 检查：client `clipboard-files`、`journal-send`、`editor`、`attachment-cache`（只读菜单）、`attachments`、`attachment-gone`、`tiptap`、`markdown`、`i18n`、`locales`；core `journal-feed`、`journal`、`attachments`、`archive`、`attachment-cache`；core + client `tsc --noEmit`。截图 `work/shots-editor-consistency/`（脚本 `work/shots-tool/editor-consistency.mjs`，三种皮肤 × 1366 / 390）。
 - 没在真机上试：桌面 app 读剪贴板（macOS / Windows 的文件列表、图片）、手机上按钮不出。
+- **内存（2026-11-01，Rei「现在内存占用太高了」）**：
+  - 剪贴板图片：readImage 拿到的是 Rust 资源表里的一张图，用完要 `close()`，不然像素一直留在主进程（Retina 截图一张二三十 MB，点一次多一份）；编 PNG 的画布用完清零。几个剪贴板按钮、focus 和 visibilitychange 一起来时只看一次剪贴板（`coalesce`，1.5 秒）：桌面上每看一次，Rust 都要把整张图解出来算签名。
+  - 原生端附件的 blob: 地址以前留到关 app，现在最多留 32 MB（`BLOB_BUDGET`），从最久没用的开始收回。
+  - 量出来的情况：Chromium 里 800 件任务 + 半年日记，JS 一共 17–22 MB，走几圈页面、开 20 个详情也就涨到 22 MB 上下，没有成片的泄漏；编辑器用完都销毁了。Mac 上 `ps` 看到的 RSS（约 600 MB）把可回收的缓存和共享库都算进去了，`footprint` 看真正占的：主进程 55 MB、WebContent 161 MB（WebKit malloc 79 MB、图层 29 MB、JIT 12 MB）、GPU 33 MB、Networking 14 MB，一共约 260 MB；大头是 WebKit 自己。
+  - 还能做但没做：Rust 的 clipboard_peek 每次都解整张图，可以先看 macOS 的 changeCount（Windows 的 GetClipboardSequenceNumber）没变就直接用上次的结果；要加 objc2-app-kit 依赖，得在 CI 上编过再说。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
