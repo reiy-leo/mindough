@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MemoryAdapter, Store, type Attachment } from '@mindough/core';
 import { memoryQueue, pendingQueue, setPendingQueue } from './attachments-queue';
-import { Uploader, addAttachments, getUploader, installUploader, tooBigMessage, uploadState, type UploadFn } from './attachments';
+import { BLOB_BUDGET, Uploader, addAttachments, blobCacheStats, getUploader, installUploader, remoteUrl, tooBigMessage, uploadState, type UploadFn } from './attachments';
 import { uploadText } from '../components/attachments/Attachments';
 import './i18n';
 
@@ -134,5 +134,38 @@ describe('上传队列', () => {
     const row = store.addAttachment({ owner_type: 'task', owner_id: 't', file_name: 'a.pdf', mime: 'application/pdf', size: 8 });
     expect(uploadText(undefined, row)).toBe('还在另一台设备上');
     expect(uploadText(undefined, { ...row, r2_key: KEY('1') })).toBeNull();
+  });
+});
+
+describe('原生端 blob: 地址的缓存有上限（Rei 2026-11-01「内存占用太高了」）', () => {
+  it('超过上限从最久没用的收回，最近用过的留着；同一个 key 不重复取', async () => {
+    const revoked: string[] = [];
+    let n = 0;
+    const origCreate = URL.createObjectURL;
+    const origRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = () => `blob:x/${++n}`;
+    URL.revokeObjectURL = (u: string) => void revoked.push(u);
+    try {
+      const gets: string[] = [];
+      const MB = 1024 * 1024;
+      const get = async (url: string) => (gets.push(url), new Blob([new Uint8Array(12 * MB)]));
+      const a = await remoteUrl('k/a', get, true);
+      const b = await remoteUrl('k/b', get, true);
+      expect(await remoteUrl('k/a', get, true)).toBe(a); // 用过一次 a，a 变成最近的
+      expect(gets).toHaveLength(2);
+      await remoteUrl('k/c', get, true); // 36 MB > 32 MB：收回最久没用的 b
+      expect(revoked).toEqual([b]);
+      expect(blobCacheStats()).toEqual({ count: 2, bytes: 24 * MB });
+      expect(BLOB_BUDGET).toBe(32 * MB);
+      // b 再要就重新取
+      await remoteUrl('k/b', get, true);
+      expect(gets.filter((g) => g.includes('k/b'))).toHaveLength(2);
+      // 取不到的不留
+      expect(await remoteUrl('k/none', async () => null, true)).toBeNull();
+      expect(blobCacheStats().count).toBe(2);
+    } finally {
+      URL.createObjectURL = origCreate;
+      URL.revokeObjectURL = origRevoke;
+    }
   });
 });

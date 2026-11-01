@@ -7,6 +7,9 @@
  *   文件内容用 clipboard_read_file 读，图片用 clipboard-manager 插件的 readImage 读出像素、在这边编成 PNG。
  * - 手机 App：不做，按钮不出。
  * - 什么时候看：挂上时、窗口拿到焦点、页面切回来（visibilitychange）。不轮询。
+ *   同一时刻挂着好几个按钮（任务详情 + 日记）、focus 和 visibilitychange 一起来时，只真看一次（coalesce，1.5 秒内共用结果）：
+ *   桌面上每看一次，Rust 都要把剪贴板里的整张图解出来算签名，一张 Retina 截图就是几十 MB（Rei 2026-11-01「内存占用太高了」）。
+ * - 读图片：readImage 拿到的是 Rust 那边的一个资源，像素一直留在主进程里，用完要 close()；编 PNG 的 canvas 用完把尺寸清零，马上放掉。
  * - 加过的内容记下签名（本机 localStorage），同一份内容按钮不再出。
  * 判断逻辑写成纯函数（clipEnv / webImageType / desktopPlan / seen 列表），测试在 clipboard-files.test.ts。
  */
@@ -152,6 +155,25 @@ export interface NavLike {
   clipboard?: { read?: () => Promise<readonly ClipboardItemLike[]> };
 }
 
+/**
+ * 把一小段时间里的重复调用并成一次：ttl 毫秒内再调，拿上一次的结果（还没回来就等同一个 Promise）。
+ * 失败的结果不留，下次重来。
+ */
+export function coalesce<T>(fn: () => Promise<T>, ttl: number, now: () => number = Date.now): () => Promise<T> {
+  let last: { at: number; p: Promise<T> } | null = null;
+  return () => {
+    const t = now();
+    if (last && t - last.at < ttl) return last.p;
+    const p = fn();
+    const mine = { at: t, p };
+    last = mine;
+    p.catch(() => {
+      if (last === mine) last = null;
+    });
+    return p;
+  };
+}
+
 const stamp = () => new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-');
 
 /** 网页：权限已经给了才读；只认图片。没给、问不了、读不出都是 null（不弹框）。 */
@@ -185,15 +207,23 @@ async function rgbaToPng(rgba: Uint8Array, width: number, height: number, name: 
   if (!ctx) throw new Error('canvas 2d context unavailable');
   ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer as ArrayBuffer, rgba.byteOffset, rgba.byteLength), width, height), 0, 0);
   const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/png'));
+  // 画布的像素（宽 × 高 × 4）不等 GC，马上放掉
+  canvas.width = canvas.height = 0;
   if (!blob) throw new Error('PNG encoding failed');
   return new File([blob], name, { type: 'image/png' });
 }
+
+/** 问 Rust 剪贴板里有什么（几个按钮、几个事件一起来时只问一次）。 */
+const peekRust = coalesce(async () => {
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<ClipPeek>('clipboard_peek');
+}, 1500);
 
 /** 桌面 App：问 Rust 剪贴板里有什么。 */
 export async function peekDesktop(imagesOnly: boolean): Promise<ClipFound | null> {
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const plan = desktopPlan(await invoke<ClipPeek>('clipboard_peek'), imagesOnly);
+    const plan = desktopPlan(await peekRust(), imagesOnly);
     if (!plan) return null;
     if (plan.kind === 'files') {
       const paths = plan.paths;
@@ -218,8 +248,13 @@ export async function peekDesktop(imagesOnly: boolean): Promise<ClipFound | null
       load: async () => {
         const { readImage } = await import('@tauri-apps/plugin-clipboard-manager');
         const img = await readImage();
-        const [rgba, size] = await Promise.all([img.rgba(), img.size()]);
-        return [await rgbaToPng(rgba, size.width, size.height, `clipboard-${stamp()}.png`)];
+        try {
+          const [rgba, size] = await Promise.all([img.rgba(), img.size()]);
+          return [await rgbaToPng(rgba, size.width, size.height, `clipboard-${stamp()}.png`)];
+        } finally {
+          // 不 close 的话，这张图的像素一直留在 Rust 的资源表里（每点一次多一份）
+          void img.close().catch(() => {});
+        }
       },
     };
   } catch (err) {
@@ -246,6 +281,9 @@ const local = (): KV | null => {
 
 const CHANGED = 'mindough:clipboard-seen';
 
+/** 网页：同一时刻只读一次剪贴板（读出来的图片要整张算哈希）。 */
+const peekWebShared = coalesce(() => peekWeb(navigator as unknown as NavLike), 1500);
+
 /**
  * 剪贴板里有没有能加的东西（加过的不算）。挂上、窗口拿到焦点、页面切回来时看一眼。
  * imagesOnly：只要图片（日记）。网页端本来就只认图片。
@@ -261,7 +299,7 @@ export function useClipboardFiles(imagesOnly: boolean): { found: ClipFound | nul
     const check = async () => {
       if (document.visibilityState === 'hidden') return;
       const my = ++seq;
-      const f = env === 'desktop' ? await peekDesktop(imagesOnly) : await peekWeb(navigator as unknown as NavLike);
+      const f = env === 'desktop' ? await peekDesktop(imagesOnly) : await peekWebShared();
       if (!alive || my !== seq) return;
       setFound(f && !isSeen(local(), f.sig) ? f : null);
     };

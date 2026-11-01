@@ -366,21 +366,61 @@ export const fileUrl = (key: string, opts: { name?: string; download?: boolean }
   return `${API_BASE}/api/files/${key}${s ? `?${s}` : ''}`;
 };
 
-const blobUrls = new Map<string, Promise<string | null>>();
-
-/** 一个 key 的可显示地址：Web 端直接用接口地址（同源带 cookie）；原生端带 Bearer 取回成 blob: 地址（缓存）。 */
-export function remoteUrl(key: string): Promise<string | null> {
-  if (!isTauri()) return Promise.resolve(fileUrl(key));
-  let p = blobUrls.get(key);
-  if (!p) {
-    p = fetch(fileUrl(key), authInit())
-      .then(async (r) => (r.ok ? URL.createObjectURL(await r.blob()) : null))
-      .catch(() => null);
-    blobUrls.set(key, p);
-    void p.then((u) => u === null && blobUrls.delete(key));
-  }
-  return p;
+/**
+ * 原生端取回的附件做成 blob: 地址，留着复用。以前一直留到关 app，看过的原图越攒越多（Rei 2026-11-01「内存占用太高了」）；
+ * 现在按大小设上限：超过 BLOB_BUDGET 就从最久没用的开始收回（revoke），收回的下次要用再取一次。最近用的那张总留着。
+ */
+export const BLOB_BUDGET = 32 * 1024 * 1024;
+interface BlobEntry {
+  p: Promise<string | null>;
+  url?: string;
+  size: number;
 }
+const blobUrls = new Map<string, BlobEntry>();
+let blobBytes = 0;
+
+function trimBlobUrls(budget = BLOB_BUDGET) {
+  for (const [k, e] of blobUrls) {
+    if (blobBytes <= budget || blobUrls.size <= 1) break;
+    if (!e.url) continue; // 还在取的不动
+    blobUrls.delete(k);
+    blobBytes -= e.size;
+    URL.revokeObjectURL(e.url);
+  }
+}
+
+/** 测试用：现在留着几个、一共多大。 */
+export const blobCacheStats = () => ({ count: blobUrls.size, bytes: blobBytes });
+
+/** 一个 key 的可显示地址：Web 端直接用接口地址（同源带 cookie）；原生端带 Bearer 取回成 blob: 地址（有上限的缓存）。 */
+export function remoteUrl(key: string, get: (url: string) => Promise<Blob | null> = fetchBlob, native = isTauri()): Promise<string | null> {
+  if (!native) return Promise.resolve(fileUrl(key));
+  const hit = blobUrls.get(key);
+  if (hit) {
+    // 挪到最后（最近用过）
+    blobUrls.delete(key);
+    blobUrls.set(key, hit);
+    return hit.p;
+  }
+  const entry: BlobEntry = { p: Promise.resolve(null), size: 0 };
+  entry.p = get(fileUrl(key))
+    .then((b) => {
+      if (!b) return null;
+      const url = URL.createObjectURL(b);
+      if (blobUrls.get(key) !== entry) return url; // 中途被清掉了：照样给这一次用
+      entry.url = url;
+      entry.size = b.size;
+      blobBytes += b.size;
+      trimBlobUrls();
+      return url;
+    })
+    .catch(() => null);
+  blobUrls.set(key, entry);
+  void entry.p.then((u) => u === null && blobUrls.get(key) === entry && blobUrls.delete(key));
+  return entry.p;
+}
+
+const fetchBlob = (url: string): Promise<Blob | null> => fetch(url, authInit()).then((r) => (r.ok ? r.blob() : null));
 
 /**
  * 附件的显示地址：本机队列里有（还没传完 / 刚加的）用本机文件；传好了用 R2。

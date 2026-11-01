@@ -2,7 +2,7 @@
  * 剪贴板按钮的判断（Rei 2026-10-29）：哪一端能看、网页只在已授权时读且只认图片、桌面先文件后图片、加过的不再出。
  */
 import { describe, expect, it } from 'vitest';
-import { baseName, clipEnv, desktopPlan, extOfMime, isSeen, markSeen, mimeOfName, peekWeb, seenList, webImageType, type NavLike } from './clipboard-files';
+import { baseName, clipEnv, coalesce, desktopPlan, extOfMime, isSeen, markSeen, mimeOfName, peekWeb, seenList, webImageType, type NavLike } from './clipboard-files';
 
 const memKV = () => {
   const m = new Map<string, string>();
@@ -104,5 +104,29 @@ describe('加过的不再出', () => {
     kv.setItem('mindough:clipboard_seen', '{bad');
     expect(seenList(kv)).toEqual([]);
     expect(isSeen(null, 'a')).toBe(false);
+  });
+});
+
+describe('coalesce：一小段时间里的重复调用并成一次', () => {
+  it('ttl 内共用结果，过了再调；失败的不留', async () => {
+    let t = 0;
+    let calls = 0;
+    let fail = false;
+    const f = coalesce(async () => {
+      calls++;
+      if (fail) throw new Error('x');
+      return calls;
+    }, 1500, () => t);
+    const [a, b] = await Promise.all([f(), f()]);
+    expect([a, b, calls]).toEqual([1, 1, 1]);
+    t = 1000;
+    expect(await f()).toBe(1);
+    t = 1600;
+    expect(await f()).toBe(2);
+    fail = true;
+    t = 4000;
+    await expect(f()).rejects.toThrow('x');
+    fail = false;
+    expect(await f()).toBe(4); // 失败的那次没留下，马上重来
   });
 });
