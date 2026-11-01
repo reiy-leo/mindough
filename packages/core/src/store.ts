@@ -42,7 +42,8 @@ import type { Change, StorageAdapter } from './storage/adapter';
 import { dataLabel, tr } from './i18n';
 import { parseHlc } from './hlc';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, normalizeDayStart, type MoodId } from './journal';
-import type { Attachment, AttachmentOwnerType, JournalEntry, JournalPost } from './types';
+import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
+import { groupIconFromPicker, normalizeGroupName, type GroupRemovalResult, type GroupRemovalUndo } from './group';
 import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './journal-feed';
 import { renamedFileName, safeFileName, sortAttachments } from './attachments';
 export interface StoreOptions {
@@ -1233,9 +1234,14 @@ export class Store {
 
   /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。 */
   deleteTask(id: string): void {
+    this.write(this.taskTombstoneRows(id));
+  }
+
+  /** 删一件任务要打墓碑的所有行（任务本身 + 依赖边、相关任务、我的一天、人物 / 类型 / 资料关联、附件）。 */
+  private taskTombstoneRows(id: string): Array<{ table: TableName; row: BaseRow }> {
     const rows: Array<{ table: TableName; row: BaseRow }> = [];
     const t = this.tables.task.get(id);
-    if (!t || t.deleted) return;
+    if (!t || t.deleted) return rows;
     rows.push({ table: 'task', row: { ...t, deleted: true } });
     for (const d of this.list('dependency'))
       if (d.pred_id === id || d.succ_id === id) rows.push({ table: 'dependency', row: { ...d, deleted: true } });
@@ -1245,6 +1251,73 @@ export class Store {
     for (const x of this.list('task_item')) if (x.task_id === id) rows.push({ table: 'task_item', row: { ...x, deleted: true } });
     for (const l of this.list('task_link')) if (l.a_task_id === id || l.b_task_id === id) rows.push({ table: 'task_link', row: { ...l, deleted: true } });
     for (const a of this.list('attachment')) if (a.owner_type === 'task' && a.owner_id === id) rows.push({ table: 'attachment', row: { ...a, deleted: true } });
+    return rows;
+  }
+
+  // ───────────── 项目（group）：改名、换图标、解散、删除（Rei 2026-11-01） ─────────────
+
+  /** 项目里还在的任务（不含删掉的）。 */
+  groupTasks(id: string): Task[] {
+    return this.tasks().filter((t) => t.group_id === id);
+  }
+
+  /**
+   * 改项目的名字 / 图标。名字去掉首尾空白，改成空的不算（留原名）；图标传选择器的值（emoji 或 lucide 名，见 group.ts）。
+   * 没变就不写（不进 outbox）。
+   */
+  updateGroup(id: string, patch: { name?: string; icon?: string }): Group | undefined {
+    const g = this.get('group', id);
+    if (!g) return undefined;
+    const next: Partial<Group> = {};
+    if (patch.name !== undefined) {
+      const n = normalizeGroupName(patch.name);
+      if (n && n !== g.name) next.name = n;
+    }
+    if (patch.icon !== undefined) {
+      const icon = groupIconFromPicker(patch.icon);
+      if (icon !== g.icon) next.icon = icon;
+    }
+    if (!Object.keys(next).length) return g;
+    return this.update('group', id, next);
+  }
+
+  /** 解散项目：项目打墓碑，里面的任务留着、移出项目（没日期的回到待安排，有日期的照旧在那天）。 */
+  dissolveGroup(id: string): GroupRemovalResult | null {
+    const g = this.get('group', id);
+    if (!g) return null;
+    const tasks = this.groupTasks(id);
+    const rows: Array<{ table: TableName; row: BaseRow }> = [{ table: 'group', row: { ...g, deleted: true } }];
+    for (const t of tasks) rows.push({ table: 'task', row: { ...t, group_id: null } as BaseRow });
+    this.write(rows);
+    return { tasks: tasks.length, undo: { kind: 'dissolve', groupId: id, tasks: tasks.map((t) => ({ id: t.id, group_id: id })) } };
+  }
+
+  /** 删除项目：项目和里面的任务一起打墓碑（任务连同前后关系、我的一天、附件，和 deleteTask 一样）。 */
+  deleteGroup(id: string): GroupRemovalResult | null {
+    const g = this.get('group', id);
+    if (!g) return null;
+    const tasks = this.groupTasks(id);
+    const rows = dedupeRows([{ table: 'group' as TableName, row: { ...g, deleted: true } as BaseRow }, ...tasks.flatMap((t) => this.taskTombstoneRows(t.id))]);
+    this.write(rows);
+    return { tasks: tasks.length, undo: { kind: 'delete', groupId: id, rows: rows.map((r) => ({ table: r.table, id: r.row.id })) } };
+  }
+
+  /** 撤销解散 / 删除：项目和打过墓碑的行恢复，解散时移出去的任务放回来（期间又放进别的项目的不动）。 */
+  undoGroupRemoval(undo: GroupRemovalUndo): void {
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    if (undo.kind === 'dissolve') {
+      const g = this.tables.group.get(undo.groupId);
+      if (g?.deleted) rows.push({ table: 'group', row: { ...g, deleted: false } });
+      for (const m of undo.tasks) {
+        const t = this.tables.task.get(m.id);
+        if (t && !t.deleted && t.group_id === null) rows.push({ table: 'task', row: { ...t, group_id: m.group_id } as BaseRow });
+      }
+    } else {
+      for (const r of undo.rows) {
+        const cur = (this.tables[r.table as TableName] as Map<string, BaseRow> | undefined)?.get(r.id);
+        if (cur?.deleted) rows.push({ table: r.table as TableName, row: { ...cur, deleted: false } });
+      }
+    }
     this.write(rows);
   }
 
