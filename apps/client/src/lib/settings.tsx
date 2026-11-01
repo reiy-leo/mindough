@@ -34,9 +34,14 @@ export interface Settings {
    * 读经 lib/date-display 的 useDateDisplay()，写在设置 → 任务。
    */
   dateDisplay: DateDisplay;
+  /**
+   * 我的一天显示「建议」（Rei 2026-11-01「我的一天中的建议，可以toggle on/off」）：默认开。只记在本机，不同步（和日期显示、任务链一样）。
+   * 关掉后建议那段不显示，也不算建议。读经 lib/myday-suggest 的 suggestionsOn()，写在设置 → 任务，或建议那段标题右边的「…」→「隐藏建议」。
+   */
+  myDaySuggestions: boolean;
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

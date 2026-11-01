@@ -24,6 +24,7 @@ fileTypes:
 # - 界面上的实际字符串、外部文件的列名、文件名、片名
 textRules:
   "「方案A」": 0
+  "可以toggle on/off": 0
   "添加从dida365导入任务的功能": 0
   "英文Journal": 0
   "5个太少了": 0

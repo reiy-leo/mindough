@@ -1,9 +1,9 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
-import { GripVertical, Lightbulb, PictureInPicture2, RotateCcw, Sun } from 'lucide-react';
+import { EyeOff, GripVertical, Lightbulb, PictureInPicture2, RotateCcw, Sun } from 'lucide-react';
 import { formatDateZh, myDayItems, recentlyUnlocked, suggestions, toDateKey, yesterdayUnfinished } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
-import { Button, Empty, Section, Tip } from '../ui/primitives';
+import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
 import { openMiniWindow } from '../lib/windows';
 import { isTauri } from '../store/sqlite-tauri';
 import { useReorderGuard } from '../lib/drag-guard';
@@ -15,6 +15,7 @@ const canMini = isTauri() && !/Android|iPhone|iPad/i.test(navigator.userAgent);
 import { TaskRow } from '../components/TaskRow';
 import { LunarLine } from '../components/LunarLine';
 import { useSettings } from '../lib/settings';
+import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
 
 import { tr } from '../lib/i18n';
@@ -24,7 +25,8 @@ export function MyDayPage() {
   const ui = useUi();
   const now = useNow();
   const today = toDateKey(now);
-  const { layout } = useSettings();
+  const { layout, settings, set } = useSettings();
+  const showSugg = suggestionsOn(settings);
   const inlineCheckIn = layout !== 'mobile';
   const tasks = store.list('task');
   const byId = new Map(tasks.map((t) => [t.id, t]));
@@ -32,10 +34,18 @@ export function MyDayPage() {
   const checkIns = store.list('check_in');
   const items = myDayItems(entries, byId, checkIns, today, now);
   const yesterday = yesterdayUnfinished(entries, byId, checkIns, today, now);
-  const derived = store.derived();
-  const unlocked = recentlyUnlocked(tasks, store.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
   const yIds = new Set(yesterday.map((t) => t.id));
-  const sugg = suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now }).filter((s) => !yIds.has(s.task.id));
+  // 建议关着（设置 → 任务「显示建议」）就不算，连「刚解锁」也不算
+  const sugg = daySuggestions(showSugg, () => {
+    const derived = store.derived();
+    const unlocked = recentlyUnlocked(tasks, store.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
+    return suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now }).filter((s) => !yIds.has(s.task.id));
+  });
+  // 标题右边「…」→「隐藏建议」：和设置里的开关是同一个；提示里说去哪儿打开，也能直接撤销
+  const hideSuggestions = () => {
+    set('myDaySuggestions', false);
+    ui.toast({ message: tr('建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。'), actions: [{ label: tr('撤销'), onPress: () => set('myDaySuggestions', true) }] }, 6000);
+  };
   // 关闭的算结束（沉底）但不算成就：不计入“已完成 x/y”
   const closedCount = items.filter((i) => i.task.status === '关闭').length;
   const counted = items.length - closedCount;
@@ -143,6 +153,7 @@ export function MyDayPage() {
               <Lightbulb size={15} /> {tr('建议')} <span className="count">{sugg.length}</span>
             </>
           }
+          extra={<OverflowMenu label={tr('建议操作')} items={[{ id: 'hide', label: tr('隐藏建议'), icon: <EyeOff size={16} />, onAction: hideSuggestions }]} />}
         >
           <div className="task-list plain">
             {sugg.map((s) => (

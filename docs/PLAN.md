@@ -1096,6 +1096,15 @@ Rei 2026-11-01 原话：「当前的 date picker 中：单日、时间段第一�
   - 手机底部弹层没加拖动把手；左右滑动翻月没做（文档里是可选）。
 - **测试**：core `test/date-grid.test.ts`（公历 / 农历月格子、闰月、周日开头、翻页、点格子和拖选的规则）；client `components/task/DatePanel.test.tsx`（点一下生效、「+ 结束日」、×、Shift 点、键盘、农历开关）。截图在 work/shots-datepicker/（脚本 work/shots-tool/datepicker.mjs）。
 
+### 我的一天的建议可以关 ✅（2026-11-01）
+Rei 2026-11-01 原话：「我的一天中的建议，可以toggle on/off」。
+
+- **开关在哪**：设置 → 任务 →「我的一天」→「显示建议」，默认开。建议那段标题右边加了「…」，里面一项「隐藏建议」，关的是同一个开关。点完弹提示「建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。」，提示里有「撤销」。
+- **关了以后**：建议那段整个不显示；「刚解锁」和建议都不算，省一次遍历。「昨天没做完」「今天的日记」照旧。
+- **存哪**：本机设置 `myDaySuggestions`（`mindough:settings`），不同步，和「日期显示」「任务链」一样。老设置里没有这个键，算开。读用 `lib/myday-suggest.ts` 的 `suggestionsOn()`，算建议包在 `daySuggestions(on, compute)` 里，关着不调 compute。
+- **文字**：新字符串 5 个，设置「任务」下面那行小字改了 2 个（中间加「我的一天」），九种语言都补了，西、葡、俄、日、德、法、印尼待母语者看。
+- **测试**：`apps/client/src/lib/myday-suggest.test.ts`（默认开、关着不算）；i18n 测试。截图在 work/shots-myday-suggest/。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。

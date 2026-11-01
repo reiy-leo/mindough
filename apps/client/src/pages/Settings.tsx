@@ -20,6 +20,7 @@ import { PageHeader } from '../components/PageHeader';
 import { TypeManager } from '../components/TypeManager';
 import { LunarSection } from '../components/LunarSettings';
 import { useSettings, type Settings } from '../lib/settings';
+import { suggestionsOn } from '../lib/myday-suggest';
 import { PLATFORM_LABEL, SKIN_LABEL, skinForPlatform } from '../skin/platform';
 import { storageInfo, useNow, useStore } from '../store/StoreProvider';
 
@@ -39,7 +40,7 @@ import type { LocalePref } from '../lib/i18n';
  * - 外观：皮肤、语言、明暗、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
- * - 任务：类型、日期显示、农历
+ * - 任务：类型、我的一天（显示建议）、日期显示、农历
  * - 日记：一天从几点开始、每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
  * 桌面 app（Tauri）里设置是单独的窗口（SettingsWindow，?window=settings）；Web 和手机是页面：
@@ -52,7 +53,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
-  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('资料库、日期显示、农历') : tr('资料库、日期显示')) },
+  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('资料库、我的一天、日期显示、农历') : tr('资料库、我的一天、日期显示')) },
   { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('一天从几点开始、每天提醒写日记') },
   { id: 'about', icon: Info, label: () => tr('关于'), hint: () => tr('版本、数据来源') },
 ];
@@ -89,6 +90,7 @@ function SectionBody({ id }: { id: SettingsSection }) {
       return (
         <>
           <TypesSection />
+          <MyDaySection />
           <DateDisplaySection />
           <LunarSection />
         </>
@@ -396,6 +398,27 @@ function DataSection() {
       </div>
     </div>
     </>
+  );
+}
+
+/**
+ * 我的一天（Rei 2026-11-01「我的一天中的建议，可以toggle on/off」）：「显示建议」开关，默认开，只存在这台设备上。
+ * 我的一天里建议那段标题右边「…」→「隐藏建议」关的也是它。
+ */
+function MyDaySection() {
+  const { settings, set } = useSettings();
+  return (
+    <Section title={tr('我的一天')}>
+      <div className="card settings-card">
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('显示建议')}</div>
+            <div className="setting-hint">{tr('在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。')}</div>
+          </div>
+          <Switch label={tr('显示建议')} isSelected={suggestionsOn(settings)} onChange={(v) => set('myDaySuggestions', v)} />
+        </div>
+      </div>
+    </Section>
   );
 }
 

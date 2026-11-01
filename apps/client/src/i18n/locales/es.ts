@@ -6,6 +6,14 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 我的一天：显示 / 隐藏建议（Rei 2026-11-01，待母语者看）──
+  "建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。": "Sugerencias ocultas. Para volver a verlas, ve a Ajustes → Tareas y activa «Mostrar sugerencias».",
+  "建议操作": "Acciones de sugerencias",
+  "隐藏建议": "Ocultar sugerencias",
+  "显示建议": "Mostrar sugerencias",
+  "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Muestra en Mi día las tareas que vencen hoy, los registros pendientes de hoy y las tareas recién desbloqueadas. Solo en este dispositivo.",
+  "资料库、我的一天、日期显示、农历": "Colecciones, Mi día, formato de fecha, calendario chino",
+  "资料库、我的一天、日期显示": "Colecciones, Mi día, formato de fecha",
   // ── 日期面板方案 A（Rei 2026-11-01，待母语者看）──
   "已选的日期": "Fechas elegidas",
   "加结束日，变成日期段": "Añadir fecha de fin para hacer un periodo",
@@ -1509,8 +1517,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "版本 {version}": "Versión {version}",
   "版本、数据来源": "Versión, fuentes de datos",
   "任务提醒的通知": "Notificaciones de recordatorios de tareas",
-  "资料库、日期显示、农历": "Colecciones, formato de fecha, calendario chino",
-  "资料库、日期显示": "Colecciones, formato de fecha",
   "日期显示": "Formato de fecha",
   "相对时间": "Relativa",
   "年月日": "Fecha",

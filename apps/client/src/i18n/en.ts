@@ -12,6 +12,14 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 我的一天：显示 / 隐藏建议（Rei 2026-11-01）──
+  "建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。": "Suggestions hidden. To see them again, go to Settings → Tasks and turn on Show Suggestions.",
+  "建议操作": "Suggestion Actions",
+  "隐藏建议": "Hide Suggestions",
+  "显示建议": "Show Suggestions",
+  "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Lists tasks due today, check-ins due today, and tasks just unlocked under My Day. Only applies on this device.",
+  "资料库、我的一天、日期显示、农历": "Collections, My Day, date display, Chinese calendar",
+  "资料库、我的一天、日期显示": "Collections, My Day, date display",
   // ── 日期面板方案 A（Rei 2026-11-01）──
   "已选的日期": "Selected dates",
   "加结束日，变成日期段": "Add an end date to make it a range",
@@ -1237,8 +1245,6 @@ export const EN: Record<string, EnValue> = {
   "版本 {version}": "Version {version}",
   "版本、数据来源": "Version, data sources",
   '任务提醒的通知': 'Notifications for task reminders',
-  '资料库、日期显示、农历': 'Collections, date display, Chinese calendar',
-  '资料库、日期显示': 'Collections, date display',
   "日期显示": "Date display",
   "相对时间": "Relative",
   "年月日": "Date",
