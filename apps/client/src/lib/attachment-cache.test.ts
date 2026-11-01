@@ -188,6 +188,12 @@ describe('附件菜单', () => {
     expect(ids(menuOf(a, act, attachmentActionState(a, { cached: true, online: false, pending: false })))).toEqual(['download', 'uncache', 'rename', 'delete']);
   });
 
+  it('只读（发出去的日记）：没有重命名、删除', () => {
+    const a = addRow('a.png', 'image/png');
+    expect(ids(menuOf(a, act, attachmentActionState(a, { cached: false, online: true, pending: false }), true))).toEqual(['download', 'cache']);
+    expect(ids(menuOf(a, act, attachmentActionState(a, { cached: true, online: true, pending: false }), true))).toEqual(['download', 'uncache']);
+  });
+
   it('英文 Title Case', async () => {
     const { setLocale } = await import('@mindough/core');
     setLocale('en');

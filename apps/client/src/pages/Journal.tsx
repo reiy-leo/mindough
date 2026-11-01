@@ -22,6 +22,8 @@ import { Button, Empty } from '../ui/primitives';
 import { JournalHeatmap } from '../components/journal/JournalHeatmap';
 import { MoodList } from '../components/journal/MoodList';
 import { JournalComposer, type ComposerHandle } from '../components/journal/JournalComposer';
+import { sendJournalPost } from '../lib/journal-send';
+import { tooBigMessage } from '../lib/attachments';
 import { JournalFeed, dayTitle } from '../components/journal/JournalFeed';
 import { MoodIcon } from '../components/journal/MoodIcon';
 import { tr } from '../lib/i18n';
@@ -63,8 +65,11 @@ export function JournalPage({ date: wanted }: { date?: string }) {
   const canWrite = !day || day === today;
 
   const selectDay = (d: string | null) => navigate(d ? { page: 'journal', date: d } : { page: 'journal' });
-  const send = (body: string, m: MoodId | null) => {
-    store.addJournalPost({ body_md: body, mood: m });
+  const send = (body: string, m: MoodId | null, images: File[]) => {
+    // 图片挂成这条的附件（Rei 2026-10-29），太大的没加上就提示
+    void sendJournalPost(store, { body, mood: m, images }).then((r) => {
+      if (r?.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) }, 6000);
+    });
     // 按心情筛着、发的又不是这个心情：取消筛选，免得刚发的看不见
     if (mood && m !== mood) setMood(null);
   };

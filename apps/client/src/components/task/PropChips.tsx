@@ -16,15 +16,8 @@ import { Bell, CalendarDays, Library, Paperclip, Plus, Repeat, Shapes, Tag, X } 
 import {
   describeCompletion,
   describeRecurrence,
-  formatTaskDate,
-  formatTaskDateRange,
   formatTaskTime,
-  isDateRange,
-  isFinished,
-  isTaskOverdue,
   parseRecurrence,
-  taskToday,
-  timeZoneBadge,
   type Store,
   type Task,
   categoryIcon,
@@ -37,7 +30,7 @@ import { addMenuItems, clearPatch, setProps, type AddMenuId, type PropId } from 
 import { CategoryList } from '../CategoryPicker';
 import { RefPicker } from '../library/RefPicker';
 import { CompletionChoice, CompletionSentence, GroupList, MODE_ICON, RepeatEditor, modeDefaults } from './pickers';
-import { DatePanel } from './DatePanel';
+import { TaskDatePicker, dateChipState } from './TaskDatePicker';
 import { TaskDateText } from '../TaskDateText';
 import { useDateDisplay } from '../../lib/date-display';
 import { formatRemindTime, RemindPanel } from './RemindPanel';
@@ -117,19 +110,12 @@ export function PropChips({
         return { icon: <Icon size={14} />, text: s, aria: s };
       }
       case 'date': {
-        // 按任务时区的今天说「明天」、判断过期；时区和设备不同时旁边小字「UTC−4」（Rei 2026-10-25 任务时区）
-        const zoneToday = taskToday(task, store.now(), today);
-        const s = task.scheduled_date
-          ? isDateRange(task)
-            ? formatTaskDateRange(task.scheduled_date, task.end_date, { mode: dateMode, today: zoneToday, timeZone: task.time_zone })
-            : formatTaskDate(task.scheduled_date, { mode: dateMode, today: zoneToday, timeZone: task.time_zone })
-          : '';
-        const badge = dateMode === 'ymd-tz' ? null : timeZoneBadge(task, task.scheduled_date);
+        const st = dateChipState(store, task, today, dateMode);
         return {
           icon: <CalendarDays size={14} />,
           text: task.scheduled_date ? <TaskDateText task={task} today={today} /> : '',
-          aria: badge ? `${s} ${badge}` : s,
-          danger: isTaskOverdue(task, store.now(), today) && !isFinished(task.status),
+          aria: st.text,
+          danger: st.danger,
         };
       }
       case 'repeat': {
@@ -202,23 +188,7 @@ export function PropChips({
           </div>
         );
       case 'date':
-        return (
-          <DatePanel
-            value={task.scheduled_date}
-            today={today}
-            timeZone={task.time_zone}
-            onTimeZoneChange={(tz) => patch({ time_zone: tz })}
-            end={task.end_date}
-            onChange={(v) => {
-              patch({ scheduled_date: v, end_date: null });
-              close();
-            }}
-            onRangeChange={(start, end, done) => {
-              patch({ scheduled_date: start, end_date: end });
-              if (done) close();
-            }}
-          />
-        );
+        return <TaskDatePicker store={store} task={task} today={today} onDone={close} />;
       case 'repeat':
         return (
           <div className="pop-section">

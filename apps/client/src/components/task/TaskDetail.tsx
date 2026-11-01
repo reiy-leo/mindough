@@ -48,6 +48,8 @@ import { detailMenu, type DetailMenuId } from '../../lib/task-menu';
 import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachments/Attachments';
 import { ChainToggle, TaskChainInline } from './TaskChain';
 import { PropChips } from './PropChips';
+import { DateQuickButton } from './TaskDatePicker';
+import { ClipboardButton } from '../attachments/ClipboardButton';
 import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '../CountControls';
 
 import { dataLabel, tr, trc } from '../../lib/i18n';
@@ -875,6 +877,9 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
           <>
             {badge}
             <CompletionPill store={store} task={task} today={today} primary={primary} secondary={secondary} addCount={addCount} counting={counting} />
+            {/* 日期快捷按钮、剪贴板按钮（Rei 2026-10-29「任务和日记 editor 要行为一致」） */}
+            <DateQuickButton store={store} task={task} today={today} />
+            <ClipboardButton onFiles={addFiles} />
           </>
         }
         headerEnd={

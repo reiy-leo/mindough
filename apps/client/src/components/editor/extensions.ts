@@ -371,6 +371,8 @@ export interface BehaviorOptions {
   placeholder: () => string;
   onEscape?: () => void;
   onLinkShortcut?: () => void;
+  /** ⌘ / Ctrl + Enter（日记输入框拿它发送）；不给就照常换行。 */
+  onModEnter?: () => void;
   /** 鼠标移到链接上（range）/ 移开（null）。 */
   onLinkHover?: (link: LinkRange | null, el: HTMLElement | null) => void;
   /** 点了链接：打开它。 */
@@ -699,7 +701,7 @@ function markdownClipboard(opts: BehaviorOptions) {
   });
 }
 
-/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K、不收新图片、剪贴板。优先级高于 StarterKit。 */
+/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。 */
 export function behaviorExtension(opts: BehaviorOptions) {
   return Extension.create({
     name: 'mindoughBehavior',
@@ -722,6 +724,12 @@ export function behaviorExtension(opts: BehaviorOptions) {
                 event.preventDefault();
                 event.stopPropagation();
                 opts.onEscape();
+                return true;
+              }
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && !event.isComposing && opts.onModEnter) {
+                event.preventDefault();
+                event.stopPropagation();
+                opts.onModEnter();
                 return true;
               }
               if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k' && opts.onLinkShortcut) {

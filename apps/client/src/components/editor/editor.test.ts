@@ -255,6 +255,24 @@ describe('链接（Rei 2026-10-17）', () => {
     await done();
   });
 
+  it('⌘ / Ctrl + Enter 交给 onModEnter（日记发送，Rei 2026-10-29）；没给就不拦', async () => {
+    let sent = 0;
+    const a = await setup('早', { onModEnter: () => sent++ });
+    for (const k of [{ metaKey: true }, { ctrlKey: true }]) {
+      const ev = new KeyboardEvent('keydown', { key: 'Enter', ...k, bubbles: true, cancelable: true });
+      a.view.dom.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(true);
+    }
+    expect(sent).toBe(2);
+    expect(a.h.getMarkdown()).toBe('早\n');
+    await a.done();
+    const b = await setup('早');
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true });
+    b.view.dom.dispatchEvent(ev);
+    expect(sent).toBe(2);
+    await b.done();
+  });
+
   it('LINK_INPUT_RE', async () => {
     const { LINK_INPUT_RE, withProtocol } = await import('./editor');
     expect('看 [a](b.com)'.match(LINK_INPUT_RE)?.slice(1)).toEqual(['a', 'b.com']);

@@ -14,11 +14,12 @@
  *   网址没协议补 https://，不像网址就在框里提示、不关。回车保存（输入法选字的回车不算）、Esc 取消，Tab 只在框里转。
  *   点框外面 = 取消。
  * - 外面的值变了（同步下来）且不是自己刚写的：替换内容。
+ * - ⌘ / Ctrl + Enter：给了 onModEnter 就交给它（日记输入框发送，Rei 2026-10-29「任务和日记 editor 要行为一致」），不给照常换行。
  * - 粘贴 / 拖进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。拖到正文外面的文件仍是附件，见 Attachments.tsx useFileDrop。
  * 内核是 Tiptap 3（@tiptap/react 的 useEditor + EditorContent，Rei 2026-10-25 从 Milkdown 换过来），读写 markdown 见 editor.ts / markdown.ts。
  * 这个文件按需加载（LazyMdEditor），加载完之前显示排好版的预览。
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
 import { tr } from '../../lib/i18n';
@@ -37,6 +38,10 @@ export interface MdEditorProps {
   className?: string;
   /** 只读：能看、能点链接，不能改。 */
   readOnly?: boolean;
+  /** ⌘ / Ctrl + Enter（日记输入框发送用，Rei 2026-10-29）；不给就照常换行。 */
+  onModEnter?: () => void;
+  /** 拿到编辑器句柄（日记输入框：清空、聚焦、列表按钮）；卸载时置回 null。 */
+  handleRef?: MutableRefObject<MdEditorHandle | null>;
 }
 
 /** 链接框：改哪一段（新加时是选区 / 光标）、是不是已有的链接、两栏的值。 */
@@ -55,11 +60,11 @@ interface LinkDialog {
 /** 输入法正在选字时的回车（Safari 选完字的那次 keydown 是 229）不算保存。 */
 const composing = (e: React.KeyboardEvent) => e.nativeEvent.isComposing || e.keyCode === 229;
 
-export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false }: MdEditorProps) {
+export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef }: MdEditorProps) {
   const ui = useUiOptional();
   const handle = useRef<MdEditorHandle | null>(null);
-  const cb = useRef({ onChange, onBlur, onEscape });
-  cb.current = { onChange, onBlur, onEscape };
+  const cb = useRef({ onChange, onBlur, onEscape, onModEnter });
+  cb.current = { onChange, onBlur, onEscape, onModEnter };
   const [focused, setFocused] = useState(false);
   const [dialog, setDialog] = useState<LinkDialog | null>(null);
   /** 鼠标指着的链接；光标 / 选区所在的链接（触屏、键盘）。 */
@@ -132,6 +137,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     },
     onEscape: () => cb.current.onEscape?.(),
     onLinkShortcut: () => openRef.current(),
+    ...(onModEnter ? { onModEnter: () => cb.current.onModEnter?.() } : {}),
     onSelection: () => {
       const h = handle.current;
       if (!h) return;
@@ -154,9 +160,11 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     if (!editor) return;
     ctl.attach(editor);
     handle.current = ctl.handle();
+    if (handleRef) handleRef.current = handle.current;
     if (autoFocus && !readOnly) editor.commands.focus('end', { scrollIntoView: false });
     return () => {
       handle.current = null;
+      if (handleRef) handleRef.current = null;
     };
   }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -27,6 +27,8 @@ tauri-plugin-deep-link = "2"
 tauri-plugin-notification = "2"
 # 附件下载：桌面弹系统保存框（Rei 2026-10-25 起）
 tauri-plugin-dialog = "2"
+# 剪贴板按钮（Rei 2026-10-29）：图片用插件的 readImage；文件列表用 arboard 的 file_list（src/clipboard.rs）
+tauri-plugin-clipboard-manager = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # 本地 SQLite：bundled 自带 SQLite 源码，各平台（含 iOS / Android）不依赖系统库
@@ -35,6 +37,8 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 # 桌面端：deep link 打开时交给已经开着的那个窗口（Windows / Linux 会新起进程带上链接）
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+# 剪贴板里的文件列表（file_list 从 3.6 起三个桌面平台都有）和图片签名
+arboard = { version = "3.6", default-features = false, features = ["image-data"] }
 
 # Windows：看系统版本决定用不用 Mica（Win11 build ≥ 22000），tauri-plugin-os 已经带着它
 [target.'cfg(windows)'.dependencies]

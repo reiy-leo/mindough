@@ -7,6 +7,7 @@
  * - 上传中显示进度、可取消；失败可重试；离线 / 没登录排队，说明为什么在等
  * - 每个附件：下载、缓存 / 删除缓存（Rei 2026-10-25，本机副本 24 小时后自动清除）、重命名、删除（提示里可撤销）
  *   桌面：悬停出现 ··· / 右键；触屏：··· / 长按，都是同一个菜单。缓存着的附件有个小硬盘标记。
+ * - 只读（readOnly，发出去的日记，Rei 2026-10-29）：不能加、菜单里没有重命名和删除，上传中也不能取消（失败了能重试）；只能看、下载、缓存
  * - 离线时没缓存的附件下载不了（按钮灰掉，点了提示）
  * - 云端文件清掉了（撤销删除、别的设备恢复了这一行）：本机有就补传，没有就显示「文件已删除」，下载、缓存灰掉（lib/attachment-gone.ts）
  */
@@ -175,7 +176,7 @@ export function DropOverlay({ active }: { active: boolean }) {
  * 附件区。bare（任务详情，Rei 2026-10-25「附件section不要label，显示在属性块下方，不显示add attachment按钮」）：
  * 不要标题行和按钮，没附件时整块不渲染。
  */
-export function Attachments({ owner, disabled, bare }: { owner: AttachmentOwner; disabled?: boolean; bare?: boolean }) {
+export function Attachments({ owner, disabled, bare, readOnly = false }: { owner: AttachmentOwner; disabled?: boolean; bare?: boolean; /** 只能看、下载（发出去的日记） */ readOnly?: boolean }) {
   const store = useStore();
   const ui = useUi();
   const { layout } = useSettings();
@@ -221,7 +222,7 @@ export function Attachments({ owner, disabled, bare }: { owner: AttachmentOwner;
   };
   const offlineHint = () => ui.toast({ message: tr('离线中，没缓存的附件下载不了，联网后再试') }, 4000);
   const check = (a: Attachment, fresh?: boolean) => void checkAttachment(store, a, fresh);
-  const actions: Actions = { remove, download, rename: setRenaming, cache, uncache, offlineHint, goneHint, check, online };
+  const actions: Actions = { remove, download, rename: setRenaming, cache, uncache, offlineHint, goneHint, check, online, readOnly };
 
   if (bare && !list.length) return null;
 
@@ -236,10 +237,10 @@ export function Attachments({ owner, disabled, bare }: { owner: AttachmentOwner;
         </span>
         {!list.length && layout !== 'mobile' && <span className="att-hint">{tr('也可以把文件拖到这里')}</span>}
         <span className="grow" />
-        <Button variant="quiet" className="att-add" isDisabled={disabled} onPress={() => input.current?.click()}>
+        {!readOnly && <Button variant="quiet" className="att-add" isDisabled={disabled} onPress={() => input.current?.click()}>
           <Paperclip size={15} />
           {tr('添加附件')}
-        </Button>
+        </Button>}
         <input
           ref={input}
           type="file"
@@ -275,13 +276,13 @@ export function Attachments({ owner, disabled, bare }: { owner: AttachmentOwner;
         onDownload={(a) => void download(a)}
         canDownload={(a) => actionStateOf(a, online).download}
       />
-      <RenameDialog
+      {!readOnly && <RenameDialog
         attachment={renaming}
         onClose={() => setRenaming(null)}
         onRename={(a, name) => {
           if (!store.renameAttachment(a.id, name)) ui.toast({ tone: 'error', message: tr('名字不能是空的') }, 3000);
         }}
-      />
+      />}
     </section>
   );
 }
@@ -325,6 +326,8 @@ interface Actions {
   /** 查云端文件还在不在（不在就补传或标已删除）；fresh = 不用 10 分钟内的结论。 */
   check: (a: Attachment, fresh?: boolean) => void;
   online: boolean;
+  /** 只读：菜单里没有重命名、删除，上传中不能取消 */
+  readOnly: boolean;
 }
 
 /** 这个附件的操作能不能用（缓存记录 + 是否在本机队列 + 联网）。 */
@@ -341,10 +344,11 @@ function useFileCheck(a: Attachment, actions: Actions, uploading: boolean) {
   }, [a.id, a.r2_key, a.thumb_key, uploading, actions.online]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
-export function menuOf(a: Attachment, act: Pick<Actions, 'remove' | 'download' | 'rename' | 'cache' | 'uncache'>, st: AttachmentActionState): MenuAction[] {
+export function menuOf(a: Attachment, act: Pick<Actions, 'remove' | 'download' | 'rename' | 'cache' | 'uncache'>, st: AttachmentActionState, readOnly = false): MenuAction[] {
   const items: MenuAction[] = [{ id: 'download', label: tr('下载'), icon: <Download size={16} />, disabled: !st.download, onAction: () => void act.download(a) }];
   if (st.cacheItem === 'cache') items.push({ id: 'cache', label: tr('缓存'), icon: <HardDriveDownload size={16} />, disabled: !st.cacheEnabled, onAction: () => void act.cache(a) });
   if (st.cacheItem === 'remove-cache') items.push({ id: 'uncache', label: tr('删除缓存'), icon: <HardDrive size={16} />, onAction: () => void act.uncache(a) });
+  if (readOnly) return items;
   items.push(
     { id: 'rename', label: tr('重命名…'), icon: <Pencil size={16} />, onAction: () => act.rename(a) },
     { id: 'delete', label: tr('删除'), icon: <Trash2 size={16} />, danger: true, separator: true, onAction: () => act.remove(a) },
@@ -444,7 +448,7 @@ export function uploadText(s: UploadState | undefined, a: Attachment, gone: Gone
 }
 
 /** 正在传 / 排着 / 失败的附件旁边的按钮：取消、重试。 */
-function UploadControls({ a, s }: { a: Attachment; s: UploadState | undefined }) {
+function UploadControls({ a, s, canCancel = true }: { a: Attachment; s: UploadState | undefined; canCancel?: boolean }) {
   if (!s) return null;
   return (
     <>
@@ -455,11 +459,13 @@ function UploadControls({ a, s }: { a: Attachment; s: UploadState | undefined })
           </RacButton>
         </Tip>
       )}
-      <Tip content={tr('取消上传')}>
-        <RacButton className="icon-btn att-cancel" aria-label={tr('取消上传「{name}」', { name: a.file_name })} onPress={() => void getUploader()?.cancel(a.id)}>
-          <X size={15} />
-        </RacButton>
-      </Tip>
+      {canCancel && (
+        <Tip content={tr('取消上传')}>
+          <RacButton className="icon-btn att-cancel" aria-label={tr('取消上传「{name}」', { name: a.file_name })} onPress={() => void getUploader()?.cancel(a.id)}>
+            <X size={15} />
+          </RacButton>
+        </Tip>
+      )}
     </>
   );
 }
@@ -506,7 +512,7 @@ function ImageTile({ a, onOpen, actions }: { a: Attachment; onOpen: () => void; 
       )}
       <Progress s={s} />
       <span className={`att-tile-actions${menu.open ? ' is-open' : ''}`}>
-        {s ? <UploadControls a={a} s={s} /> : <OverflowMenu label={tr('附件操作')} items={menuOf(a, actions, st)} className="att-more" isOpen={menu.open} onOpenChange={menu.setOpen} />}
+        {s ? <UploadControls a={a} s={s} canCancel={!actions.readOnly} /> : <OverflowMenu label={tr('附件操作')} items={menuOf(a, actions, st, actions.readOnly)} className="att-more" isOpen={menu.open} onOpenChange={menu.setOpen} />}
       </span>
     </li>
   );
@@ -546,7 +552,7 @@ function FileRow({ a, actions }: { a: Attachment; actions: Actions }) {
       </RacButton>
       <span className="att-file-actions">
         {s ? (
-          <UploadControls a={a} s={s} />
+          <UploadControls a={a} s={s} canCancel={!actions.readOnly} />
         ) : (
           <>
             <Tip content={dlTip}>
@@ -554,7 +560,7 @@ function FileRow({ a, actions }: { a: Attachment; actions: Actions }) {
                 <Download size={16} />
               </RacButton>
             </Tip>
-            <OverflowMenu label={tr('附件操作')} items={menuOf(a, actions, st)} className="att-more" isOpen={menu.open} onOpenChange={menu.setOpen} />
+            <OverflowMenu label={tr('附件操作')} items={menuOf(a, actions, st, actions.readOnly)} className="att-more" isOpen={menu.open} onOpenChange={menu.setOpen} />
           </>
         )}
       </span>

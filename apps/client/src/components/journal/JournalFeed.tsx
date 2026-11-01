@@ -1,7 +1,8 @@
 /**
  * 日记的条目列表（Rei 2026-10-28 Feed 流）：按天分组，新的日子在上，一天里新的在上。每条：时间、心情图标、正文。
  * 发了不能改（Rei：「a feed提交之后就不能修改了，心情也不能修改」），所以没有编辑；右键 / 长按（或 ··· 菜单）只有「删除」，
- * 先确认，删了提示里能撤销。旧日记转来的条目，旧日记上的附件跟着显示（只读）。
+ * 先确认，删了提示里能撤销。每条下面是它自己的附件（发送时带的图片，Rei 2026-10-29；旧日记转来的条目是旧日记上的附件），
+ * 只读：只能看、下载，不能加、改名、删（Attachments readOnly）。附件挂在哪个 id 上由 store.postAttachmentOwnerId 定。
  */
 import { useState, type CSSProperties } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -66,8 +67,7 @@ function Post({ post, onDelete }: { post: JournalPost; onDelete: () => void }) {
   const store = useStore();
   const menu = useContextMenuAt();
   const items: MenuAction[] = [{ id: 'delete', label: tr('删除'), icon: <Trash2 size={16} />, danger: true, onAction: onDelete }];
-  const attached = store.attachmentsOfPost(post).length > 0;
-  const entryId = attached ? store.attachmentsOfPost(post)[0]!.owner_id : null;
+  const ownerId = store.postAttachmentOwnerId(post);
   const time = postTime(post.created_at);
   return (
     <li className={`jpost${post.mood ? ' has-mood' : ''}`} style={post.mood ? ({ '--jm': `var(--mood-${post.mood})` } as CSSProperties) : undefined} {...menu.props}>
@@ -84,7 +84,7 @@ function Post({ post, onDelete }: { post: JournalPost; onDelete: () => void }) {
           </div>
         )}
         {post.body_md.trim() ? <Markdown source={post.body_md} className="jpost-body" /> : null}
-        {entryId && <Attachments owner={{ type: 'journal', id: entryId, date: post.day }} bare disabled />}
+        <Attachments owner={{ type: 'journal', id: ownerId, date: post.day }} bare readOnly />
       </div>
       <OverflowMenu className="jpost-more" label={tr('这条日记的操作')} items={items} />
       <MenuAt at={menu.at} label={tr('这条日记的操作')} items={items} onClose={menu.close} />
