@@ -15,7 +15,7 @@ export function ClipboardButton({ onFiles, imagesOnly = false, className = 'icon
   const { found, take } = useClipboardFiles(imagesOnly);
   const [busy, setBusy] = useState(false);
   if (!found) return null;
-  const label = found.kind === 'image' ? tr('添加剪贴板里的图片') : tr('添加剪贴板里的文件');
+  const label = found.kind === 'files' ? tr('加上剪贴板里的 {n} 个文件', { n: found.count }) : found.count > 1 ? tr('加上剪贴板里的 {n} 张图片', { n: found.count }) : tr('加上剪贴板里的图片');
   return (
     <Tip content={label}>
       <RacButton
@@ -28,7 +28,7 @@ export function ClipboardButton({ onFiles, imagesOnly = false, className = 'icon
             .then((files) => files.length && onFiles(files))
             .catch((err) => {
               console.error('读剪贴板失败', err);
-              ui.toast({ tone: 'error', message: tr('剪贴板里的内容没读出来') }, 4000);
+              ui.toast({ tone: 'error', message: tr('没读到剪贴板里的内容，再复制一次试试') }, 4000);
             })
             .finally(() => setBusy(false));
         }}

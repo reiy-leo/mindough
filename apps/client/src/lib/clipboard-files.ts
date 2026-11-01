@@ -182,10 +182,10 @@ async function rgbaToPng(rgba: Uint8Array, width: number, height: number, name: 
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('canvas 不能用');
+  if (!ctx) throw new Error('canvas 2d context unavailable');
   ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba.buffer as ArrayBuffer, rgba.byteOffset, rgba.byteLength), width, height), 0, 0);
   const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/png'));
-  if (!blob) throw new Error('编不成 PNG');
+  if (!blob) throw new Error('PNG encoding failed');
   return new File([blob], name, { type: 'image/png' });
 }
 
