@@ -409,12 +409,13 @@
   padding: 0;
   border: 2px solid var(--jcomp-bg, var(--surface));
   border-radius: 50%;
-  background: var(--text-2);
-  color: var(--surface);
+  /* 压在图片上：不跟主题变，深底白字才看得清 */
+  background: rgb(40 40 44);
+  color: #fff;
   cursor: pointer;
 }
 .jcomposer-thumb-x[data-hovered] {
-  background: var(--text);
+  background: rgb(0 0 0);
 }
 .jcomposer-thumb-x[data-focus-visible] {
   outline: none;
