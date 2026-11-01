@@ -37,6 +37,7 @@ import { Check, ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import { useSettings } from '../lib/settings';
 
 import { tr } from '../lib/i18n';
+import { chipColors } from '../lib/chip-colors';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-solid' | 'tonal' | 'quiet';
 
 export function Button({ variant = 'secondary', className, ...props }: ButtonProps & { variant?: Variant }) {
@@ -755,6 +756,7 @@ export function ChipPicker<T extends string>({
   onChange: (v: T) => void;
   options: Array<{ id: T; label: ReactNode; color?: string }>;
 }) {
+  const { theme } = useSettings();
   return (
     <ToggleButtonGroup
       aria-label={label}
@@ -767,11 +769,18 @@ export function ChipPicker<T extends string>({
         if (k !== undefined) onChange(String(k) as T);
       }}
     >
-      {options.map((o) => (
-        <ToggleButton key={o.id} id={o.id} className="chip-pick" style={o.color ? ({ '--chip-color': o.color } as CSSProperties) : undefined}>
-          {o.label}
-        </ToggleButton>
-      ))}
+      {options.map((o) => {
+        // 类型色只上底色，字用黑或白、保证 4.5:1（Rei 2026-11-01，lib/chip-colors.ts）
+        const cc = chipColors(o.color, theme);
+        const style = cc
+          ? ({ '--chip-color': o.color, '--chip-bg': cc.bg, '--chip-fg': cc.fg, '--chip-border': cc.border, '--chip-sel-bg': cc.selBg, '--chip-sel-fg': cc.selFg } as CSSProperties)
+          : undefined;
+        return (
+          <ToggleButton key={o.id} id={o.id} className={`chip-pick${cc ? ' has-tint' : ''}`} style={style}>
+            {o.label}
+          </ToggleButton>
+        );
+      })}
     </ToggleButtonGroup>
   );
 }

@@ -2479,6 +2479,28 @@ button {
 .chip-pick[data-focus-visible] {
   box-shadow: var(--focus);
 }
+/* 类型筛选胶囊（Rei 2026-11-01）：类型色只当底色，字色由 lib/chip-colors.ts 按对比度挑（黑或白，≥ 4.5:1）。
+   没选中 = 浅浅一层类型色；选中 = 整块类型色。「全部」「没有类型」没有类型色，选中时整块强调色。 */
+.chip-pick.has-tint {
+  background: var(--chip-bg);
+  border-color: var(--chip-border);
+  color: var(--chip-fg);
+}
+.chip-pick.has-tint[data-hovered] {
+  background: color-mix(in srgb, var(--chip-bg) 90%, var(--chip-fg));
+}
+.chip-pick.has-tint[data-selected] {
+  background: var(--chip-sel-bg);
+  border-color: var(--chip-sel-bg);
+  color: var(--chip-sel-fg);
+  font-weight: 600;
+}
+.chip-pick:not(.has-tint)[data-selected] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
 .checkin-filters {
   flex-wrap: nowrap;
   align-items: center;

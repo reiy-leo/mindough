@@ -177,7 +177,7 @@ export function GroupsPage() {
             onChange={setCat}
             options={[
               { id: 'all', label: tr('全部 {length}', { length: all.length }) },
-              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} />, color: c.color })),
+              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} plain />, color: c.color })),
               ...(hasNone ? [{ id: NO_CATEGORY, label: tr('没有类型') }] : []),
             ]}
           />

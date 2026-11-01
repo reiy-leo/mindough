@@ -763,6 +763,20 @@ export const EN: Record<string, EnValue> = {
   视图: 'View',
   项目里的任务都做完了: 'Everything in this project is done',
   '已结束 {length}': 'Ended {length}',
+  // ── 项目改名、换图标、解散、删除（Rei 2026-11-01）──
+  "编辑…": "Edit…",
+  "解散项目…": "Dissolve Project…",
+  "删除项目…": "Delete Project…",
+  "解散「{name}」？": "Dissolve “{name}”?",
+  "项目没了，里面的 {n} 件任务都留着：没日期的回到待安排，有日期的还在那一天。": (p) => `The project goes away, but its ${n(p.n, 'task stays', 'tasks stay')}: undated ones go back to Inbox, dated ones stay on their day.`,
+  "项目里没有任务，解散后项目就没了。": "This project has no tasks. Dissolving it just removes the project.",
+  "解散": "Dissolve",
+  "已解散「{name}」": "Dissolved “{name}”",
+  "项目和里面的 {n} 件任务会一起删掉。只想留下任务，就选「解散项目」。": (p) => `The project and its ${n(p.n, 'task', 'tasks')} will be deleted. To keep the tasks, choose “Dissolve Project”.`,
+  "项目里没有任务，删掉的只有项目本身。": "This project has no tasks. Only the project itself will be deleted.",
+  "编辑项目": "Edit Project",
+  "项目名字": "Project name",
+  "改名：{name}": "Rename: {name}",
 
   // ── 资料库页 ──
   '看过的片、在读的书、想去的地方都留在这里，新建任务时直接选。': 'Movies you’ve watched, books you’re reading, places you want to go — all here to pick when you add a task.',

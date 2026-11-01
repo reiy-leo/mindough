@@ -26,10 +26,11 @@ export const NO_CATEGORY = '__none';
 export const categoryNames = (c: Pick<Category, 'name'>) => [c.name, dataLabel(c.name), dataEnglish(c.name)];
 
 /** 类型小标签：图标 + 名称，颜色跟随类型。 */
-export function CategoryLabel({ c, size = 13 }: { c: Category; size?: number }) {
+/** plain：不用类型色当字色、跟着外面走（筛选胶囊里底色已经是类型色，Rei 2026-11-01）。 */
+export function CategoryLabel({ c, size = 13, plain = false }: { c: Category; size?: number; plain?: boolean }) {
   const Icon = typeIcon(categoryIcon(c));
   return (
-    <span className="cat-label" style={{ color: c.color }}>
+    <span className="cat-label" style={plain ? undefined : { color: c.color }}>
       <Icon size={size} aria-hidden />
       <span>{dataLabel(c.name)}</span>
     </span>

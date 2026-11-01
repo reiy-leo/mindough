@@ -142,7 +142,7 @@ export function CheckInsPage() {
             onChange={setCat}
             options={[
               { id: 'all', label: tr('全部 {length}', { length: allRecurring.length }) },
-              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} />, color: c.color })),
+              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} plain />, color: c.color })),
               ...(hasUncategorized ? [{ id: NO_CATEGORY, label: tr('没有类型') }] : []),
             ]}
           />
