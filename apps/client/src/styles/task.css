@@ -569,14 +569,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .date-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   min-height: 28px;
-  padding: 0 10px;
+  padding: 0 9px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: var(--accent-soft);
@@ -609,7 +609,7 @@
 }
 .date-chip-main {
   min-height: 26px;
-  padding: 0 4px 0 10px;
+  padding: 0 2px 0 9px;
   border: 0;
   border-radius: 999px 0 0 999px;
   background: transparent;
@@ -765,6 +765,11 @@
 .calendar-td.is-range-end {
   border-radius: 0 999px 999px 0;
 }
+/* 结束日在一行开头、开始日在一行末尾：那一边没有带子，四角都圆 */
+.calendar-td.is-range-end:first-child,
+.calendar-td.is-range-start:last-child {
+  border-radius: 999px;
+}
 .calendar-cell.is-range-middle {
   border-radius: 0;
   color: var(--accent-soft-text);
@@ -785,6 +790,11 @@
   gap: var(--space-1);
   padding-top: var(--space-2);
   border-top: 1px solid var(--border);
+}
+/* 时区一行自己带分隔线，放进 date-foot 后不用再画一条 */
+.date-foot > .tz-row {
+  border-top: 0;
+  padding-top: 0;
 }
 .date-clear {
   align-self: flex-start;

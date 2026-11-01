@@ -3,7 +3,7 @@
 
 /* 日期面板：开了农历，格子变成竖排（数字 + 小字），圆形改圆角方块 */
 .date-panel.has-lunar {
-  width: 300px;
+  width: 304px;
 }
 .date-panel.has-lunar .calendar-cell {
   position: relative;
@@ -24,9 +24,16 @@
 .date-panel.has-lunar .calendar-td.is-range-end {
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
+.date-panel.has-lunar .calendar-td.is-range-end:first-child,
+.date-panel.has-lunar .calendar-td.is-range-start:last-child {
+  border-radius: var(--radius-md);
+}
 .date-panel.has-lunar .calendar-cell.is-range-middle {
-  max-width: none;
   border-radius: 0;
+}
+/* 段里的格子撑满 td，浅色带两边不露缝 */
+.date-panel.has-lunar .calendar-td.in-range .calendar-cell {
+  max-width: none;
 }
 .calendar-num {
   font-size: 14px;
