@@ -128,6 +128,13 @@
 }
 
 /* ── 桌面设置窗口 ── */
+/*
+ * 整个窗口不能滚，只有右边内容区滚（Rei 2026-11-01「设置中打开农历时，侧边栏shift up了」）。
+ * 原因：开关、单选的原生 input 是 React Aria 的 VisuallyHidden（position: absolute），以前祖先都没定位，
+ * 它们的包含块就是整个页面，内容区 overflow 裁不住，撑高了 html；点开关时 input 拿到焦点，
+ * 浏览器把它滚进视野——overflow: hidden 的 html 照样能被这样滚，侧栏连同红绿灯的空位一起被顶上去。
+ * 所以：内容区、侧栏各自 position: relative 当包含块；窗口本身 position: fixed + overflow: clip（clip 不是滚动容器，谁也滚不动它）。
+ */
 html:has(.settings-window),
 html:has(.settings-window) body,
 html:has(.settings-window) #root {
@@ -137,7 +144,12 @@ html:has(.settings-window) #root {
 .settings-window {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  position: fixed;
+  inset: 0;
   height: 100vh;
+  overflow: hidden;
+  overflow: clip;
   background: var(--bg);
   color: var(--text);
 }
@@ -155,6 +167,7 @@ html:has(.settings-window) #root {
   overscroll-behavior-x: none;
   touch-action: pan-y;
   min-width: 0;
+  position: relative;
 }
 /* 红绿灯的位置：只在 macOS 隐藏标题栏时占高（38px，和主窗口一样），可拖动窗口 */
 .settings-titlebar {
@@ -193,6 +206,7 @@ html:has(.settings-window) #root {
   font-weight: 650;
 }
 .settings-main-scroll {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
