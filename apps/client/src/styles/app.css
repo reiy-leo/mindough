@@ -2480,7 +2480,8 @@ button {
   box-shadow: var(--focus);
 }
 /* 类型筛选胶囊（Rei 2026-11-01）：类型色只当底色，字色由 lib/chip-colors.ts 按对比度挑（黑或白，≥ 4.5:1）。
-   没选中 = 浅浅一层类型色；选中 = 整块类型色。「全部」「没有类型」没有类型色，选中时整块强调色。 */
+   没选中 = 浅浅一层类型色；选中 = 整块类型色。「全部」「没有类型」没有类型色，选中时是字色当底、底色当字
+   （Apple 的强调蓝配白字只有 4.0:1，不够 AA，所以不用强调色）。 */
 .chip-pick.has-tint {
   background: var(--chip-bg);
   border-color: var(--chip-border);
@@ -2496,9 +2497,9 @@ button {
   font-weight: 600;
 }
 .chip-pick:not(.has-tint)[data-selected] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
   font-weight: 600;
 }
 .checkin-filters {
