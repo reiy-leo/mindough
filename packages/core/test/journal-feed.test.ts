@@ -7,6 +7,7 @@ import { search } from '../src/search';
 import { applyImport, exportArchive, fromUtf8, planImport, summarizeImport, undoImport } from '../src/archive';
 import { JournalPostLockedError, journalEntryId } from '../src/journal';
 import {
+  canSendPost,
   dayMoodColor,
   entryIdOfPost,
   filterPosts,
@@ -189,6 +190,17 @@ describe('Feed 流：只追加', () => {
     expect(s.addJournalPost({ body_md: '   ' })).toBeUndefined();
     expect(s.addJournalPost({ body_md: '', mood: 'calm' })).toMatchObject({ body_md: '', mood: 'calm' });
     expect(s.journalPosts().map((p) => p.id)[0]).not.toBe(a.id); // 新的在前
+  });
+
+  it('只放了图片也能发（Rei 2026-10-29）：正文、心情、图片三样有一样就行', async () => {
+    expect(canSendPost('', null)).toBe(false);
+    expect(canSendPost('  \n', null, 0)).toBe(false);
+    expect(canSendPost('', null, 2)).toBe(true);
+    expect(canSendPost('', 'calm')).toBe(true);
+    expect(canSendPost('早', null)).toBe(true);
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 10, 28, 9) });
+    expect(s.addJournalPost({ body_md: '', images: 0 })).toBeUndefined();
+    expect(s.addJournalPost({ body_md: '', images: 1 })).toMatchObject({ body_md: '', mood: null, day: '2026-10-28' });
   });
 
   it('发了不能改正文、心情、日子；能删、能撤销', async () => {

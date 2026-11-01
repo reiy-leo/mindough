@@ -1570,13 +1570,14 @@ export class Store {
   }
 
   /**
-   * 发一条：算在「今天」（按「一天从几点开始」），id 随机。正文空又没心情不发（返回 undefined）。
+   * 发一条：算在「今天」（按「一天从几点开始」），id 随机。正文、心情、图片都没有就不发（返回 undefined）；
+   * images 是跟着这条要挂的图片张数（附件在发出去以后再挂到 post.id 上）。
    * 发了就不能改正文和心情（write 里拦着），只能 deleteJournalPost。
    */
-  addJournalPost(input: { body_md: string; mood?: MoodId | string | null }): JournalPost | undefined {
+  addJournalPost(input: { body_md: string; mood?: MoodId | string | null; images?: number }): JournalPost | undefined {
     const body = input.body_md.replace(/\s+$/, '');
     const mood = input.mood || null;
-    if (!canSendPost(body, mood)) return undefined;
+    if (!canSendPost(body, mood, input.images ?? 0)) return undefined;
     const now = this.now();
     const row: JournalPost = { id: uuidv7(now.getTime()), updated_at: '', deleted: false, day: this.journalToday(now), body_md: body, mood, created_at: now.toISOString() };
     this.write([{ table: 'journal_post', row }]);

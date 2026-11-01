@@ -234,9 +234,9 @@ export function postTime(createdAt: string, timeZone?: string): string {
   return new Intl.DateTimeFormat('en-GB', { ...(timeZone ? { timeZone } : {}), hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
 }
 
-/** 正文空的、也没心情的不能发。 */
-export function canSendPost(body: string, mood: string | null | undefined): boolean {
-  return !!body.trim() || !!mood;
+/** 正文、心情、图片三样都没有的不能发；只放了图片的能发（Rei 2026-10-29 日记图片走附件）。 */
+export function canSendPost(body: string, mood: string | null | undefined, images = 0): boolean {
+  return !!body.trim() || !!mood || images > 0;
 }
 
 // ───────────── 导出 / 导入 ─────────────
