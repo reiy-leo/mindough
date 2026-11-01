@@ -1037,7 +1037,7 @@ Rei 2026-10-28 原话：「日记还是不好用，我更喜欢Feed流，一天�
 
 - **数据**：新表 `journal_post`（迁移 v13），只追加。Store `addJournalPost` / `deleteJournalPost` / `restoreJournalPost`，改正文、心情、日子的写入一律拦下（`JournalPostLockedError`）。旧的 `journal_entry` 打开时每篇转成一条（id 由那篇算，各设备一样，不进 outbox），折叠块里收着的另一版各成一条；旧客户端后来改了、删了那天，转来的跟着变。旧表留着不删。
 - **core** `journal-feed.ts`：排序、按天分组、按天 / 心情筛选、`journalHeatRange`（至少 26 周，往前补到最早一条）、`moodCounts`、`mixOklab` / `dayMoodColor`（当天各条心情色在 OKLab 里平均，没心情算中性色）、`heatStrength`（1 条 62% 到 4 条以上 100%）、导出 `formatJournalDay` / 导入 `parseJournalDay`（每条一段，标记注释记 id、时刻、心情）。搜索按条命中。
-- **界面**：`pages/Journal.tsx` 两栏，左边 `JournalHeatmap` + `MoodList`，右边 `JournalComposer`（心情弹层、插入图片、列表、发送 / ⌘↵）+ `JournalFeed`（按天分组，右键 / 长按 / ··· 只有「删除」，确认后删，提示里撤销）。点一天 = 路由 `#/journal/<日期>`；按心情筛能叠加，筛着时活动图只画这个心情。选中的不是今天就没有输入框。窄屏上下排，心情是一排横着的胶囊。我的一天小卡改成今天几条 + 最新一条 +「写一条」。⌘K「写今天的日记」改名「写日记」。旧的情绪月历、心情轮（`JournalCalendar`、`MoodWheel`）和 36 个用不到的词条删了（9 种语言）。
+- **界面**：`pages/Journal.tsx` 两栏，左边 `JournalHeatmap` + `MoodList`，右边 `JournalComposer`（心情弹层、插入图片、列表、发送 / ⌘↵；2026-10-29 起换成 Tiptap 编辑器、图片改成附件，见下面「任务和日记的编辑器一致」）+ `JournalFeed`（按天分组，右键 / 长按 / ··· 只有「删除」，确认后删，提示里撤销）。点一天 = 路由 `#/journal/<日期>`；按心情筛能叠加，筛着时活动图只画这个心情。选中的不是今天就没有输入框。窄屏上下排，心情是一排横着的胶囊。我的一天小卡改成今天几条 + 最新一条 +「写一条」。⌘K「写今天的日记」改名「写日记」。旧的情绪月历、心情轮（`JournalCalendar`、`MoodWheel`）和 36 个用不到的词条删了（9 种语言）。
 - 检查：core `journal-feed.test.ts`（21 条：只追加、迁移、颜色混合、导出导入来回）、`journal`、`attachments`、`sync`；client `i18n`、`locales`、`deeplink`、`nav`、`prop-chips`；core + client `tsc --noEmit`。截图 `work/shots-journal-feed/`（脚本 `work/shots-tool/jf-*.mjs`）：Apple 宽屏全部 / 选中某天 / 按心情筛 / 某天叠加心情 / 心情弹层 / 写好待发，WinUI 宽屏亮色全部、暗色某天，Material 暗色按心情筛，Apple 390。
 
 替 Rei 定的、待确认（JOURNAL.md 顶部「待确认」有详细说法）：
@@ -1049,6 +1049,21 @@ Rei 2026-10-28 原话：「日记还是不好用，我更喜欢Feed流，一天�
 6. alpha.9 及以前的旧客户端看不到新条目；旧客户端改了旧日记，转来的那条跟着变。
 7. 我的一天小卡：今天几条 + 最新一条 +「写一条」。
 8. 7 种语言的新文案待母语的人看。
+
+### 任务和日记的编辑器一致 ✅（2026-11-01 上线，Rei 2026-10-29 提的）
+Rei 2026-10-29 原话：「任务和日记 editor 要行为一致」「日记的工具栏保留图标，限制只能是图片」。网页端剪贴板按我的建议做（Rei 同意）：只在已授权时读，只认图片，文件走附件选择或拖进来。详细规则见 JOURNAL.md「2026-10-29：和任务用同一个编辑器」。
+
+- **任务详情顶栏**（`TaskDetail` 的 headerStart，状态胶囊后面）：
+  - `DateQuickButton`（`components/task/TaskDatePicker.tsx`）：和「日期」胶囊共用 `dateChipState` + `TaskDatePicker`（单天清掉结束日，日期段两头选完才收起）。设了日期是强调色（`.is-set`），过期变红（`.is-danger`，做完、关掉的不算）。
+  - `ClipboardButton`（`components/attachments/ClipboardButton.tsx`）：剪贴板里有能加的东西才出现，点了交给 `useAddFiles`（附件上传队列）。
+- **剪贴板**（`lib/clipboard-files.ts`）：挂上、窗口拿到焦点、页面切回来时看，不轮询；加过的内容记签名（localStorage，20 条），同一份不再出。
+  - 网页：`clipboard-read` 已是 granted 才读，从不弹框，只认图片；Firefox、Safari 不认这个权限名，按钮不出。
+  - Tauri 桌面：`src-tauri/src/clipboard.rs` 的 `clipboard_peek`（arboard 的 `file_list` + 图片签名）和 `clipboard_read_file`；图片用 `@tauri-apps/plugin-clipboard-manager` 2.5.0 的 `readImage`，在前端编成 PNG。权限 `clipboard-manager:allow-read-image`。
+  - 手机 app：不做。
+- **日记输入框**（`JournalComposer`）：换成 `LazyMdEditor`（`onModEnter` 发送、`handleRef` 拿句柄清空和点列表）。图片按钮只收图片，先放待发小图，发送时 `sendJournalPost`（`lib/journal-send.ts`）建条目再挂附件；工具栏的剪贴板按钮只认图片。只放图片也能发。
+- **发出去的条目**：`JournalFeed` 用 `Attachments readOnly`（菜单只有下载、缓存，上传中不能取消），owner 是 `store.postAttachmentOwnerId(post)`。
+- 检查：client `clipboard-files`、`journal-send`、`editor`、`attachment-cache`（只读菜单）、`attachments`、`attachment-gone`、`tiptap`、`markdown`、`i18n`、`locales`；core `journal-feed`、`journal`、`attachments`、`archive`、`attachment-cache`；core + client `tsc --noEmit`。截图 `work/shots-editor-consistency/`（脚本 `work/shots-tool/editor-consistency.mjs`，三种皮肤 × 1366 / 390）。
+- 没在真机上试：桌面 app 读剪贴板（macOS / Windows 的文件列表、图片）、手机上按钮不出。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
