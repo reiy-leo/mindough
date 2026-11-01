@@ -14,10 +14,12 @@ import { BacklogPage } from './pages/Backlog';
 import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
 import { LibraryItemPage, LibraryPage } from './pages/Library';
-import { BUILTIN_TYPE_IDS, libraryCopy, type Store } from '@mindough/core';
+import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough/core';
 import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries } from './lib/nav';
 import { typeIcon } from './lib/icons';
-import { groupSidebarAction, librarySidebarAction } from './lib/library-sidebar';
+import { librarySidebarAction } from './lib/library-sidebar';
+import { GroupIcon } from './components/project/GroupIcon';
+import { useProjectActions } from './components/project/ProjectActions';
 import { DoablePage } from './pages/Doable';
 import { CheckInsPage } from './pages/CheckIns';
 import { COUNTDOWN_DEFAULTS, CountdownsPage } from './pages/Countdowns';
@@ -227,11 +229,45 @@ function NavLink({ item, active, badge, onOpen }: { item: NavItem; active: boole
 /** 放进侧边栏的库 / 项目：缩进一点挂在「资料库」/「项目」下面；右键 / 长按能「取消在侧边栏显示」。 */
 function PinnedLink({ item, active }: { item: NavItem; active: boolean }) {
   const store = useStore();
+  const g = item.groupId ? store.get('group', item.groupId) : null;
+  if (g) return <PinnedGroupLink item={item} active={active} group={g} />;
+  return <PinnedLibraryLink item={item} active={active} />;
+}
+
+/** 放进侧边栏的项目：右键 / 长按的菜单和项目页的 ··· 一样（编辑、取消在侧边栏显示、解散、删除，Rei 2026-11-01）。 */
+function PinnedGroupLink({ item, active, group }: { item: NavItem; active: boolean; group: Group }) {
+  const store = useStore();
+  const menu = useContextMenuAt();
+  const actions = useProjectActions(store, group);
+  return (
+    <>
+      <a
+        href={href(item.to!)}
+        {...menu.props}
+        onClick={(e) => {
+          if (menu.consumeLongPress()) e.preventDefault();
+        }}
+        className={`nav-item nav-item-sub${active ? ' is-active' : ''}`}
+        aria-current={active ? 'page' : undefined}
+        title={item.label}
+      >
+        <span className="nav-icon">
+          <GroupIcon icon={group.icon} size={18} />
+        </span>
+        <span className="nav-label">{item.label}</span>
+      </a>
+      <MenuAt at={menu.at} label={item.label} items={actions.items} onClose={menu.close} />
+      {actions.dialogs}
+    </>
+  );
+}
+
+function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean }) {
+  const store = useStore();
   const menu = useContextMenuAt();
   const Icon = item.icon;
   const t = item.libraryId ? store.get('task_type', item.libraryId) : null;
-  const g = item.groupId ? store.get('group', item.groupId) : null;
-  const action = t ? librarySidebarAction(store, t) : g ? groupSidebarAction(store, g) : null;
+  const action = t ? librarySidebarAction(store, t) : null;
   return (
     <>
       <a
@@ -427,8 +463,9 @@ export function App() {
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
-  // 项目页顶上有添加框（Rei 2026-10-26「新建任务也统一换成输入框」），不再放新建按钮
-  const hideFab = route.page === 'journal' || route.page === 'group';
+  // 项目页顶上有添加框（Rei 2026-10-26「新建任务也统一换成输入框」），不再放新建按钮；
+  // 项目列表只留右上角「新建项目」（Rei 2026-11-01「项目列表中的右下的float新建任务去掉」）
+  const hideFab = route.page === 'journal' || route.page === 'group' || route.page === 'groups';
 
   let shell: ReactNode;
   if (layout === 'desktop') {

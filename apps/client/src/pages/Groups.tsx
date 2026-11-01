@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { CalendarRange, Plus, Shapes } from 'lucide-react';
-import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
+import { formatDateZh, groupIconFromPicker, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
-import { Button, ChipPicker, Empty, Field, MenuAt, OverflowMenu, PopoverPanel, ProgressBar, Section, Select, Sheet, useContextMenuAt } from '../ui/primitives';
-import { groupSidebarAction } from '../lib/library-sidebar';
+import { Button, ChipPicker, Empty, Field, MenuAt, OverflowMenu, PopoverPanel, ProgressBar, Section, Select, Sheet, Tip, useContextMenuAt } from '../ui/primitives';
+import { GroupIcon } from '../components/project/GroupIcon';
+import { ProjectTitle, useProjectActions } from '../components/project/ProjectActions';
+import { IconPicker } from '../components/TypeManager';
 import { CategoryField, CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
 import { TaskRow } from '../components/TaskRow';
 import { PageHeader } from '../components/PageHeader';
@@ -26,7 +28,7 @@ function range(g: Group) {
 function GroupDialog({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('📁');
+  const [icon, setIcon] = useState('folder');
   const [cat, setCat] = useState<string | null>(null);
   const [type, setType] = useState('__none');
   const [start, setStart] = useState('');
@@ -43,7 +45,7 @@ function GroupDialog({ onClose }: { onClose: () => void }) {
           onPress={() => {
             const g = store.insert('group', {
               name: name.trim(),
-              icon: icon || '📁',
+              icon: groupIconFromPicker(icon),
               start_at: start || null,
               end_at: end || null,
               category_id: cat,
@@ -57,8 +59,29 @@ function GroupDialog({ onClose }: { onClose: () => void }) {
       }
     >
       <div className="editor-grid">
-        <Field label={tr('名称')} value={name} onChange={setName} autoFocus />
-        <Field label={tr('图标（emoji）')} value={icon} onChange={setIcon} />
+        <div className="editor-grid-wide project-new-name">
+          <PopoverPanel
+            label={tr('图标')}
+            className="icon-pick-popover"
+            trigger={
+              <RacButton className="project-icon-btn is-large" aria-label={tr('换图标')}>
+                <GroupIcon icon={groupIconFromPicker(icon)} size={20} />
+              </RacButton>
+            }
+          >
+            {(close) => (
+              <IconPicker
+                value={icon}
+                searchable
+                onChange={(v) => {
+                  setIcon(v);
+                  close();
+                }}
+              />
+            )}
+          </PopoverPanel>
+          <Field label={tr('名称')} value={name} onChange={setName} autoFocus className="project-new-name-field" />
+        </div>
         <Field label={tr('开始')} type="date" value={start} onChange={setStart} />
         <Field label={tr('结束')} type="date" value={end} onChange={setEnd} />
         <div className="editor-grid-wide">
@@ -89,6 +112,7 @@ function GroupCard({ group: g }: { group: Group }) {
   const blocked = tasks.filter((t) => store.derived().get(t.id)?.state === '被阻塞').length;
   const c = store.category(g.category_id);
   const late = g.end_at && g.end_at < toDateKey(store.now()) && done < counted.length;
+  const actions = useProjectActions(store, g);
   return (
     <div className="group-card-wrap" {...menu.props}>
       <RacButton
@@ -99,7 +123,7 @@ function GroupCard({ group: g }: { group: Group }) {
         }}
       >
         <div className="group-card-head">
-          <span className="group-icon">{g.icon}</span>
+          <GroupIcon icon={g.icon} size={22} className="group-icon" />
           <span className="group-name">{g.name}</span>
           {c && <CategoryLabel c={c} size={12} />}
         </div>
@@ -113,7 +137,9 @@ function GroupCard({ group: g }: { group: Group }) {
           {blocked > 0 && <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>}
         </div>
       </RacButton>
-      <MenuAt at={menu.at} label={tr('项目操作')} items={[groupSidebarAction(store, g)]} onClose={menu.close} />
+      <OverflowMenu label={tr('项目操作')} items={actions.items} className="group-card-more" />
+      <MenuAt at={menu.at} label={tr('项目操作')} items={actions.items} onClose={menu.close} />
+      {actions.dialogs}
     </div>
   );
 }
@@ -135,9 +161,12 @@ export function GroupsPage() {
         subtitle={tr('一批相关的任务，有起止时间和类型')}
         icon={<Shapes size={22} />}
         actions={
-          <Button variant="primary" onPress={() => setCreating(true)}>
-            <Plus size={16} />
-            {tr('新建项目')}</Button>
+          <Tip content={tr('新建项目')}>
+            <Button variant="primary" className="page-cta" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
+              <Plus size={16} aria-hidden />
+              <span className="page-cta-label">{tr('新建项目')}</span>
+            </Button>
+          </Tip>
         }
       />
       <div className="filter-row">
@@ -186,19 +215,37 @@ export function GroupDetailPage({ id }: { id: string }) {
     prefs.sort,
     prefs.dir,
   );
+  // 回车建到本项目（带项目的默认类型），马上打开；看板里新任务是「待办」，自然在待办列
+  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id }).id;
+  return <GroupDetail g={g} tasks={tasks} prefs={prefs} setPrefs={setPrefs} create={create} />;
+}
+
+function GroupDetail({
+  g,
+  tasks,
+  prefs,
+  setPrefs,
+  create,
+}: {
+  g: Group;
+  tasks: Task[];
+  prefs: ProjectViewPrefs;
+  setPrefs: (patch: Partial<ProjectViewPrefs>) => void;
+  create: (text: string) => string;
+}) {
+  const store = useStore();
+  const actions = useProjectActions(store, g);
   const c = store.category(g.category_id);
   const open = tasks.filter((t) => !isFinished(t.status));
   const ended = tasks.filter((t) => isFinished(t.status));
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
-  // 回车建到本项目（带项目的默认类型），马上打开；看板里新任务是「待办」，自然在待办列
-  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id }).id;
   return (
     <div className={`page project-page is-${prefs.view}`}>
       <PageHeader
         compact
         title={g.name}
-        icon={<span className="page-emoji">{g.icon}</span>}
+        titleNode={<ProjectTitle key={g.id} store={store} group={g} />}
         subtitle={
           <>
             {range(g)}
@@ -232,7 +279,7 @@ export function GroupDetailPage({ id }: { id: string }) {
           <>
             <ViewMenu view={prefs.view} onChange={(view) => setPrefs({ view })} />
             <SortMenu field={prefs.sort} dir={prefs.dir} onChange={(sort, dir) => setPrefs({ sort, dir })} />
-            <OverflowMenu label={tr('项目操作')} items={[groupSidebarAction(store, g)]} />
+            <OverflowMenu label={tr('项目操作')} items={actions.items} />
           </>
         }
       />
@@ -262,6 +309,7 @@ export function GroupDetailPage({ id }: { id: string }) {
           )}
         </>
       )}
+      {actions.dialogs}
     </div>
   );
 }

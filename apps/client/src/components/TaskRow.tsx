@@ -16,6 +16,7 @@ import { CheckInControl } from './CheckInControl';
 import { ItemArt, layoutShape } from './library/Library';
 
 import { dataLabel, tr } from '../lib/i18n';
+import { GroupIcon } from './project/GroupIcon';
 export interface TaskRowProps {
   store: Store;
   task: Task;
@@ -182,7 +183,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           )}
           {showGroup && v.group && (
             <span className="meta-group">
-              {v.group.icon} {v.group.name}
+              <GroupIcon icon={v.group.icon} size={12} /> {v.group.name}
             </span>
           )}
           {showDate && task.scheduled_date && (

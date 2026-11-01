@@ -34,6 +34,7 @@ import { TaskDatePicker, dateChipState } from './TaskDatePicker';
 import { TaskDateText } from '../TaskDateText';
 import { useDateDisplay } from '../../lib/date-display';
 import { formatRemindTime, RemindPanel } from './RemindPanel';
+import { GroupIcon } from '../project/GroupIcon';
 
 /** 属性名（胶囊的 aria-label、「+」菜单、弹层标题共用；叫法同原来的属性列表）。 */
 export function propLabel(id: PropId): string {
@@ -133,7 +134,7 @@ export function PropChips({
       }
       case 'group': {
         const s = group?.name ?? '';
-        return { icon: group?.icon ? <span className="pchip-emoji">{group.icon}</span> : <Shapes size={14} />, text: s, aria: s };
+        return { icon: group ? <GroupIcon icon={group.icon} size={14} /> : <Shapes size={14} />, text: s, aria: s };
       }
     }
   };

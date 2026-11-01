@@ -20,6 +20,7 @@ import { TaskRow } from '../components/TaskRow';
 import { CategoryBadge, CategoryList, categoryGroupLabel, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
 import { ColorPicker, IconPicker } from '../components/TypeManager';
 import { dataLabel, tr, trc } from '../lib/i18n';
+import { GroupIcon } from '../components/project/GroupIcon';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
 
@@ -189,7 +190,7 @@ function CategoryUses({ c }: { c: Category }) {
           <div className="card types-groups">
             {groups.map((g) => (
               <RacButton key={g.id} className="more-item" onPress={() => navigate({ page: 'group', id: g.id })}>
-                <span className="more-icon">{g.icon || '📁'}</span>
+                <span className="more-icon"><GroupIcon icon={g.icon} size={16} /></span>
                 <span className="grow">{g.name}</span>
               </RacButton>
             ))}

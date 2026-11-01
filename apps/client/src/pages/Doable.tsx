@@ -5,6 +5,7 @@ import { TaskRow } from '../components/TaskRow';
 import { QuickAddBar } from '../components/QuickAddBar';
 
 import { tr } from '../lib/i18n';
+import { GroupIcon } from '../components/project/GroupIcon';
 /** 可做清单：所有“可开始”的任务，按组和日期排。 */
 export function DoablePage() {
   const store = useStore();
@@ -29,7 +30,7 @@ export function DoablePage() {
       {keys.map((k) => {
         const g = store.get('group', k);
         return (
-          <Section key={k || 'none'} title={g ? `${g.icon} ${g.name}` : tr('琐事')}>
+          <Section key={k || 'none'} title={g ? <><GroupIcon icon={g.icon} size={14} /> {g.name}</> : tr('琐事')}>
             <div className="task-list plain">
               {groups.get(k)!.map((t) => (
                 <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />

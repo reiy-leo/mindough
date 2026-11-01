@@ -61,6 +61,7 @@ import { saveImageAsset } from '../../lib/upload';
 import { dataLabel, tr, trc } from '../../lib/i18n';
 import { trx } from '../../lib/trx';
 import { useLunarUi } from '../../lib/lunar';
+import { GroupIcon } from '../project/GroupIcon';
 export const MODE_ICON: Record<CompletionMode, typeof Timer> = { once: CircleCheck, timer: Timer, count: Hash, countdown: CalendarClock };
 
 /** 完成方式的选择：四张卡片（单选，方向键可切换）。 */
@@ -401,7 +402,7 @@ export function GroupList({ store, value, onChange }: { store: Store; value: str
       </ListBoxItem>
       {groups.map((g) => (
         <ListBoxItem key={g.id} id={g.id} className="listbox-item pick-item" textValue={g.name}>
-          <span className="pick-icon">{g.icon}</span>
+          <span className="pick-icon"><GroupIcon icon={g.icon} size={15} /></span>
           <span className="grow">{g.name}</span>
           <Check size={14} className="pick-check" />
         </ListBoxItem>

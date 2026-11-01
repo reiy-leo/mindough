@@ -66,9 +66,5 @@ export function activeGroupEntry(route: Route, pinnedIds: readonly string[]): st
   return pinnedIds.includes(route.id) ? route.id : 'groups';
 }
 
-/** 项目图标（emoji，或 "lucide:名字"）→ 图标名，交给 typeIcon 画。空的给 folder。 */
-export function groupIconName(icon: string | undefined | null): string {
-  const s = (icon ?? '').trim();
-  if (!s) return '📁';
-  return s.startsWith('lucide:') ? s.slice('lucide:'.length) : s;
-}
+/** 项目图标（emoji，或 "lucide:名字"）→ 图标名，交给 typeIcon 画。空的给 📁。逻辑在 core（group.ts）。 */
+export { groupIconName } from '@mindough/core';

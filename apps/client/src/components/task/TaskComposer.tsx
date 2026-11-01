@@ -55,6 +55,7 @@ import { markdownHelp } from '../Markdown';
 
 import { dataLabel, tr, trc } from '../../lib/i18n';
 import { trx } from '../../lib/trx';
+import { GroupIcon } from '../project/GroupIcon';
 interface Draft extends CompletionValue {
   body: string;
   typeData: Record<string, FieldValue>;
@@ -367,7 +368,7 @@ function Composer() {
               )}
             </PopoverPanel>
           )}
-          <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: `${group.icon} ${group.name}` } : {})} />}>
+          <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: <><GroupIcon icon={group.icon} size={13} /> {group.name}</> } : {})} />}>
             {(close) => (
               <GroupList
                 store={store}

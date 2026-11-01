@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, Input, Modal, ModalOverlay, SearchField, Button as RacButton } from 'react-aria-components';
-import { CornerDownLeft, FileDown, FolderOpen, NotebookPen, Plus, Search, Sun, SunDim, UserRound } from 'lucide-react';
+import { CornerDownLeft, FileDown, NotebookPen, Plus, Search, Sun, SunDim, UserRound } from 'lucide-react';
 import { TASK_STATUS_LABEL, isFinished, libraryCopy, search, type SearchHit } from '@mindough/core';
 import { MoodIcon } from './journal/MoodIcon';
 import { requestJournalCompose } from '../lib/journal-compose';
@@ -15,6 +15,7 @@ import { ItemArt, artShape } from './library/Library';
 import { imageUrl } from '../lib/view';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
+import { GroupIcon } from './project/GroupIcon';
 /** ⌘K / Ctrl+K 全局搜索：搜正文、类型字段、人物、组；结果直接“加入我的一天”。 */
 export function CommandPalette() {
   const ui = useUi();
@@ -219,7 +220,7 @@ export function CommandPalette() {
               return (
                 <li key={h.id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
                   <RacButton className="palette-main" onPress={() => openHit(h)}>
-                    {h.kind === 'person' ? <Avatar store={store} person={h.person} size={32} /> : h.kind === 'group' ? <span className="thumb thumb-icon">{h.group.icon || <FolderOpen size={16} />}</span> : null}
+                    {h.kind === 'person' ? <Avatar store={store} person={h.person} size={32} /> : h.kind === 'group' ? <span className="thumb thumb-icon"><GroupIcon icon={h.group.icon} size={16} /></span> : null}
                     <span className="palette-text">
                       <span className="palette-title">{h.title}</span>
                       <span className="palette-snippet">
