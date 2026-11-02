@@ -39,7 +39,7 @@ export function MyDayPage() {
   const sugg = daySuggestions(showSugg, () => {
     const derived = store.derived();
     const unlocked = recentlyUnlocked(tasks, store.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
-    return suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now }).filter((s) => !yIds.has(s.task.id));
+    return suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now, groups: store.list('group') }).filter((s) => !yIds.has(s.task.id));
   });
   // 标题右边「…」→「隐藏建议」：和设置里的开关是同一个；提示里说去哪儿打开，也能直接撤销
   const hideSuggestions = () => {

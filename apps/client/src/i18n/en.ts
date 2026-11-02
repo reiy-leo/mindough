@@ -774,6 +774,9 @@ export const EN: Record<string, EnValue> = {
   "项目里没有任务，删掉的只有项目本身。": "This project has no tasks. Only the project itself will be deleted.",
   "编辑项目": "Edit Project",
   "项目名字": "Project name",
+  "出现在我的一天": "Show in My Day",
+  "到了该做的那天，项目里的任务直接放进我的一天。": "On the day they’re due, this project’s tasks go straight into My Day.",
+  "项目里的任务不会自己出现在我的一天，到了那天只放在建议里。": "This project’s tasks won’t join My Day on their own; on the day they’re due, they only show up in suggestions.",
   "改名：{name}": "Rename: {name}",
 
   // ── 资料库页 ──

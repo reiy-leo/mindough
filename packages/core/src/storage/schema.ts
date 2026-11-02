@@ -42,7 +42,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   dependency: { pred_id: 'text', succ_id: 'text', type: 'text', lag: 'int' },
-  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?' },
+  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool' },
   category: { name: 'text', color: 'text', icon: 'text', builtin: 'bool', hidden: 'bool', sort: 'real', merged_into: 'text?' },
   task_type: {
     name: 'text',
@@ -307,6 +307,14 @@ CREATE TABLE IF NOT EXISTS "journal_post" (
   "day" TEXT NOT NULL, "body_md" TEXT NOT NULL DEFAULT '', "mood" TEXT, "created_at" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "journal_post_day" ON "journal_post" ("day");
+`,
+  },
+  {
+    // Rei 2026-11-02：项目里的任务直接出现在我的一天，项目上有开关（默认开）。
+    version: 14,
+    name: '项目的「出现在我的一天」开关（group.my_day_auto）',
+    sql: `
+ALTER TABLE "group" ADD COLUMN "my_day_auto" INTEGER NOT NULL DEFAULT 1;
 `,
   },
 ];

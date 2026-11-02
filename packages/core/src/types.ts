@@ -200,6 +200,11 @@ export interface Group extends BaseRow {
   end_at: DateKey | null;
   category_id: string | null;
   default_type_id: string | null;
+  /**
+   * 项目里的任务到了该做的那天，自动出现在我的一天（Rei 2026-11-02「直接出现在我的一天，而不是出现在的建议里」）。
+   * 默认开；关掉后这些任务还像以前一样进建议。v14 加的列，老客户端写来的行没有这个字段，读的时候当成开。
+   */
+  my_day_auto: boolean;
 }
 
 /**

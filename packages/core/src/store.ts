@@ -7,6 +7,7 @@ import { uuidv7 } from './uuid';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
+import { AUTO_MY_DAY_HLC, autoMyDayTasks, groupAutoMyDay, myDayEntryId, recentlyUnlocked } from './myday';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
@@ -408,6 +409,8 @@ export class Store {
         if (typeof a.size !== 'number') a.size = 0;
       }
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
+      // 老客户端写来的项目没有「出现在我的一天」：当成开（默认值）
+      if (c.table === 'group' && typeof (row as Group).my_day_auto !== 'boolean') (row as Group).my_day_auto = true;
       table.set(row.id, row);
       applied.push({ table: c.table, row } as Change);
     }
@@ -1265,7 +1268,7 @@ export class Store {
    * 改项目的名字 / 图标。名字去掉首尾空白，改成空的不算（留原名）；图标传选择器的值（emoji 或 lucide 名，见 group.ts）。
    * 没变就不写（不进 outbox）。
    */
-  updateGroup(id: string, patch: { name?: string; icon?: string }): Group | undefined {
+  updateGroup(id: string, patch: { name?: string; icon?: string; my_day_auto?: boolean }): Group | undefined {
     const g = this.get('group', id);
     if (!g) return undefined;
     const next: Partial<Group> = {};
@@ -1277,6 +1280,7 @@ export class Store {
       const icon = groupIconFromPicker(patch.icon);
       if (icon !== g.icon) next.icon = icon;
     }
+    if (patch.my_day_auto !== undefined && patch.my_day_auto !== groupAutoMyDay(g)) next.my_day_auto = patch.my_day_auto;
     if (!Object.keys(next).length) return g;
     return this.update('group', id, next);
   }
@@ -1415,17 +1419,65 @@ export class Store {
 
   // ───────────── 我的一天 ─────────────
 
+  /** 加进那天的我的一天（排最后）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。 */
   addToMyDay(taskId: string, date: string = toDateKey(this.now())): TableMap['my_day'] {
     const existing = this.list('my_day').find((e) => e.task_id === taskId && e.date === date);
     if (existing) return existing;
     const maxSort = this.list('my_day')
       .filter((e) => e.date === date)
       .reduce((m, e) => Math.max(m, e.sort), 0);
-    return this.insert('my_day', { task_id: taskId, date, sort: maxSort + 1, added_at: this.now().toISOString() });
+    const id = myDayEntryId(taskId, date);
+    const row: TableMap['my_day'] = { id, updated_at: '', deleted: false, task_id: taskId, date, sort: maxSort + 1, added_at: this.now().toISOString() };
+    this.write([{ table: 'my_day', row }]);
+    return this.tables.my_day.get(id)!;
   }
 
+  /**
+   * 移出那天的我的一天。除了给活着的行打墓碑，算出来的那一行（myDayEntryId）没有的话也写一条墓碑：
+   * 这样别的设备离线时自动加的那行（时间戳最早，见 AUTO_MY_DAY_HLC）同步后会被它盖掉，当天不会再冒出来。
+   */
   removeFromMyDay(taskId: string, date: string = toDateKey(this.now())): void {
-    for (const e of this.list('my_day')) if (e.task_id === taskId && e.date === date) this.remove('my_day', e.id);
+    const id = myDayEntryId(taskId, date);
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const e of this.list('my_day')) if (e.task_id === taskId && e.date === date) rows.push({ table: 'my_day', row: { ...e, deleted: true } });
+    if (!this.tables.my_day.has(id)) {
+      const tomb: TableMap['my_day'] = { id, updated_at: '', deleted: true, task_id: taskId, date, sort: 0, added_at: this.now().toISOString() };
+      rows.push({ table: 'my_day', row: tomb });
+    }
+    this.write(rows);
+  }
+
+  /**
+   * 项目里今天该做的任务，自动放进今天的我的一天（Rei 2026-11-02「直接出现在我的一天，而不是出现在的建议里」）。
+   * 只加项目开着「出现在我的一天」（group.my_day_auto，默认开）的；这一天已经有过行的（在里面的、移出过的）不再加。
+   * 加的行：id = myDayEntryId，updated_at = AUTO_MY_DAY_HLC（最早），sort 0、added_at 那天 00:00，各设备写出来一模一样，
+   * 进 outbox 推上去，别的设备同一行不会重复；用户移出的墓碑总比它新。不看「显示建议」开关。
+   * 重复调用没有副作用（没东西要加就不写）。返回加了几件。
+   */
+  syncAutoMyDay(today: string = toDateKey(this.now())): number {
+    const now = this.now();
+    const tasks = this.list('task');
+    const seen = new Set<string>();
+    for (const e of this.tables.my_day.values()) if (e.date === today) seen.add(e.task_id);
+    const derived = this.derived();
+    const unlocked = recentlyUnlocked(tasks, this.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
+    const picks = autoMyDayTasks({ tasks, checkIns: this.list('check_in'), derived, recentlyUnlocked: unlocked, today, now, groups: this.list('group'), seen });
+    if (!picks.length) return 0;
+    const stamped: Change[] = [];
+    for (const { task } of picks) {
+      const id = myDayEntryId(task.id, today);
+      if (this.tables.my_day.has(id)) continue;
+      const row: TableMap['my_day'] = { id, updated_at: AUTO_MY_DAY_HLC, deleted: false, task_id: task.id, date: today, sort: 0, added_at: `${today}T00:00:00.000Z` };
+      this.tables.my_day.set(id, row);
+      stamped.push({ table: 'my_day', row } as Change);
+    }
+    if (!stamped.length) return 0;
+    // 不走 write（write 会盖上现在的时间戳）；直接提交，照样落盘、进 outbox
+    if (this.batchBuffer) {
+      this.batchBuffer.push(...stamped);
+      this._version++;
+    } else this.commit(stamped);
+    return stamped.length;
   }
 
   isInMyDay(taskId: string, date: string = toDateKey(this.now())): boolean {

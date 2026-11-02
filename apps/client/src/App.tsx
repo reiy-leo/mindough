@@ -37,6 +37,7 @@ import { LoginErrorBanner } from './components/LoginErrorBanner';
 import { MovedBanner } from './components/MovedBanner';
 import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
+import { useAutoMyDay } from './lib/myday-auto';
 import { MenuAt, Tip, useContextMenuAt } from './ui/primitives';
 import { useAppMenu } from './lib/app-menu';
 
@@ -416,6 +417,7 @@ export function App() {
   const ui = useUi();
   const store = useStore();
   useLunarSubScheduler(store);
+  useAutoMyDay(store);
   const { setDidaImportOpen } = ui;
   const { layout, skin, platform } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面

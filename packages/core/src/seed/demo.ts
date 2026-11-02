@@ -87,6 +87,7 @@ export function seedDemo(store: Store): void {
       end_at: d(20),
       category_id: life.id,
       default_type_id: null,
+      my_day_auto: true,
     });
     const dev = store.insert('group', {
       name: tr('念头团开发'),
@@ -95,6 +96,7 @@ export function seedDemo(store: Store): void {
       end_at: d(45),
       category_id: work.id,
       default_type_id: null,
+      my_day_auto: true,
     });
     const watch = store.insert('group', {
       name: tr('周末看片'),
@@ -103,6 +105,7 @@ export function seedDemo(store: Store): void {
       end_at: null,
       category_id: fun.id,
       default_type_id: T.movie,
+      my_day_auto: true,
     });
 
     const task = (body: string, extra: Partial<Task> = {}) =>

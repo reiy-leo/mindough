@@ -175,7 +175,7 @@ export function applyDida(store: Store, plan: DidaPlan, opts: DidaOptions): Dida
       id = groupIdOf(list || tr('滴答清单'));
       if (!store.get('group', id)) {
         const info = plan.lists.find((l) => l.name === list);
-        put('group', fresh<Omit<Group, 'updated_at' | 'deleted'>>({ id, name: list || tr('滴答清单'), icon: '📁', start_at: null, end_at: null, category_id: categoryFor(info?.folder ?? null), default_type_id: null }));
+        put('group', fresh<Omit<Group, 'updated_at' | 'deleted'>>({ id, name: list || tr('滴答清单'), icon: '📁', start_at: null, end_at: null, category_id: categoryFor(info?.folder ?? null), default_type_id: null, my_day_auto: true }));
         groups++;
       }
     }

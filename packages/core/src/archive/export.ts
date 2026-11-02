@@ -421,6 +421,8 @@ function groupFront(g: Group, store: Store): Record<string, unknown> {
     end: g.end_at ?? undefined,
     category: g.category_id ? new Noted(cat?.id ?? g.category_id, cat ? dataLabel(cat.name) : '') : undefined,
     default_type: g.default_type_id ? new Noted(g.default_type_id, type ? dataLabel(type.name) : '') : undefined,
+    // 只在关掉时写（默认开）
+    my_day: g.my_day_auto === false ? false : undefined,
   };
 }
 

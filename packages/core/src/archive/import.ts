@@ -433,6 +433,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       end_at: dateKey(p.fm.end),
       category_id: cat && (archiveCats.has(cat) || store.get('category', cat)) ? cat : null,
       default_type_id: dt && (archiveTypes.has(dt) || store.get('task_type', dt)) ? dt : null,
+      my_day_auto: p.fm.my_day !== false,
     });
     folderGroup.set(dir, id);
     archiveGroups.add(id);
@@ -447,7 +448,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     folderGroup.set(dir, id);
     if (!store.get('group', id)) {
       archiveGroups.add(id);
-      add('group', 'group', `${dir}/`, name, fresh<Omit<Group, 'updated_at' | 'deleted'>>({ id, name, icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null }));
+      add('group', 'group', `${dir}/`, name, fresh<Omit<Group, 'updated_at' | 'deleted'>>({ id, name, icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true }));
     }
     return id;
   };
