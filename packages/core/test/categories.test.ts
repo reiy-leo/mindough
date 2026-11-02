@@ -14,7 +14,7 @@ const OLD = '0000000000005-0000-old';
 const cat = (id: string, name: string, extra: Partial<Category> = {}): Category =>
   fillCategory({ id, updated_at: OLD, deleted: false, name, color: '#123456', ...extra });
 const oldProjectCat = (id: string, name: string, color = '#0a84ff') => ({ id, updated_at: OLD, deleted: false, name, color }) as unknown as Category;
-const group = (id: string, category_id: string | null): Group => ({ id, updated_at: OLD, deleted: false, name: id, icon: '📁', start_at: null, end_at: null, category_id, default_type_id: null });
+const group = (id: string, category_id: string | null): Group => ({ id, updated_at: OLD, deleted: false, name: id, icon: '📁', start_at: null, end_at: null, category_id, default_type_id: null, my_day_auto: true });
 /** 旧客户端写的任务：只有 checkin_category_id，没有 category_id。 */
 const oldTask = (id: string, checkin: string | null) => {
   const { category_id: _c, ...t } = { ...mkTask(id), checkin_category_id: checkin, updated_at: OLD };
@@ -235,7 +235,7 @@ describe('导出导入', () => {
     const src = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
     const c = src.createCategory('装修', 'hammer', '#aa5500');
     const t = src.createTask({ body_md: '买瓷砖', category_id: c.id });
-    src.insert('group', { name: '新家', icon: '🏠', start_at: null, end_at: null, category_id: c.id, default_type_id: null });
+    src.insert('group', { name: '新家', icon: '🏠', start_at: null, end_at: null, category_id: c.id, default_type_id: null, my_day_auto: true });
     const { files } = exportArchive(src);
     expect(files.some((f) => f.path.endsWith('_meta/checkin-categories.json'))).toBe(false);
     const dst = await Store.open(new MemoryAdapter(), { deviceId: 'b' });

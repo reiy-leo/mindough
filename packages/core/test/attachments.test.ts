@@ -225,7 +225,7 @@ describe('Store：附件', () => {
 describe('导出 / 导入', () => {
   async function source() {
     const { store, advance } = await open('dev-src');
-    const g = store.insert('group', { name: '搬家', icon: 'box', start_at: null, end_at: null, category_id: null, default_type_id: null });
+    const g = store.insert('group', { name: '搬家', icon: 'box', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
     const task = store.createTask({ body_md: '退押金\n\n- [ ] 拍水电表\n', group_id: g.id });
     const pdf = store.addAttachment({ owner_type: 'task', owner_id: task.id, file_name: '收据 (1).pdf', mime: 'application/pdf', size: 4, r2_key: KEY });
     advance(5);

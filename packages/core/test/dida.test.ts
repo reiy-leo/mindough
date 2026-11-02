@@ -229,8 +229,8 @@ describe('导入', () => {
 
   it('选项：只导未完成；清单并入已有组 / 不放进组；同名组复用', async () => {
     const s = await open();
-    const life = s.insert('group', { name: '生活', icon: '🏠', start_at: null, end_at: null, category_id: null, default_type_id: null });
-    const other = s.insert('group', { name: '别的组', icon: '🧩', start_at: null, end_at: null, category_id: null, default_type_id: null });
+    const life = s.insert('group', { name: '生活', icon: '🏠', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
+    const other = s.insert('group', { name: '别的组', icon: '🧩', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
     const { rows } = parseDidaCsv(fixture('dida-backup.csv'));
     const plan = planDida(s, rows);
     expect(plan.lists.find((l) => l.name === '生活')!.defaultTarget).toEqual({ kind: 'group', id: life.id });

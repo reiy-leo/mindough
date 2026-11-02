@@ -9,7 +9,7 @@ const open = async () => Store.open(new MemoryAdapter(), { deviceId: 'a', now: (
 describe('待安排', () => {
   it('没结束、只做一次、没日期、不在今天的我的一天；组里的也算', async () => {
     const s = await open();
-    const g = s.insert('group', { name: '搬家', icon: '📦', start_at: null, end_at: null, category_id: null, default_type_id: null });
+    const g = s.insert('group', { name: '搬家', icon: '📦', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
     const a = s.createTask({ body_md: 'a' });
     const inGroup = s.createTask({ body_md: '组里', group_id: g.id });
     const dated = s.createTask({ body_md: '有日期', scheduled_date: '2026-10-20' });

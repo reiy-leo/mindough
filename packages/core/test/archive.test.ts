@@ -247,7 +247,7 @@ describe('普通 markdown 文件夹', () => {
 
   it('同名的已有组直接用', async () => {
     const s = await open();
-    const g = s.insert('group', { name: '读书', icon: '📚', start_at: null, end_at: null, category_id: null, default_type_id: null });
+    const g = s.insert('group', { name: '读书', icon: '📚', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
     applyImport(s, planImport(s, [md('读书/a.md', 'a'), md('读书/b.md', 'b'), md('别的/c.md', 'c')]));
     expect(s.list('group').filter((x) => x.name === '读书')).toHaveLength(1);
     expect(s.tasks().filter((t) => t.group_id === g.id)).toHaveLength(2);

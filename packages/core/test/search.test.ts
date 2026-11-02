@@ -6,7 +6,7 @@ import { mkTask } from './helpers';
 
 const base = { updated_at: '', deleted: false };
 const people: Person[] = [{ ...base, id: 'p1', name: '小林', avatar_asset_id: null, relation: '朋友', birthday: null, note_md: '' }];
-const groups: Group[] = [{ ...base, id: 'g1', name: '搬家', icon: '🏠', start_at: null, end_at: null, category_id: null, default_type_id: null }];
+const groups: Group[] = [{ ...base, id: 'g1', name: '搬家', icon: '🏠', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true }];
 const taskPeople: TaskPerson[] = [{ ...base, id: 'tp', task_id: 't3', person_id: 'p1' }];
 const tasks = [
   mkTask('t1', { body_md: '打包书和衣服', group_id: 'g1' }),

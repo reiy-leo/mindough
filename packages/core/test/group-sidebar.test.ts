@@ -13,7 +13,7 @@ async function open(adapter = new MemoryAdapter(), deviceId = 'dev1', t0 = local
 }
 
 const mk = (store: Store, name: string) =>
-  store.insert('group', { name, icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null });
+  store.insert('group', { name, icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
 
 describe('侧边栏里的项目（Rei 2026-10-28）', () => {
   it('偏好名是 group.sidebar；默认都不显示', async () => {

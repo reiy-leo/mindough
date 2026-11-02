@@ -273,7 +273,7 @@ describe('Store 类型编辑', () => {
 
   it('组的默认类型归档了照样生效：新建任务仍用它（Rei 2026-10-17「组的类型被归档后不退回」），只是选择器里选不到', async () => {
     const { store } = await open();
-    const g = store.insert('group', { name: '听', icon: '🎧', start_at: null, end_at: null, category_id: null, default_type_id: T.book });
+    const g = store.insert('group', { name: '听', icon: '🎧', start_at: null, end_at: null, category_id: null, default_type_id: T.book, my_day_auto: true });
     store.archiveType(T.book);
     expect(store.effectiveDefaultTypeId(g)).toBe(T.book);
     expect(store.createTask({ group_id: g.id }).type_id).toBe(T.book);

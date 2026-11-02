@@ -23,7 +23,7 @@ async function devices() {
 }
 
 const mk = (store: Store, name = '搬家', icon = '🏠') =>
-  store.insert('group', { name, icon, start_at: null, end_at: null, category_id: null, default_type_id: null });
+  store.insert('group', { name, icon, start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
 
 describe('项目图标的存法（group.ts）', () => {
   it('lucide 名加前缀，emoji 原样，空的给文件夹', () => {

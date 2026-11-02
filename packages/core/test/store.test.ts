@@ -36,7 +36,7 @@ describe('Store', () => {
 
   it('组的默认类型自动套用', async () => {
     const { store } = await open();
-    const g = store.insert('group', { name: '看片', icon: '🎬', start_at: null, end_at: null, category_id: null, default_type_id: BUILTIN_TYPE_IDS.movie });
+    const g = store.insert('group', { name: '看片', icon: '🎬', start_at: null, end_at: null, category_id: null, default_type_id: BUILTIN_TYPE_IDS.movie, my_day_auto: true });
     expect(store.createTask({ group_id: g.id }).type_id).toBe(BUILTIN_TYPE_IDS.movie);
   });
 
