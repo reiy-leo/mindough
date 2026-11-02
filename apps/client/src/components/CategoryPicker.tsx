@@ -282,7 +282,8 @@ export function CategoryPicker({ store, value, onChange, onDone }: { store: Stor
 }
 
 /**
- * 表单里的类型一栏（新建面板、新建项目）：一个按钮，显示已选的类型小标签，点开是下拉列表。
+ * 表单里的类型一栏：一个按钮，显示已选的类型小标签，点开是下拉列表。
+ * 现在没地方用（2026-11-02 起新建项目不填类型，和编辑窗口一样）；表单里要加回类型就用它。
  * multiple = false 时 value 只取第一个。
  */
 export function CategoryField({ store, value, onChange, multiple = true, label = true }: { store: Store; value: readonly string[]; onChange: (ids: string[]) => void; multiple?: boolean; label?: boolean }) {

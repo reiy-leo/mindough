@@ -7,7 +7,8 @@ import { useState, type ReactNode } from 'react';
 import { Button as RacButton, Input, TextField } from 'react-aria-components';
 import { FolderMinus, Pencil, Trash2 } from 'lucide-react';
 import { groupIconName, type Group, type Store } from '@mindough/core';
-import { Button, ConfirmDialog, PopoverPanel, Sheet, type MenuAction } from '../../ui/primitives';
+import { ConfirmDialog, PopoverPanel, type MenuAction } from '../../ui/primitives';
+import { ProjectSheet } from './ProjectSheet';
 import { IconPicker } from '../TypeManager';
 import { GroupIcon } from './GroupIcon';
 import { groupSidebarAction } from '../../lib/library-sidebar';
@@ -36,7 +37,7 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
   const close = (o: boolean) => !o && setOpen(null);
   const dialogs = (
     <>
-      {open === 'edit' && <ProjectEditSheet store={store} group={group} onClose={() => setOpen(null)} />}
+      {open === 'edit' && <ProjectSheet store={store} group={group} onClose={() => setOpen(null)} />}
       <ConfirmDialog
         isOpen={open === 'dissolve'}
         onOpenChange={close}
@@ -67,41 +68,6 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
     </>
   );
   return { items, dialogs };
-}
-
-/** 编辑项目：名字 + 图标（lucide 或 emoji，和资料库、类型同一个选择器）。 */
-export function ProjectEditSheet({ store, group, onClose }: { store: Store; group: Group; onClose: () => void }) {
-  const [name, setName] = useState(group.name);
-  const [icon, setIcon] = useState(groupIconName(group.icon));
-  const save = () => {
-    if (!name.trim()) return;
-    store.updateGroup(group.id, { name, icon });
-    onClose();
-  };
-  return (
-    <Sheet
-      isOpen
-      onOpenChange={(o) => !o && onClose()}
-      title={tr('编辑项目')}
-      footer={
-        <Button variant="primary" isDisabled={!name.trim()} onPress={save}>
-          {tr('保存')}
-        </Button>
-      }
-    >
-      <div className="project-edit">
-        <div className="project-edit-head">
-          <span className="project-edit-preview" aria-hidden>
-            <GroupIcon icon={icon} size={24} />
-          </span>
-          <TextField aria-label={tr('项目名字')} value={name} onChange={setName} autoFocus className="project-edit-name">
-            <Input className="input" placeholder={tr('项目名字')} onKeyDown={(e) => e.key === 'Enter' && save()} />
-          </TextField>
-        </div>
-        <IconPicker value={icon} searchable onChange={setIcon} />
-      </div>
-    </Sheet>
-  );
 }
 
 /**

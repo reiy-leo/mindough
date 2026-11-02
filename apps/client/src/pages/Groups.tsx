@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { CalendarRange, Plus, Shapes } from 'lucide-react';
-import { formatDateZh, groupIconFromPicker, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
+import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
-import { Button, ChipPicker, Empty, Field, MenuAt, OverflowMenu, PopoverPanel, ProgressBar, Section, Select, Sheet, Tip, useContextMenuAt } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, ProgressBar, Section, Tip, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { ProjectTitle, useProjectActions } from '../components/project/ProjectActions';
-import { IconPicker } from '../components/TypeManager';
-import { CategoryField, CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
+import { ProjectSheet } from '../components/project/ProjectSheet';
+import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
 import { TaskRow } from '../components/TaskRow';
 import { PageHeader } from '../components/PageHeader';
 import { QuickAddBar } from '../components/QuickAddBar';
@@ -23,79 +23,6 @@ import { dataLabel, tr, trc } from '../lib/i18n';
 function range(g: Group) {
   if (!g.start_at && !g.end_at) return tr('不限时间');
   return `${g.start_at ? formatDateZh(g.start_at, false) : '…'} – ${g.end_at ? formatDateZh(g.end_at, false) : '…'}`;
-}
-
-function GroupDialog({ onClose }: { onClose: () => void }) {
-  const store = useStore();
-  const [name, setName] = useState('');
-  const [icon, setIcon] = useState('folder');
-  const [cat, setCat] = useState<string | null>(null);
-  const [type, setType] = useState('__none');
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  return (
-    <Sheet
-      isOpen
-      onOpenChange={(o) => !o && onClose()}
-      title={tr('新建项目')}
-      footer={
-        <Button
-          variant="primary"
-          isDisabled={!name.trim()}
-          onPress={() => {
-            const g = store.insert('group', {
-              name: name.trim(),
-              icon: groupIconFromPicker(icon),
-              start_at: start || null,
-              end_at: end || null,
-              category_id: cat,
-              default_type_id: type === '__none' ? null : type,
-            });
-            onClose();
-            navigate({ page: 'group', id: g.id });
-          }}
-        >
-          {tr('创建')}</Button>
-      }
-    >
-      <div className="editor-grid">
-        <div className="editor-grid-wide project-new-name">
-          <PopoverPanel
-            label={tr('图标')}
-            className="icon-pick-popover"
-            trigger={
-              <RacButton className="project-icon-btn is-large" aria-label={tr('换图标')}>
-                <GroupIcon icon={groupIconFromPicker(icon)} size={20} />
-              </RacButton>
-            }
-          >
-            {(close) => (
-              <IconPicker
-                value={icon}
-                searchable
-                onChange={(v) => {
-                  setIcon(v);
-                  close();
-                }}
-              />
-            )}
-          </PopoverPanel>
-          <Field label={tr('名称')} value={name} onChange={setName} autoFocus className="project-new-name-field" />
-        </div>
-        <Field label={tr('开始')} type="date" value={start} onChange={setStart} />
-        <Field label={tr('结束')} type="date" value={end} onChange={setEnd} />
-        <div className="editor-grid-wide">
-          <CategoryField store={store} value={cat ? [cat] : []} multiple={false} onChange={(ids) => setCat(ids[0] ?? null)} />
-        </div>
-        <Select
-          label={tr('默认资料库')}
-          value={type}
-          onChange={setType}
-          options={[{ id: '__none', label: tr('不放进资料库') }, ...store.pickableTypes().filter((t) => t.layout !== 'text').map((t) => ({ id: t.id, label: dataLabel(t.name) }))]}
-        />
-      </div>
-    </Sheet>
-  );
 }
 
 /**
@@ -158,7 +85,7 @@ export function GroupsPage() {
     <div className="page">
       <PageHeader
         title={trc('导航', '项目')}
-        subtitle={tr('一批相关的任务，有起止时间和类型')}
+        subtitle={tr('把相关的任务放在一起')}
         icon={<Shapes size={22} />}
         actions={
           <Tip content={tr('新建项目')}>
@@ -192,7 +119,7 @@ export function GroupsPage() {
           ))}
         </div>
       )}
-      {creating && <GroupDialog onClose={() => setCreating(false)} />}
+      {creating && <ProjectSheet store={store} onClose={() => setCreating(false)} />}
     </div>
   );
 }
