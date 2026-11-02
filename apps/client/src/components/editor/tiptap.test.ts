@@ -214,6 +214,17 @@ describe('清单、撤销、快捷键', () => {
     done();
   });
 
+  it('中文输入法用回车选词，不拆出下一条清单（Rei 2026-11-02）', () => {
+    const { view, h, done } = setup('- [ ] 买菜');
+    view.dispatch(view.state.tr.setSelection(TextSelection.atEnd(view.state.doc)));
+    key(view, 'Enter', { isComposing: true, keyCode: 229 });
+    key(view, 'Enter', { keyCode: 229 });
+    view.dom.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '白菜' }));
+    key(view, 'Enter');
+    expect(h.getMarkdown()).toBe('- [ ] 买菜\n');
+    done();
+  });
+
   it('行首打 [] / [ ] / [x] 加空格（Notion 式，Rei 2026-10-25）：直接变清单项，存的还是 - [ ]', () => {
     for (const [typed, md] of [
       ['[] 买菜', '- [ ] 买菜\n'],

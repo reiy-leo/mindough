@@ -702,7 +702,18 @@ function markdownClipboard(opts: BehaviorOptions) {
 }
 
 /** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。 */
+/**
+ * 输入法选词的那次回车：正在组字（isComposing）、Safari / WebKit 里 keyCode 229，
+ * 或者紧跟在 compositionend 后面（WebKit 先发 compositionend 再发回车的 keydown）。
+ */
+export function imeEnter(event: Pick<KeyboardEvent, 'key' | 'isComposing' | 'keyCode'>, lastCompositionEnd: number, now = Date.now()): boolean {
+  if (event.key !== 'Enter') return false;
+  if (event.isComposing || event.keyCode === 229) return true;
+  return now - lastCompositionEnd < 100;
+}
+
 export function behaviorExtension(opts: BehaviorOptions) {
+  let lastCompositionEnd = 0;
   return Extension.create({
     name: 'mindoughBehavior',
     priority: 1000,
@@ -718,7 +729,15 @@ export function behaviorExtension(opts: BehaviorOptions) {
               if (doc.childCount !== 1 || !first || !first.isTextblock || first.content.size > 0) return null;
               return DecorationSet.create(doc, [Decoration.node(0, first.nodeSize, { class: 'md-placeholder', 'data-placeholder': opts.placeholder() })]);
             },
+            handleDOMEvents: {
+              compositionend() {
+                lastCompositionEnd = Date.now();
+                return false;
+              },
+            },
             handleKeyDown(view, event) {
+              // 中文输入法用回车选词：这次回车只是上屏，不能拆出下一条清单 / 列表项（Rei 2026-11-02）
+              if (imeEnter(event, lastCompositionEnd)) return true;
               if (event.key === 'Tab') return handleTab(view, event);
               if (event.key === 'Escape' && opts.onEscape) {
                 event.preventDefault();
