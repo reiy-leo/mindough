@@ -14,11 +14,11 @@ import { afterQuickAdd, quickAdd } from '../lib/quick-add';
  * 添加框固定在列表顶上，不跟着列表滚（Rei 2026-11-02「所有的任务输入框都不随列表滚动」）：外面一层 sticky、不透明底；
  * 滚动后（顶上的哨兵看不见了）加 is-stuck，底下多一条细分隔线。
  */
-export function QuickAddBar({ placeholder, label, create, trailing, meta }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode }) {
-  const ui = useUi();
-  const { layout } = useSettings();
-  const [draft, setDraft] = useState('');
-  const input = useRef<HTMLInputElement>(null);
+/**
+ * 固定在顶上的那一层滚动了没有：把 sentinel 放在 sticky 层前面（1px 高），它滚出可见区域就是 stuck。
+ * 日记的输入框也用它（Rei 2026-11-02「日记中的输入框也不滚动」）。
+ */
+export function useStuck() {
   const sentinel = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   useEffect(() => {
@@ -28,6 +28,15 @@ export function QuickAddBar({ placeholder, label, create, trailing, meta }: { pl
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  return { sentinel, stuck };
+}
+
+export function QuickAddBar({ placeholder, label, create, trailing, meta }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode }) {
+  const ui = useUi();
+  const { layout } = useSettings();
+  const [draft, setDraft] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  const { sentinel, stuck } = useStuck();
   const add = () => {
     const id = quickAdd({ create, openEditor: ui.openEditor }, draft);
     if (!id) return;

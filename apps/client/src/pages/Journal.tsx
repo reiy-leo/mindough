@@ -22,6 +22,7 @@ import { Button, Empty } from '../ui/primitives';
 import { JournalHeatmap } from '../components/journal/JournalHeatmap';
 import { MoodList } from '../components/journal/MoodList';
 import { JournalComposer, type ComposerHandle } from '../components/journal/JournalComposer';
+import { useStuck } from '../components/QuickAddBar';
 import { sendJournalPost } from '../lib/journal-send';
 import { tooBigMessage } from '../lib/attachments';
 import { JournalFeed, dayTitle } from '../components/journal/JournalFeed';
@@ -38,6 +39,7 @@ export function JournalPage({ date: wanted }: { date?: string }) {
   const day = wanted && isDateKey(wanted) ? wanted : null;
   const [mood, setMood] = useState<string | null>(null);
   const composer = useRef<ComposerHandle>(null);
+  const sticky = useStuck();
 
   // #/journal/不是日期：回到全部并提示一句
   useEffect(() => {
@@ -127,10 +129,18 @@ export function JournalPage({ date: wanted }: { date?: string }) {
       <MoodList counts={counts} selected={mood} onSelect={setMood} />
     </>
   );
+  // 筛选条和输入框固定在右栏顶上，条目在下面滚（Rei 2026-11-02「日记中的输入框也不滚动」）
   const main = (
     <>
-      {filterBar}
-      {canWrite && <JournalComposer ref={composer} onSend={send} />}
+      {(filterBar || canWrite) && (
+        <>
+          <div ref={sticky.sentinel} className="add-bar-sentinel" aria-hidden />
+          <div className={`jf-compose-sticky${sticky.stuck ? ' is-stuck' : ''}`}>
+            {filterBar}
+            {canWrite && <JournalComposer ref={composer} onSend={send} />}
+          </div>
+        </>
+      )}
       {empty || <JournalFeed groups={shown} today={today} single={!!day} />}
     </>
   );

@@ -167,6 +167,38 @@
   gap: var(--space-4);
 }
 
+/* 筛选条 + 输入框固定在右栏顶上（Rei 2026-11-02「日记中的输入框也不滚动」），条目从它下面滚过去。
+   不透明底（页面底色，WinUI 渐变照铺）；输入框能长高，固定时最多 min(32vh, 260px)，再多就在框里滚，条目不会被挤没。
+   滚动后 is-stuck 加一条细分隔线。窄屏上下排时一样，粘在整页的滚动区顶上。 */
+.jf-compose-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+.jf-compose-sticky.is-stuck {
+  border-bottom-color: var(--border);
+}
+.jf-compose-sticky .jcomposer-input {
+  max-height: min(32vh, 260px);
+}
+.jf.is-mobile .jf-compose-sticky .jcomposer-input {
+  max-height: min(24vh, 180px);
+}
+.jf-main-inner > .add-bar-sentinel,
+.jf.is-mobile .jf-main > .add-bar-sentinel {
+  margin-bottom: calc(-1px - var(--space-4));
+}
+
 /* ───────── 活动图 ───────── */
 .jf-heat {
   padding: var(--space-3) var(--space-3) var(--space-2);
