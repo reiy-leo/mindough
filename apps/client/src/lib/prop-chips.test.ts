@@ -9,6 +9,7 @@ const base: PropTask = {
   remind_time: null,
   group_id: null,
   target_date: null,
+  card_color: null,
 };
 const t = (p: Partial<PropTask> = {}): PropTask => ({ ...base, ...p });
 
@@ -85,5 +86,17 @@ describe('「+」菜单里的附件（Rei 2026-10-25）', () => {
   it('属性都设了，菜单里还剩「附件」，「+」不藏', () => {
     const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g' });
     expect(addMenuItems(full, { refs: 1 }, true)).toEqual(['attachment']);
+  });
+});
+
+describe('倒数日的卡片颜色（Rei 2026-11-02）', () => {
+  it('只有倒数日有「颜色」；设了才显示胶囊，清除回默认', () => {
+    expect(applicableProps(t())).not.toContain('color');
+    const cd = t({ completion_mode: 'countdown', target_date: '2026-12-01' });
+    expect(applicableProps(cd)).toContain('color');
+    expect(isPropSet('color', cd)).toBe(false);
+    expect(isPropSet('color', t({ ...cd, card_color: 'teal' }))).toBe(true);
+    expect(isPropSet('color', t({ ...cd, card_color: 'nope' }))).toBe(false);
+    expect(clearPatch('color')).toEqual({ card_color: null });
   });
 });

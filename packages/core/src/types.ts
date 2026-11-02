@@ -39,6 +39,11 @@ export function isFinished(status: TaskStatus): boolean {
   return status === '完成' || status === '关闭';
 }
 
+/** 归档了的任务（打卡归档，Rei 2026-11-02）：状态照旧，只是先收起来。 */
+export function isArchived(task: { archived_at?: string | null }): boolean {
+  return !!task.archived_at;
+}
+
 /** 旧数据兼容：M0 存过的“取消”一律视作“关闭”；未知值当“待办”。 */
 export function normalizeStatus(status: unknown): TaskStatus {
   if (status === '取消' || status === 'cancelled') return '关闭';
@@ -155,6 +160,17 @@ export interface Task extends BaseRow {
    */
   refs_mirror: string | null;
   done_at: Timestamp | null;
+  /**
+   * 归档时间（Rei 2026-11-02「打卡任务可以归档」）：空 = 没归档。只给重复任务（打卡）用：先收起来，以后可能再打。
+   * 和「不再打卡」（status 关闭）不同：状态不变、不算结束、不解锁后续；从归档那天起不算应打卡日、不提醒、不进我的一天，
+   * 以前的打卡记录照常显示。老客户端不认这一列，拉到的行没有它就当没归档。SQLite 迁移 v15。
+   */
+  archived_at?: Timestamp | null;
+  /**
+   * 倒数日卡片的背景色（Rei 2026-11-02「倒数日的card可以设置不同的颜色背景」）：预设色的名字（见 countdown-color.ts），
+   * 空 = 默认样子。存名字不存色值，亮暗主题各用各的色值。SQLite 迁移 v15。
+   */
+  card_color?: string | null;
   sort: number;
   created_at: Timestamp;
 }

@@ -12,7 +12,7 @@
  */
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
-import { Bell, CalendarDays, Library, Paperclip, Plus, Repeat, Shapes, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Tag, X } from 'lucide-react';
 import {
   describeCompletion,
   describeRecurrence,
@@ -21,7 +21,12 @@ import {
   type Store,
   type Task,
   categoryIcon,
+  cardColorOf,
+  CARD_COLOR_VALUES,
 } from '@mindough/core';
+import { CardColorPicker } from '../CardColorPicker';
+import { cardColorLabel } from '../../lib/card-colors';
+import { useSettings } from '../../lib/settings';
 import { useUi } from '../../lib/ui';
 import { useLunarUi } from '../../lib/lunar';
 import { dataLabel, tr, trc } from '../../lib/i18n';
@@ -53,6 +58,8 @@ export function propLabel(id: PropId): string {
       return tr('提醒');
     case 'group':
       return trc('属性', '项目');
+    case 'color':
+      return tr('卡片颜色');
   }
 }
 
@@ -83,6 +90,7 @@ export function PropChips({
   onAttach?: (files: File[]) => void;
 }) {
   const ui = useUi();
+  const { theme } = useSettings();
   const lunarUi = useLunarUi();
   const dateMode = useDateDisplay();
   const [open, setOpen] = useState<{ id: PropId; via: 'chip' | 'add' } | null>(null);
@@ -135,6 +143,15 @@ export function PropChips({
       case 'group': {
         const s = group?.name ?? '';
         return { icon: group ? <GroupIcon icon={group.icon} size={14} /> : <Shapes size={14} />, text: s, aria: s };
+      }
+      case 'color': {
+        const c = cardColorOf(task);
+        const s = cardColorLabel(c);
+        return {
+          icon: <span className="pchip-swatch" style={c ? ({ '--cd-swatch': CARD_COLOR_VALUES[c][theme] } as CSSProperties) : undefined} />,
+          text: s,
+          aria: s,
+        };
       }
     }
   };
@@ -208,6 +225,12 @@ export function PropChips({
               close();
             }}
           />
+        );
+      case 'color':
+        return (
+          <div className="pop-section">
+            <CardColorPicker store={store} task={task} onDone={close} />
+          </div>
         );
       case 'group':
         return (
@@ -348,5 +371,7 @@ function addIcon(id: PropId, task: Task): ReactNode {
       return <Bell size={16} />;
     case 'group':
       return <Shapes size={16} />;
+    case 'color':
+      return <Paintbrush size={16} />;
   }
 }

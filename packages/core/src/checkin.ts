@@ -163,9 +163,15 @@ export function isCheckInTask(task: Pick<Task, 'completion_mode' | 'recurrence'>
   return task.recurrence !== null || task.completion_mode !== 'once';
 }
 
-export function dueToday(task: Pick<Task, 'recurrence' | 'deleted' | 'status' | 'created_at'>, date: DateKey): boolean {
-  // 已结束（完成 / 关闭）的重复任务不再要打卡
-  if (task.deleted || isFinished(task.status)) return false;
+/** 重复任务从哪天起不再算应打卡日：结束（完成 / 关闭）那天或归档那天，取早的；都没有就是 null。 */
+function endOfDue(t: Pick<Task, 'status' | 'done_at' | 'archived_at'>): DateKey | null {
+  const ends = [isFinished(t.status) && t.done_at ? toDateKey(new Date(t.done_at)) : null, t.archived_at ? toDateKey(new Date(t.archived_at)) : null].filter((d): d is DateKey => !!d);
+  return ends.length ? ends.sort()[0]! : null;
+}
+
+export function dueToday(task: Pick<Task, 'recurrence' | 'deleted' | 'status' | 'created_at' | 'archived_at'>, date: DateKey): boolean {
+  // 已结束（完成 / 关闭）、归档了的重复任务不再要打卡
+  if (task.deleted || isFinished(task.status) || task.archived_at) return false;
   const r = parseRecurrence(task.recurrence);
   if (!r) return false;
   if (toDateKey(new Date(task.created_at)) > date) return false;
@@ -219,7 +225,7 @@ export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly Check
         task: t,
         rule: parseRecurrence(t.recurrence),
         since: toDateKey(new Date(t.created_at)),
-        until: isFinished(t.status) && t.done_at ? toDateKey(new Date(t.done_at)) : null,
+        until: endOfDue(t),
       },
     ]),
   );

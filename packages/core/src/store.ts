@@ -37,6 +37,7 @@ import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, categoryGroupOf, categoryG
 import { CategoryDeleteError, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
+import { isCardColor } from './card-color';
 import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type CheckInCategory, type DateKey, type CheckInKind, type FieldDef, type FieldValue, type LibraryItem, type NewRow, type Person, type TableMap, type TableName, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskStatus } from './types';
 import type { Change, StorageAdapter } from './storage/adapter';
 
@@ -399,6 +400,8 @@ export class Store {
         if (t.remind_time === undefined) t.remind_time = null;
         if (t.time_zone === undefined) t.time_zone = null;
         if (t.refs_mirror === undefined) t.refs_mirror = null;
+        if (t.archived_at === undefined) t.archived_at = null;
+        if (t.card_color === undefined) t.card_color = null;
         if (!isPlainObject(t.count_config)) t.count_config = {};
       }
       if (c.table === 'attachment') {
@@ -1216,6 +1219,8 @@ export class Store {
       time_zone: input.time_zone ?? null,
       refs_mirror: null,
       done_at: input.done_at ?? null,
+      archived_at: input.archived_at ?? null,
+      card_color: input.card_color ?? null,
       sort: input.sort ?? maxSort + 1,
       created_at: input.created_at ?? now.toISOString(),
       ...(input.id ? { id: input.id } : {}),
@@ -1346,6 +1351,36 @@ export class Store {
   /** 关闭：不做了也算结束，同样解锁后续，但不算成就。 */
   closeTask(id: string): CompleteResult {
     return this.setStatus(id, '关闭');
+  }
+
+  /**
+   * 打卡归档（Rei 2026-11-02「打卡任务可以归档」）：先收起来，以后可能再打。状态不变，不解锁后续；
+   * 从今天起不算应打卡日、不提醒、不进我的一天（今天已经在我的一天里的顺手移出），以前的打卡记录都留着。
+   */
+  archiveTask(id: string): Task | undefined {
+    const t = this.get('task', id);
+    if (!t || t.archived_at) return t;
+    const today = toDateKey(this.now());
+    const inDay = this.list('my_day').some((e) => e.task_id === id && e.date === today);
+    const task = this.updateTask(id, { archived_at: this.now().toISOString() });
+    if (inDay) this.removeFromMyDay(id, today);
+    return task;
+  }
+
+  /** 取消归档：回到打卡页主列表，照常要打卡、提醒。 */
+  unarchiveTask(id: string): Task | undefined {
+    const t = this.get('task', id);
+    if (!t || !t.archived_at) return t;
+    return this.updateTask(id, { archived_at: null });
+  }
+
+  /** 倒数日卡片的背景色（Rei 2026-11-02）：预设色的名字，null = 默认。名字不认识的当默认存成 null。 */
+  setCardColor(id: string, color: string | null): Task | undefined {
+    const t = this.get('task', id);
+    if (!t) return t;
+    const next = color && isCardColor(color) ? color : null;
+    if ((t.card_color ?? null) === next) return t;
+    return this.updateTask(id, { card_color: next });
   }
 
   /** 重新打开：改回待办。 */

@@ -15,6 +15,7 @@ import { taskCategoryId, taskItemId } from '../task-refs';
 import { tr } from '../i18n';
 import { normalizeTimeZone } from '../timezone';
 import { normalizeRange } from '../date-range';
+import { isCardColor } from '../card-color';
 import { cleanQuick } from '../count';
 import type { CountConfig } from '../types';
 import { isDateKey, journalEntryId } from '../journal';
@@ -601,6 +602,8 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       remind_time: remind && /^\d{1,2}:\d{2}$/.test(remind) ? remind.padStart(5, '0') : null,
       time_zone: normalizeTimeZone(fm.time_zone),
       done_at: iso(fm.done) ?? null,
+      archived_at: iso(fm.archived) ?? null,
+      card_color: isCardColor(fm.card_color) ? fm.card_color : null,
       sort: num(fm.sort) ?? ++sort,
       created_at: iso(fm.created) ?? now.toISOString(),
     });

@@ -131,7 +131,8 @@ export function upcomingReminders(tasks: readonly Task[], checkIns: readonly Che
   };
 
   for (const t of tasks) {
-    if (t.deleted || isFinished(t.status)) continue;
+    // 归档了的打卡不提醒（Rei 2026-11-02）
+    if (t.deleted || isFinished(t.status) || t.archived_at) continue;
     // 任务自己的时区（空 = 本机 / 传入的 timeZone）：那天、那个钟点都按它算
     const tz = normalizeTimeZone(t.time_zone) ?? opts.timeZone;
     const firstDay = dateKeyIn(from, tz);

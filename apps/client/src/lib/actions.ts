@@ -50,6 +50,22 @@ export function closeTask(store: Store, ui: Ui, taskId: string) {
   announceComplete(store, ui, store.closeTask(taskId), t.status);
 }
 
+/**
+ * 打卡归档 / 取消归档（Rei 2026-11-02「打卡任务可以归档」），提示里能撤销。
+ * 归档时今天在我的一天里的会顺手移出；撤销只恢复归档状态，不把它加回我的一天。
+ */
+export function archiveHabit(store: Store, ui: Ui, taskId: string, archived: boolean) {
+  const t = store.get('task', taskId);
+  if (!t || !!t.archived_at === archived) return;
+  if (archived) {
+    store.archiveTask(taskId);
+    ui.toast({ message: tr('已归档「{title}」，在打卡页最下面「已归档」里', { title: titleOf(store, taskId) }), actions: [{ label: tr('撤销'), onPress: () => store.unarchiveTask(taskId) }] }, 6000);
+  } else {
+    store.unarchiveTask(taskId);
+    ui.toast({ message: tr('已取消归档「{title}」', { title: titleOf(store, taskId) }) }, 3000);
+  }
+}
+
 /** 改状态：结束态走解锁提示，其余直接改。 */
 export function changeStatus(store: Store, ui: Ui, taskId: string, status: TaskStatus) {
   const t = store.get('task', taskId);

@@ -9,17 +9,18 @@
  * - 重复：一次（recurrence = null / 空）
  * - 提醒：不提醒（remind_time = null；要有日期 / 重复 / 倒数日目标日才适用，见 core canRemind）
  * - 组：不放进组（group_id = null）
+ * - 颜色：默认（card_color = null；只有倒数日有，Rei 2026-11-02「倒数日的card可以设置不同的颜色背景」）
  * 资料（Rei 2026-10-28：和类型平级，跨库多选，含人物）不是胶囊：挂了就在胶囊下面按库分组列出来；
  * 一条都没挂时，「+」菜单里有「资料」（PropId refs）。以前的「资料库」「和谁有关」两个胶囊并进了资料。
  */
-import { canRemind, type Task } from '@mindough/core';
+import { canRemind, cardColorOf, type Task } from '@mindough/core';
 
-export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind' | 'group';
+export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind' | 'group' | 'color';
 
 /** 固定顺序：先说「是什么、和什么有关、怎么算完成」，再说「什么时候」，最后「放哪」。 */
-export const PROP_ORDER: readonly PropId[] = ['category', 'refs', 'mode', 'date', 'repeat', 'remind', 'group'];
+export const PROP_ORDER: readonly PropId[] = ['category', 'refs', 'mode', 'date', 'repeat', 'remind', 'group', 'color'];
 
-export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurrence' | 'category_id' | 'remind_time' | 'group_id' | 'target_date'>;
+export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurrence' | 'category_id' | 'remind_time' | 'group_id' | 'target_date' | 'card_color'>;
 
 /** 挂了几个类型、几条资料（含人物）。不给类型数时看单值 category_id。 */
 export interface PropCounts {
@@ -32,6 +33,8 @@ export function applicableProps(t: PropTask): PropId[] {
   return PROP_ORDER.filter((id) => {
     if (id === 'date') return !t.recurrence;
     if (id === 'remind') return canRemind(t) || !!t.remind_time;
+    // 卡片颜色只有倒数日有（倒数日页是卡片）
+    if (id === 'color') return t.completion_mode === 'countdown';
     return true;
   });
 }
@@ -53,6 +56,8 @@ export function isPropSet(id: PropId, t: PropTask, counts: PropCounts = {}): boo
       return !!t.remind_time;
     case 'group':
       return !!t.group_id;
+    case 'color':
+      return !!cardColorOf(t);
   }
 }
 
@@ -81,6 +86,8 @@ export function clearPatch(id: PropId): Partial<Task> | null {
       return { remind_time: null };
     case 'group':
       return { group_id: null };
+    case 'color':
+      return { card_color: null };
     case 'category':
     case 'refs':
       return null;

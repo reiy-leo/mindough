@@ -289,6 +289,9 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
       items: itemsOf(t).length > 1 ? listOf(itemsOf(t), (id) => store.get('library_item', id)?.name ?? '') : undefined,
       remind: t.remind_time ? new Quoted(t.remind_time) : undefined,
       time_zone: t.time_zone ?? undefined,
+      // 打卡归档、倒数日卡片颜色（Rei 2026-11-02，v15）：没有就不写
+      archived: t.archived_at ?? undefined,
+      card_color: t.card_color ?? undefined,
       sort: t.sort,
       people: listOf(peopleOf.get(t.id), (id) => store.get('person', id)?.name ?? ''),
       after: listOf(

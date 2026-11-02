@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarCheck2, Flame, Plus, Timer } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, Flame, PanelRight, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
   dueToday,
+  entriesFor,
   formatRecurrence,
   isFinished,
   parseRecurrence,
@@ -17,7 +18,9 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY, openCategoryPage } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
-import { Button, ChipPicker, Empty, Section, Segmented, TipButton } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { habitMenu } from '../lib/task-menu';
+import { archiveHabit, toggleMyDay } from '../lib/actions';
 import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
 import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
@@ -40,7 +43,42 @@ export function CheckInsPage() {
 
   const [cat, setCat] = useState<string>('all');
   const [arrange, setArrange] = useState<'today' | 'category'>('today');
-  const allRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
+  // 归档了的（Rei 2026-11-02「打卡任务可以归档」）不在主列表里，放在最下面折叠的「已归档」一节
+  const liveRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
+  const allRecurring = liveRecurring.filter((t) => !t.archived_at);
+  const allArchived = liveRecurring.filter((t) => !!t.archived_at).sort((a, b) => (b.archived_at! < a.archived_at! ? -1 : 1));
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  // 行的右键 / 长按菜单：整页一个，记下是哪一行
+  const menu = useContextMenuAt();
+  const menuTask = useRef<string | null>(null);
+  const bindMenu = (id: string) => ({
+    ...menu.props,
+    onContextMenu: (e: ReactMouseEvent<HTMLElement>) => {
+      menuTask.current = id;
+      menu.props.onContextMenu(e);
+    },
+    onPointerDownCapture: (e: ReactPointerEvent<HTMLElement>) => {
+      menuTask.current = id;
+      menu.props.onPointerDownCapture(e);
+    },
+  });
+  const dayIds = new Set(entriesFor(store.list('my_day'), today).map((e) => e.task_id));
+  const menuItems = (): MenuAction[] => {
+    const id = menuTask.current;
+    const t = id ? store.get('task', id) : undefined;
+    if (!t) return [];
+    const inDay = dayIds.has(t.id);
+    const icon = { open: <PanelRight size={16} />, myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} /> };
+    return habitMenu(!!t.archived_at, inDay).map((e) => ({
+      ...e,
+      icon: icon[e.id],
+      onAction: () => {
+        if (e.id === 'open') ui.openEditor(t.id);
+        else if (e.id === 'myday') toggleMyDay(store, ui, t.id);
+        else archiveHabit(store, ui, t.id, e.id === 'archive');
+      },
+    }));
+  };
   // 类型（Rei 2026-10-26：和项目、倒数日共用一套）：顺着合并找到留下的那个
   const catOf = (t: Task) => store.categoryOf(t);
   // 一件任务能挂几个类型（Rei 2026-10-28）：筛选看挂没挂这个类型；按类型分组时放在第一个类型下面（不重复出现）
@@ -48,7 +86,9 @@ export function CheckInsPage() {
   // 筛选标签：只列出有重复任务挂着的类型（按类型顺序，不显示的也算，挂着就列），有没类型的再加一个“没有类型”
   const usedCats = store.categories(true).filter((c) => allRecurring.some((t) => hasCat(t, c.id)));
   const hasUncategorized = allRecurring.some((t) => !catOf(t));
-  const recurring = cat === 'all' ? allRecurring : allRecurring.filter((t) => (cat === NO_CATEGORY ? !catOf(t) : hasCat(t, cat)));
+  const byCat = (list: Task[]) => (cat === 'all' ? list : list.filter((t) => (cat === NO_CATEGORY ? !catOf(t) : hasCat(t, cat))));
+  const recurring = byCat(allRecurring);
+  const archived = byCat(allArchived);
   const dueNow = recurring.filter((t) => dueToday(t, today));
   const others = recurring.filter((t) => !dueToday(t, today));
   const metToday = dueNow.filter((t) => store.progress(t.id, today)?.met).length;
@@ -64,7 +104,7 @@ export function CheckInsPage() {
     const open = isHeatmapOpen(settings.habitHeatmapOpen, t.id);
     const heatId = `habit-heat-${t.id}`;
     return (
-      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}`} data-task-id={t.id}>
+      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} {...bindMenu(t.id)}>
         {/* 左上角圆点：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
         <TipButton
           tip={open ? tr('隐藏活动图') : tr('显示活动图')}
@@ -75,7 +115,14 @@ export function CheckInsPage() {
         >
           <span className="habit-heat-dot-mark" style={color ? ({ '--heat-color-local': color } as CSSProperties) : undefined} aria-hidden />
         </TipButton>
-        <RacButton className="habit-main" aria-current={ui.editingId === t.id ? 'true' : undefined} onPress={() => ui.openEditor(t.id)}>
+        <RacButton
+          className="habit-main"
+          aria-current={ui.editingId === t.id ? 'true' : undefined}
+          onPress={() => {
+            if (menu.consumeLongPress()) return;
+            ui.openEditor(t.id);
+          }}
+        >
           <span className="habit-title">{title(t)}</span>
           <span className="habit-meta">
             {arrange !== 'category' && catOf(t) && <CategoryLabels cats={store.categoriesOfTask(t)} size={12} />}
@@ -89,7 +136,14 @@ export function CheckInsPage() {
           </span>
         </RacButton>
         <div className="habit-action">
-          <CheckInControl store={store} task={t} compact={layout === 'mobile'} />
+          {t.archived_at ? (
+            <RacButton className="btn btn-quiet habit-unarchive" onPress={() => archiveHabit(store, ui, t.id, false)}>
+              <ArchiveRestore size={15} aria-hidden />
+              {tr('取消归档')}
+            </RacButton>
+          ) : (
+            <CheckInControl store={store} task={t} compact={layout === 'mobile'} />
+          )}
         </div>
         {open && (
           <div className="habit-heat">
@@ -194,6 +248,23 @@ export function CheckInsPage() {
       )}
         </>
       )}
+
+      {archived.length > 0 && (
+        <section className={`section habit-archived${archivedOpen ? ' is-open' : ''}`}>
+          <RacButton className="habit-archived-toggle" aria-expanded={archivedOpen} aria-controls="habit-archived-list" onPress={() => setArchivedOpen((o) => !o)}>
+            <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
+            <Archive size={15} aria-hidden />
+            <span className="section-title">{tr('已归档')}</span>
+            <span className="muted small">{tr('{length} 项', { length: archived.length })}</span>
+          </RacButton>
+          {archivedOpen && (
+            <div id="habit-archived-list" className="habit-list">
+              {archived.map(row)}
+            </div>
+          )}
+        </section>
+      )}
+      <MenuAt at={menu.at} label={tr('打卡操作')} items={menu.at ? menuItems() : []} onClose={menu.close} />
     </div>
   );
 }

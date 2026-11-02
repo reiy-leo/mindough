@@ -38,6 +38,8 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     time_zone: 'text?',
     refs_mirror: 'text?',
     done_at: 'text?',
+    archived_at: 'text?',
+    card_color: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -315,6 +317,15 @@ CREATE INDEX IF NOT EXISTS "journal_post_day" ON "journal_post" ("day");
     name: '项目的「出现在我的一天」开关（group.my_day_auto）',
     sql: `
 ALTER TABLE "group" ADD COLUMN "my_day_auto" INTEGER NOT NULL DEFAULT 1;
+`,
+  },
+  {
+    // Rei 2026-11-02：打卡任务可以归档（task.archived_at）；倒数日卡片可以选背景色（task.card_color）。两列都可空，老行是空。
+    version: 15,
+    name: '打卡归档（task.archived_at）、倒数日卡片颜色（task.card_color）',
+    sql: `
+ALTER TABLE "task" ADD COLUMN "archived_at" TEXT;
+ALTER TABLE "task" ADD COLUMN "card_color" TEXT;
 `,
   },
 ];

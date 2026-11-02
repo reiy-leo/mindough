@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type TouchEvent, type ReactNode, type RefObject } from 'react';
 import { Autocomplete, Button as RacButton, Disclosure, DisclosurePanel, Heading, Input, ListBox, ListBoxItem, SearchField, useFilter } from 'react-aria-components';
-import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Link2, ListPlus, Pause, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
 import {
   PLAIN_TYPE_ID,
   countdownPhrase,
@@ -36,7 +36,7 @@ import { useNow, useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
 import { useDateDisplay } from '../../lib/date-display';
-import { announceComplete, closeTask, toggleMyDay, tryAddDependency, tryLinkTasks } from '../../lib/actions';
+import { announceComplete, archiveHabit, closeTask, toggleMyDay, tryAddDependency, tryLinkTasks } from '../../lib/actions';
 import { TaskSearch, taskStateText } from './TaskSearch';
 import { imageUrl, titleOf } from '../../lib/view';
 import { typeIcon } from '../../lib/icons';
@@ -836,11 +836,17 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
         <CircleSlash size={12} />
         {tr('已关闭')}</span>
     );
+  else if (task.recurrence && task.archived_at)
+    badge = (
+      <span className="status-badge is-closed">
+        <Archive size={12} />
+        {tr('已归档')}</span>
+    );
   else if (derived?.state === '被阻塞') badge = <span className="status-badge is-blocked">{tr('还在等 {length} 件事', { length: derived.missing.length })}</span>;
   else if (task.status === '进行中') badge = <span className="status-badge is-active">{tr('进行中')}</span>;
 
   // 「关闭」在这里，不在底部（Rei 2026-10-17）；顺序和分隔见 lib/task-menu.ts
-  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, delete: <Trash2 size={16} /> };
+  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };
   const MENU_DO: Record<DetailMenuId, () => void> = {
     myday: () => toggleMyDay(store, ui, task.id),
     done: complete,
@@ -852,6 +858,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
       store.reopenTask(task.id);
       ui.toast({ message: tr('已重新打开') }, 2500);
     },
+    archive: () => archiveHabit(store, ui, task.id, true),
+    unarchive: () => archiveHabit(store, ui, task.id, false),
     delete: () => setConfirmDelete(true),
   };
   const menu: MenuAction[] = detailMenu(task, inDay).map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));

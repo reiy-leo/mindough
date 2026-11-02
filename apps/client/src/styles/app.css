@@ -3674,13 +3674,6 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   max-width: none;
   justify-content: flex-start;
 }
-.icon-search {
-  margin-bottom: var(--space-2);
-}
-.icon-none {
-  grid-column: 1 / -1;
-  margin: var(--space-2) 0;
-}
 .types-page .types-list {
   max-height: none;
 }
@@ -3714,4 +3707,133 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   color: var(--text-3);
   word-break: break-word;
   user-select: text;
+}
+
+/* 倒数日卡片：右键 / 长按 / ··· 菜单（2026-11-02），和项目卡片一样 */
+.countdown-card-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.countdown-card-wrap > .countdown-card {
+  width: 100%;
+  height: 100%;
+}
+.countdown-card-wrap .countdown-title {
+  padding-right: 28px;
+}
+.countdown-card-more.icon-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+.countdown-card-wrap:hover .countdown-card-more,
+.countdown-card-wrap:focus-within .countdown-card-more,
+.countdown-card-more[aria-expanded='true'] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .countdown-card-more.icon-btn {
+    opacity: 1;
+  }
+}
+[data-layout='mobile'] .countdown-card-more.icon-btn {
+  opacity: 1;
+}
+.countdown-card-wrap.has-color .countdown-card-more {
+  color: var(--cd-fg);
+}
+
+/* 卡片颜色选择：一排圆点，第一个是默认 */
+.cd-colors {
+  display: grid;
+  grid-template-columns: repeat(6, 32px);
+  gap: 8px;
+}
+.cd-color {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cd-swatch);
+  color: var(--cd-swatch-fg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  cursor: pointer;
+  outline: none;
+}
+.cd-color.is-default {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.cd-color.is-default::after {
+  content: '';
+  width: 60%;
+  height: 1.5px;
+  background: var(--text-3);
+  transform: rotate(-45deg);
+  grid-area: 1 / 1;
+}
+.cd-color.is-default[data-selected]::after {
+  display: none;
+}
+.cd-color[data-selected] {
+  box-shadow: 0 0 0 2px var(--surface-2), 0 0 0 4px var(--accent);
+}
+.cd-color[data-focus-visible] {
+  box-shadow: var(--focus);
+}
+.pchip-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cd-swatch, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+/* 打卡页最下面折叠的「已归档」（2026-11-02） */
+.habit-archived-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  outline: none;
+}
+.habit-archived-toggle[data-hovered] {
+  background: var(--surface-hover);
+}
+.habit-archived-toggle[data-focus-visible] {
+  box-shadow: var(--focus);
+}
+.habit-archived-toggle .section-title {
+  margin: 0;
+}
+.habit-archived-chevron {
+  transition: transform 0.15s var(--ease);
+}
+.habit-archived.is-open .habit-archived-chevron {
+  transform: rotate(90deg);
+}
+.habit-archived .habit-list {
+  margin-top: var(--space-2);
+}
+.habit-row.is-archived .habit-title {
+  color: var(--text-2);
+}
+.btn.habit-unarchive {
+  gap: 4px;
+  font-size: 13px;
+  white-space: nowrap;
 }

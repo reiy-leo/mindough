@@ -1484,3 +1484,89 @@ html[data-layout='mobile'][data-skin='material'] .date-panel.has-lunar .calendar
   width: 100%;
   height: 50px;
 }
+
+/* ═════════════ 图标选择（2026-11-02 重做，三种皮肤各自的格子） ═════════════ */
+/* Apple：像 SF Symbols / 提醒事项的图标选择——圆角 8，悬停浅灰填充，选中是系统强调色实心 + 白色图标 */
+[data-skin='apple'] .icon-picker {
+  --icon-cell-r: 8px;
+}
+[data-skin='apple'] .icon-cell:not(.icon-emoji) {
+  background: var(--surface-3);
+}
+[data-skin='apple'] .icon-cell[data-hovered]:not(.is-selected) {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+[data-skin='apple'] .icon-group-title {
+  font-weight: 600;
+  text-transform: none;
+}
+/* WinUI 3：像 GridView——圆角 4，悬停 subtle fill，选中是浅强调色底 + 2px 强调色描边，图标仍是正文色 */
+[data-skin='winui'] .icon-picker {
+  --icon-cell-r: 4px;
+  --icon-gap: 4px;
+}
+[data-skin='winui'] .icon-cell.is-selected,
+[data-skin='winui'] .icon-cell.is-selected[data-hovered] {
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+[data-skin='winui'] .icon-cell.is-selected[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent), var(--focus);
+}
+[data-skin='winui'] .icon-emoji {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+}
+/* Material 3：圆角 12，state layer（悬停 8%、按下 12% 的正文色），选中是 tonal 的 secondaryContainer */
+[data-skin='material'] .icon-picker {
+  --icon-cell: 40px;
+  --icon-cell-r: 12px;
+}
+[data-skin='material'] .icon-cell[data-hovered] {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+[data-skin='material'] .icon-cell[data-pressed] {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+[data-skin='material'] .icon-cell.is-selected,
+[data-skin='material'] .icon-cell.is-selected[data-hovered] {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+[data-skin='material'] .icon-cell.is-selected[data-hovered] {
+  background: color-mix(in srgb, var(--accent-soft-text) 8%, var(--accent-soft));
+}
+[data-skin='material'] .icon-group-title {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+/* ═════════════ 倒数日卡片颜色（2026-11-02） ═════════════ */
+/* 选了颜色的卡片：底色、字色来自 lib/card-colors.ts（--cd-*，字色已按对比度挑好）；形状仍按各皮肤的 .card */
+.countdown-card.has-color {
+  background: var(--cd-bg);
+  border-color: var(--cd-border);
+  color: var(--cd-fg);
+}
+.countdown-card.has-color .countdown-num,
+.countdown-card.has-color .countdown-date {
+  color: var(--cd-fg2);
+}
+.countdown-card.has-color .countdown-num b {
+  color: var(--cd-fg);
+}
+/* Apple：彩色卡片不要阴影描边，像小组件 */
+[data-skin='apple'] .countdown-card.has-color {
+  border-color: transparent;
+}
+/* WinUI：彩色卡片保留 1px 描边（Card 的样子），悬停不变色 */
+[data-skin='winui'] .countdown-card.has-color {
+  border-color: var(--cd-border);
+}
+/* Material 3：filled card，没有描边 */
+[data-skin='material'] .countdown-card.has-color {
+  border: 0;
+}

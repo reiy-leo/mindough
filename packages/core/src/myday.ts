@@ -65,7 +65,7 @@ export function yesterdayUnfinished(
   for (const e of entriesFor(entries, yesterday)) {
     if (todayIds.has(e.task_id)) continue;
     const t = tasksById.get(e.task_id);
-    if (!t || t.deleted) continue;
+    if (!t || t.deleted || t.archived_at) continue;
     // 重复任务看的是昨天那个周期；普通任务看现在的状态
     if (t.recurrence ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
   }
@@ -115,7 +115,8 @@ export function dueTodayCandidates({ tasks, checkIns, derived, recentlyUnlocked,
     seen.add(task.id);
     out.push({ task, reason });
   };
-  const live = tasks.filter((t) => !t.deleted && !isFinished(t.status));
+  // 归档了的打卡不进建议，也不自动加进我的一天（Rei 2026-11-02）
+  const live = tasks.filter((t) => !t.deleted && !isFinished(t.status) && !t.archived_at);
   // 到期按任务时区的今天（Rei 2026-10-25 任务时区；没设时区就是 today）
   // 日期段（Rei 2026-10-26）：今天落在段里、还没到结束日的是「这几天要做」；到了结束日或过了才算「今天到期」
   for (const t of live) {

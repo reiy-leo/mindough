@@ -2,6 +2,7 @@ import {
   BookOpen,
   Clapperboard,
   FileText,
+  Folder,
   FolderGit2,
   Gamepad2,
   GraduationCap,
@@ -69,6 +70,7 @@ export const TYPE_ICONS: Record<string, LucideIcon> = {
   clapperboard: Clapperboard,
   'gamepad-2': Gamepad2,
   'book-open': BookOpen,
+  folder: Folder,
   'folder-git-2': FolderGit2,
   'graduation-cap': GraduationCap,
   plane: Plane,
@@ -152,13 +154,19 @@ export function typeIcon(name: string | undefined): IconComponent {
   return (name && TYPE_ICONS[name]) || FileText;
 }
 
-/** 图标选择里给的 lucide 图标（按用途排）。 */
-export const PICKER_ICONS = [
-  'star', 'heart', 'bookmark', 'flag', 'tag', 'sparkles', 'lightbulb', 'trophy',
-  'clapperboard', 'film', 'tv', 'music', 'mic', 'headphones', 'gamepad-2', 'camera',
-  'book-open', 'notebook-pen', 'pen-line', 'graduation-cap', 'languages', 'code', 'folder-git-2', 'briefcase',
-  'plane', 'map-pin', 'globe', 'mountain', 'car', 'bike', 'home', 'calendar',
-  'utensils', 'salad', 'coffee', 'wine', 'shopping-bag', 'shopping-cart', 'gift', 'wallet',
-  'dumbbell', 'heart-pulse', 'pill', 'leaf', 'sprout', 'flower-2', 'paw-print', 'baby',
-  'palette', 'guitar', 'scissors', 'wrench', 'spray-can', 'archive', 'users', 'party-popper',
+/**
+ * 图标选择里给的 lucide 图标，按用途分组（Rei 2026-11-02「项目弹窗中的这个图标部分也太难看了吧」：分组带小标题）。
+ * 组名在界面上用 tr()，见 TypeManager 的 IconPicker。folder 是新建项目的默认图标，放在「常用」第一个。
+ */
+export const PICKER_GROUPS = [
+  { id: 'common', icons: ['folder', 'star', 'heart', 'bookmark', 'flag', 'tag', 'sparkles', 'lightbulb', 'trophy'] },
+  { id: 'fun', icons: ['clapperboard', 'film', 'tv', 'music', 'mic', 'headphones', 'gamepad-2', 'camera', 'palette', 'guitar', 'party-popper'] },
+  { id: 'work', icons: ['book-open', 'notebook-pen', 'pen-line', 'graduation-cap', 'languages', 'code', 'folder-git-2', 'briefcase', 'calendar'] },
+  { id: 'travel', icons: ['plane', 'map-pin', 'globe', 'mountain', 'car', 'bike'] },
+  { id: 'life', icons: ['home', 'utensils', 'salad', 'coffee', 'wine', 'shopping-bag', 'shopping-cart', 'gift', 'wallet', 'users', 'scissors', 'spray-can'] },
+  { id: 'health', icons: ['dumbbell', 'heart-pulse', 'pill', 'leaf', 'sprout', 'flower-2', 'paw-print', 'baby'] },
+  { id: 'other', icons: ['wrench', 'archive'] },
 ] as const;
+
+/** 图标选择里的全部图标（按分组的顺序摊平）。 */
+export const PICKER_ICONS: readonly string[] = PICKER_GROUPS.flatMap((g) => g.icons);

@@ -73,6 +73,9 @@
 | 今天 / 计划 / 持续 / 管理 | 资料（2026-10-26 18:02 以前的叫法） | 侧边栏和「更多」的小节标题：今天（我的一天、待安排、可做）、计划（时间轴、项目、放进侧边栏的项目）、持续（打卡、倒数日、日记）、管理（资料库、放进侧边栏的库、类型）（Rei 2026-10-26 加「持续」；同一天「资料」改叫「管理」、加「类型」，18:54 删掉「人物」入口）。代码里是 `trc('导航', '持续')`、`trc('导航', '管理')`，英文 Manage |
 | 在侧边栏显示 / 取消在侧边栏显示 | 固定到侧边栏 / 置顶 / 收藏 | Rei 2026-10-26 原话就是这两个说法。资料库页标签条末尾 ··· 菜单（读屏名「资料库操作」）、库标签右键 / 长按菜单、侧栏里那一项的右键菜单；设置 → 任务 → 编辑资料库列表每行的侧栏按钮（读屏名同样随状态变，亮着用强调色）。项目也用这两个说法（Rei 2026-10-28）：项目页右上角 ··· 菜单、项目卡片右键 / 长按菜单（读屏名都是「项目操作」，英文 Project Actions）、侧栏里那一项的右键菜单。英文 Show in Sidebar / Hide from Sidebar |
 | 倒数日（导航 / 页面） | 纪念日 / 倒计时 | 页面名，侧边栏「持续」里；页头按钮「新建倒数日」；空状态「还没有倒数日」+「考试、纪念日、出发那天，记下来看看还有几天。」 |
+| 归档 / 取消归档 / 已归档（打卡） | 隐藏 / 暂停 / 收起来 / 停用 | Rei 2026-11-02「打卡任务可以归档」。详情 ··· 菜单里排在「不再打卡」后面；打卡页行的右键 / 长按菜单（读屏名「打卡操作」）：查看详情 ｜ 加入 / 移出我的一天 ｜ 归档，归档了的是 查看详情 ｜ 取消归档。打卡页最下面折叠的一节叫「已归档」+「N 项」，行尾按钮「取消归档」；详情状态徽章「已归档」。提示「已归档「X」，在打卡页最下面「已归档」里」（带撤销）/「已取消归档「X」」。别和「不再打卡」混用：不再打卡 = 结束这件事，归档 = 先收起来 |
+| 卡片颜色 / 颜色… / 默认 | 背景色 / 主题色 / 卡片背景 | 倒数日卡片（Rei 2026-11-02）。卡片菜单（读屏名「倒数日操作」）：查看详情 ｜ 颜色…；详情胶囊和弹层标题叫「卡片颜色」。颜色名：默认、红、橙、黄、绿、青、蓝、靛、紫、粉、棕、灰（读屏用） |
+| 图标分组：常用 / 娱乐 / 学习工作 / 出行 / 生活 / 健康 / 其它 | 推荐 / 最近 / 杂项 | 图标选择的小标题（2026-11-02）。emoji 小格读屏名「用一个 emoji」；搜不到「没有对得上的图标」+「换个词试试，或者在右上角打一个 emoji」；没有搜索框时旁边写「点下面的图标，或者在左边这格打一个 emoji」。「或者用一个 emoji，如 🎙️」「用这个」两句删了 |
 | 删除… | 删除（直接执行） | 放进 ··· 菜单，要确认：「删除这件任务？」「「X」会被删除，它和别的任务之间的关系也一起去掉。删除后不能恢复。」 |
 | 不选 | 未选 | 下拉里的空选项 |
 | 未安排 | 无日期 | 日期为空 |
@@ -184,6 +187,9 @@
 | 打卡（导航 / 页面） | Check-ins | 按钮上的「打卡」是 Check In |
 | 持续（导航小节） | Ongoing | 打卡、倒数日、日记这一节（2026-10-26） |
 | 倒数日（导航 / 页面） | Countdown | 「新建倒数日」= New Countdown；空状态 No countdowns yet |
+| 归档 / 取消归档 / 已归档（打卡） | Archive / Unarchive / Archived | 行菜单读屏 Check-in actions；提示 Archived “X”. Find it under Archived at the bottom of Check-ins. / Unarchived “X” |
+| 卡片颜色 / 颜色… | Card Color / Color… | 颜色名 Default, Red, Orange, Yellow, Green, Teal, Blue, Indigo, Purple, Pink, Brown, Gray；卡片菜单读屏 Countdown actions |
+| 图标分组 | Frequently Used / Entertainment / Study & Work / Travel / Life / Health / Other | emoji 小格 Use an emoji；No matching icons |
 | 可做 | Available | 前置都做完、现在就能开始 |
 | 时间轴（导航 / 页面） | Timeline | 侧栏「计划 → 时间轴」（2026-11-02 前叫「列表」）。项目页视图里也有「时间轴」（甘特图），英文同样是 Timeline；项目里的视图「列表」还是 List |
 | 项目 | Projects / Project | 导航复数，属性单数（2026-10-25 由 Groups / Group 改来）；「不放进项目」= No Project；「新建项目」= New Project；项目面板的开关「出现在我的一天」= Show in My Day |
@@ -255,6 +261,8 @@ Rei 2026-10-25：「支持西、葡、俄、日、德、法、印尼」。设置
 | 先做完这些 / 做完后解锁 | Do These First / Unlocks Next | Antes, haz esto / Desbloquea después | Faça antes / Libera em seguida | Сначала это / Откроет доступ | 先にやること / 完了すると着手可能 | Zuerst erledigen / Danach möglich | À faire avant / Débloque ensuite | Kerjakan Dulu / Membuka Berikutnya |
 | 任务链 | Task Chain | Cadena de tareas | Cadeia de tarefas | Цепочка задач | タスクチェーン | Aufgabenkette | Chaîne de tâches | Rantai Tugas |
 | 倒数日 | Countdown | Cuenta atrás | Contagem regressiva | Обратный отсчёт | カウントダウン | Countdown | Compte à rebours | Hitung mundur |
+| 归档（打卡，2026-11-02，待母语者看） | Archive | Archivar | Arquivar | В архив | アーカイブ | Archivieren | Archiver | Arsipkan |
+| 卡片颜色（2026-11-02，待母语者看） | Card Color | Color de la tarjeta | Cor do cartão | Цвет карточки | カードの色 | Kartenfarbe | Couleur de la carte | Warna kartu |
 | 提醒 | Reminder | Recordatorio | Lembrete | Напоминание | リマインダー | Erinnerung | Rappel | Pengingat |
 | 附件 | Attachments | Adjuntos | Anexos | Вложения | 添付ファイル | Anhänge | Pièces jointes | Lampiran |
 | 附件（「+」菜单那一项） | Attachment | Adjunto | Anexo | Вложение | 添付ファイル | Anhang | Pièce jointe | Lampiran |
