@@ -12,7 +12,6 @@
  * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6），不多占别的键。
  */
 import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, type AnyExtension } from '@tiptap/core';
-import { imeEnter } from '../../lib/ime';
 import { Document } from '@tiptap/extension-document';
 import { Paragraph } from '@tiptap/extension-paragraph';
 import { Text } from '@tiptap/extension-text';
@@ -702,12 +701,9 @@ function markdownClipboard(opts: BehaviorOptions) {
   });
 }
 
-/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。 */
-/** 输入法选词的那次回车：判断放在 lib/ime.ts（搜索框也用），这里转出去给老的引用。 */
-export { imeEnter };
-
+/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。
+ * 中文输入法选词的回车、组字时 WebKit 删掉清单项的毛病在 ime-guard.ts（优先级更高，先过它）。 */
 export function behaviorExtension(opts: BehaviorOptions) {
-  let lastCompositionEnd = 0;
   return Extension.create({
     name: 'mindoughBehavior',
     priority: 1000,
@@ -723,15 +719,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
               if (doc.childCount !== 1 || !first || !first.isTextblock || first.content.size > 0) return null;
               return DecorationSet.create(doc, [Decoration.node(0, first.nodeSize, { class: 'md-placeholder', 'data-placeholder': opts.placeholder() })]);
             },
-            handleDOMEvents: {
-              compositionend() {
-                lastCompositionEnd = Date.now();
-                return false;
-              },
-            },
             handleKeyDown(view, event) {
-              // 中文输入法用回车选词：这次回车只是上屏，不能拆出下一条清单 / 列表项（Rei 2026-11-02）
-              if (imeEnter(event, lastCompositionEnd)) return true;
               if (event.key === 'Tab') return handleTab(view, event);
               if (event.key === 'Escape' && opts.onEscape) {
                 event.preventDefault();

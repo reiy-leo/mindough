@@ -21,7 +21,7 @@ import { CategoryBadge, CategoryList, categoryGroupLabel, categoryStateLabel, ca
 import { ColorPicker, IconPicker } from '../components/TypeManager';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
-import { typingKey } from '../lib/ime';
+import { imeBusy, typingKey } from '../lib/ime';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
 
@@ -144,7 +144,7 @@ function CategoryHead({ c }: { c: Category }) {
           </div>
         </PopoverPanel>
         <TextField aria-label={tr('「{name}」的名字', { name: shown })} value={name} onChange={setName} className="cat-head-name">
-          <Input className="input" onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+          <Input className="input" onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && (e.target as HTMLInputElement).blur()} />
         </TextField>
       </div>
       {note && (

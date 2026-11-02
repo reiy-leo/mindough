@@ -13,6 +13,7 @@ import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { useNow, useStore } from '../store/StoreProvider';
 import { tr } from '../lib/i18n';
+import { imeBusy } from '../lib/ime';
 
 export function LunarSection() {
   // 不是中文界面：整节不显示（开关之前打开过也不显示，农历界面一律隐藏）
@@ -87,7 +88,7 @@ function LunarSectionInner() {
               onChange={(e) => setDraft(e.target.value)}
               onBlur={() => !invalid && saveUrl(draft)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                if (e.key === 'Enter' && !imeBusy(e.nativeEvent)) {
                   e.preventDefault();
                   if (!invalid) saveUrl(draft);
                 }

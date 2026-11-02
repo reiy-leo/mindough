@@ -16,7 +16,7 @@ import { createMarkdownIO, sameMarkdown, type MarkdownIO } from './markdown';
 import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type LinkRange } from './extensions';
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
-
+import { imeGuardExtension } from './ime-guard';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
 export { finishMarkdown, prepareMarkdown, sameMarkdown } from './markdown';
 
@@ -212,6 +212,7 @@ export class MdController {
     const io = () => markdownIO(this.editor?.schema ?? baseSchema());
     const extensions: AnyExtension[] = [
       ...schemaExtensions(),
+      imeGuardExtension(),
       behaviorExtension({
         placeholder: () => this.get().placeholder,
         onEscape: () => this.get().onEscape?.(),

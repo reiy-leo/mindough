@@ -32,18 +32,18 @@
   pointer-events: none;
 }
 
-/* 清单：勾画在 ::before 上（点它切换，见 extensions.ts taskToggle）。Apple 圆形、WinUI / Material 圆角方形 */
+/* 清单：勾画在 ::before 上（点它切换，见 extensions.ts taskToggle）。Apple 圆形、WinUI / Material 圆角方形。
+ * 勾用浮动挂在左边的留白里，li 不能 position: relative：WebKit 选词上屏时会把删空了的 relative 节点整个删掉，空清单项一打中文就变成另起一行（见 editor/ime-guard.ts）。 */
 .md-editor-content li[data-item-type='task'] {
   list-style: none;
-  position: relative;
   margin-left: -20px;
   padding-left: 26px;
 }
 .md-editor-content li[data-item-type='task']::before {
   content: '';
-  position: absolute;
-  left: 2px;
-  top: 0.32em;
+  float: left;
+  margin-left: -24px;
+  margin-top: 0.32em;
   width: 16px;
   height: 16px;
   box-sizing: border-box;
@@ -68,6 +68,11 @@
 }
 .md-editor-content li > p {
   margin: 2px 0;
+}
+
+/* 组字期间光标处的空 span（ime-guard.ts），不占位置 */
+.ProseMirror-ime-span {
+  display: inline;
 }
 
 /* 表格：可以在格子里直接改 */

@@ -76,6 +76,7 @@ import { layoutShape } from './library/Library';
 import { sidebarToggleLabel } from '../lib/library-sidebar';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
+import { imeBusy } from '../lib/ime';
 
 const KIND_ICON: Record<FieldKind, LucideIcon> = {
   text: TypeGlyph,
@@ -312,7 +313,7 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
           )}
         </PopoverPanel>
         <TextField aria-label={tr('资料库名字')} value={name.value} onChange={name.setValue} className="type-name-field">
-          <Input className="input type-name-input" placeholder={tr('资料库名字')} onBlur={name.commit} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+          <Input className="input type-name-input" placeholder={tr('资料库名字')} onBlur={name.commit} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && (e.target as HTMLInputElement).blur()} />
         </TextField>
       </div>
 
@@ -461,7 +462,7 @@ function FieldList({ type }: { type: TaskType }) {
       <div className="field-row field-row-add">
         <Plus size={16} className="field-row-kind" aria-hidden />
         <TextField aria-label={tr('新字段的名字')} value={label} onChange={setLabel} className="field-row-name">
-          <Input className="input" placeholder={tr('新字段')} onKeyDown={(e) => e.key === 'Enter' && add()} />
+          <Input className="input" placeholder={tr('新字段')} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && add()} />
         </TextField>
         <Select
           label={tr('种类')}
@@ -491,7 +492,7 @@ function FieldRow({ type, f, index, count }: { type: TaskType; f: FieldDef; inde
       </RacButton>
       <KIcon size={16} className="field-row-kind" aria-hidden />
       <TextField aria-label={tr('「{name}」的名字', { name: shown })} value={name.value} onChange={name.setValue} className="field-row-name">
-        <Input className="input" onBlur={name.commit} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+        <Input className="input" onBlur={name.commit} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && (e.target as HTMLInputElement).blur()} />
       </TextField>
       <span className="field-row-meta">
         {FIELD_KIND_LABEL[f.kind] !== shown && FIELD_KIND_LABEL[f.kind]}
@@ -621,7 +622,7 @@ function OptionsEditor({ type, f }: { type: TaskType; f: FieldDef }) {
         ))}
         <li className="option-row">
           <TextField aria-label={tr('新选项')} value={draft} onChange={setDraft} className="option-name">
-            <Input className="input" placeholder={tr('加一个选项')} onKeyDown={(e) => e.key === 'Enter' && add()} onBlur={add} />
+            <Input className="input" placeholder={tr('加一个选项')} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && add()} onBlur={add} />
           </TextField>
         </li>
       </ul>
@@ -634,7 +635,7 @@ function OptionRow({ value, onRename, onRemove }: { value: string; onRename: (to
   return (
     <li className="option-row">
       <TextField aria-label={tr('选项「{name}」', { name: dataLabel(value) })} value={c.value} onChange={c.setValue} className="option-name">
-        <Input className="input" onBlur={c.commit} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+        <Input className="input" onBlur={c.commit} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && (e.target as HTMLInputElement).blur()} />
       </TextField>
       <IconButton label={tr('去掉「{name}」', { name: dataLabel(value) })} onPress={onRemove}>
         <X size={14} />

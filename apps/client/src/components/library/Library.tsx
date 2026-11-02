@@ -136,7 +136,7 @@ export function LibraryPicker({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActive((a) => (count ? (a - 1 + count) % count : 0));
-    } else if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.nativeEvent.isComposing) {
+    } else if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !imeBusy(e.nativeEvent)) {
       if (!count) return;
       e.preventDefault();
       choose(active);

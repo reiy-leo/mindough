@@ -17,6 +17,7 @@ import { categoryNames } from './CategoryPicker';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { dataLabel, tr, trc } from '../lib/i18n';
+import { imeBusy } from '../lib/ime';
 
 /** 每个类型挂了多少件任务 + 项目（没删的；顺着合并算到留下的那个）。 */
 export function categoryUsage(store: Store): Map<string, number> {
@@ -174,7 +175,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
       const d = e.key === 'ArrowDown' ? 1 : -1;
       const i = activeIndex < 0 ? (d > 0 ? 0 : rows.length - 1) : Math.min(rows.length - 1, Math.max(0, activeIndex + d));
       setActive(rowId(rows[i]!));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' && !imeBusy(e.nativeEvent)) {
       const r = rows[activeIndex] ?? (term ? rows[0] : undefined);
       if (r) {
         e.preventDefault();

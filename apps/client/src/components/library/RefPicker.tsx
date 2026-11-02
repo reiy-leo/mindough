@@ -162,7 +162,7 @@ function AllLibraries({
             } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               setActive((a) => (results.length ? (a - 1 + results.length) % results.length : 0));
-            } else if (e.key === 'Enter' && !e.nativeEvent.isComposing && results[active]) {
+            } else if (e.key === 'Enter' && !imeBusy(e.nativeEvent) && results[active]) {
               e.preventDefault();
               onPick(results[active]);
             }

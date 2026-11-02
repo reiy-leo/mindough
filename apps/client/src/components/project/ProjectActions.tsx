@@ -15,6 +15,7 @@ import { groupSidebarAction } from '../../lib/library-sidebar';
 import { navigate, useRoute } from '../../lib/router';
 import { useUi } from '../../lib/ui';
 import { tr } from '../../lib/i18n';
+import { imeBusy } from '../../lib/ime';
 
 type Dialog = 'edit' | 'dissolve' | 'delete' | null;
 
@@ -109,7 +110,7 @@ export function ProjectTitle({ store, group }: { store: Store; group: Group }) {
             onFocus={(e) => e.currentTarget.select()}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur();
+              if (e.key === 'Enter' && !imeBusy(e.nativeEvent)) e.currentTarget.blur();
               if (e.key === 'Escape') {
                 e.preventDefault();
                 setDraft(group.name);

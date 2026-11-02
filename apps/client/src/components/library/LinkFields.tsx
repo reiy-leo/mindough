@@ -9,6 +9,7 @@ import { SITES, detectLinkLabel, linksOf, normalizeUrl, type FieldDef, type Fiel
 import { Field, Tip } from '../../ui/primitives';
 
 import { dataLabel, tr } from '../../lib/i18n';
+import { imeBusy } from '../../lib/ime';
 /**
  * 链接打开方式：新标签页（App 里由 lib/external.ts 交给系统浏览器）。
  * 放在卡片、弹层这类自己能点的东西里面：按下和点击都不往外传，免得点链接同时触发外层（打开详情、关弹层）。
@@ -135,7 +136,7 @@ export function LinksInput({ def, value, onChange }: { def: FieldDef; value: Fie
     set(next);
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing && !e.metaKey && !e.ctrlKey) {
+    if (e.key === 'Enter' && !imeBusy(e.nativeEvent) && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
       add(draft);
     }

@@ -11,6 +11,7 @@ import { IconPicker } from '../TypeManager';
 import { GroupIcon } from './GroupIcon';
 import { navigate } from '../../lib/router';
 import { tr } from '../../lib/i18n';
+import { imeBusy } from '../../lib/ime';
 
 /** 新建（不给 group）建好后打开那个项目；编辑（给 group）改名、换图标。 */
 export function ProjectSheet({ store, group, onClose }: { store: Store; group?: Group; onClose: () => void }) {
@@ -54,7 +55,7 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
             <GroupIcon icon={icon} size={24} />
           </span>
           <TextField aria-label={tr('项目名字')} value={name} onChange={setName} autoFocus className="project-edit-name">
-            <Input className="input" placeholder={tr('项目名字')} onKeyDown={(e) => e.key === 'Enter' && save()} />
+            <Input className="input" placeholder={tr('项目名字')} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && save()} />
           </TextField>
         </div>
         <IconPicker value={icon} searchable onChange={setIcon} />
