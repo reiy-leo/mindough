@@ -41,7 +41,7 @@ async function richStore() {
   const s = await open();
   seedDemo(s);
   const asset = s.insert('asset', { sha256: '', mime: 'image/png', width: null, height: null, r2_key: null, url: PNG });
-  const g = s.insert('group', { name: '搬家 / 收拾', icon: '📦', start_at: '2026-10-01', end_at: null, category_id: null, default_type_id: null });
+  const g = s.insert('group', { name: '搬家 / 收拾', icon: '📦', start_at: '2026-10-01', end_at: null, category_id: null, default_type_id: null, my_day_auto: false });
   const p = s.insert('person', { name: '王小明', avatar_asset_id: asset.id, relation: '朋友', birthday: '1990-05-01', note_md: '喜欢**猫**' });
   const a = s.createTask({ body_md: `# 打包书\n\n![封面](${PNG})\n\n- [ ] 第一箱\n- [x] 第二箱\n`, group_id: g.id, remind_time: '08:00', scheduled_date: '2026-10-20' });
   const b = s.createTask({ body_md: '# 打包书', group_id: g.id }); // 同名 → 文件名去重
