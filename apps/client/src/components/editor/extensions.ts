@@ -12,6 +12,7 @@
  * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6），不多占别的键。
  */
 import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, type AnyExtension } from '@tiptap/core';
+import { imeEnter } from '../../lib/ime';
 import { Document } from '@tiptap/extension-document';
 import { Paragraph } from '@tiptap/extension-paragraph';
 import { Text } from '@tiptap/extension-text';
@@ -702,15 +703,8 @@ function markdownClipboard(opts: BehaviorOptions) {
 }
 
 /** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。 */
-/**
- * 输入法选词的那次回车：正在组字（isComposing）、Safari / WebKit 里 keyCode 229，
- * 或者紧跟在 compositionend 后面（WebKit 先发 compositionend 再发回车的 keydown）。
- */
-export function imeEnter(event: Pick<KeyboardEvent, 'key' | 'isComposing' | 'keyCode'>, lastCompositionEnd: number, now = Date.now()): boolean {
-  if (event.key !== 'Enter') return false;
-  if (event.isComposing || event.keyCode === 229) return true;
-  return now - lastCompositionEnd < 100;
-}
+/** 输入法选词的那次回车：判断放在 lib/ime.ts（搜索框也用），这里转出去给老的引用。 */
+export { imeEnter };
 
 export function behaviorExtension(opts: BehaviorOptions) {
   let lastCompositionEnd = 0;

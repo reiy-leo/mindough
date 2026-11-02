@@ -8,6 +8,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Input, SearchField, Button as RacButton } from 'react-aria-components';
+import { useImeQuery } from '../lib/ime';
 import { Search, SmilePlus } from 'lucide-react';
 import { categoryMatches } from '@mindough/core';
 import { PICKER_GROUPS, PICKER_ICONS, isEmojiIcon, typeIcon } from '../lib/icons';
@@ -46,12 +47,13 @@ const GROUP_LABEL: Record<string, () => string> = {
 const groupLabel = (id: string) => (GROUP_LABEL[id] ?? GROUP_LABEL.other!)();
 
 export function IconPicker({ value, onChange, searchable }: { value: string; onChange: (icon: string) => void; searchable?: boolean }) {
-  const [q, setQ] = useState('');
+  // 组字时不拿拼音去搜（Rei 2026-11-02，lib/ime.ts）
+  const ime = useImeQuery();
   const isEmoji = isEmojiIcon(value);
   const [emoji, setEmoji] = useState(isEmoji ? value : '');
   useEffect(() => setEmoji(isEmojiIcon(value) ? value : ''), [value]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const query = q.trim();
+  const query = ime.query.trim();
   const found = query ? PICKER_ICONS.filter((n) => categoryMatches([n.replace(/-\d+$/, '').replace(/-/g, ' '), ...(ICON_KEYWORDS[n] ?? '').split(' ')], query)) : [];
 
   // 打开时把选中的格子滚进可见范围（只滚这一块，不带着外面的弹窗一起滚）
@@ -77,9 +79,9 @@ export function IconPicker({ value, onChange, searchable }: { value: string; onC
     <div className="icon-picker">
       <div className="icon-picker-top">
         {searchable && (
-          <SearchField aria-label={tr('搜索图标')} value={q} onChange={setQ} className="cat-search icon-search">
+          <SearchField aria-label={tr('搜索图标')} value={ime.text} onChange={ime.onChange} className="cat-search icon-search">
             <Search size={14} aria-hidden className="cat-search-icon" />
-            <Input className="input" placeholder={tr('搜图标，比如“书”“运动”')} />
+            <Input className="input" placeholder={tr('搜图标，比如“书”“运动”')} {...ime.handlers} />
           </SearchField>
         )}
         {/* emoji 小格：打进一个 emoji 就用它 */}

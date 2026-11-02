@@ -7,6 +7,7 @@
  *   多选：点一下挂上，再点一下去掉，面板不收起。人物库的「资料」就是人物关联。
  * - RefList：已挂的资料按库分组显示（详情、新建面板共用）：库名一行，下面一条一行，行尾 × 去掉（只解开关联，资料留在库里）。
  */
+import { imeBusy, useImeField } from '../../lib/ime';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button as RacButton, ToggleButton, ToggleButtonGroup } from 'react-aria-components';
 import { Check, Search, X } from 'lucide-react';
@@ -134,6 +135,11 @@ function AllLibraries({
   const all = useMemo(() => libs.flatMap((t) => store.libraryEntries(t.id)), [libs, store, store.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const results = useMemo(() => searchLibrary(all, query, 40), [all, query]);
   const [active, setActive] = useState(0);
+  // 组字时不拿拼音去搜（Rei 2026-11-02，lib/ime.ts）
+  const field = useImeField(query, (v) => {
+    onQueryChange(v);
+    setActive(0);
+  });
   return (
     <div className="lib-picker in-popover">
       <div className="lib-picker-field">
@@ -144,13 +150,12 @@ function AllLibraries({
           aria-expanded
           aria-label={tr('搜所有资料库…')}
           placeholder={tr('搜所有资料库…')}
-          value={query}
+          value={field.value}
           autoFocus
-          onChange={(e) => {
-            onQueryChange(e.target.value);
-            setActive(0);
-          }}
+          onChange={field.onChange}
+          {...field.handlers}
           onKeyDown={(e) => {
+            if (imeBusy(e.nativeEvent) || field.isImeEnter(e.nativeEvent)) return;
             if (e.key === 'ArrowDown') {
               e.preventDefault();
               setActive((a) => (results.length ? (a + 1) % results.length : 0));

@@ -2,6 +2,7 @@
  * 资料库共用件：占位图 / 图片（ItemArt）、选择框（LibraryPicker）、资料编辑（ItemEditor）、
  * 选中的资料卡（ItemCard）、编辑资料弹层（ItemSheet）。文案见 docs/COPY.md「资料库」。
  */
+import { imeBusy, useImeField } from '../../lib/ime';
 import { useEffect, useId, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Check, ImagePlus, Plus, Search, Sparkles } from 'lucide-react';
@@ -120,12 +121,15 @@ export function LibraryPicker({
     listRef.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [active]);
 
+  // 组字时不拿拼音去搜（Rei 2026-11-02，lib/ime.ts）
+  const field = useImeField(query, onQueryChange);
   const choose = (i: number) => {
     if (i < results.length) onPick(results[i]!);
     else if (i >= onlineStart) onPickOnline?.(onlineResults[i - onlineStart]!);
     else if (canCreate) onCreate(q);
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (imeBusy(e.nativeEvent) || field.isImeEnter(e.nativeEvent)) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((a) => (count ? (a + 1) % count : 0));
@@ -155,8 +159,9 @@ export function LibraryPicker({
           aria-activedescendant={count ? optId(active) : undefined}
           aria-label={copy.pick}
           placeholder={copy.pick}
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
+          value={field.value}
+          onChange={field.onChange}
+          {...field.handlers}
           onKeyDown={onKey}
           spellCheck={false}
           autoComplete="off"

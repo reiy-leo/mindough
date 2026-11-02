@@ -44,6 +44,7 @@ import { useAppMenu } from './lib/app-menu';
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
 
 import { appName, tr, trc } from './lib/i18n';
+import { typingKey } from './lib/ime';
 interface NavItem {
   page: Route['page'];
   label: string;
@@ -407,11 +408,6 @@ function newTaskDefaults(route: Route) {
   return {};
 }
 
-function isTyping(el: EventTarget | null) {
-  const t = el as HTMLElement | null;
-  return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
-}
-
 export function App() {
   const route = useRoute();
   const ui = useUi();
@@ -450,7 +446,7 @@ export function App() {
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         ui.setPaletteOpen(true);
-      } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !isTyping(e.target) && !ui.paletteOpen && !ui.quickCreate) {
+      } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !typingKey(e) && !ui.paletteOpen && !ui.quickCreate) {
         e.preventDefault();
         ui.openQuickCreate(newTaskDefaults(route), { myDay: route.page === 'myday' });
       }

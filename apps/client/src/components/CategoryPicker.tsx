@@ -10,6 +10,7 @@
  * - 底部「管理类型…」去侧栏「管理 → 类型」页。手机上整个面板从底部出来（.is-sheet）。
  * 不显示的类型不在列表里（已经挂着的照常显示成小标签）。
  */
+import { imeBusy, useImeQuery } from '../lib/ime';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Check, ChevronDown, Plus, Search, X } from 'lucide-react';
@@ -79,7 +80,10 @@ export function CategoryList({
   onDone?: () => void;
   autoFocus?: boolean;
 }) {
-  const [q, setQ] = useState('');
+  // 组字时框里是拼音，不拿去过滤（Rei 2026-11-02，lib/ime.ts）
+  const ime = useImeQuery();
+  const q = ime.query;
+  const setQ = ime.reset;
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -154,7 +158,7 @@ export function CategoryList({
     inputRef.current?.focus();
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing) return;
+    if (imeBusy(e.nativeEvent) || ime.isImeEnter(e.nativeEvent)) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((a) => (rows.length ? (a + 1) % rows.length : 0));
@@ -164,7 +168,7 @@ export function CategoryList({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       choose(rows[active]);
-    } else if (e.key === 'Backspace' && q === '' && selected.length && multiple) {
+    } else if (e.key === 'Backspace' && ime.text === '' && selected.length && multiple) {
       e.preventDefault();
       onChange(value.slice(0, -1));
     }
@@ -195,8 +199,9 @@ export function CategoryList({
           aria-activedescendant={rows.length ? optId(active) : undefined}
           aria-label={tr('搜索类型')}
           placeholder={selected.length && multiple ? '' : tr('搜类型，比如“健康”“yd”')}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          value={ime.text}
+          onChange={(e) => ime.onChange(e.target.value)}
+          {...ime.handlers}
           onKeyDown={onKey}
           spellCheck={false}
           autoComplete="off"

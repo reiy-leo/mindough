@@ -3281,6 +3281,37 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 }
 .page-detail .pane-head {
   padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  min-width: 0;
+}
+/*
+ * 手机整页详情的顶栏放不下时（Rei 2026-11-02 截图：归档的计时打卡，「已归档」+「8 小时 00 分 / 16 小时」把 ··· 挤出了屏幕）：
+ * 左边的状态徽标、进度胶囊可以缩（徽标先缩成只剩图标，胶囊的字省略），右边的按钮一直都在。
+ */
+.page-detail .pane-head > * {
+  flex-shrink: 0;
+}
+.page-detail .pane-head .status-badge {
+  flex: 0 100 auto;
+  min-width: 24px;
+  overflow: hidden;
+}
+.page-detail .pane-head .status-badge > svg {
+  flex: none;
+}
+.page-detail .pane-head .completion-pill {
+  flex: 0 1 auto;
+  min-width: 40px;
+  overflow: hidden;
+}
+.page-detail .pane-head .status-badge-text,
+.page-detail .pane-head .completion-pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-detail .pane-head > .grow {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .page-detail .pane-body {
   padding: var(--space-1) var(--space-4) var(--space-8);

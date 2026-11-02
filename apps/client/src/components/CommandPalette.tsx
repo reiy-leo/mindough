@@ -5,6 +5,7 @@ import { TASK_STATUS_LABEL, isFinished, libraryCopy, search, type SearchHit } fr
 import { MoodIcon } from './journal/MoodIcon';
 import { requestJournalCompose } from '../lib/journal-compose';
 import { useStore } from '../store/StoreProvider';
+import { imeBusy, useImeQuery } from '../lib/ime';
 import { useUi } from '../lib/ui';
 import { navigate } from '../lib/router';
 import { toggleMyDay } from '../lib/actions';
@@ -20,14 +21,17 @@ import { GroupIcon } from './project/GroupIcon';
 export function CommandPalette() {
   const ui = useUi();
   const store = useStore();
-  const [q, setQ] = useState('');
+  // 组字时框里是拼音，不拿去搜；选词的回车不当成「新建」（Rei 2026-11-02，lib/ime.ts）
+  const ime = useImeQuery();
+  const q = ime.query;
   const [active, setActive] = useState(0);
+  const { reset } = ime;
   useEffect(() => {
     if (!ui.paletteOpen) {
-      setQ('');
+      reset();
       setActive(0);
     }
-  }, [ui.paletteOpen]);
+  }, [ui.paletteOpen, reset]);
 
   const hits = useMemo<SearchHit[]>(
     () =>
@@ -106,13 +110,14 @@ export function CommandPalette() {
           <SearchField
             aria-label={tr('搜索任务、资料库、人物、项目')}
             className="palette-search"
-            value={q}
+            value={ime.text}
             onChange={(v) => {
-              setQ(v);
+              ime.onChange(v);
               setActive(0);
             }}
             autoFocus
             onKeyDown={(e) => {
+              if (imeBusy(e.nativeEvent)) return;
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 setActive((a) => Math.min(a + 1, Math.max(0, count - 1)));
@@ -138,7 +143,7 @@ export function CommandPalette() {
             }}
           >
             <Search size={18} className="palette-icon" aria-hidden />
-            <Input className="palette-input" placeholder={tr('搜索任务、资料库、人物、项目…')} />
+            <Input className="palette-input" placeholder={tr('搜索任务、资料库、人物、项目…')} {...ime.handlers} />
             <kbd className="kbd">Esc</kbd>
           </SearchField>
           <ul className="palette-list">

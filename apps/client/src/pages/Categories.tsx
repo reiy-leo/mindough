@@ -21,6 +21,7 @@ import { CategoryBadge, CategoryList, categoryGroupLabel, categoryStateLabel, ca
 import { ColorPicker, IconPicker } from '../components/TypeManager';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
+import { typingKey } from '../lib/ime';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
 
@@ -43,7 +44,7 @@ export function CategoriesPage({ id }: { id?: string }) {
     if (mobile) return;
     const on = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      const typing = typingKey(e);
       const inDialog = !!el?.closest('[role="dialog"]');
       const mod = e.metaKey || e.ctrlKey;
       if (mod && !e.altKey && !e.shiftKey && (e.key === '1' || e.key === '2' || e.key === '3')) {

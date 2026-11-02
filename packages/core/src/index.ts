@@ -43,6 +43,7 @@ export * from './seed/builtin-types';
 export * from './seed/builtin-checkin-categories';
 export * from './categories';
 export * from './category-prefs';
+export * from './task-match';
 export * from './seed/demo';
 export * from './sync/protocol';
 export * from './sync/engine';

@@ -14,6 +14,7 @@ import {
   type DateDisplay,
   isFinished,
   predecessorsOf,
+  wouldCreateCycle,
   successorsOf,
   taskStreak,
   hasLibrary,
@@ -550,6 +551,12 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
   if (!kind) return null;
   const edges = store.edges();
   const exclude = new Set([task.id, ...predecessorsOf(edges, task.id), ...successorsOf(edges, task.id), ...store.relatedTasks(task.id).map((t) => t.id)]);
+  // 连上会绕成圈的不列出来（以前点了才提示「没有连上」）：挑后续时排除它的上游，挑前置时排除它的下游
+  if (kind !== 'related')
+    for (const t of store.tasks()) {
+      if (exclude.has(t.id)) continue;
+      if (kind === 'succ' ? wouldCreateCycle(edges, task.id, t.id) : wouldCreateCycle(edges, t.id, task.id)) exclude.add(t.id);
+    }
   const connect = (id: string) => {
     if (kind === 'pred') tryAddDependency(store, ui, id, task.id);
     else if (kind === 'succ') tryAddDependency(store, ui, task.id, id);
@@ -562,6 +569,7 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
       <TaskSearch
         store={store}
         exclude={exclude}
+        hideFinished={kind !== 'related'}
         label={tr('搜索任务，或写下新的一件')}
         onPick={(id) => {
           connect(id);
@@ -828,19 +836,19 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     badge = (
       <span className="status-badge is-done">
         <Check size={12} strokeWidth={3} />
-        {tr('已完成')}</span>
+        <span className="status-badge-text">{tr('已完成')}</span></span>
     );
   else if (task.status === '关闭')
     badge = (
       <span className="status-badge is-closed">
         <CircleSlash size={12} />
-        {tr('已关闭')}</span>
+        <span className="status-badge-text">{tr('已关闭')}</span></span>
     );
   else if (task.recurrence && task.archived_at)
     badge = (
       <span className="status-badge is-closed">
         <Archive size={12} />
-        {tr('已归档')}</span>
+        <span className="status-badge-text">{tr('已归档')}</span></span>
     );
   else if (derived?.state === '被阻塞') badge = <span className="status-badge is-blocked">{tr('还在等 {length} 件事', { length: derived.missing.length })}</span>;
   else if (task.status === '进行中') badge = <span className="status-badge is-active">{tr('进行中')}</span>;

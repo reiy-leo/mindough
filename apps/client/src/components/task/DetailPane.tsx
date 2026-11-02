@@ -6,6 +6,7 @@ import { clampDetailWidth, DETAIL_W_DEFAULT, DETAIL_W_KEY, loadDetailWidth, next
 import { TaskDetail, useSelectedTask } from './TaskDetail';
 import { tr } from '../../lib/i18n';
 import { scrollIntoContainer } from '../../lib/root-scroll';
+import { typingKey } from '../../lib/ime';
 
 function isTyping(el: EventTarget | null) {
   const t = el as HTMLElement | null;
@@ -60,7 +61,8 @@ export function DetailPane() {
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || ui.paletteOpen || ui.quickCreate) return;
-      if (isTyping(e.target) || inOverlay(e.target)) return;
+      // 焦点在输入框里（含 Autocomplete 转发到列表的按键）、输入法在用：不抢（lib/ime.ts）
+      if (isTyping(e.target) || typingKey(e) || inOverlay(e.target) || inOverlay(document.activeElement)) return;
       if (document.querySelector('.overlay')) return;
       if (e.key === 'Escape' && ui.editingId) {
         e.preventDefault();

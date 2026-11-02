@@ -1633,8 +1633,10 @@ html[data-layout='mobile'] .date-panel .date-chip {
   color: var(--text-2);
   font-size: 13px;
 }
+/* 高度固定：搜的字变了、删字、搜不到时弹层不伸缩（Rei 2026-11-02「删除字符会跳转」） */
 .modal-relpick .task-search-list {
-  max-height: 320px;
+  height: min(320px, 42vh);
+  max-height: none;
 }
 .pick-create {
   display: flex;
@@ -1654,6 +1656,9 @@ html[data-layout='mobile'] .date-panel .date-chip {
   text-align: left;
   cursor: pointer;
   outline: none;
+}
+.pick-create.is-idle {
+  visibility: hidden;
 }
 .pick-create[data-hovered],
 .pick-create[data-focus-visible] {
