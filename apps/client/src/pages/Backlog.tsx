@@ -40,11 +40,14 @@ export function BacklogPage() {
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，加进待安排；件数挪到列表上方的小字。
           原来页头的「新建任务」按钮去掉了：右下角新建按钮和 N 一样打开完整的新建面板 */}
-      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id} />
-      <div className="list-meta">
-        <h1 className="sr-only">{tr('待安排')}</h1>
-        {list.length ? tr('{length} 件还没定哪天做', { length: list.length }) : tr('都安排好了')}
-      </div>
+      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id}
+        meta={
+          <div className="list-meta">
+            <h1 className="sr-only">{tr('待安排')}</h1>
+            {list.length ? tr('{length} 件还没定哪天做', { length: list.length }) : tr('都安排好了')}
+          </div>
+        }
+      />
       {list.length ? (
         <GridList ref={reorderGuard.ref} aria-label={tr('待安排的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list}>
           {(t) => (

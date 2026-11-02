@@ -21,11 +21,14 @@ export function DoablePage() {
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框。可做页新建本来就进待安排（和右下角新建一样），
           新任务没有前置，所以马上出现在下面「琐事」里；件数挪到列表上方的小字 */}
-      <QuickAddBar placeholder={tr('现在想做什么？按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id} />
-      <div className="list-meta">
-        <h1 className="sr-only">{tr('可做')}</h1>
-        {tr('{length} 件任务的前置都已完成，现在就能开始', { length: ready.length })}
-      </div>
+      <QuickAddBar placeholder={tr('现在想做什么？按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id}
+        meta={
+          <div className="list-meta">
+            <h1 className="sr-only">{tr('可做')}</h1>
+            {tr('{length} 件任务的前置都已完成，现在就能开始', { length: ready.length })}
+          </div>
+        }
+      />
       {ready.length === 0 && <Empty title={tr('没有可开始的任务')} />}
       {keys.map((k) => {
         const g = store.get('group', k);

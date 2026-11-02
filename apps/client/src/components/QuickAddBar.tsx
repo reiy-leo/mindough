@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Form, Input, TextField } from 'react-aria-components';
 import { Plus } from 'lucide-react';
 import { useUi } from '../lib/ui';
@@ -10,12 +10,24 @@ import { afterQuickAdd, quickAdd } from '../lib/quick-add';
  * 回车建任务，马上打开它（「从这里添加任务后立即打开任务」）；焦点、滚动见 lib/quick-add。
  * create 负责建任务并放到对的地方（今天 / 待安排），返回新任务的 id。
  * trailing：输入框行尾的小图标按钮（比如我的一天的「打开小窗」）。
+ * meta：框下面那行小字（日期、件数），和框一起固定。
+ * 添加框固定在列表顶上，不跟着列表滚（Rei 2026-11-02「所有的任务输入框都不随列表滚动」）：外面一层 sticky、不透明底；
+ * 滚动后（顶上的哨兵看不见了）加 is-stuck，底下多一条细分隔线。
  */
-export function QuickAddBar({ placeholder, label, create, trailing }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode }) {
+export function QuickAddBar({ placeholder, label, create, trailing, meta }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode }) {
   const ui = useUi();
   const { layout } = useSettings();
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLInputElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setStuck(!!e && !e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const add = () => {
     const id = quickAdd({ create, openEditor: ui.openEditor }, draft);
     if (!id) return;
@@ -23,18 +35,24 @@ export function QuickAddBar({ placeholder, label, create, trailing }: { placehol
     afterQuickAdd(id, input.current, layout);
   };
   return (
-    <Form
-      className="add-bar"
-      onSubmit={(e) => {
-        e.preventDefault();
-        add();
-      }}
-    >
-      <Plus size={18} className="add-bar-icon" aria-hidden />
-      <TextField aria-label={label} value={draft} onChange={setDraft} className="add-bar-field">
-        <Input ref={input} className="add-bar-input" placeholder={placeholder} />
-      </TextField>
-      {trailing}
-    </Form>
+    <>
+      <div ref={sentinel} className="add-bar-sentinel" aria-hidden />
+      <div className={`add-bar-sticky${stuck ? ' is-stuck' : ''}`}>
+        <Form
+          className="add-bar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            add();
+          }}
+        >
+          <Plus size={18} className="add-bar-icon" aria-hidden />
+          <TextField aria-label={label} value={draft} onChange={setDraft} className="add-bar-field">
+            <Input ref={input} className="add-bar-input" placeholder={placeholder} />
+          </TextField>
+          {trailing}
+        </Form>
+        {meta}
+      </div>
+    </>
   );
 }

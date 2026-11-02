@@ -1087,6 +1087,36 @@ button {
 .add-bar-btn {
   flex: none;
 }
+/* 添加框固定在列表顶上（Rei 2026-11-02「所有的任务输入框都不随列表滚动」）：框和下面那行小字一起 sticky。
+   底色用页面底色（不透明，WinUI 的渐变也照样铺，fixed 和 body 对齐），列表从它下面滚过去不会透出来；
+   往左右各多铺一点，盖住行的悬停底色。滚动后 is-stuck 加一条细分隔线。用 flex 列，免得小字的下边距漏到底色外面。 */
+.add-bar-sentinel {
+  height: 1px;
+  margin-bottom: -1px;
+}
+.add-bar-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-2) var(--space-2) 0;
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+.add-bar-sticky.is-stuck {
+  border-bottom-color: var(--border);
+}
+.add-bar-sticky > .list-meta {
+  margin-top: calc(-1 * var(--space-2));
+}
+.add-bar-sticky > .add-bar:last-child {
+  margin-bottom: var(--space-3);
+}
 /* 列表上方的小字：原来页头副标题里的日期、件数（Rei 2026-10-26 去掉中间列页头后挪到这里） */
 .list-meta {
   display: flex;

@@ -84,12 +84,14 @@ export function MyDayPage() {
             </Tip>
           ) : undefined
         }
+        meta={
+          <div className="list-meta">
+            <h1 className="sr-only">{tr('我的一天')}</h1>
+            {`${formatDateZh(today)} · ${items.length ? (closedCount ? tr('{doneCount}/{counted} 已完成 · {closed} 个已关闭', { doneCount, counted, closed: closedCount }) : tr('{doneCount}/{counted} 已完成', { doneCount, counted })) : tr('还没有安排')}`}
+            <LunarLine date={today} className="page-subtitle-lunar" />
+          </div>
+        }
       />
-      <div className="list-meta">
-        <h1 className="sr-only">{tr('我的一天')}</h1>
-        {`${formatDateZh(today)} · ${items.length ? (closedCount ? tr('{doneCount}/{counted} 已完成 · {closed} 个已关闭', { doneCount, counted, closed: closedCount }) : tr('{doneCount}/{counted} 已完成', { doneCount, counted })) : tr('还没有安排')}`}
-        <LunarLine date={today} className="page-subtitle-lunar" />
-      </div>
 
       {items.length ? (
         <GridList ref={reorderGuard.ref} aria-label={tr('今天的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={items.map((i) => ({ ...i, id: i.task.id }))}>
