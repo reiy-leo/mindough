@@ -11,7 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { tr, trc } from '../lib/i18n';
 import { useDateDisplay } from '../lib/date-display';
 import { scrollIntoContainer } from '../lib/root-scroll';
-/** Agenda 式时间线：按日期往下流，今天居中；过去在上、将来在下。 */
+/** 时间轴（导航「计划 → 时间轴」，路由仍是 agenda）：按日期往下流，今天居中；过去在上、将来在下。 */
 export function AgendaPage() {
   const store = useStore();
   const now = useNow();
@@ -45,7 +45,7 @@ export function AgendaPage() {
 
   return (
     <div className="page">
-      <PageHeader title={trc('导航', '列表')} subtitle={tr('随手记下的琐事，按日期排开')} icon={<CalendarDays size={22} />} />
+      <PageHeader title={trc('导航', '时间轴')} subtitle={tr('随手记下的琐事，按日期排开')} icon={<CalendarDays size={22} />} />
       {hiddenPast > 0 && (
         <Button variant="ghost" className="load-past" onPress={() => setPastDays((d) => d + 30)}>
           <ChevronsUp size={16} />

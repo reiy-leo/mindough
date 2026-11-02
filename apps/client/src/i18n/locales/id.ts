@@ -667,7 +667,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡": "Catat",
   "可做": "Tersedia",
   "计划": "Rencana",
-  "导航|列表": "Linimasa",
+  // 侧栏「计划 → 时间轴」（原名「列表」，Rei 2026-11-02 改名；译法待母语者看）
+  "导航|时间轴": "Linimasa",
   "列表": "Daftar",
   "导航|项目": "Proyek",
   "导航|持续": "Berkelanjutan",
@@ -982,7 +983,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "待安排的任务": "Tugas di Kotak Masuk",
   "拖动排序": "Seret untuk mengurutkan",
   "安排日期": "Jadwalkan",
-  "已安排到列表：「{titleOf}」": "“{titleOf}” dijadwalkan",
+  "已安排到时间轴：「{titleOf}」": "“{titleOf}” dijadwalkan",
   "没有待安排的事": "Kotak Masuk kosong",
   "想到什么先记下来，有空再决定哪天做。": "Catat sekarang, putuskan nanti kapan mengerjakannya.",
   "记一件事": "Tambahkan ke Kotak Masuk",

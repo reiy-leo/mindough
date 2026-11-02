@@ -297,7 +297,7 @@ export const EN: Record<string, EnValue> = {
   打卡: 'Check In',
   可做: 'Available',
   计划: 'Plan',
-  '导航|列表': 'Timeline',
+  '导航|时间轴': 'Timeline',
   列表: 'List',
   '导航|项目': 'Projects',
   '导航|持续': 'Ongoing',
@@ -653,7 +653,7 @@ export const EN: Record<string, EnValue> = {
   网络不通: 'No network connection',
   同步出错: 'Sync Error',
 
-  // ── 列表（时间线）──
+  // ── 时间轴（导航「计划 → 时间轴」，路由 agenda）──
   '随手记下的琐事，按日期排开': 'Quick notes and errands, by date',
   '更早的 {hiddenPast} 条': (p) => `${n(p.hiddenPast, 'earlier item', 'earlier items')}`,
   '添加到{formatDateZh}': 'Add to {formatDateZh}',
@@ -665,7 +665,7 @@ export const EN: Record<string, EnValue> = {
   待安排的任务: 'Inbox tasks',
   拖动排序: 'Drag to reorder',
   安排日期: 'Schedule',
-  '已安排到列表：「{titleOf}」': 'Scheduled “{titleOf}”',
+  '已安排到时间轴：「{titleOf}」': 'Scheduled “{titleOf}”',
   没有待安排的事: 'Inbox Zero',
   '想到什么先记下来，有空再决定哪天做。': 'Jot things down now and decide when to do them later.',
   记一件事: 'Add to Inbox',

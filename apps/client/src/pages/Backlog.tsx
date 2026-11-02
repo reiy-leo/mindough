@@ -78,7 +78,7 @@ export function BacklogPage() {
                         onChange={(d) => {
                           store.updateTask(t.id, { scheduled_date: d });
                           close();
-                          if (d) ui.toast({ message: tr('已安排到列表：「{titleOf}」', { titleOf: titleOf(store, t) }) }, 2500);
+                          if (d) ui.toast({ message: tr('已安排到时间轴：「{titleOf}」', { titleOf: titleOf(store, t) }) }, 2500);
                         }}
                       />
                     )}

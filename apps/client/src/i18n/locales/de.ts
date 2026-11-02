@@ -667,7 +667,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡": "Abhaken",
   "可做": "Verfügbar",
   "计划": "Planen",
-  "导航|列表": "Zeitleiste",
+  // 侧栏「计划 → 时间轴」（原名「列表」，Rei 2026-11-02 改名；译法待母语者看）
+  "导航|时间轴": "Zeitleiste",
   "列表": "Liste",
   "导航|项目": "Projekte",
   "导航|持续": "Fortlaufend",
@@ -982,7 +983,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "待安排的任务": "Aufgaben im Eingang",
   "拖动排序": "Zum Umsortieren ziehen",
   "安排日期": "Einplanen",
-  "已安排到列表：「{titleOf}」": "„{titleOf}“ eingeplant",
+  "已安排到时间轴：「{titleOf}」": "„{titleOf}“ eingeplant",
   "没有待安排的事": "Eingang leer",
   "想到什么先记下来，有空再决定哪天做。": "Notiere Dinge jetzt und entscheide später, wann du sie erledigst.",
   "记一件事": "Zum Eingang hinzufügen",
