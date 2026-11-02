@@ -92,7 +92,7 @@ export function CheckInsPage() {
   const dueNow = recurring.filter((t) => dueToday(t, today));
   const others = recurring.filter((t) => !dueToday(t, today));
   const metToday = dueNow.filter((t) => store.progress(t.id, today)?.met).length;
-  const running = tasks.filter((t) => t.completion_mode === 'timer' && store.progress(t.id, today)?.running);
+  const running = tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running);
   const streaks = recurring.map((t) => taskStreak(t, store.checkInsOf(t.id), now)?.current ?? 0);
   const best = Math.max(0, ...streaks);
   const title = (t: Task) => titleOf(store, t);

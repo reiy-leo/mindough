@@ -1490,7 +1490,7 @@ html[data-layout='mobile'][data-skin='material'] .date-panel.has-lunar .calendar
 [data-skin='apple'] .icon-picker {
   --icon-cell-r: 8px;
 }
-[data-skin='apple'] .icon-cell:not(.icon-emoji) {
+[data-skin='apple'] .icon-cell:not(.icon-emoji):not(.is-selected) {
   background: var(--surface-3);
 }
 [data-skin='apple'] .icon-cell[data-hovered]:not(.is-selected) {
