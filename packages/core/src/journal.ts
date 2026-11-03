@@ -10,6 +10,7 @@
  */
 import { addDays, parseDateKey, toDateKey } from './dates';
 import { parseHlc } from './hlc';
+import { stripUnderlineTags, stripWithLiterals } from './md-text';
 import { tr, weekStartsOn as localeWeekStart } from './i18n';
 import type { DateKey, JournalEntry } from './types';
 
@@ -162,14 +163,17 @@ export function moodTone(id: string | null | undefined): MoodTone | null {
 
 const CJK = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]/g;
 
-/** 去掉 markdown 记号（标题、引用、清单、强调、链接地址、HTML 标签）后的纯文字。 */
+/** 去掉 markdown 记号（标题、引用、清单、强调、链接地址、HTML 标签、反斜杠转义）后的纯文字。 */
 export function journalPlainText(md: string): string {
-  return md
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/(^|\n)\s*(#{1,6}|>|[-*+](\s+\[[ xX]\])?|\d+[.)])\s+/g, '$1')
-    .replace(/[*_`~]/g, '')
+  // 反斜杠转义（draw\.io）和行内代码先保护起来，去完记号再换回原字（md-text.ts）
+  return stripWithLiterals(md, (s) =>
+    stripUnderlineTags(s)
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/(^|\n)\s*(#{1,6}|>|[-*+](\s+\[[ xX]\])?|\d+[.)])\s+/g, '$1')
+      .replace(/[*_`~]/g, ''),
+  )
     .replace(/\s+/g, ' ')
     .trim();
 }

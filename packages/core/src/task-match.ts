@@ -5,19 +5,22 @@
  * 几个词用空格隔开时每个词都要对上（顺序不限）；标题、正文里的空格不算（「交 房租」搜「交房租」）。
  */
 import { categoryMatches } from './category-prefs';
-import { stripUnderlineTags } from './preview';
+import { stripUnderlineTags, stripWithLiterals } from './preview';
 
 const norm = (s: string) => s.normalize('NFKC').toLowerCase();
 
-/** markdown 的正文摊成一行纯文字：去掉行首的 # > - [ ] 1. 、粗体斜体代码符号、图片，链接只留文字，HTML 标签去掉。 */
+/** markdown 的正文摊成一行纯文字：去掉行首的 # > - [ ] 1. 、粗体斜体代码符号、图片、反斜杠转义，链接只留文字，HTML 标签去掉。 */
 export function plainMarkdown(md: string): string {
   // 下划线标签先去掉、不留空格（别的 HTML 标签换成空格）
-  return stripUnderlineTags(md)
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/(^|\n)\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/g, '$1')
-    .replace(/[*_`~]/g, '')
+  // 反斜杠转义（draw\.io）和行内代码先保护起来，去完记号再换回原字（md-text.ts）
+  return stripWithLiterals(md, (s) =>
+    stripUnderlineTags(s)
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/(^|\n)\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/g, '$1')
+      .replace(/[*_`~]/g, ''),
+  )
     .replace(/\s+/g, ' ')
     .trim();
 }

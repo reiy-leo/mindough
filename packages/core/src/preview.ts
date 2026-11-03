@@ -1,5 +1,6 @@
 /** 任务预览：没有标题，列表里显示 body_md 首行；有类型主字段时用主字段。 */
 import { linkLabel } from './links';
+import { stripUnderlineTags, stripWithLiterals } from './md-text';
 import { formatMoney, moneyOf } from './money';
 import { episodeOf, formatEpisode } from './episode';
 import type { FieldDef, FieldValue, LinkValue, Task, TaskType } from './types';
@@ -9,22 +10,25 @@ import { dataLabel, tr } from './i18n';
 /** 把字段值解析成显示文本（如人物字段 person_id → 姓名）。 */
 export type FieldResolver = (def: FieldDef, value: FieldValue) => string;
 
-/**
- * 下划线的标签（编辑器存成 `<u>…</u>`、`<u class="wavy">`、`<u class="double">`，Rei 2026-11-03）。
- * 标题、搜索、片段里去掉，不留空格（「这是<u>重点</u>」搜「这是重点」也对得上）。
- */
-export const UNDERLINE_TAG_RE = /<\/?u(?:\s+class=(["'])(?:wavy|double)\1)?\s*>/gi;
-export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '');
 
-/** 去掉 markdown 行首标记（和下划线标签），取第一条非空行。 */
+export { UNDERLINE_TAG_RE, stripUnderlineTags, stripWithLiterals, unescapeMarkdown } from './md-text';
+
+/** 正文摊成搜索用的文字：去掉下划线标签和反斜杠转义（draw\.io → draw.io），别的照原样。 */
+export const searchableMarkdown = (md: string) => stripWithLiterals(md, stripUnderlineTags);
+
+/**
+ * 去掉 markdown 行首标记（和下划线标签、反斜杠转义），取第一条非空行。
+ * 转义和行内代码先当字面量保护起来（md-text.ts）：`draw\.io` 显示 draw.io，`1\. 不是列表` 不会被当成列表去掉序号，行内代码原样。
+ */
 export function firstLine(md: string): string {
   for (const raw of md.split(/\r?\n/)) {
-    const line = stripUnderlineTags(raw)
-      .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/, '')
-      .replace(/[*_`~]/g, '')
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .trim();
+    const line = stripWithLiterals(raw, (s) =>
+      stripUnderlineTags(s)
+        .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/, '')
+        .replace(/[*_`~]/g, '')
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1'),
+    ).trim();
     if (line) return line;
   }
   return '';

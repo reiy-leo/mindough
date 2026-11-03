@@ -7,7 +7,7 @@
  * 界面叫法见 docs/COPY.md（资料库、影视库、书库…、「新建“xxx”」、「换一个」「编辑资料」）。
  */
 import { BUILTIN_TYPE_IDS, PLAIN_TYPE_ID } from './seed/builtin-types';
-import { fieldText } from './preview';
+import { fieldText, searchableMarkdown } from './preview';
 import { isLinkField, linkChips, matchOptions, type LinkChip } from './links';
 import { DEFAULT_CURRENCY, moneyOf } from './money';
 import { isShownField } from './typedef';
@@ -207,7 +207,7 @@ export function entryOfItem(type: TaskType | undefined, item: LibraryItem, recen
 }
 
 export function entryOfPerson(typeId: string, p: Person, recency: number, uses: number): LibraryEntry {
-  return { kind: 'person', id: p.id, type_id: typeId, name: p.name, image: p.avatar_asset_id, subtitle: p.relation ?? '', keywords: p.note_md, recency, uses };
+  return { kind: 'person', id: p.id, type_id: typeId, name: p.name, image: p.avatar_asset_id, subtitle: p.relation ?? '', keywords: searchableMarkdown(p.note_md), recency, uses };
 }
 
 /** 名字与查询的模糊匹配分：完全一致 > 开头 > 包含 > 按顺序出现（如「王泪」→「王国之泪」）；0 = 不匹配。 */

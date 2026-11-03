@@ -46,4 +46,11 @@ describe('全局搜索', () => {
     expect(search(inp, 'wavy')).toEqual([]);
     expect(search(inp, 'u')).toEqual([]);
   });
+  it('反斜杠转义不算字：标题、片段显示原字，搜原字搜得到（Rei 2026-11-03 draw\\.io）', () => {
+    const tasks2 = [mkTask('e1', { body_md: 'draw\\.io for ChatGPT\n\n再用 draw\\.io 画图' })];
+    const hits = search({ ...input, tasks: tasks2 }, 'draw.io');
+    expect(hits.map((h) => h.id)).toEqual(['e1']);
+    expect(hits[0]!.title).toBe('draw.io for ChatGPT');
+    expect(hits[0]!.snippet).not.toContain('\\');
+  });
 });

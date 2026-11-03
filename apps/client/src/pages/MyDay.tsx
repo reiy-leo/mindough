@@ -9,6 +9,7 @@ import { isTauri } from '../store/sqlite-tauri';
 import { useReorderGuard } from '../lib/drag-guard';
 import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
+import { titleOf } from '../lib/view';
 
 /** 小窗只在桌面 app 里有（手机、网页没有置顶窗口）。 */
 const canMini = isTauri() && !/Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -96,7 +97,7 @@ export function MyDayPage() {
       {items.length ? (
         <GridList ref={reorderGuard.ref} aria-label={tr('今天的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={items.map((i) => ({ ...i, id: i.task.id }))}>
           {(item) => (
-            <GridListItem id={item.id} textValue={item.task.body_md.slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
+            <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
               <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
                 <GripVertical size={14} />
               </RacButton>

@@ -1,5 +1,5 @@
 /** 全局搜索（⌘K / Ctrl+K）：搜正文、类型字段（片名、店名…）、资料库、人物、组。 */
-import { fieldText, stripUnderlineTags, taskTitle } from './preview';
+import { fieldText, searchableMarkdown, stripUnderlineTags, stripWithLiterals, taskTitle } from './preview';
 import { itemSubtitle, mergedData } from './library';
 import { isHiddenFieldKey } from './lookup';
 import { isFinished, type Category, type Group, type JournalPost, type LibraryItem, type Person, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskType } from './types';
@@ -47,10 +47,12 @@ function scoreText(hay: string, terms: string[]): number {
 }
 
 function snippetAround(text: string, term: string, radius = 24): string {
-  // 去掉 markdown 标记（# 标题、> 引用、- [ ] 清单、**粗体**、下划线标签）再取片段
-  const flat = stripUnderlineTags(text)
-    .replace(/(^|\n)\s*(#{1,6}|>|[-*+](\s+\[[ xX]\])?|\d+[.)])\s+/g, '$1')
-    .replace(/[*_`~]/g, '')
+  // 去掉 markdown 标记（# 标题、> 引用、- [ ] 清单、**粗体**、下划线标签、反斜杠转义）再取片段；行内代码原样
+  const flat = stripWithLiterals(text, (s) =>
+    stripUnderlineTags(s)
+      .replace(/(^|\n)\s*(#{1,6}|>|[-*+](\s+\[[ xX]\])?|\d+[.)])\s+/g, '$1')
+      .replace(/[*_`~]/g, ''),
+  )
     .replace(/\s+/g, ' ')
     .trim();
   const i = norm(flat).indexOf(term);
@@ -87,7 +89,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
     const type = typeById.get(it.type_id);
     // 归档类型的资料照常能搜到（Rei 2026-10-17：「搜索里出它的资料。归档只是让它不能被后续任务使用」）
     const sub = itemSubtitle(type, it.fields);
-    const s = scoreText(`${it.name} ${Object.entries(it.fields).filter(([k]) => !isHiddenFieldKey(k)).map(([, v]) => fieldText(v)).join(' ')} ${stripUnderlineTags(it.note_md)}`, terms);
+    const s = scoreText(`${it.name} ${Object.entries(it.fields).filter(([k]) => !isHiddenFieldKey(k)).map(([, v]) => fieldText(v)).join(' ')} ${searchableMarkdown(it.note_md)}`, terms);
     if (s > 0) hits.push({ kind: 'item', id: it.id, title: it.name, snippet: sub, score: s + (scoreText(it.name, terms) > 0 ? 6 : 0), item: it, type });
   }
   for (const t0 of input.tasks) {
@@ -106,7 +108,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
       .join(' ');
     const extra = [fields, (peopleOfTask.get(t.id) ?? []).join(' '), (refText.get(t.id) ?? []).join(' '), t.group_id ? (groupById.get(t.group_id)?.name ?? '') : ''].join(' ');
     const title = taskTitle(t, type, (def, v) => (def.kind === 'person' && typeof v === 'string' ? (personById.get(v)?.name ?? '') : fieldText(v)));
-    const body = stripUnderlineTags(t.body_md);
+    const body = searchableMarkdown(t.body_md);
     let s = scoreText(`${title} ${body} ${extra}`, terms);
     // 和挑任务的搜索一致（task-match.ts）：标题的拼音首字母 / 全拼、去掉 markdown 标记后的正文也算
     if (!s && taskTextMatches(title, t.body_md, query)) s = 1;
@@ -119,7 +121,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
     }
   }
   for (const p of personById.values()) {
-    const s = scoreText(`${p.name} ${p.relation ?? ''} ${stripUnderlineTags(p.note_md)}`, terms);
+    const s = scoreText(`${p.name} ${p.relation ?? ''} ${searchableMarkdown(p.note_md)}`, terms);
     if (s > 0) hits.push({ kind: 'person', id: p.id, title: p.name, snippet: p.relation ?? '', score: s + 4, person: p });
   }
   for (const g of groupById.values()) {
@@ -129,7 +131,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
   for (const p of input.journal ?? []) {
     if (p.deleted || !(p.body_md.trim() || p.mood)) continue;
     const date = formatDate(p.day, { year: true });
-    const s = scoreText(`${stripUnderlineTags(p.body_md)} ${moodLabel(p.mood)} ${p.day} ${date}`, terms);
+    const s = scoreText(`${searchableMarkdown(p.body_md)} ${moodLabel(p.mood)} ${p.day} ${date}`, terms);
     const time = postTime(p.created_at);
     // 比任务低一点（同样命中时任务在前）
     if (s > 0) hits.push({ kind: 'journal', id: p.id, title: time ? `${date} · ${time}` : date, snippet: snippetAround(p.body_md, terms[0]!) || moodLabel(p.mood), score: s - 0.5, post: p });

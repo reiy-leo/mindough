@@ -423,6 +423,37 @@ const remarkPreserveEmptyLine = () => (tree: MdNode) => {
   walk(tree);
 };
 
+/**
+ * 少转义（Rei 2026-11-03「任务列表中，.会显示成\.」）：GFM 自动链接的写出规则很宽，
+ * 「w.」里的点、「p:/」「s:/」里的冒号、「a@b」里的 @ 都会加反斜杠（draw.io 存成 draw\.io）。
+ * 这里只在读回来真会变成自动链接时才转义：
+ * - 点：前面是 www（不分大小写），即「www.」网址；
+ * - 冒号：前面是 http / https（不分大小写），后面是 /；
+ * - @：后面像个域名（还有一个点，点后还有字）。
+ * 其它规则（行首「1.」、* _ [ < 等）照旧。老数据里的 \. 读进来还是点，不受影响。
+ * 要排在 remarkGfm 后面：改的是它挂上去的规则对象（每个处理器一份，编译正则之前改）。
+ */
+type UnsafeRule = { character: string; before?: string; after?: string; _compiled?: unknown };
+const LESS_ESCAPE: Record<string, { from: { before: string; after: string }; to: { before?: string; after?: string } }> = {
+  '.': { from: { before: '[Ww]', after: '[\\-.\\w]' }, to: { before: '[Ww][Ww][Ww]' } },
+  ':': { from: { before: '[ps]', after: '\\/' }, to: { before: '[Hh][Tt][Tt][Pp][Ss]?' } },
+  '@': { from: { before: '[+\\-.\\w]', after: '[\\-.\\w]' }, to: { after: '[\\-.\\w]*\\.[\\-\\w]' } },
+};
+export function remarkLessEscapes(this: { data(): Record<string, unknown[] | undefined> }) {
+  const exts = this.data().toMarkdownExtensions ?? [];
+  const walk = (ext: unknown) => {
+    if (!ext || typeof ext !== 'object') return;
+    const e = ext as { unsafe?: UnsafeRule[]; extensions?: unknown[] };
+    for (const r of e.unsafe ?? []) {
+      const fix = LESS_ESCAPE[r.character];
+      if (!fix || r.before !== fix.from.before || r.after !== fix.from.after || r._compiled) continue;
+      Object.assign(r, fix.to);
+    }
+    e.extensions?.forEach(walk);
+  };
+  exts.forEach(walk);
+}
+
 // ───────── 写出的选项（和 Milkdown 一样）─────────
 
 type Handler = (node: MdNode, parent: unknown, state: StringifyState, info: Record<string, unknown>) => string;
@@ -519,7 +550,8 @@ export function createMarkdownIO(schema: Schema, extra: MarkdownPlugins): Markdo
     .use(remarkHtmlTransformer)
     .use(remarkMarker)
     .use(remarkPreserveEmptyLine)
-    .use(remarkGfm);
+    .use(remarkGfm)
+    .use(remarkLessEscapes);
   for (const p of extra.remark) processor = processor.use(p);
   const remark = processor as unknown as {
     parse(s: string): MdNode;
