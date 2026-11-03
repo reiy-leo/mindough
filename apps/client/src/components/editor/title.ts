@@ -311,6 +311,8 @@ export function plainTitleExtension(opts: PlainTitleOptions) {
           props: {
             handleKeyDown(view, event) {
               if (composingKey(view, event)) return false;
+              // 刚用方向键 / Home / End 挪的光标，ProseMirror 可能还没从 DOM 读进来（selectionchange 是异步的）：先读一下
+              if (event.key === 'Enter' || isFormatShortcut(event)) (view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
               const { state } = view;
               if (!selectionInTitle(state)) return false;
               if (isFormatShortcut(event)) {
