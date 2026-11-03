@@ -326,7 +326,7 @@ M0 实现时定下的细节（Rei 2026-10-15 已确认）：
    - 🟡 iOS：WidgetKit 脚手架（`src-tauri/mobile/ios-widget/MindoughWidget.swift`）+ 步骤（要 App Group，快照得写到共享容器）；待 Rei 在 Mac 上接。
 4. ✅ 桌面 app 外链用系统浏览器打开（Tauri opener）：`lib/external.ts` 在 document 上捕获 click / auxclick，指向别的源的 http(s) 和 mailto / tel 链接都交给 `openUrl`（Markdown 渲染的链接、资料卡小标签、编辑器里的链接都不用各自处理）；Web 端照常新标签页；权限沿用 `opener:default`（只放行 http / https / mailto / tel）。真机待验。
    - ✅ 别的 App 的链接（Rei 2026-11-03「codex://threads/… 这种 deeplink 点了没反应」）：以前只认 http(s) / mailto / tel，codex:// obsidian:// vscode:// things:/// 这些点了什么都不做。现在协议统一在 `lib/link-scheme.ts` 判断：任何协议都放行，只挡 javascript: vbscript: data: file: blob: filesystem: about: view-source: chrome: chrome-extension: resource: jar: tauri: asset: ipc:。编辑器读入时裸写的 `scheme://…` 变成链接（`app-links.ts`，写回 `<scheme://…>`，和裸 https 网址一样），手打 `<…>`、裸写加空格也变；链接框收这些地址；只读显示（marked）也认裸写的，DOMPurify 的地址规则跟着放宽。打开：App 里交给 opener（capabilities 加了 `opener:allow-open-url`，允许 `*:*`、拒绝上面那些协议）；Web 端 http(s) 照旧新标签页，别的协议建个不带 target 的 `<a>` 点一下，浏览器弹「打开 xxx？」，不留空白标签页。测试 `lib/link-scheme.test.ts`、`lib/external.test.ts`、`components/editor/app-links.test.ts`、`link-pop.test.tsx`。Mac 客户端要新 alpha 才生效（前端打包在 App 里，权限也是编译进去的）。
-5. 🟡 各平台安装包：版本 0.1.0、macOS ad-hoc 签名、notification npm 与 crate 对齐；已推标签 v0.1.0-alpha.1 触发 build.yml（macOS / Windows / Linux / Android debug），结果由 Rei 在 Actions 查看；iOS 用免费 Apple ID + Xcode 直装（docs/IOS.md）。打包规则（Rei 2026-10-17）：alpha 标签也建 Release（预发布草稿），APK 一并挂上。
+5. 🟡 各平台安装包：版本 0.1.0（2026-11-03 起按标签填，alpha 序号进 CFBundleVersion / msi 第四段 / versionCode，见「版本号分得出第几个 alpha」）、macOS ad-hoc 签名、notification npm 与 crate 对齐；已推标签 v0.1.0-alpha.1 触发 build.yml（macOS / Windows / Linux / Android debug），结果由 Rei 在 Actions 查看；iOS 用免费 Apple ID + Xcode 直装（docs/IOS.md）。打包规则（Rei 2026-10-17）：alpha 标签也建 Release（预发布草稿），APK 一并挂上。
 6. ✅ 界面收尾：
    - ✅ 27 个打卡分类改「常用 6 个 + 更多」：常用 = 重复任务用得最多的（件数一样按最近），不够用 健康 / 运动 / 学习 / 读书 / 饮食 / 作息 补齐（core `pickFrequentCategories`、`Store.frequentCheckInCategories`）；当前选中的总在第一屏；「更多 · 21」展开搜索框和其余分类；分类改成随宽度换行的小胶囊。
    - ✅ 手机端细节：弹层底部轻提示（「改动会同步到用到它的 N 件任务」）放不下时自己占一行，不再把「保存」挤到下一行；更多链接每条一张小卡（上面名字 + 上移 / 下移 / 去掉，下面整行网址）；IMDb / 豆瓣预览链接太长时省略号。
@@ -854,7 +854,7 @@ Rei 2026-10-26 原话：
 
 - **七项**：账户、外观、数据、提醒、任务、日记、关于。桌面设置窗口、Web 宽屏侧栏、窄屏列表三处都一样。
   - 关于（Lucide `Info`）：app 图标、名字（中文界面念头团，其他语言 Mindough）、「版本 0.1.0 (60eeba0)」、「数据先存在这台设备上，离线也能用」、TMDB 署名（logo + 英文原文，中文界面再加一行中文）。数据页底部不再有这块。署名照原样搬过来：仓库里原本只有 TMDB 的署名，豆瓣、Open Library、Steam 没有现成署名，这次没加。
-  - 版本号：`vite.config.ts` 用 define 注入 `__APP_VERSION__`（读 `src-tauri/tauri.conf.json` 的 version，和安装包一致）和 `__GIT_SHA__`（`GITHUB_SHA` 前 7 位，没有就跑 `git rev-parse --short HEAD`，再没有就不写）。`lib/version.ts` 拼成「0.1.0 (60eeba0)」。
+  - 版本号：`vite.config.ts` 用 define 注入 `__APP_VERSION__`（读 `src-tauri/tauri.conf.json` 的 version，和安装包一致）和 `__GIT_SHA__`（`GITHUB_SHA` 前 7 位，没有就跑 `git rev-parse --short HEAD`，再没有就不写）。`lib/version.ts` 拼成「0.1.0 (60eeba0)」。2026-11-03 改了：完整版本由 `scripts/app-version.mjs` 算，显示成「v0.1.0-alpha.13」或「`v0.1.0-dev+<短哈希>`」，见「版本号分得出第几个 alpha」。
   - 日记（Lucide `NotebookPen`，和侧边栏日记页同一个图标）：一天从几点开始、每天提醒写日记（21:00）。任务页只留类型和农历。
   - 深链：`#/settings/journal`、`#/settings/about`，`mindough://view/settings/journal|about`。旧的 `#/settings/tasks`、`#/settings/data` 照旧能打开（原来没有指向日记或关于的锚点，不用另做跳转）。
   - macOS 应用菜单「关于念头团」还是系统默认的关于面板，Rust 没动。
@@ -1259,6 +1259,31 @@ Rei 2026-11-03 原话：「现在样式支持粗体、斜体、下划线（直�
 - 文案：`trc('格式', …)` 一组格式名 +「写法和快捷键」+ 两行说明，九种语言，外语待母语者看。
 - 测试：`components/editor/underline.test.ts`（往返、叠粗斜链接删代码、标题列表表格、不成对、转义、两遍稳定；⌘B / ⌘I；⌘U、+1 / +2、再按去掉、一次撤销、松开 / 超时 / 别的键不算、时间窗里 ⌘1 不外传、空光标、组字不算）、`shortcuts.test.ts`（写法、按键识别、只列真有的、组字不弹）、core `preview` / `search` / `task-match` 去标签、`lib/markdown.test.ts` 只读显示。截图 `work/shots-underline/`。
 - 没做：手机上没有快捷键，下划线只能手打 `<u>…</u>`（不在浮层里列）；浮层不能点里面的条目来套格式。
+
+### 版本号分得出第几个 alpha ✅（2026-11-03）
+Rei 2026-11-03 22:49 答「要不要让 macOS app 显示 alpha 版本号」：「该改」。以前 `tauri.conf.json` 的 version 写死 0.1.0，装哪个 alpha 都显示 0.1.0，分不出来。
+
+- **规则**放在 `scripts/app-version.mjs`（纯 JS，CI 和 `vite.config.ts` 共用），推标签构建按标签 `v0.1.0-alpha.13` 算，别的构建算「dev + 短哈希」：
+
+  | 平台 | 推标签 v0.1.0-alpha.13 | 手动跑 Actions、本地、网页版 |
+  | --- | --- | --- |
+  | 设置底部、关于（前端） | v0.1.0-alpha.13 | v0.1.0-dev+2e5b580 |
+  | macOS「关于念头团」 | 0.1.0 (13) | 0.1.0 (0) |
+  | iOS（规则写好了，ios.yml 没接） | 0.1.0 (13) | — |
+  | Windows msi | 0.1.0.13 | 0.1.0 |
+  | Windows nsis、exe 资源 | 0.1.0 | 0.1.0 |
+  | Linux（AppImage、deb） | 0.1.0 | 0.1.0 |
+  | Android versionName / versionCode | 0.1.0-alpha.13 / 100013 | 0.1.0-dev+2e5b580 / 100000 |
+
+- **为什么这样拆**：macOS 的 CFBundleShortVersionString、msi 的版本都只认数字，所以数字部分 0.1.0 不动，alpha 序号放到 CFBundleVersion（`bundle.macOS.bundleVersion`）和 msi 第四段（`bundle.windows.wix.version`）。macOS 关于面板：Rust 菜单传的 `AboutMetadata.version` 是 0.1.0（对应 ApplicationVersion），没传 `short_version`，括号里就是系统从 CFBundleVersion 取的 13，所以 Rust 不用改。
+- **预发布序号**：alpha.N → N，beta.N → 300 + N，rc.N → 600 + N；正式版 999（只在 Android 用），非标签构建 0。正式版不填 CFBundleVersion，「关于」只显示 0.1.0。
+- **versionCode** = 主 × 10⁷ + 次 × 10⁵ + 修订 × 10³ + 序号，alpha < beta < rc < 正式版 < 下一个版本；主版本最大 209，次、修订最大 99，超了构建直接报错。
+- **CI**（`build.yml`）：桌面三个任务和 Android 任务在打包前跑 `node scripts/app-version.mjs apply <平台>`，把版本合进 `src-tauri/tauri.<平台>.conf.json`（Tauri 和 tauri-action 构建时都会合并这个文件；linux、android 的文件 CI 现建，仓库里没有），同时把完整版本写进 `MINDOUGH_VERSION` 给前端。仓库里的 `tauri.conf.json` 还是 0.1.0，以后升版本改这里和标签。
+- **前端**：`vite.config.ts` 优先用 `MINDOUGH_VERSION`，没有就按环境自己算（`GITHUB_REF_TYPE=tag` 才用标签名，短哈希取 `GITHUB_SHA`，再没有问 git）。本地和网页版一律是 dev + 短哈希。iOS（ios.yml 只手动触发）的前端也自动是 dev + 短哈希，原生版本没接。
+- **设置底部一行小字**：「版本 v0.1.0-alpha.13」。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在七项列表下面。点一下复制完整版本，提示「已复制版本号」；先用浏览器剪贴板，App 里不行再用 clipboard-manager 插件（capabilities 加了 `clipboard-manager:allow-write-text`）。三种皮肤：Apple 灰色小字、按下变淡；WinUI 悬停有浅底小圆角块；Material 胶囊形、强调色淡底。设置 → 关于里的版本也换成同一个字符串。
+- 文案 4 条，九种语言。
+- 测试：`apps/client/src/lib/app-version.test.ts`（标签解析、序号、各平台、versionCode 排序和上限、merge patch、环境判断）。
+- 验证：沙箱和 LightVela 都没有 Rust，原生部分靠 Actions：手动跑了一次 build.yml（非标签构建），结果见 notes。Mac 上要等下一个 alpha 才看得到「0.1.0 (14)」。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
