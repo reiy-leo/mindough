@@ -15,17 +15,21 @@
  *   点框外面 = 取消。
  * - 外面的值变了（同步下来）且不是自己刚写的：替换内容。
  * - ⌘ / Ctrl + Enter：给了 onModEnter 就交给它（日记输入框发送，Rei 2026-10-29「任务和日记 editor 要行为一致」），不给照常换行。
+ * - ⌘? / ⌘/（Windows / Linux 是 Ctrl）：光标旁弹出「写法和快捷键」浮层（Rei 2026-11-03），只看不点；Esc、再按一次、点别处、离开编辑器都收起。
+ *   下划线 ⌘U（+1 波浪线、+2 双线）见 underline.ts。
  * - 粘贴进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。从外面拖进来的文件（包括图片、落在正文上）都是附件，外框先接住，见 Attachments.tsx attachFileDrop。
  * 内核是 Tiptap 3（@tiptap/react 的 useEditor + EditorContent，Rei 2026-10-25 从 Milkdown 换过来），读写 markdown 见 editor.ts / markdown.ts。
  * 这个文件按需加载（LazyMdEditor），加载完之前显示排好版的预览。
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
 import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions } from './editor';
+import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
   value: string;
@@ -79,6 +83,20 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   const textInput = useRef<HTMLInputElement>(null);
   const linkingRef = useRef(false);
   linkingRef.current = !!dialog;
+  /** 「写法和快捷键」浮层：开着时的光标位置（视口坐标）。 */
+  const [help, setHelp] = useState<{ left: number; top: number; bottom: number } | null>(null);
+  const helpRef = useRef(false);
+  helpRef.current = !!help;
+  const toggleHelp = () => {
+    if (helpRef.current) return setHelp(null);
+    const h = handle.current;
+    if (!h) return;
+    const box = wrap.current?.getBoundingClientRect();
+    const c = h.coordsOf(h.selection()) ?? (box ? { left: box.right - 16, top: box.top, bottom: box.top } : null);
+    if (c) setHelp(c);
+  };
+  const toggleHelpRef = useRef(toggleHelp);
+  toggleHelpRef.current = toggleHelp;
 
   const cancelHide = () => clearTimeout(hideTimer.current);
   const scheduleHide = () => {
@@ -132,10 +150,13 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       setTimeout(() => {
         if (linkingRef.current || wrap.current?.contains(document.activeElement)) return;
         setFocused(false);
+        setHelp(null);
         cb.current.onBlur?.();
       }, 0);
     },
-    onEscape: () => cb.current.onEscape?.(),
+    // 快捷键浮层开着：Esc 先关它，不收起编辑器 / 关详情
+    onEscape: () => (helpRef.current ? setHelp(null) : cb.current.onEscape?.()),
+    onHelpShortcut: () => toggleHelpRef.current(),
     onLinkShortcut: () => openRef.current(),
     ...(onModEnter ? { onModEnter: () => cb.current.onModEnter?.() } : {}),
     onSelection: () => {
@@ -222,6 +243,73 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     const id = requestAnimationFrame(() => (toHref ? hrefInput : textInput).current?.focus());
     return () => cancelAnimationFrame(id);
   }, [dialogOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 快捷键浮层：贴着光标（下面放不下就放上面），收在视口里；点别处收起
+  const helpEl = useRef<HTMLDivElement>(null);
+  const [helpPos, setHelpPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = helpEl.current;
+    if (!help || !el) return setHelpPos(null);
+    const w = el.offsetWidth;
+    const hgt = el.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const left = Math.max(8, Math.min(help.left - 12, vw - w - 8));
+    let top = help.bottom + 6;
+    if (top + hgt > vh - 8) top = help.top - 6 - hgt;
+    setHelpPos({ left, top: Math.max(8, top) });
+  }, [help]);
+  useEffect(() => {
+    if (!help) return;
+    // 浮层只看不点（pointer-events: none，不挡下面的东西）：点哪儿都收起
+    const down = () => setHelp(null);
+    const away = () => setHelp(null);
+    document.addEventListener('pointerdown', down, true);
+    window.addEventListener('resize', away);
+    return () => {
+      document.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('resize', away);
+    };
+  }, [help]);
+  const mac = useMemo(() => isAppleKeyboard(), []);
+  const helpPop =
+    help &&
+    createPortal(
+      (() => {
+        const t = shortcutTexts(mac);
+        return (
+          <div
+            ref={helpEl}
+            className="md-keys-pop"
+            role="dialog"
+            aria-label={t.title}
+            style={helpPos ? { left: helpPos.left, top: helpPos.top } : { left: 0, top: 0, visibility: 'hidden' }}
+          >
+            <div className="md-keys-title">{t.title}</div>
+            <table className="md-keys-table">
+              <tbody>
+                {shortcutRows().map((r) => (
+                  <tr key={r.label}>
+                    <th scope="row">{r.label}</th>
+                    <td className="md-keys-md">{r.md && <code>{r.md}</code>}</td>
+                    <td className="md-keys-keys">
+                      {r.keys.map((c, i) => (
+                        <kbd key={i} className="kbd">
+                          {formatChord(c, mac)}
+                        </kbd>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="md-keys-note">{t.combo}</p>
+            <p className="md-keys-note">{t.close}</p>
+          </div>
+        );
+      })(),
+      document.body,
+    );
 
   // 底部面板：键盘弹起时（visualViewport 变矮）把面板抬到键盘上面
   const [kbInset, setKbInset] = useState(0);
@@ -357,6 +445,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       onPointerMoveCapture={(e) => e.pointerType === 'mouse' && (touch.current = false)}
     >
       <EditorContent editor={editor} className="md-editor-root" />
+      {helpPop}
       {(pop || (dialog && !dialog.sheet)) && (
         <div
           ref={popEl}

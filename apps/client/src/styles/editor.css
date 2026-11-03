@@ -468,3 +468,74 @@
   font-weight: inherit;
   margin-bottom: 6px;
 }
+
+/* 写法和快捷键浮层（⌘? / Ctrl+?，Rei 2026-11-03）：贴着光标，只看不点，不挡下面的东西 */
+.md-keys-pop {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  padding: 10px 12px 8px;
+  color: var(--text);
+  background: var(--surface);
+  background-color: color-mix(in srgb, var(--surface) 100%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.md-keys-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.md-keys-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.md-keys-table th,
+.md-keys-table td {
+  padding: 2px 0;
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+}
+.md-keys-table th {
+  font-weight: 400;
+  color: var(--text-2);
+  padding-right: 14px;
+}
+.md-keys-md {
+  padding-right: 14px !important;
+}
+.md-keys-md code {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  white-space: pre;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  color: var(--text);
+}
+.md-keys-keys {
+  text-align: right !important;
+}
+.md-keys-keys .kbd + .kbd {
+  margin-left: 4px;
+}
+.md-keys-keys .kbd {
+  color: var(--text-2);
+}
+.md-keys-note {
+  margin: 6px 0 0;
+  color: var(--text-3);
+  font-size: 11.5px;
+  white-space: normal;
+}
+.md-keys-note + .md-keys-note {
+  margin-top: 2px;
+}

@@ -187,6 +187,8 @@ export interface MdEditorOptions {
   onLinkShortcut?: () => void;
   /** ⌘ / Ctrl + Enter；不给就照常换行。 */
   onModEnter?: () => void;
+  /** ⌘? / ⌘/：开关「写法和快捷键」浮层。 */
+  onHelpShortcut?: () => void;
   onSelection?: () => void;
   /** 鼠标移到链接上（range）/ 移开（null）。 */
   onLinkHover?: (link: LinkRange | null, el: HTMLElement | null) => void;
@@ -221,6 +223,7 @@ export class MdController {
         onEscape: () => this.get().onEscape?.(),
         onLinkShortcut: o.onLinkShortcut ? () => this.get().onLinkShortcut?.() : undefined,
         onModEnter: o.onModEnter ? () => this.get().onModEnter?.() : undefined,
+        onHelpShortcut: o.onHelpShortcut ? () => this.get().onHelpShortcut?.() : undefined,
         onLinkHover: (r, el) => this.get().onLinkHover?.(r, el),
         onLinkOpen: o.onLinkOpen ? (u) => this.get().onLinkOpen?.(u) : undefined,
         onImageBlocked: () => this.get().onImageBlocked?.(),

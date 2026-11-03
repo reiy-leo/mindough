@@ -1909,6 +1909,26 @@ button {
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
+/* 下划线三种（Rei 2026-11-03）：存成 <u>、<u class="wavy">、<u class="double">；颜色跟着字，三皮肤深浅色都一样清楚 */
+.md u {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-skip-ink: auto;
+}
+.md u.wavy {
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+  text-decoration-skip-ink: none;
+}
+.md u.double {
+  text-decoration-style: double;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
 .md code {
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   font-size: 0.88em;

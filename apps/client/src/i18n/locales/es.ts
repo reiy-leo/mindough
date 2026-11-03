@@ -6,6 +6,32 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 写法和快捷键浮层、下划线三种（Rei 2026-11-03，待母语者看）──
+  "格式|文字": "Texto",
+  "格式|粗体": "Negrita",
+  "格式|斜体": "Cursiva",
+  "格式|下划线": "Subrayado",
+  "格式|波浪线": "Subrayado ondulado",
+  "格式|双线": "Subrayado doble",
+  "格式|删除线": "Tachado",
+  "格式|行内代码": "Código en línea",
+  "格式|代码": "código",
+  "格式|链接": "Enlace",
+  "格式|网址": "url",
+  "格式|标题": "Encabezado",
+  "格式|列表": "Lista",
+  "格式|编号列表": "Lista numerada",
+  "格式|清单": "Lista de tareas",
+  "格式|引用": "Cita",
+  "格式|代码块": "Bloque de código",
+  "格式|分隔线": "Separador",
+  "格式|表格": "Tabla",
+  "格式|折叠块": "Bloque plegable",
+  "格式|公式": "Fórmula",
+  "格式|换行": "Salto de línea",
+  "写法和快捷键": "Formato y atajos",
+  "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Ondulado y doble: mantén {mod}, pulsa U y luego 1 o 2. Repite para quitarlo.",
+  "{keys} 或 Esc 关闭": "{keys} o Esc para cerrar",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──
   "归档": "Archivar",
   "打卡操作": "Acciones del hábito",

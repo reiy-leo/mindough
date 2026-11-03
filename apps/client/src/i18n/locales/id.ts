@@ -6,6 +6,32 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 写法和快捷键浮层、下划线三种（Rei 2026-11-03，待母语者看）──
+  "格式|文字": "Teks",
+  "格式|粗体": "Tebal",
+  "格式|斜体": "Miring",
+  "格式|下划线": "Garis bawah",
+  "格式|波浪线": "Garis bawah bergelombang",
+  "格式|双线": "Garis bawah ganda",
+  "格式|删除线": "Coret",
+  "格式|行内代码": "Kode sebaris",
+  "格式|代码": "kode",
+  "格式|链接": "Tautan",
+  "格式|网址": "url",
+  "格式|标题": "Judul",
+  "格式|列表": "Daftar",
+  "格式|编号列表": "Daftar bernomor",
+  "格式|清单": "Daftar periksa",
+  "格式|引用": "Kutipan",
+  "格式|代码块": "Blok kode",
+  "格式|分隔线": "Garis pemisah",
+  "格式|表格": "Tabel",
+  "格式|折叠块": "Blok lipat",
+  "格式|公式": "Rumus",
+  "格式|换行": "Ganti baris",
+  "写法和快捷键": "Format dan pintasan",
+  "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Bergelombang dan ganda: tahan {mod}, tekan U, lalu 1 atau 2. Ulangi untuk menghapus.",
+  "{keys} 或 Esc 关闭": "{keys} atau Esc untuk menutup",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──
   "归档": "Arsipkan",
   "打卡操作": "Tindakan kebiasaan",

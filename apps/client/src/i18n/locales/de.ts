@@ -6,6 +6,32 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 写法和快捷键浮层、下划线三种（Rei 2026-11-03，待母语者看）──
+  "格式|文字": "Text",
+  "格式|粗体": "Fett",
+  "格式|斜体": "Kursiv",
+  "格式|下划线": "Unterstrichen",
+  "格式|波浪线": "Wellenlinie",
+  "格式|双线": "Doppelt unterstrichen",
+  "格式|删除线": "Durchgestrichen",
+  "格式|行内代码": "Inline-Code",
+  "格式|代码": "Code",
+  "格式|链接": "Link",
+  "格式|网址": "URL",
+  "格式|标题": "Überschrift",
+  "格式|列表": "Liste",
+  "格式|编号列表": "Nummerierte Liste",
+  "格式|清单": "Checkliste",
+  "格式|引用": "Zitat",
+  "格式|代码块": "Codeblock",
+  "格式|分隔线": "Trennlinie",
+  "格式|表格": "Tabelle",
+  "格式|折叠块": "Ausklappbereich",
+  "格式|公式": "Formel",
+  "格式|换行": "Zeilenumbruch",
+  "写法和快捷键": "Formatierung & Tastenkürzel",
+  "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Welle und doppelt: {mod} halten, U drücken, dann 1 oder 2. Nochmal drücken entfernt es.",
+  "{keys} 或 Esc 关闭": "{keys} oder Esc zum Schließen",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──
   "归档": "Archivieren",
   "打卡操作": "Aktionen für Gewohnheit",

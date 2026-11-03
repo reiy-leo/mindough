@@ -40,6 +40,7 @@ import { ghExtensions } from './gh-syntax';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
+import { isHelpShortcut } from './shortcuts';
 
 // ───────── 链接的小工具（MdEditor 和测试也用）─────────
 
@@ -375,6 +376,8 @@ export interface BehaviorOptions {
   onLinkShortcut?: () => void;
   /** ⌘ / Ctrl + Enter（日记输入框拿它发送）；不给就照常换行。 */
   onModEnter?: () => void;
+  /** ⌘? / ⌘/：开关「写法和快捷键」浮层。 */
+  onHelpShortcut?: () => void;
   /** 鼠标移到链接上（range）/ 移开（null）。 */
   onLinkHover?: (link: LinkRange | null, el: HTMLElement | null) => void;
   /** 点了链接：打开它。 */
@@ -723,6 +726,12 @@ export function behaviorExtension(opts: BehaviorOptions) {
             },
             handleKeyDown(view, event) {
               if (event.key === 'Tab') return handleTab(view, event);
+              if (opts.onHelpShortcut && isHelpShortcut(event) && !event.isComposing && event.keyCode !== 229 && !view.composing) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!event.repeat) opts.onHelpShortcut();
+                return true;
+              }
               if (event.key === 'Escape' && opts.onEscape) {
                 event.preventDefault();
                 event.stopPropagation();
