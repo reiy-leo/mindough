@@ -17,6 +17,7 @@ import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type Li
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
+import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
 export { finishMarkdown, prepareMarkdown, sameMarkdown } from './markdown';
 
@@ -30,10 +31,11 @@ export function markdownIO(schema: Schema | null | undefined): MarkdownIO {
   let io = ios.get(schema);
   if (!io) {
     io = createMarkdownIO(schema, {
-      remark: [remarkGh, remarkDetails],
-      parse: [...ghParse, ...detailsParse],
-      serialize: { ...ghSerialize, ...detailsSerialize },
+      remark: [remarkGh, remarkDetails, remarkUnderline],
+      parse: [...ghParse, ...detailsParse, ...underlineParse],
+      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize },
       wrapText: mathSafeText as never,
+      handlers: { underline: underlineHandler },
     });
     ios.set(schema, io);
   }
@@ -213,6 +215,7 @@ export class MdController {
     const extensions: AnyExtension[] = [
       ...schemaExtensions(),
       imeGuardExtension(),
+      underlineKeysExtension(),
       behaviorExtension({
         placeholder: () => this.get().placeholder,
         onEscape: () => this.get().onEscape?.(),

@@ -35,4 +35,15 @@ describe('全局搜索', () => {
     expect(search(input, '打包 不存在')).toEqual([]);
     expect(search(input, '  ')).toEqual([]);
   });
+
+  it('下划线标签不算字：搜得到、片段里没有标签、搜 u 不会命中标签', () => {
+    const tasks2 = [mkTask('u1', { body_md: '这是<u class="wavy">重点</u>内容\n\n第二行<u>也有</u>' })];
+    const inp = { ...input, tasks: tasks2 };
+    const hits = search(inp, '是重点内');
+    expect(hits.map((h) => h.id)).toEqual(['u1']);
+    expect(hits[0]!.title).toBe('这是重点内容');
+    expect(search(inp, '行也有')[0]!.snippet).not.toContain('<u');
+    expect(search(inp, 'wavy')).toEqual([]);
+    expect(search(inp, 'u')).toEqual([]);
+  });
 });

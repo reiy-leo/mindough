@@ -159,8 +159,10 @@ interface SFrame {
 /**
  * mark 的先后：和 Milkdown 一样——行内代码最后（priority 100），其余按 Milkdown schema 的注册顺序
  * （强调、粗体、链接、删除线）。顺序决定 `***粗斜***`、`[**粗**](…)` 这类嵌套怎么写。
+ * 下划线（`<u>`）放最外面：写成 `这是<u>**重点**</u>内容`。反过来写 `这是**<u>重点</u>**内容`，`**` 紧挨着 `<`、前面又是汉字，
+ * CommonMark 不认它是粗体的开头，读回来粗体就没了。
  */
-const MARK_RANK: Record<string, number> = { italic: 0, bold: 1, link: 2, strike: 3, code: 100 };
+const MARK_RANK: Record<string, number> = { underline: -1, italic: 0, bold: 1, link: 2, strike: 3, code: 100 };
 const rankOf = (m: Mark) => MARK_RANK[m.type.name] ?? 50;
 
 /** 和 Milkdown 的 SerializerState 一样（含相邻同样 mark 合并、mark 两头的空格挪到外面）。 */
@@ -462,6 +464,8 @@ export interface MarkdownPlugins {
   serialize: Record<string, SerializeSpec>;
   /** 包一层 text 写法（公式：文字里的 $ 不转义）。 */
   wrapText?: (prev: Handler) => Handler;
+  /** 额外的 remark-stringify 写法（下划线 `<u>`）。 */
+  handlers?: Record<string, unknown>;
 }
 
 export interface MarkdownIO {
@@ -496,6 +500,7 @@ export function createMarkdownIO(schema: Schema, extra: MarkdownPlugins): Markdo
       strong: markHandler('strong', true) as never,
       emphasis: markHandler('emphasis', false) as never,
       text: (extra.wrapText ? extra.wrapText(prevText) : prevText) as never,
+      ...(extra.handlers as Record<string, never> | undefined),
     },
     encode: [],
     bullet: '-',

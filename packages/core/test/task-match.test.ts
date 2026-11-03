@@ -61,4 +61,10 @@ describe('⌘K 和挑任务用的是同一套', () => {
     expect(search(input, 'mc').map((h) => h.id)).toContain('a');
     expect(search(input, 'ds').map((h) => h.id)).toContain('b');
   });
+
+  it('下划线标签去掉、不留空格', () => {
+    expect(plainMarkdown('这是<u class="double">重点</u>内容')).toBe('这是重点内容');
+    expect(match('a<u>bc</u>d', 'abcd')).toBe(true);
+    expect(match('<u>x</u>', 'u')).toBe(false);
+  });
 });

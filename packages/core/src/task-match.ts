@@ -5,12 +5,14 @@
  * 几个词用空格隔开时每个词都要对上（顺序不限）；标题、正文里的空格不算（「交 房租」搜「交房租」）。
  */
 import { categoryMatches } from './category-prefs';
+import { stripUnderlineTags } from './preview';
 
 const norm = (s: string) => s.normalize('NFKC').toLowerCase();
 
 /** markdown 的正文摊成一行纯文字：去掉行首的 # > - [ ] 1. 、粗体斜体代码符号、图片，链接只留文字，HTML 标签去掉。 */
 export function plainMarkdown(md: string): string {
-  return md
+  // 下划线标签先去掉、不留空格（别的 HTML 标签换成空格）
+  return stripUnderlineTags(md)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/<[^>]+>/g, ' ')

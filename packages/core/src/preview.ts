@@ -9,10 +9,17 @@ import { dataLabel, tr } from './i18n';
 /** 把字段值解析成显示文本（如人物字段 person_id → 姓名）。 */
 export type FieldResolver = (def: FieldDef, value: FieldValue) => string;
 
-/** 去掉 markdown 行首标记，取第一条非空行。 */
+/**
+ * 下划线的标签（编辑器存成 `<u>…</u>`、`<u class="wavy">`、`<u class="double">`，Rei 2026-11-03）。
+ * 标题、搜索、片段里去掉，不留空格（「这是<u>重点</u>」搜「这是重点」也对得上）。
+ */
+export const UNDERLINE_TAG_RE = /<\/?u(?:\s+class=(["'])(?:wavy|double)\1)?\s*>/gi;
+export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '');
+
+/** 去掉 markdown 行首标记（和下划线标签），取第一条非空行。 */
 export function firstLine(md: string): string {
   for (const raw of md.split(/\r?\n/)) {
-    const line = raw
+    const line = stripUnderlineTags(raw)
       .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/, '')
       .replace(/[*_`~]/g, '')
       .replace(/!\[[^\]]*\]\([^)]*\)/g, '')

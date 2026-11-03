@@ -1,7 +1,7 @@
 /**
  * 编辑器用到的 Tiptap 扩展（Rei 2026-10-25 换成 Tiptap）。全部是开源扩展（StarterKit 里的那些单独引、表格、图片），没用付费的 Pro 扩展；
  * 公式、提示块、折叠块、脚注、HTML 片段、链接是自己写的（gh-syntax.ts、details.ts、这里）。
- * 不直接用 StarterKit：它会把用不上的 Underline、官方 Link（连带 linkifyjs）一起打进包里，链接的行为我们全是自己的。
+ * 不直接用 StarterKit：它会把官方 Underline、官方 Link（连带 linkifyjs）一起打进包里；下划线（三种样式，存成 `<u>`）和链接都是自己写的（underline.ts、这里）。
  *
  * 节点名用 Tiptap 自己的（paragraph、bulletList、listItem、codeBlock、hardBreak、table、tableRow…）；
  * 自己写的沿用以前的名字（gh_alert、math_inline、math_block、details、details_summary、footnote_reference、footnote_definition、html）。
@@ -9,7 +9,7 @@
  * - 一种列表项 listItem，`checked` 不是 null 就是清单项（`- [ ]`），所以一个列表里可以混着写；
  * - 单换行读成 hardBreak（isInline），显示成空格、写回还是换行；Shift+Enter 是真的换行（写成 `\`）；
  * - 粗体 / 强调记下原来的符号（`*` / `_`），表格格子里只有一段；
- * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6），不多占别的键。
+ * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6）；2026-11-03 加了下划线 ⌘U（+1 波浪线、+2 双线）和 ⌘? 快捷键提示。
  */
 import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, type AnyExtension } from '@tiptap/core';
 import { Document } from '@tiptap/extension-document';
@@ -39,6 +39,7 @@ import { isRemoteImage, remoteImageText } from '../../lib/remote-image';
 import { ghExtensions } from './gh-syntax';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
+import { Underline } from './underline';
 
 // ───────── 链接的小工具（MdEditor 和测试也用）─────────
 
@@ -341,6 +342,7 @@ export function schemaExtensions(): AnyExtension[] {
     MdBold,
     MdItalic,
     MdStrike,
+    Underline,
     MdCode,
     MdHardBreak,
     MdCodeBlock.configure({ enableTabIndentation: false }),

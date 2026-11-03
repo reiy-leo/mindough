@@ -1,5 +1,5 @@
 /** 全局搜索（⌘K / Ctrl+K）：搜正文、类型字段（片名、店名…）、资料库、人物、组。 */
-import { fieldText, taskTitle } from './preview';
+import { fieldText, stripUnderlineTags, taskTitle } from './preview';
 import { itemSubtitle, mergedData } from './library';
 import { isHiddenFieldKey } from './lookup';
 import { isFinished, type Category, type Group, type JournalPost, type LibraryItem, type Person, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskType } from './types';
@@ -47,8 +47,8 @@ function scoreText(hay: string, terms: string[]): number {
 }
 
 function snippetAround(text: string, term: string, radius = 24): string {
-  // 去掉 markdown 标记（# 标题、> 引用、- [ ] 清单、**粗体**）再取片段
-  const flat = text
+  // 去掉 markdown 标记（# 标题、> 引用、- [ ] 清单、**粗体**、下划线标签）再取片段
+  const flat = stripUnderlineTags(text)
     .replace(/(^|\n)\s*(#{1,6}|>|[-*+](\s+\[[ xX]\])?|\d+[.)])\s+/g, '$1')
     .replace(/[*_`~]/g, '')
     .replace(/\s+/g, ' ')
@@ -87,7 +87,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
     const type = typeById.get(it.type_id);
     // 归档类型的资料照常能搜到（Rei 2026-10-17：「搜索里出它的资料。归档只是让它不能被后续任务使用」）
     const sub = itemSubtitle(type, it.fields);
-    const s = scoreText(`${it.name} ${Object.entries(it.fields).filter(([k]) => !isHiddenFieldKey(k)).map(([, v]) => fieldText(v)).join(' ')} ${it.note_md}`, terms);
+    const s = scoreText(`${it.name} ${Object.entries(it.fields).filter(([k]) => !isHiddenFieldKey(k)).map(([, v]) => fieldText(v)).join(' ')} ${stripUnderlineTags(it.note_md)}`, terms);
     if (s > 0) hits.push({ kind: 'item', id: it.id, title: it.name, snippet: sub, score: s + (scoreText(it.name, terms) > 0 ? 6 : 0), item: it, type });
   }
   for (const t0 of input.tasks) {
@@ -106,19 +106,20 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
       .join(' ');
     const extra = [fields, (peopleOfTask.get(t.id) ?? []).join(' '), (refText.get(t.id) ?? []).join(' '), t.group_id ? (groupById.get(t.group_id)?.name ?? '') : ''].join(' ');
     const title = taskTitle(t, type, (def, v) => (def.kind === 'person' && typeof v === 'string' ? (personById.get(v)?.name ?? '') : fieldText(v)));
-    let s = scoreText(`${title} ${t.body_md} ${extra}`, terms);
+    const body = stripUnderlineTags(t.body_md);
+    let s = scoreText(`${title} ${body} ${extra}`, terms);
     // 和挑任务的搜索一致（task-match.ts）：标题的拼音首字母 / 全拼、去掉 markdown 标记后的正文也算
     if (!s && taskTextMatches(title, t.body_md, query)) s = 1;
     if (s > 0) {
       const titleBoost = scoreText(title, terms) > 0 ? 5 : 0;
       const done = isFinished(t.status) ? -2 : 0;
       // 片段只取内容里命中的那段；资料字段（年份、平台…）不拼进片段，免得一长串
-      const inBody = norm(t.body_md).includes(terms[0]!);
+      const inBody = norm(body).includes(terms[0]!);
       hits.push({ kind: 'task', id: t.id, title, snippet: inBody ? snippetAround(t.body_md, terms[0]!) : '', score: s + titleBoost + done, task: t0 });
     }
   }
   for (const p of personById.values()) {
-    const s = scoreText(`${p.name} ${p.relation ?? ''} ${p.note_md}`, terms);
+    const s = scoreText(`${p.name} ${p.relation ?? ''} ${stripUnderlineTags(p.note_md)}`, terms);
     if (s > 0) hits.push({ kind: 'person', id: p.id, title: p.name, snippet: p.relation ?? '', score: s + 4, person: p });
   }
   for (const g of groupById.values()) {
@@ -128,7 +129,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
   for (const p of input.journal ?? []) {
     if (p.deleted || !(p.body_md.trim() || p.mood)) continue;
     const date = formatDate(p.day, { year: true });
-    const s = scoreText(`${p.body_md} ${moodLabel(p.mood)} ${p.day} ${date}`, terms);
+    const s = scoreText(`${stripUnderlineTags(p.body_md)} ${moodLabel(p.mood)} ${p.day} ${date}`, terms);
     const time = postTime(p.created_at);
     // 比任务低一点（同样命中时任务在前）
     if (s > 0) hits.push({ kind: 'journal', id: p.id, title: time ? `${date} · ${time}` : date, snippet: snippetAround(p.body_md, terms[0]!) || moodLabel(p.mood), score: s - 0.5, post: p });

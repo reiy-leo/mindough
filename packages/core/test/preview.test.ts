@@ -13,6 +13,14 @@ describe('预览', () => {
     expect(firstLine('[链接](https://x.y) 后面')).toBe('链接 后面');
     expect(firstLine('   ')).toBe('');
   });
+  it('首行：去掉下划线标签（三种），字挨着不加空格', () => {
+    expect(firstLine('这是<u>重点</u>内容')).toBe('这是重点内容');
+    expect(firstLine('- [ ] <u class="wavy">**买**</u>牙膏')).toBe('买牙膏');
+    expect(firstLine("## <u class='double'>标题</u>")).toBe('标题');
+    expect(firstLine('<u></u>\n第二行')).toBe('第二行');
+    // 别的标签不动
+    expect(firstLine('<kbd>K</kbd>')).toBe('<kbd>K</kbd>');
+  });
 
   it('标题：类型主字段优先，其次正文首行，再其次“空白任务”', () => {
     expect(taskTitle(mkTask('a', { body_md: '想看', type_data: { title: '沙丘' } }), movie)).toBe('沙丘');
