@@ -107,7 +107,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
       })
       .join(' ');
     const extra = [fields, (peopleOfTask.get(t.id) ?? []).join(' '), (refText.get(t.id) ?? []).join(' '), t.group_id ? (groupById.get(t.group_id)?.name ?? '') : ''].join(' ');
-    const title = taskTitle(t, type, (def, v) => (def.kind === 'person' && typeof v === 'string' ? (personById.get(v)?.name ?? '') : fieldText(v)));
+    const title = taskTitle(t);
     const body = searchableMarkdown(t.body_md);
     let s = scoreText(`${title} ${body} ${extra}`, terms);
     // 和挑任务的搜索一致（task-match.ts）：标题的拼音首字母 / 全拼、去掉 markdown 标记后的正文也算

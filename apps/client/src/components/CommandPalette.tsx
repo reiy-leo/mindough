@@ -85,7 +85,7 @@ export function CommandPalette() {
     return (
       <li key={id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
         <RacButton className="palette-main" onPress={() => { close(); ui.openEditor(id); }}>
-          <TaskThumb media={v.media} layout={v.type?.layout ?? 'text'} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} name={v.artName} />
+          <TaskThumb media={v.media} layout={v.thumbLayout} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} hasItem={v.hasItem} />
           <span className="palette-text">
             <span className="palette-title">{title}</span>
             <span className="palette-snippet">

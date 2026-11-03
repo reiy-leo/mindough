@@ -44,7 +44,7 @@ describe('escapeTitleLine：存成字面文字，显示回原样', () => {
   it.each(LITERALS)('%s', (s) => {
     const md = escapeTitleLine(s);
     expect(firstLine(md)).toBe(s);
-    expect(taskTitle({ body_md: `${md}\n\n正文 **粗**`, type_data: {} })).toBe(s);
+    expect(taskTitle({ body_md: `${md}\n\n正文 **粗**` })).toBe(s);
   });
 
   it('普通文字不加反斜杠', () => {
@@ -73,7 +73,7 @@ describe('escapeTitleLine：存成字面文字，显示回原样', () => {
 describe('plainTitleMarkdown：添加框打的字', () => {
   it('一行：整行当标题', () => {
     expect(plainTitleMarkdown('# 买菜')).toBe('\\# 买菜');
-    expect(taskTitle({ body_md: plainTitleMarkdown('# 买菜'), type_data: {} })).toBe('# 买菜');
+    expect(taskTitle({ body_md: plainTitleMarkdown('# 买菜') })).toBe('# 买菜');
   });
   it('多行：第一行当标题，后面照原样', () => {
     expect(plainTitleMarkdown('- 标题\n- 列表')).toBe('\\- 标题\n\n- 列表');

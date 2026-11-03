@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { Button as RacButton } from 'react-aria-components';
 import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Sparkles, Tag, X } from 'lucide-react';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsOf, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
-import { newCountConfig, primaryFieldKey, shownFields } from '@mindough/core';
+import { newCountConfig, shownFields, withTitleLine } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
@@ -79,6 +79,11 @@ interface Draft extends CompletionValue {
   epIgnored: boolean;
 }
 
+/** 挂上第一条资料时的正文：资料名当第一行（纯文字），下面接库的正文模板。 */
+export function prefillBody(name: string, template: string | null | undefined): string {
+  return withTitleLine(template ? dataLabel(template) : '', name);
+}
+
 function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]): Draft {
   const typeId = d.type_id ?? null;
   const type = store.get('task_type', typeId);
@@ -88,8 +93,11 @@ function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]):
   if (type && isPersonLibrary(type) && typeof d.type_data?.person === 'string') refs.push({ kind: 'person', id: d.type_data.person });
   for (const pid of people) if (!refs.some((r) => r.id === pid)) refs.push({ kind: 'person', id: pid });
   const cat = d.category_id ?? d.checkin_category_id ?? null;
+  // 从资料新建（资料库「新建任务」、⌘K「用它新建任务」）：第一行预填资料名，下面接库的正文模板，都能改（Rei 2026-11-03）
+  const item = d.library_item_id ? store.get('library_item', d.library_item_id) : undefined;
+  const itemType = item ? store.get('task_type', item.type_id) : undefined;
   return {
-    body: d.body_md ?? '',
+    body: d.body_md ?? (item ? prefillBody(item.name, itemType?.body_template) : ''),
     typeData: d.type_data ?? {},
     completion_mode: mode,
     target_value: d.target_value ?? (mode === 'timer' ? 10 * 60_000 : mode === 'count' ? 1 : null),
@@ -162,8 +170,6 @@ function Composer() {
   // 任务的「主库」= 第一条资料的库，没有资料时用默认库（决定任务字段、正文模板）
   const mainType = firstItemType ?? (hasLibrary(defaultLib) ? defaultLib : undefined);
   const legacyType = !mainType && defaultLib && defaultLib.id !== PLAIN_TYPE_ID && shownFields(defaultLib).length > 0 ? defaultLib : undefined;
-  // 标题来自正文第一行（类型没有主字段）：第一行只能是纯文字（Rei 2026-11-03）；有主字段的（影视、游戏…）标题是资料名，正文照常排版
-  const plainTitle = !primaryFieldKey(mainType ?? legacyType);
   // 任务字段：每个挂着资料的库各自的，外加默认库；同一个 key 只要一个
   // 人物库不显示任务字段（和详情一样）
   const fieldLibs = [...groups.map((g) => g.type).filter((t) => !isPersonLibrary(t)), ...(mainType && !groups.some((g) => g.type.id === mainType.id) ? [mainType] : [])];
@@ -194,16 +200,26 @@ function Composer() {
 
   const remindable = canRemind({ recurrence: d.recurrence, completion_mode: d.completion_mode, scheduled_date: d.date, target_date: d.target_date });
 
-  /** 挂上 / 去掉一条资料。挂上第一条资料时：正文空着就套这个库的正文模板，完成方式没手选过就用库的默认。 */
+  // 上次自动填进正文的那段（资料名 + 模板）：用户没改过，换了资料就跟着换
+  const prefilled = useRef<string | null>(req.defaults.library_item_id && req.defaults.body_md === undefined ? d.body : null);
+
+  /**
+   * 挂上 / 去掉一条资料。挂上第一条资料时：正文空着（或还是上次自动填的）就填「资料名 + 这个库的正文模板」，
+   * 第一行是资料名、能改（Rei 2026-11-03）；完成方式没手选过就用库的默认。
+   */
   const toggleRef = (k: RefKey, on: boolean) => {
     setD((x) => {
       if (!on) return { ...x, refs: x.refs.filter((r) => r.id !== k.id) };
       if (x.refs.some((r) => r.id === k.id)) return x;
       const next: Draft = { ...x, refs: [...x.refs, k] };
       const hadItem = x.refs.some((r) => r.kind === 'item');
-      const type = k.kind === 'item' ? store.get('task_type', store.get('library_item', k.id)?.type_id) : undefined;
-      if (type && !hadItem) {
-        if (!x.body.trim() && type.body_template) next.body = dataLabel(type.body_template);
+      const item = k.kind === 'item' ? store.get('library_item', k.id) : undefined;
+      const type = item ? store.get('task_type', item.type_id) : undefined;
+      if (item && type && !hadItem) {
+        if (!x.body.trim() || x.body === prefilled.current) {
+          next.body = prefillBody(item.name, type.body_template);
+          prefilled.current = next.body;
+        }
         if (!x.modeTouched) Object.assign(next, modeDefaults(type.default_completion_mode, x));
       }
       return next;
@@ -306,8 +322,8 @@ function Composer() {
         )}
         {epDef && bodyEp && <EpisodeChip text={formatEpisode(bodyEp.value)} pending onUndo={() => set({ epIgnored: true })} />}
         <LazyMdEditor
-          key={plainTitle ? 'title' : 'free'}
-          plainTitle={plainTitle}
+          // 任务的第一行是标题，只能是纯文字（Rei 2026-11-03，挂了资料的任务也一样）
+          plainTitle
           label={tr('内容')}
           className="composer-body"
           onEscape={() => ui.closeQuickCreate()}

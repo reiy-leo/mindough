@@ -8,7 +8,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { taskTitle, type Store, type Task } from '@mindough/core';
 
-vi.mock('../../lib/view', () => ({ titleOf: (_s: unknown, t: Task) => taskTitle({ body_md: t.body_md, type_data: {} }) }));
+vi.mock('../../lib/view', () => ({ titleOf: (_s: unknown, t: Task) => taskTitle({ body_md: t.body_md }) }));
 
 import { TaskSearch } from './TaskSearch';
 import { typingKey } from '../../lib/ime';

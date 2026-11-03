@@ -6,7 +6,7 @@ import { search } from '../src/search';
 import { BUILTIN_TASK_TYPES } from '../src/seed/builtin-types';
 import { mkTask } from './helpers';
 
-const t = (body_md: string) => ({ title: taskTitle({ body_md, type_data: {} }), body: body_md });
+const t = (body_md: string) => ({ title: taskTitle({ body_md }), body: body_md });
 const match = (body_md: string, q: string) => {
   const x = t(body_md);
   return taskTextMatches(x.title, x.body, q);

@@ -70,7 +70,7 @@ describe('第一行打 markdown 不变', () => {
     const md = h.getMarkdown();
     expect(md).toBe('\\*\\*不是粗体\\*\\* # 1. x\n');
     expect(firstLine(md)).toBe(s);
-    expect(taskTitle({ body_md: md, type_data: {} })).toBe(s);
+    expect(taskTitle({ body_md: md })).toBe(s);
     done();
     const again = setup(md);
     expect(first(again.view)).toEqual(plain(s));
@@ -261,7 +261,7 @@ describe('老数据', () => {
     ['> 引用', '引用'],
     ['- [ ] 清单', '清单'],
   ])('%s：打开显示成纯文字，不写回；标题照旧', (md, title) => {
-    expect(taskTitle({ body_md: md, type_data: {} })).toBe(title);
+    expect(taskTitle({ body_md: md })).toBe(title);
     const { view, changes, done } = setup(md);
     expect(first(view)).toEqual(plain(title));
     expect(changes).toEqual([]);

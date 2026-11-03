@@ -32,11 +32,14 @@ export interface TaskRowProps {
   spanNote?: string;
 }
 
-export function TaskThumb({ media, layout, isAvatar, color, icon, name }: { media: string | null; layout: string; isAvatar: boolean; color?: string; icon?: string; name?: string | null }) {
+/**
+ * 行首缩略图。挂了资料的任务（hasItem）只显示第一条资料的图，没图就什么都不显示（Rei 2026-11-03「电影B只是显示海报缩略图」）；
+ * 没挂资料的照旧：类型的图片字段 / 人物头像，有版式的类型没图时显示类型图标。name 给了就用按名字生成的渐变占位（⌘K 的资料结果）。
+ */
+export function TaskThumb({ media, layout, isAvatar, color, icon, name, hasItem = false }: { media: string | null; layout: string; isAvatar: boolean; color?: string; icon?: string; name?: string | null; hasItem?: boolean }) {
   const Icon = typeIcon(icon);
   if (media) return <img className={`thumb thumb-${isAvatar ? 'avatar' : layout}`} src={media} alt="" />;
-  if (layout === 'text') return null;
-  // 资料没有图：按名字生成的渐变占位
+  if (hasItem || layout === 'text') return null;
   if (name) return <ItemArt src={null} name={name} shape={layoutShape(layout)} className={`thumb thumb-${layout}`} />;
   return (
     <span className="thumb thumb-icon" style={{ color }}>
@@ -61,10 +64,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const cats = store.categoriesOfTask(task);
   const items = store.itemsOfTask(task);
   const CategoryIcon = typeIcon(cats[0] ? categoryIcon(cats[0]) : undefined);
-  // 行标题用的是正文首行时，第一条资料的名字写在元信息里；标题本来就是资料名就不重复
-  const itemShown = v.subtitle && v.title && items.length ? v.title : null;
-  // 第一条资料总看得见（在标题里或元信息里），其余的才算进 +N
-  const more = Math.max(0, cats.length - 1) + Math.max(0, items.length - 1);
+  // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图）。第一条资料有图时算看得见，其余的（和没图的那条）算进 +N，悬停看全部
+  const more = Math.max(0, cats.length - 1) + Math.max(0, items.length - (v.media ? 1 : 0));
   const allRefs = [...cats.map((c) => dataLabel(c.name)), ...items.map((i) => i.name)].join(tr('、'));
   const isCheckInRow = checkIn && (task.completion_mode !== 'once' || !!rec);
   const relatedCount = store.relatedTasks(task.id).length;
@@ -142,7 +143,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           </span>
         </Checkbox>
       )}
-      <TaskThumb media={v.media} layout={v.type?.layout ?? 'text'} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} name={v.artName} />
+      <TaskThumb media={v.media} layout={v.thumbLayout} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} hasItem={v.hasItem} />
       <RacButton className="row-main" aria-current={selected ? 'true' : undefined} onPress={() => {
           // 长按出菜单后松手不算点开
           if (longPressed.current) {
@@ -154,15 +155,14 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           ui.openEditor(task.id);
         }}
       >
-        {/* 列表不显示副标题（Rei 2026-10-27）。带资料又写了正文的任务：标题用正文首行，资料名挪到类型后面（Rei 2026-10-28「连任务名称都不显示了」） */}
-        <span className="row-title">{v.subtitle || v.title}</span>
+        {/* 第一行是任务标题 = 正文第一行，挂了资料也一样（Rei 2026-11-03）；资料只在行首显示缩略图 */}
+        <span className="row-title">{v.title}</span>
         <span className="row-meta">
-          {/* 类型和资料（Rei 2026-10-28 能挂多个）：克制地写「游戏 · 生灵重塑 +2」——第一个类型、第一条资料，其余合成 +N，悬停看全部 */}
-          {(cats.length > 0 || itemShown) && (
+          {/* 类型（Rei 2026-10-28 能挂多个）：克制地写「游戏 +2」——第一个类型，其余类型和资料合成 +N，悬停看全部 */}
+          {cats.length > 0 && (
             <span className="meta-type meta-refs" style={{ color: cats[0]?.color ?? v.type?.color }}>
-              {cats[0] ? <CategoryIcon size={12} /> : <TypeIcon size={12} />}
-              {cats[0] ? dataLabel(cats[0].name) : null}
-              {itemShown ? <span className="meta-item">{cats[0] ? ' · ' : ''}{itemShown}</span> : null}
+              <CategoryIcon size={12} />
+              {dataLabel(cats[0]!.name)}
               {more > 0 && (
                 <HoverTip className="meta-more" tip={allRefs}>
                   {' '}+{more}
@@ -170,7 +170,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
               )}
             </span>
           )}
-          {!cats.length && !itemShown && v.type && v.type.layout !== 'text' && (
+          {!cats.length && v.type && v.type.layout !== 'text' && (
             <span className="meta-type" style={{ color: v.type.color }}>
               <TypeIcon size={12} />
               {dataLabel(v.type.name)}

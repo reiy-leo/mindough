@@ -42,6 +42,7 @@ import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type 
 import type { Change, StorageAdapter } from './storage/adapter';
 
 import { dataLabel, tr } from './i18n';
+import { fieldText, itemTitleOf, needsTitleLine, withTitleLine } from './preview';
 import { parseHlc } from './hlc';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, normalizeDayStart, type MoodId } from './journal';
 import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
@@ -196,6 +197,7 @@ export class Store {
     store.settleMerges();
     store.settleCategories();
     store.backfillRefs();
+    store.migrateTitleLines();
     store.adoptJournalEntries([...store.tables.journal_entry.values()]);
     await store.flush();
     return store;
@@ -434,6 +436,8 @@ export class Store {
     if (applied.some((c) => c.table === 'library_item' || c.table === 'person' || c.table === 'task' || c.table === 'task_person')) this.settleMerges();
     // 类型：拉下来的有同名的就并、指着被并掉的改指留下的
     if (applied.some((c) => c.table === 'category' || c.table === 'task' || c.table === 'group')) this.settleCategories();
+    // 旧客户端写来的挂资料任务（正文以 `## 想看理由` 开头或空着）：资料名补成第一行（见 migrateTitleLines）
+    if (applied.some((c) => c.table === 'task' || c.table === 'task_item' || c.table === 'library_item')) this.migrateTitleLines();
     return applied.length;
   }
 
@@ -608,6 +612,35 @@ export class Store {
     }
     this.write(rows);
     return plan.tasks.length;
+  }
+
+  /** 2026-11-03 之前这件任务的标题来源：类型主字段的值（资料名）。没有就是 ''。 */
+  private itemTitle(t: Task): string {
+    return itemTitleOf({ type_data: this.taskData(t) }, this.get('task_type', t.type_id), (def, v) =>
+      def.kind === 'person' && typeof v === 'string' ? (this.get('person', v)?.name ?? '') : fieldText(v),
+    );
+  }
+
+  /**
+   * 标题改成正文第一行（Rei 2026-11-03）后的迁移：标题原来是资料名、正文又缺标题行的任务
+   * （空正文，或旧客户端写的 `## 想看理由` / 列表 / 带格式开头），把资料名按纯文字转义插到正文最前面。
+   * - 幂等：插完第一行就是纯文字，下次不再动；结果只看正文和资料名，两台设备各迁一遍得到同一段。
+   * - 每次打开、拉到任务 / 资料、挂上资料、新建时都跑；没有要改的就是空操作。
+   * - 改了的正文进 outbox，同步给别的设备（行级 LWW）。
+   * ids 给了就只看这几件。返回改了几件。
+   */
+  migrateTitleLines(ids?: Iterable<string>): number {
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    const pick = ids ? [...ids].map((id) => this.tables.task.get(id)).filter((t): t is Task => !!t) : [...this.tables.task.values()];
+    for (const t of pick) {
+      if (t.deleted || !needsTitleLine(t.body_md)) continue;
+      const name = this.itemTitle(t);
+      if (!name) continue;
+      const body = withTitleLine(t.body_md, name);
+      if (body !== t.body_md) rows.push({ table: 'task', row: { ...t, body_md: body } as BaseRow });
+    }
+    if (rows.length) this.write(rows);
+    return rows.length;
   }
 
   // ───────────── 资料库 ─────────────
@@ -890,6 +923,8 @@ export class Store {
     // 单值里的那条也要去掉（它可能还没补进多值）：不然下面对齐时又会被补回来
     if (t && t.library_item_id && !want.includes(this.resolveItemId(t.library_item_id) ?? t.library_item_id)) rows.push({ table: 'task', row: { ...t, library_item_id: null } as BaseRow });
     this.write(dedupeRows(rows));
+    // 挂上了资料、正文还没写标题：资料名当第一行
+    if (want.length) this.migrateTitleLines([taskId]);
   }
 
   addTaskItem(taskId: string, itemId: string): void {
@@ -1226,7 +1261,10 @@ export class Store {
       ...(input.id ? { id: input.id } : {}),
     });
     // type_data 里直接写了资料（片名…）：挂到资料库（同名复用）
-    return this.attachLibrary(created);
+    const attached = this.attachLibrary(created);
+    // 挂了资料、正文没写标题（空着或只有正文模板）：资料名当第一行（Rei 2026-11-03）
+    this.migrateTitleLines([attached.id]);
+    return this.tables.task.get(attached.id)!;
   }
 
   updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'updated_at'>>): Task {

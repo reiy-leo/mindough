@@ -17,10 +17,10 @@ const tasks = [
 const input = { tasks, types: BUILTIN_TASK_TYPES, people, groups, taskPeople };
 
 describe('全局搜索', () => {
-  it('搜类型字段（片名）', () => {
+  it('搜类型字段（片名）：能搜到，标题是正文第一行（Rei 2026-11-03，资料名不当标题）', () => {
     const hits = search(input, '沙丘');
     expect(hits.map((h) => h.id)).toEqual(['t2']);
-    expect(hits[0]!.title).toBe('沙丘 2');
+    expect(hits[0]!.title).toBe('想看理由');
     expect(hits[0]!.snippet).not.toContain('#');
   });
 
