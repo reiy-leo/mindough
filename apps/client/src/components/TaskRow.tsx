@@ -64,8 +64,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const cats = store.categoriesOfTask(task);
   const items = store.itemsOfTask(task);
   const CategoryIcon = typeIcon(cats[0] ? categoryIcon(cats[0]) : undefined);
-  // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图）。第一条资料有图时算看得见，其余的（和没图的那条）算进 +N，悬停看全部
-  const more = Math.max(0, cats.length - 1) + Math.max(0, items.length - (v.media ? 1 : 0));
+  // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图，没图就不显示）。第一条资料不算进 +N，其余的才算，悬停看全部
+  const more = Math.max(0, cats.length - 1) + Math.max(0, items.length - 1);
   const allRefs = [...cats.map((c) => dataLabel(c.name)), ...items.map((i) => i.name)].join(tr('、'));
   const isCheckInRow = checkIn && (task.completion_mode !== 'once' || !!rec);
   const relatedCount = store.relatedTasks(task.id).length;
