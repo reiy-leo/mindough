@@ -229,6 +229,8 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
           onKeyDown={onSearchKey}
         />
       </SearchField>
+      {/* 搜索框不动，下面的行和说明一起滚（类型页上它是唯一会滚的地方，Rei 2026-11-03） */}
+      <div className="cat-list-scroll">
       <div className="cat-list-rows" id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
         {matches ? (
           <>
@@ -265,6 +267,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
       <p className="foot-note cat-list-note">
         {mobile ? tr('左滑一行可以设成常用或不显示。类型不能删，不想看到就设成不显示。') : tr('↑↓ 选，回车打开；{mod}1、{mod}2、{mod}3 切常用、普通、不显示。类型不能删。', { mod: modKey() })}
       </p>
+      </div>
     </div>
   );
 }

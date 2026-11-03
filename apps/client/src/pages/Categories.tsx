@@ -76,7 +76,7 @@ export function CategoriesPage({ id }: { id?: string }) {
       </div>
     );
   return (
-    <div className={`page types-page${selected ? ' has-selection' : ''}`}>
+    <div className={`page types-page is-fill${selected ? ' has-selection' : ''}`}>
       <PageHeader
         title={trc('分类', '类型')}
         icon={<Tags size={22} />}

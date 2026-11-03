@@ -3883,3 +3883,66 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   font-size: 13px;
   white-space: nowrap;
 }
+
+/* 类型页只让列表自己滚（Rei 2026-11-03「类型页：只有类型列表滚动，而不是整个页面」）：
+   页头和搜索框不动；宽屏右边的详情单独滚。页面撑满 .main（或 macOS 无标题栏时的 .main-scroll），
+   每层 flex 都给 min-height: 0，不然子元素会把父级撑高，又变成整页滚。
+   手机上列表卡片停在标签栏上沿，列表底部留出加号的位置，最后一行不被压住。 */
+.types-page.is-fill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: var(--space-4);
+}
+.types-page > .types-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.types-page .types-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.types-page .types-list > .cat-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.types-page .cat-list-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 焦点框、选中行的阴影不被裁掉 */
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 2px var(--space-2) var(--space-2);
+}
+.types-page .types-uses {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 右下角浮着新建按钮，详情底部留出它的位置 */
+  padding-bottom: 96px;
+}
+@media (max-width: 900px) {
+  /* 窄窗口一列：没选中时只放列表；选中了列表和详情上下各占一半、各自滚 */
+  .app-desktop .types-page:not(.has-selection) .types-uses {
+    display: none;
+  }
+  .app-desktop .types-page.has-selection > .types-layout {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .app-desktop .types-page .cat-list-scroll {
+    padding-bottom: 80px;
+  }
+}
+.app-mobile .types-page.is-fill {
+  padding-bottom: calc(var(--tabbar-h) + var(--space-2) + env(safe-area-inset-bottom));
+}
+.app-mobile .types-page .cat-list-scroll {
+  padding-bottom: 88px;
+}
