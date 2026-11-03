@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Form, Input, TextField, Button as RacButton } from 'react-aria-components';
 import { CalendarDays, ChevronsUp, Plus } from 'lucide-react';
-import { weekdayLabel, addDays, agendaBuckets, compareDateKey, diffDays, formatTaskDateRange, formatDateZh, relativeDayZh, toDateKey, weekday, type AgendaItem, type Task } from '@mindough/core';
+import { weekdayLabel, addDays, agendaBuckets, compareDateKey, diffDays, formatTaskDateRange, formatDateZh, relativeDayZh, toDateKey, weekday, type AgendaItem, type Task, plainTitleMarkdown } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
@@ -38,7 +38,7 @@ export function AgendaPage() {
   }, []);
 
   const submit = (date: string) => {
-    if (draft.trim()) store.createTask({ body_md: draft.trim(), scheduled_date: date });
+    if (draft.trim()) store.createTask({ body_md: plainTitleMarkdown(draft.trim()), scheduled_date: date });
     setDraft('');
     setAdding(null);
   };

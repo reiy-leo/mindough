@@ -11,7 +11,7 @@ import { dataLabel, tr } from './i18n';
 export type FieldResolver = (def: FieldDef, value: FieldValue) => string;
 
 
-export { UNDERLINE_TAG_RE, stripUnderlineTags, stripWithLiterals, unescapeMarkdown } from './md-text';
+export { UNDERLINE_TAG_RE, escapeTitleLine, plainTitleMarkdown, stripUnderlineTags, stripWithLiterals, unescapeMarkdown } from './md-text';
 
 /** 正文摊成搜索用的文字：去掉下划线标签和反斜杠转义（draw\.io → draw.io），别的照原样。 */
 export const searchableMarkdown = (md: string) => stripWithLiterals(md, stripUnderlineTags);

@@ -48,6 +48,8 @@ export interface MdEditorProps {
   onModEnter?: () => void;
   /** 拿到编辑器句柄（日记输入框：清空、聚焦、列表按钮）；卸载时置回 null。 */
   handleRef?: MutableRefObject<MdEditorHandle | null>;
+  /** 任务正文：第一行是标题，只能是纯文字（Rei 2026-11-03，见 title.ts）。日记、备注不给。 */
+  plainTitle?: boolean;
 }
 
 /** 链接框：改哪一段（新加时是选区 / 光标）、是不是已有的链接、两栏的值。 */
@@ -66,7 +68,7 @@ interface LinkDialog {
 /** 输入法正在选字时的回车（Safari 选完字的那次 keydown 是 229）不算保存。 */
 const composing = (e: React.KeyboardEvent) => e.nativeEvent.isComposing || e.keyCode === 229;
 
-export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef }: MdEditorProps) {
+export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef, plainTitle = false }: MdEditorProps) {
   const ui = useUiOptional();
   const handle = useRef<MdEditorHandle | null>(null);
   const cb = useRef({ onChange, onBlur, onEscape, onModEnter });
@@ -145,6 +147,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     label,
     placeholder,
     readOnly,
+    plainTitle,
     onChange: (md) => cb.current.onChange(md),
     onFocus: () => setFocused(true),
     onBlur: () => {
@@ -305,6 +308,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
                 ))}
               </tbody>
             </table>
+            {plainTitle && <p className="md-keys-note">{t.title1}</p>}
             <p className="md-keys-note">{t.combo}</p>
             <p className="md-keys-note">{t.close}</p>
           </div>

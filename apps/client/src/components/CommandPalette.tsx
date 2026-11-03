@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, Input, Modal, ModalOverlay, SearchField, Button as RacButton } from 'react-aria-components';
 import { CornerDownLeft, FileDown, NotebookPen, Plus, Search, Sun, SunDim, UserRound } from 'lucide-react';
-import { TASK_STATUS_LABEL, isFinished, libraryCopy, search, type SearchHit } from '@mindough/core';
+import { TASK_STATUS_LABEL, isFinished, libraryCopy, search, type SearchHit, plainTitleMarkdown } from '@mindough/core';
 import { MoodIcon } from './journal/MoodIcon';
 import { requestJournalCompose } from '../lib/journal-compose';
 import { useStore } from '../store/StoreProvider';
@@ -62,7 +62,7 @@ export function CommandPalette() {
   const didaIndex = journalIndex + (showJournal ? 1 : 0);
   const offset = didaIndex + (showDida ? 1 : 0);
   const createFromQuery = () => {
-    const t = store.createTask({ body_md: q.trim() });
+    const t = store.createTask({ body_md: plainTitleMarkdown(q.trim()) });
     store.addToMyDay(t.id);
     ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: q.trim() }) }, 3000);
     close();

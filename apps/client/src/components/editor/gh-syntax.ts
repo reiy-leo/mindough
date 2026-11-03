@@ -10,6 +10,7 @@
  */
 import { Extension, Node as TiptapNode } from '@tiptap/core';
 import { InputRule, inputRules } from '@tiptap/pm/inputrules';
+import { guardTitleRules } from './title';
 import { Plugin, PluginKey, Selection, TextSelection, type EditorState, type Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView, type NodeView } from '@tiptap/pm/view';
 import type { Node as PMNode } from '@tiptap/pm/model';
@@ -477,6 +478,6 @@ export const ghExtensions = [
   Extension.create({
     name: 'mindoughGhSyntax',
     priority: 1100,
-    addProseMirrorPlugins: () => [mathEditing(), mathKeys(), inputRules({ rules: [alertInputRule(), mathInputRule(), mathDigitRule(), mathBlockInputRule()] })],
+    addProseMirrorPlugins: () => [mathEditing(), mathKeys(), inputRules({ rules: guardTitleRules([alertInputRule(), mathInputRule(), mathDigitRule(), mathBlockInputRule()]) })],
   }),
 ];

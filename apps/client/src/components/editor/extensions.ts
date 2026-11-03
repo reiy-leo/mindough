@@ -41,6 +41,7 @@ import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
 import { isHelpShortcut } from './shortcuts';
+import { guardTitleRules } from './title';
 
 // ───────── 链接的小工具（MdEditor 和测试也用）─────────
 
@@ -424,7 +425,7 @@ const canLinkAt = (state: EditorState, pos: number) => {
 
 /** 手打 [文字](网址)、<网址>、裸网址 + 空格、|3x2| + 空格。 */
 function syntaxRules(): InputRule[] {
-  return [
+  return guardTitleRules([
     new InputRule(LINK_INPUT_RE, (state, match, start, end) => {
       const type = state.schema.marks.link;
       const raw = match[2];
@@ -466,7 +467,7 @@ function syntaxRules(): InputRule[] {
       const tr = state.tr.replaceWith($s.before(), $s.after(), table);
       return tr.setSelection(TextSelection.create(tr.doc, $s.before() + 4));
     }),
-  ];
+  ]);
 }
 
 /** 一个表格：第一行是表头（header 里的字），后面 rows - 1 行空的（至少一行）。 */
@@ -761,7 +762,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
         inputRules({ rules: syntaxRules() }),
         // 清单：列表项开头打 [ ] / [x] 再空格
         inputRules({
-          rules: [
+          rules: guardTitleRules([
             new InputRule(/^\[([\sxX]?)\]\s$/, (state, match, start, end) => {
               const $s = state.doc.resolve(start);
               const d = $s.depth;
@@ -771,7 +772,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
               const tr = state.tr.delete(start, end);
               return tr.setNodeMarkup($s.before(d - 1), undefined, { ...li.attrs, checked: (match[1] ?? '').toLowerCase() === 'x' });
             }),
-          ],
+          ]),
         }),
       ];
     },

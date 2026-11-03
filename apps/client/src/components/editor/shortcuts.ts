@@ -67,6 +67,8 @@ export function shortcutRows(): ShortcutRow[] {
 /** 浮层的标题和底下两行说明。 */
 export const shortcutTexts = (mac: boolean) => ({
   title: tr('写法和快捷键'),
+  /** 任务正文才显示（第一行纯文字，Rei 2026-11-03）。 */
+  title1: tr('第一行是标题，只能是纯文字'),
   combo: tr('波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。', { mod: modName(mac) }),
   close: tr('{keys} 或 Esc 关闭', { keys: formatChord(['mod', '?'], mac) }),
 });

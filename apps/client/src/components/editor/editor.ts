@@ -18,6 +18,7 @@ import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
+import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
 export { finishMarkdown, prepareMarkdown, sameMarkdown } from './markdown';
 
@@ -143,10 +144,12 @@ export function applyLinkTr(state: EditorState, range: { from: number; to: numbe
 // ───────── 编辑器 ─────────
 
 /** 初始内容（JSON）。万一读不出来（理论上不会），整段当文字放进去，别让编辑器打不开。 */
-function initialContent(md: string) {
+function initialContent(md: string, plainTitle = false) {
   const schema = baseSchema();
   try {
-    return markdownIO(schema).parse(md).toJSON();
+    const doc = markdownIO(schema).parse(md);
+    // 任务：第一块显示成纯文字段落（老数据的标题 / 列表 / 粗体也是）；只改显示，canon 记的是规范后的样子，没改字不写回
+    return (plainTitle ? normalizeTitleDoc(doc) : doc).toJSON();
   } catch (err) {
     console.error('markdown 读不出来', err);
     const p = schema.nodes.paragraph!;
@@ -180,6 +183,8 @@ export interface MdEditorOptions {
   placeholder: string;
   label: string;
   readOnly?: boolean;
+  /** 任务正文：第一行是标题，只能是纯文字（见 title.ts）。日记、备注不开。 */
+  plainTitle?: boolean;
   onChange: (md: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -215,8 +220,9 @@ export class MdController {
     const o = this.get();
     const io = () => markdownIO(this.editor?.schema ?? baseSchema());
     const extensions: AnyExtension[] = [
-      ...schemaExtensions(),
+      ...(o.plainTitle ? guardTitleInputRules(schemaExtensions()) : schemaExtensions()),
       imeGuardExtension(),
+      ...(o.plainTitle ? [plainTitleExtension({ io })] : []),
       underlineKeysExtension(),
       behaviorExtension({
         placeholder: () => this.get().placeholder,
@@ -232,7 +238,7 @@ export class MdController {
     ];
     return {
       extensions,
-      content: initialContent(o.value),
+      content: initialContent(o.value, !!o.plainTitle),
       editable: !o.readOnly,
       enablePasteRules: false,
       enableContentCheck: false,
@@ -257,8 +263,13 @@ export class MdController {
   }
 
   private serialize() {
-    const ed = this.editor!;
-    return markdownIO(ed.schema).serialize(ed.state.doc);
+    return this.write(this.editor!.state.doc);
+  }
+
+  /** 文档写成 markdown；任务的第一行按字面文字写（title.ts）。 */
+  write(doc: PMNode) {
+    const io = markdownIO(this.editor?.schema ?? baseSchema());
+    return this.get().plainTitle ? serializeWithTitle(io, doc) : io.serialize(doc);
   }
 
   private alive() {
@@ -282,11 +293,12 @@ export class MdController {
     const ed = this.editor;
     if (!ed || !this.alive() || sameMarkdown(md, this.lastValue)) return;
     this.lastValue = md;
-    const doc = markdownIO(ed.schema).parse(md);
+    const parsed = markdownIO(ed.schema).parse(md);
+    const doc = this.get().plainTitle ? normalizeTitleDoc(parsed) : parsed;
     const view = ed.view;
     const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, doc.content);
     tr.setSelection(TextSelection.atStart(tr.doc));
-    this.lastOut = markdownIO(ed.schema).serialize(tr.doc);
+    this.lastOut = this.write(tr.doc);
     view.dispatch(tr.setMeta('addToHistory', false));
   }
 
@@ -306,7 +318,7 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
   return {
     editor,
     setMarkdown: (md) => ctl.setMarkdown(md),
-    getMarkdown: () => (editor.isDestroyed ? ctl.value() : markdownIO(editor.schema).serialize(editor.state.doc)),
+    getMarkdown: () => (editor.isDestroyed ? ctl.value() : ctl.write(editor.state.doc)),
     focus: () => view().focus(),
     destroy: () => editor.destroy(),
     linkAtSelection: () => linkAtSelection(editor.state),

@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { Button as RacButton, Form, Input, TextField } from 'react-aria-components';
 import { AppWindow, Pin, PinOff, Plus, Sun } from 'lucide-react';
-import { dueToday, formatDateZh, myDayItems, toDateKey } from '@mindough/core';
+import { dueToday, formatDateZh, myDayItems, toDateKey, plainTitleMarkdown } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { TaskRow } from './TaskRow';
 import { Tip } from '../ui/primitives';
@@ -29,7 +29,7 @@ export function MiniWindow() {
   const add = () => {
     const text = draft.trim();
     if (!text) return;
-    const t = store.createTask({ body_md: text });
+    const t = store.createTask({ body_md: plainTitleMarkdown(text) });
     store.addToMyDay(t.id, today);
     setDraft('');
   };

@@ -32,6 +32,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|公式": "Rumus",
   "格式|换行": "Ganti baris",
   "写法和快捷键": "Format dan pintasan",
+  "第一行是标题，只能是纯文字": "Baris pertama adalah judul dan hanya berupa teks biasa.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Bergelombang dan ganda: tahan {mod}, tekan U, lalu 1 atau 2. Ulangi untuk menghapus.",
   "{keys} 或 Esc 关闭": "{keys} atau Esc untuk menutup",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──

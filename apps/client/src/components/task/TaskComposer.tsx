@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { Button as RacButton } from 'react-aria-components';
 import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Sparkles, Tag, X } from 'lucide-react';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsOf, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
-import { newCountConfig, shownFields } from '@mindough/core';
+import { newCountConfig, primaryFieldKey, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
@@ -162,6 +162,8 @@ function Composer() {
   // 任务的「主库」= 第一条资料的库，没有资料时用默认库（决定任务字段、正文模板）
   const mainType = firstItemType ?? (hasLibrary(defaultLib) ? defaultLib : undefined);
   const legacyType = !mainType && defaultLib && defaultLib.id !== PLAIN_TYPE_ID && shownFields(defaultLib).length > 0 ? defaultLib : undefined;
+  // 标题来自正文第一行（类型没有主字段）：第一行只能是纯文字（Rei 2026-11-03）；有主字段的（影视、游戏…）标题是资料名，正文照常排版
+  const plainTitle = !primaryFieldKey(mainType ?? legacyType);
   // 任务字段：每个挂着资料的库各自的，外加默认库；同一个 key 只要一个
   // 人物库不显示任务字段（和详情一样）
   const fieldLibs = [...groups.map((g) => g.type).filter((t) => !isPersonLibrary(t)), ...(mainType && !groups.some((g) => g.type.id === mainType.id) ? [mainType] : [])];
@@ -304,6 +306,8 @@ function Composer() {
         )}
         {epDef && bodyEp && <EpisodeChip text={formatEpisode(bodyEp.value)} pending onUndo={() => set({ epIgnored: true })} />}
         <LazyMdEditor
+          key={plainTitle ? 'title' : 'free'}
+          plainTitle={plainTitle}
           label={tr('内容')}
           className="composer-body"
           onEscape={() => ui.closeQuickCreate()}

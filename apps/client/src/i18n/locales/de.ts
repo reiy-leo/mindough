@@ -32,6 +32,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|公式": "Formel",
   "格式|换行": "Zeilenumbruch",
   "写法和快捷键": "Formatierung & Tastenkürzel",
+  "第一行是标题，只能是纯文字": "Die erste Zeile ist der Titel und bleibt reiner Text.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Welle und doppelt: {mod} halten, U drücken, dann 1 oder 2. Nochmal drücken entfernt es.",
   "{keys} 或 Esc 关闭": "{keys} oder Esc zum Schließen",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──

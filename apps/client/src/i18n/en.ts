@@ -472,6 +472,7 @@ export const EN: Record<string, EnValue> = {
   "格式|公式": "Formula",
   "格式|换行": "Line Break",
   "写法和快捷键": "Formatting & Shortcuts",
+  "第一行是标题，只能是纯文字": "The first line is the title and stays plain text.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Wavy and double: hold {mod}, press U, then 1 or 2. Do it again to remove.",
   "{keys} 或 Esc 关闭": "{keys} or Esc to close",
   链接地址: 'Link URL',

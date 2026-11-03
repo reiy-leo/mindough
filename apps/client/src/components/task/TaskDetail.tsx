@@ -27,9 +27,8 @@ import {
   type LibraryEntry,
   type Store,
   type Task,
-  type TaskType,
-} from '@mindough/core';
-import { shownFields } from '@mindough/core';
+  type TaskType,, plainTitleMarkdown } from '@mindough/core';
+import { primaryFieldKey, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
 import { RefList, RefPicker } from '../library/RefPicker';
@@ -187,7 +186,7 @@ function DetailFrame({
  * 正文：所见即所得的 Markdown 编辑器（写的时候就是排好版的样子，存的还是 markdown）。
  * 打字先记在本地，离开编辑器、按 Esc 或关掉面板时存下来（同步一次一段，不是每个字一次）。
  */
-function Body({ store, task, placeholder }: { store: Store; task: Task; placeholder: string }) {
+function Body({ store, task, placeholder, plainTitle }: { store: Store; task: Task; placeholder: string; plainTitle: boolean }) {
   const [body, setBody] = useState(task.body_md);
   const latest = useRef(body);
   latest.current = body;
@@ -240,6 +239,8 @@ function Body({ store, task, placeholder }: { store: Store; task: Task; placehol
   return (
     <div className="detail-body">
       <LazyMdEditor
+        key={plainTitle ? 'title' : 'free'}
+        plainTitle={plainTitle}
         className="detail-md"
         label={tr('内容')}
         placeholder={placeholder}
@@ -576,7 +577,7 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
           onClose();
         }}
         onCreate={(text) => {
-          const created = store.createTask({ body_md: text, group_id: task.group_id });
+          const created = store.createTask({ body_md: plainTitleMarkdown(text), group_id: task.group_id });
           connect(created.id);
           ui.toast({ message: tr('已新建「{text}」', { text }), actions: [{ label: tr('查看'), onPress: () => ui.openEditor(created.id) }] });
           onClose();
@@ -972,7 +973,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
                 </div>
               </div>
             )}
-            <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} />
+            <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} plainTitle={!primaryFieldKey(type)} />
             {!lib && typed && type && (
               <Disclosure className="type-disclosure" defaultExpanded={!hasPrimary}>
                 <Heading level={3} className="disclosure-head">

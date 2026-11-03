@@ -7,6 +7,7 @@
  * - 手机：详情整页盖住列表，添加框收起焦点，软键盘随之落下；要写正文再点正文。
  * 新任务滚到看得见的地方；连着加时只滚最后一件。
  */
+import { plainTitleMarkdown } from '@mindough/core';
 import type { LayoutKind } from '../skin/platform';
 
 export interface QuickAddDeps {
@@ -19,7 +20,8 @@ export interface QuickAddDeps {
 export function quickAdd(deps: { create: (text: string) => string; openEditor: (taskId: string | null) => void }, text: string): string | null {
   const body = text.trim();
   if (!body) return null;
-  const id = deps.create(body);
+  // 打的字就是标题：按字面文字存（Rei 2026-11-03「任务标题是纯文本不渲染md」）
+  const id = deps.create(plainTitleMarkdown(body));
   deps.openEditor(id);
   return id;
 }

@@ -32,6 +32,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|公式": "Fórmula",
   "格式|换行": "Salto de línea",
   "写法和快捷键": "Formato y atajos",
+  "第一行是标题，只能是纯文字": "La primera línea es el título y solo admite texto sin formato.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Ondulado y doble: mantén {mod}, pulsa U y luego 1 o 2. Repite para quitarlo.",
   "{keys} 或 Esc 关闭": "{keys} o Esc para cerrar",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──

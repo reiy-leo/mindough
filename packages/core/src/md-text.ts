@@ -50,3 +50,31 @@ export function unescapeMarkdown(md: string): string {
  */
 export const UNDERLINE_TAG_RE = /<\/?u(?:\s+class=(["'])(?:wavy|double)\1)?\s*>/gi;
 export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '');
+
+/**
+ * 任务标题（正文第一行）存成字面文字（Rei 2026-11-03「任务标题是纯文本不渲染md」）。
+ * 第一行写进 markdown 前把会被读成格式的字符加反斜杠，读回来、在列表里显示都是原来那几个字：
+ * - 哪里都转：`\` `*` `_` `` ` `` `~` `[` `$`；`<` 后面跟字母、`/`、`!`、`?` 时（HTML、`<u>`、`<网址>`）；`&` 像实体时（`&amp;`）。
+ * - 只在行首转：`#` `-` `+` `>` `=` `|`，`1.` / `1)` 的 `.` `)`。
+ * 前后的空白去掉（行首四个空格会变成代码块）。中间的换行当空格。
+ */
+export function escapeTitleLine(line: string): string {
+  const s = line.replace(/\s*\r?\n\s*/g, ' ').trim();
+  if (!s) return '';
+  let out = s
+    .replace(/[\\*_`~[$]/g, (c) => `\\${c}`)
+    .replace(/<(?=[A-Za-z/!?])/g, '\\<')
+    .replace(/&(?=#?[A-Za-z0-9]+;)/g, '\\&');
+  out = out.replace(/^([#\-+>=|])/, '\\$1').replace(/^(\d{1,9})([.)])/, '$1\\$2');
+  return out;
+}
+
+/** 一段用户直接打的字当任务正文：第一行按标题转义（escapeTitleLine），后面的行照原样。添加框、⌘K 新建用。 */
+export function plainTitleMarkdown(text: string): string {
+  const t = text.replace(/^\s*\n/, '');
+  const i = t.indexOf('\n');
+  if (i < 0) return escapeTitleLine(t);
+  const rest = t.slice(i + 1).replace(/\s+$/, '');
+  const head = escapeTitleLine(t.slice(0, i));
+  return rest.trim() ? `${head}\n\n${rest}` : head;
+}
