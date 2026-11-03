@@ -130,7 +130,7 @@
 | （不用）格式工具栏 | 富文本工具栏 / Markdown 工具栏 | 编辑器没有工具栏了（Rei 2026-10-25「换成tiptap后，不用显示toolbar」），格式靠快捷键和手打写法；⌘K 打开链接框（见下一行）。原来按钮的文字（标题、粗体、斜体…格式）已经从九种语言里删掉 |
 | 写法和快捷键 | Markdown 快捷键 / 键盘快捷键 / 格式帮助 / 速查表 | 编辑器里 ⌘? / ⌘/（Ctrl+?）弹出的小浮层标题（Rei 2026-11-03），界面上不写 markdown。每行：格式名（灰）· 手打写法（等宽小块）· 快捷键（kbd）。格式名用语境「格式」：粗体、斜体、下划线、波浪线、双线、删除线、行内代码、链接、标题、列表、编号列表、清单、引用、代码块、分隔线、表格、折叠块、公式、换行；写法里的占位词「文字」「代码」「网址」也随语言。底下两行灰字：「波浪线、双线：按住 ⌘，先按 U，再按 1 或 2；同样再按一遍就去掉。」「⌘? 或 Esc 关闭」。Mac 写 ⌘ ⌥ ⇧ ↩，Windows / Linux 写 Ctrl+Alt+Shift+Enter。英文 Formatting & Shortcuts；Bold / Italic / Underline / Wavy Underline / Double Underline / Strikethrough / Inline Code / Link / Heading / Bulleted List / Numbered List / Checklist / Quote / Code Block / Divider / Table / Collapsible Section / Formula / Line Break；“Wavy and double: hold ⌘, press U, then 1 or 2. Do it again to remove.”“⌘? or Esc to close”。七种外语 2026-11-03 加，待母语者看 |
 | 下划线 / 波浪线 / 双线 | 底线 / 波浪下划线 / 双下划线（中文界面） | 三种下划线（Rei 2026-11-03 的叫法），⌘U、⌘U+1、⌘U+2。英文 Underline / Wavy Underline / Double Underline |
-| 链接小浮层 | 链接气泡 / 链接卡片 | 编辑器里鼠标移到链接上（触屏长按选中链接里的字）出现：原地址（太长省略号）+「编辑」「去掉链接」；点「编辑」原地展开成链接框。点链接就是打开，不用说明。英文 Edit / Remove Link |
+| 链接小浮层 | 链接气泡 / 链接卡片 | 编辑器里鼠标移到链接上（触屏长按选中链接里的字）出现三个按钮：「访问」（前面一个外链图标，点了打开链接）「编辑」「去掉链接」。不显示网址（Rei 2026-11-03「链接的popover中不显示链接，只显示访问、编辑、去掉链接」），网址放在「访问」的悬停提示里，读屏念「访问 网址」。点「编辑」原地展开成链接框。点链接本身也是打开，不用说明。英文 Open / Edit / Remove Link |
 | 链接框 | 链接弹窗 / 链接对话框 / 名称 | 两栏「文字」（占位「不填就用网址」）「链接」（占位 https://）；读屏名「编辑链接」/「添加链接」，手机底部面板标题同；按钮：已有链接「去掉链接」「取消」「保存」，新加「取消」「添加」；网址空着「填一个网址」，不像网址「这不像网址，检查一下」。叫「文字」不叫「名称 / 标题」（markdown 里就是链接文字）。英文 Text / Link，Leave empty to use the URL，Edit Link / Add Link，Enter a URL，That doesn’t look like a URL，Cancel / Save / Add / Remove Link |
 | 注意 / 提示 / 重要 / 警告 / 小心 | 备注 / 技巧 / 危险 / NOTE | GitHub 提示块（`> [!NOTE]` 等，Rei 2026-10-17）的标题，带图标；参考 GitHub 中文界面，CAUTION 叫「小心」（和 NOTE 的「注意」分开）。英文 Note / Tip / Important / Warning / Caution |
 | 公式 | LaTeX / 数学表达式 | `$…$` / `$$…$$`（KaTeX）；界面上没有专门的文字，写错的公式显示红色源码 |
@@ -265,6 +265,7 @@ Rei 2026-10-25：「支持西、葡、俄、日、德、法、印尼」。设置
 | 倒数日 | Countdown | Cuenta atrás | Contagem regressiva | Обратный отсчёт | カウントダウン | Countdown | Compte à rebours | Hitung mundur |
 | 归档（打卡，2026-11-02，待母语者看） | Archive | Archivar | Arquivar | В архив | アーカイブ | Archivieren | Archiver | Arsipkan |
 | 卡片颜色（2026-11-02，待母语者看） | Card Color | Color de la tarjeta | Cor do cartão | Цвет карточки | カードの色 | Kartenfarbe | Couleur de la carte | Warna kartu |
+| 访问（链接浮层按钮，2026-11-03，待母语者看） | Open | Abrir | Abrir | Открыть | 開く | Öffnen | Ouvrir | Buka |
 | 提醒 | Reminder | Recordatorio | Lembrete | Напоминание | リマインダー | Erinnerung | Rappel | Pengingat |
 | 附件 | Attachments | Adjuntos | Anexos | Вложения | 添付ファイル | Anhänge | Pièces jointes | Lampiran |
 | 附件（「+」菜单那一项） | Attachment | Adjunto | Anexo | Вложение | 添付ファイル | Anhang | Pièce jointe | Lampiran |

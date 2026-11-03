@@ -166,7 +166,7 @@
   border-radius: 8px;
 }
 
-/* 链接小浮层：悬停 / 光标在链接里时出现在链接下面（原地址 + 编辑 + 去掉链接） */
+/* 链接小浮层：悬停 / 光标在链接里时出现在链接下面（访问 + 编辑 + 去掉链接，不显示网址） */
 .md-link-pop {
   position: absolute;
   z-index: 30;
@@ -174,7 +174,7 @@
   align-items: center;
   gap: 2px;
   max-width: min(420px, 100%);
-  padding: 3px 4px 3px 10px;
+  padding: 3px 4px;
   background: var(--surface);
   background-color: color-mix(in srgb, var(--surface) 100%, var(--bg));
   border: 1px solid var(--border);
@@ -299,19 +299,15 @@
     animation: none;
   }
 }
-.md-link-pop-url {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--accent);
-  text-decoration: none;
-  margin-right: 4px;
+/* 「访问」：和另外两个按钮一样，前面一个外链图标 */
+.md-link-pop-open-tip {
+  display: contents;
 }
-.md-link-pop-url:hover {
-  text-decoration: underline;
+.md-link-pop-open {
+  gap: 4px;
+}
+.md-link-pop-open svg {
+  flex: none;
 }
 .md-link-pop .btn {
   flex: none;

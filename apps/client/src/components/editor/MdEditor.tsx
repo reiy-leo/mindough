@@ -6,7 +6,8 @@
  *   和手打语法（清单 `[] `、表格 `|3x2| `、折叠块 `<details>` 回车、提示块 `> [!NOTE]`、公式 `$…$`）。⌘K / Ctrl+K 加链接，Esc 收起。
  * - 悬停不变底色（Rei 2026-10-25「hover编辑器不用change bg」），聚焦也不变；只有光标。备注框（.note-editor）聚焦时边框照旧变强调色。
  * - 链接（Rei 2026-10-17「放上去就展示吧，点一下是访问链接」）：点一下打开（Web 新标签页，App 交给系统浏览器）；
- *   鼠标移到链接上出现小浮层：原地址 +「编辑」「去掉链接」，鼠标能移进浮层，移开收起。
+ *   鼠标移到链接上出现小浮层：「访问」「编辑」「去掉链接」三个按钮，不显示网址（Rei 2026-11-03），网址在「访问」的悬停提示里；
+ *   鼠标能移进浮层，移开收起。
  *   触屏没有悬停：长按选中链接里的字（光标 / 选区落在链接里）出同一个浮层。
  * - 链接框（Rei 2026-10-17「编辑器中链接要支持编辑名称和链接」）：浮层「编辑」、⌘K 都开同一个框，
  *   桌面：就是那个悬停浮层原地展开（新加时锚在光标 / 选区处），不是居中弹窗；触屏：底部弹出面板，键盘弹起时跟着抬高、留出安全区。
@@ -25,6 +26,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefO
 import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
+import { ExternalLink } from 'lucide-react';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
 import { useUiOptional } from '../../lib/ui';
@@ -459,20 +461,18 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
             linkForm
           ) : pop ? (
             <>
-              <a
-                className="md-link-pop-url"
-                href={pop.href}
-                title={pop.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  if (e.defaultPrevented) return; // App 里全局外链拦截已经交给系统浏览器了
-                  e.preventDefault();
-                  openLink(pop.href);
-                }}
-              >
-                {pop.href}
-              </a>
+              {/* 不显示网址（Rei 2026-11-03「链接的popover中不显示链接，只显示访问、编辑、去掉链接」），网址放悬停提示里。
+                  RAC 的 Button 不往下传 title，提示挂在外面一层（display: contents，不占位） */}
+              <span className="md-link-pop-open-tip" title={pop.href}>
+                <RacButton
+                  className="btn btn-quiet btn-sm md-link-pop-open"
+                  aria-label={`${tr('访问')} ${pop.href}`}
+                  onPress={() => openLink(pop.href)}
+                >
+                  <ExternalLink size={14} aria-hidden />
+                  {tr('访问')}
+                </RacButton>
+              </span>
               <RacButton className="btn btn-quiet btn-sm" onPress={() => openLinkForm(pop)}>
                 {tr('编辑')}
               </RacButton>

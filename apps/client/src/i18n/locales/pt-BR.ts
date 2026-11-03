@@ -6,6 +6,8 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 链接浮层「访问」按钮（Rei 2026-11-03，待母语者看）──
+  "访问": "Abrir",
   // ── 写法和快捷键浮层、下划线三种（Rei 2026-11-03，待母语者看）──
   "格式|文字": "Texto",
   "格式|粗体": "Negrito",

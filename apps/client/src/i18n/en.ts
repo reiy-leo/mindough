@@ -12,6 +12,8 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 链接浮层「访问」按钮（Rei 2026-11-03）──
+  "访问": "Open",
   // ── 我的一天：显示 / 隐藏建议（Rei 2026-11-01）──
   "建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。": "Suggestions hidden. To see them again, go to Settings → Tasks and turn on Show Suggestions.",
   "建议操作": "Suggestion Actions",
