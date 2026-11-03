@@ -27,8 +27,9 @@ import {
   type LibraryEntry,
   type Store,
   type Task,
-  type TaskType,, plainTitleMarkdown } from '@mindough/core';
-import { primaryFieldKey, shownFields } from '@mindough/core';
+  type TaskType,
+} from '@mindough/core';
+import { plainTitleMarkdown, primaryFieldKey, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
 import { RefList, RefPicker } from '../library/RefPicker';

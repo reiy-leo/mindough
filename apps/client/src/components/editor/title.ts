@@ -247,8 +247,7 @@ export const guardTitleRules = (rules: PmInputRule[]): PmInputRule[] =>
     const r = rule as unknown as PmRuleFields;
     return new PmInputRule(r.match, (state, match, start, end) => (titleLocked(state, start) ? null : r.handler(state, match, start, end)), {
       undoable: r.undoable,
-      inCode: r.inCode,
-      inCodeMark: r.inCodeMark,
+      ...({ inCode: r.inCode, inCodeMark: r.inCodeMark } as object),
     });
   });
 
