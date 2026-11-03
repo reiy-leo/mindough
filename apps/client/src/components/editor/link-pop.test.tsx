@@ -54,4 +54,21 @@ describe('链接小浮层', () => {
     await wait();
     expect(opened).toEqual(['https://a.com/x']);
   });
+
+  it('别的 App 的链接（codex://、裸写的也算）：点链接、点「访问」都打开（Rei 2026-11-03「deeplink 点了没反应」）', async () => {
+    const url = 'codex://threads/01a14ff8-3846-7242-9697-6c269dceacf2';
+    act(() => root.render(<MdEditor value={`看 ${url} 吧`} onChange={() => {}} label="内容" />));
+    await wait();
+    const a = host.querySelector('.md-editor-content a') as HTMLElement;
+    expect(a?.getAttribute('href')).toBe(url);
+    act(() => void a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })));
+    await wait();
+    expect(opened).toEqual([url]);
+    act(() => void a.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+    await wait();
+    const visit = host.querySelector('.md-link-pop button') as HTMLElement;
+    act(() => visit.click());
+    await wait();
+    expect(opened).toEqual([url, url]);
+  });
 });

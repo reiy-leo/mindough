@@ -30,4 +30,22 @@ describe('备注 / 内容的 Markdown', () => {
     expect(html).toContain('<u class="double">双</u>');
     expect(html).toContain('<u><strong>粗</strong></u>');
   });
+
+  it('别的 App 的链接（codex:// 等，写成链接、尖括号或裸写）留着 href；javascript: file: 去掉', () => {
+    const url = 'codex://threads/01a14ff8-3846-7242-9697-6c269dceacf2';
+    for (const src of [`[线程](${url})`, `<${url}>`, `看 ${url}。`]) {
+      const div = document.createElement('div');
+      div.innerHTML = renderMarkdown(src);
+      const a = div.querySelector('a');
+      expect(a?.getAttribute('href'), src).toBe(url);
+    }
+    const div = document.createElement('div');
+    div.innerHTML = renderMarkdown('[a](javascript:alert(1)) [b](file:///etc/passwd) javascript://x `codex://code`');
+    for (const a of div.querySelectorAll('a')) expect(a.getAttribute('href')).toBeNull();
+    expect(div.querySelector('code')?.textContent).toBe('codex://code');
+    // 链接文字里的 codex:// 不再套一层链接
+    const d2 = document.createElement('div');
+    d2.innerHTML = renderMarkdown(`[${url}](${url})`);
+    expect(d2.querySelectorAll('a').length).toBe(1);
+  });
 });

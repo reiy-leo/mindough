@@ -36,6 +36,7 @@ import { DOMParser as PMDOMParser, DOMSerializer, Fragment, Slice, type Node as 
 import { Plugin, PluginKey, TextSelection, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import { isRemoteImage, remoteImageText } from '../../lib/remote-image';
+import { isBlockedHref, schemeOf } from '../../lib/link-scheme';
 import { ghExtensions } from './gh-syntax';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
@@ -52,15 +53,18 @@ export interface LinkRange {
   href: string;
 }
 
-/** 网址缺协议时补 https://（mailto: 之类有协议的照原样）。 */
-export const withProtocol = (url: string) => (/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`);
+/** 网址缺协议时补 https://（mailto: codex:// 之类有协议的照原样；a.com:8080 是端口，照样补）。 */
+export const withProtocol = (url: string) => (schemeOf(url) ? url : `https://${url}`);
 
 /** 手打的 [文字](网址) / [](网址)；前面是 ! 的是图片，不管。也认全角括号（中文输入法）。 */
 export const LINK_INPUT_RE = /(?<!!)\[([^\]]*)\][(（]([^)）\s]+)[)）]$/;
-/** 手打 <网址> / <mailto:…>：打完 > 变成链接。 */
-export const ANGLE_LINK_RE = /<((?:https?:\/\/|mailto:)[^\s<>]+)>$/;
-/** 手打裸网址后接空格：网址变成链接（GFM 自动链接，同粘贴 / 读入时的样子）。末尾的标点不算网址。 */
-export const BARE_URL_RE = /(?:^|[\s(（])((?:https?:\/\/|www\.)[^\s<>]*[^\s<>.,;:!?'"）)\]】，。；：！？、])[.,;:!?'"）)\]】，。；：！？、]*\s$/;
+/** 手打 <网址> / <mailto:…> / <codex://…>：打完 > 变成链接（任何协议，挡掉的协议在规则里再判）。 */
+export const ANGLE_LINK_RE = /<([a-z][a-z0-9+.-]{1,31}:[^\s<>]+)>$/i;
+/**
+ * 手打裸网址后接空格：网址变成链接（GFM 自动链接，同粘贴 / 读入时的样子）。末尾的标点不算网址。
+ * 除了 http(s) / www，别的 App 的「scheme://…」也认（codex://、obsidian://，Rei 2026-11-03）；挡掉的协议在规则里再判。
+ */
+export const BARE_URL_RE = /(?:^|[\s(（])((?:https?:\/\/|www\.|[a-z][a-z0-9+.-]{1,31}:\/\/)[^\s<>]*[^\s<>.,;:!?'"）)\]】，。；：！？、])[.,;:!?'"）)\]】，。；：！？、]*\s$/i;
 /** 一行 |a|b|（至少两列，或一列也行）：回车变成表格，这行当表头。 */
 export const TABLE_ROW_RE = /^\|(?:[^|]*\|)+\s*$/;
 
@@ -314,8 +318,8 @@ export const FootnoteDefinition = Node.create({
   renderHTML: ({ node }) => ['dl', { 'data-label': String(node.attrs.label), 'data-type': 'footnote_definition' }, ['dt', { contenteditable: 'false' }, String(node.attrs.label)], ['dd', 0]],
 });
 
-/** 不收的链接地址（和以前的编辑器一样挡掉能跑脚本的）。 */
-const unsafeHref = (href: string) => /^\s*(javascript|vbscript|data):/i.test(href);
+/** 不收的链接地址：能跑脚本的、读本机文件的（见 lib/link-scheme.ts）。 */
+const unsafeHref = (href: string) => isBlockedHref(href);
 
 /** 链接：只有 href / title（就是 markdown 里那两样）。点开、悬停浮层、手打转换都在 behaviorExtension。 */
 export const Link = Mark.create({
@@ -441,14 +445,14 @@ function syntaxRules(): InputRule[] {
     new InputRule(ANGLE_LINK_RE, (state, match, start, end) => {
       const type = state.schema.marks.link;
       const url = match[1];
-      if (!type || !url || !canLinkAt(state, start)) return null;
+      if (!type || !url || isBlockedHref(url) || !canLinkAt(state, start)) return null;
       const marks = state.doc.resolve(start).marks();
       return state.tr.replaceWith(start, end, state.schema.text(url, [...marks, type.create({ href: url })])).removeStoredMark(type);
     }),
     new InputRule(BARE_URL_RE, (state, match, start, end) => {
       const type = state.schema.marks.link;
       const url = match[1];
-      if (!type || !url) return null;
+      if (!type || !url || isBlockedHref(url)) return null;
       const from = start + match[0].lastIndexOf(url);
       const to = from + url.length;
       if (!canLinkAt(state, from) || state.doc.rangeHasMark(from, to, type)) return null;

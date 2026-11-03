@@ -109,7 +109,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   };
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
-  /** 打开链接：别的源 / mailto / tel 走 openExternal（App 里系统浏览器，Web 新标签页 noopener）；同源的 #/ 路由就地跳。 */
+  /** 打开链接：别的源的 http(s) 和别的 App 的链接（mailto / tel / codex:// …）走 openExternal（App 里交给系统，Web 端 http(s) 新标签页、别的协议就地交给浏览器）；同源的 #/ 路由就地跳。 */
   const openLink = (raw: string) => {
     const url = externalHref(raw, window.location.origin);
     if (url) return void openExternal(url).catch((err) => console.error('打开链接失败', err));

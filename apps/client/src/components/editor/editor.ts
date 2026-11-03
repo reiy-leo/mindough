@@ -17,6 +17,7 @@ import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type Li
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
+import { hasSchemeBody, isAppSchemeHref, isBlockedHref, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
@@ -79,16 +80,19 @@ export function setLinkTr(state: EditorState, range: { from: number; to: number 
 /**
  * 链接框里填的网址 → 存进去的地址；不像网址返回 null（Rei 2026-10-17「编辑器中链接要支持编辑名称和链接」）。
  * - 去掉两头空白；中间的空格编成 %20（markdown 里的链接地址不能带空格，否则往返会断）。
- * - 没协议补 https://；mailto: / tel: 照原样；站内的 #/… 照原样。
- * - javascript: / data: / vbscript: 不收。http(s) 要有像样的主机名（带点、localhost 或 IP）。
+ * - 没协议补 https://；站内的 #/… 照原样。
+ * - 别的 App 的链接（mailto: tel: codex:// obsidian:// …）照原样，协议后面得有东西（Rei 2026-11-03）。
+ * - javascript: / data: / vbscript: / file: 之类不收（见 lib/link-scheme.ts）。http(s) 要有像样的主机名（带点、localhost 或 IP）。
+ * - 「a.com:8080」「localhost:3000」是主机加端口，补 https://。
  */
 export function normalizeHref(raw: string): string | null {
   const t = raw.trim().replace(/\s+/g, '%20');
   if (!t) return null;
   if (t.startsWith('#')) return t;
-  if (/^(javascript|data|vbscript):/i.test(t)) return null;
-  if (/^(mailto|tel):/i.test(t)) return t.length > t.indexOf(':') + 1 ? t : null;
-  const url = withProtocol(t.replace(/^\/\//, ''));
+  if (isBlockedHref(t)) return null;
+  if (isAppSchemeHref(t)) return hasSchemeBody(t) && !/^[a-z][a-z0-9+.-]*:\/*$/i.test(t) ? t : null;
+  const bare = t.replace(/^\/\//, '');
+  const url = schemeOf(bare) ? bare : `https://${bare}`;
   let u: URL;
   try {
     u = new URL(url);

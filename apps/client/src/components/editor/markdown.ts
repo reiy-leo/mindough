@@ -12,6 +12,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify, { type Options as StringifyOptions } from 'remark-stringify';
 import remarkGfm from 'remark-gfm';
+import { remarkAppLinks } from './app-links';
 import remarkInlineLinks from 'remark-inline-links';
 import { Fragment, Mark, type Attrs, type MarkType, type Node as PMNode, type NodeType, type Schema } from '@tiptap/pm/model';
 
@@ -551,7 +552,8 @@ export function createMarkdownIO(schema: Schema, extra: MarkdownPlugins): Markdo
     .use(remarkMarker)
     .use(remarkPreserveEmptyLine)
     .use(remarkGfm)
-    .use(remarkLessEscapes);
+    .use(remarkLessEscapes)
+    .use(remarkAppLinks);
   for (const p of extra.remark) processor = processor.use(p);
   const remark = processor as unknown as {
     parse(s: string): MdNode;

@@ -11,6 +11,7 @@ import { isRemoteImage, remoteImageText } from './remote-image';
 import { ALERT_MARKER_RE, alertTitleHtml, type AlertKind } from './gh-alerts';
 import { BLOCK_MATH_RE, INLINE_MATH_RE, renderMath, validInlineMath } from './math';
 import { getLocale, tr } from './i18n';
+import { SANITIZE_URI_RE, findBareAppLinks, isBlockedHref } from './link-scheme';
 
 const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
@@ -40,6 +41,31 @@ const inlineMath: TokenizerAndRendererExtension = {
   renderer: (t) => renderMath((t as unknown as MathToken).text, false),
 };
 
+/**
+ * 正文里裸的「scheme://…」（codex://、obsidian://…）也渲染成链接（Rei 2026-11-03）。
+ * marked 的 GFM 自动链接只认 http(s) / www / 邮箱；这里补上别的 App 的协议，挡掉的协议（javascript: file: …）不管。和编辑器读入时一样（app-links.ts）。
+ */
+interface AppLinkToken {
+  type: 'appLink';
+  raw: string;
+  href: string;
+}
+const appLink: TokenizerAndRendererExtension = {
+  name: 'appLink',
+  level: 'inline',
+  start: (src) => findBareAppLinks(src)[0]?.start,
+  tokenizer(this: { lexer: { state: { inLink: boolean } } }, src) {
+    if (this.lexer.state.inLink) return undefined;
+    const hit = findBareAppLinks(src)[0];
+    if (!hit || hit.start !== 0) return undefined;
+    return { type: 'appLink', raw: hit.url, href: hit.url } satisfies AppLinkToken;
+  },
+  renderer: (t) => {
+    const href = (t as unknown as AppLinkToken).href;
+    return `<a href="${escAttr(href)}" target="_blank" rel="noopener noreferrer">${escHtml(href)}</a>`;
+  },
+};
+
 const blockMath: TokenizerAndRendererExtension = {
   name: 'mathBlock',
   level: 'block',
@@ -62,11 +88,13 @@ function build() {
   const md = new Marked({
     gfm: true,
     breaks: true,
-    extensions: [blockMath, inlineMath],
+    extensions: [blockMath, inlineMath, appLink],
     renderer: {
       link(this: { parser: { parseInline: (t: Tokens.Link['tokens']) => string } }, token: Tokens.Link) {
         const text = this.parser.parseInline(token.tokens);
         const title = token.title ? ` title="${escAttr(token.title)}"` : '';
+        // 挡掉的协议（javascript: file: …）不留 href，不只靠 DOMPurify
+        if (isBlockedHref(token.href)) return `<a${title}>${text}</a>`;
         return `<a href="${escAttr(token.href)}"${title} target="_blank" rel="noopener noreferrer">${text}</a>`;
       },
       /** 网络图片不渲染（Rei 2026-10-17），显示成和编辑器一样的文字；自己的图照常。 */
@@ -109,5 +137,6 @@ export function markdownHtml(source: string): string {
 }
 
 export function renderMarkdown(source: string): string {
-  return DOMPurify.sanitize(markdownHtml(source), { ADD_ATTR: ['target'] });
+  // 别的 App 的链接（codex:// obsidian:// …）也留着 href，DOMPurify 默认只留 http(s) mailto tel 这几种
+  return DOMPurify.sanitize(markdownHtml(source), { ADD_ATTR: ['target'], ALLOWED_URI_REGEXP: SANITIZE_URI_RE });
 }
