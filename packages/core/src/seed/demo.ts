@@ -152,7 +152,8 @@ export function seedDemo(store: Store): void {
     task(tr('## 想看理由\n大银幕看沙漠和沙虫\n\n## 观后感\n'), {
       group_id: watch.id,
       type_id: T.movie,
-      type_data: { title: tr('沙丘 2'), year: 2024, kind: '电影', imdb: 'tt15239678', douban: '35575567' },
+      // 海报用按名字生成的渐变图（不用有版权的海报），列表里看得到缩略图；《繁花》不给图，列表里就没有缩略图
+      type_data: { title: tr('沙丘 2'), poster: asset(svgArt(tr('沙丘 2'), '#f6d365', '#c0392b', 200, 300), 200, 300), year: 2024, kind: '电影', imdb: 'tt15239678', douban: '35575567' },
       scheduled_date: d(3),
     });
     task(tr('## 想看理由\n听说上海话版本很好\n'), {
