@@ -70,6 +70,7 @@
     "notification:default",
     "dialog:allow-save",
     "clipboard-manager:allow-read-image",
+    "clipboard-manager:allow-write-text",
     "core:webview:allow-create-webview-window",
     "core:window:allow-set-always-on-top",
     "core:window:allow-set-focus",

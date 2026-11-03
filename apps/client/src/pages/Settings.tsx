@@ -139,6 +139,42 @@ function SettingsNav({ current }: { current: SettingsSection }) {
   );
 }
 
+/**
+ * 设置底部那行小字版本号（Rei 2026-11-03：macOS app 要分得出第几个 alpha）：「版本 v0.1.0-alpha.13」，网页版和非标签构建是「v0.1.0-dev+短哈希」。
+ * 点一下复制完整版本（报问题时好贴）。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在七项列表下面。
+ */
+function VersionFooter() {
+  const { toast } = useUi();
+  const version = versionLabel();
+  if (!version) return null;
+  const copy = async () => {
+    try {
+      await copyText(version);
+      toast({ message: tr('已复制版本号') });
+    } catch {
+      toast({ tone: 'error', message: tr('没能复制版本号') });
+    }
+  };
+  return (
+    <div className="settings-version">
+      <button type="button" className="settings-version-btn" onClick={() => void copy()} title={tr('点一下复制版本号')} aria-label={tr('版本 {version}，点一下复制', { version })}>
+        {tr('版本 {version}', { version })}
+      </button>
+    </div>
+  );
+}
+
+/** 先用浏览器的剪贴板；桌面 app 里不行就走 clipboard-manager 插件。 */
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    if (!isTauri()) throw e;
+    const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+    await writeText(text);
+  }
+}
+
 /** Web 与手机的设置页。section 省略：宽屏显示上次那项，窄屏列出七项。 */
 export function SettingsPage({ section }: { section?: SettingsSection }) {
   const { layout } = useSettings();
@@ -166,6 +202,7 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
             );
           })}
         </nav>
+        <VersionFooter />
       </div>
     );
   }
@@ -192,7 +229,10 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
     <div className="page settings-page">
       <PageHeader title={tr('设置')} icon={<SettingsIcon size={22} />} />
       <div className="settings-layout">
-        <SettingsNav current={sec} />
+        <div className="settings-layout-side">
+          <SettingsNav current={sec} />
+          <VersionFooter />
+        </div>
         <section className="settings-pane" aria-labelledby="settings-pane-title">
           <h2 id="settings-pane-title" className="settings-pane-title">
             {itemOf(sec).label()}
@@ -240,6 +280,7 @@ export function SettingsWindow() {
       <aside className="settings-side">
         <div className="settings-titlebar" data-tauri-drag-region aria-hidden />
         <SettingsNav current={sec} />
+        <VersionFooter />
       </aside>
       <main className="settings-main" aria-labelledby="settings-window-title">
         <header className="settings-main-head" data-tauri-drag-region>

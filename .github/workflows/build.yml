@@ -1,5 +1,5 @@
 # 打原生安装包（未签名）：macOS（universal）、Windows（msi / nsis）、Linux（AppImage / deb）、Android（debug APK）。
-# 手动触发，或推 v* 标签；产物上传为 Actions artifacts，推标签时另建 Release 草稿（alpha 也建，预发布），APK 一并挂上；iOS 见 ios.yml（手动）。
+# 手动触发，或推 v* 标签；版本号按标签填（scripts/app-version.mjs：macOS「0.1.0 (13)」、msi 0.1.0.13、APK 0.1.0-alpha.13），手动触发是 0.1.0-dev+短哈希；产物上传为 Actions artifacts，推标签时另建 Release 草稿（alpha 也建，预发布），APK 一并挂上；iOS 见 ios.yml（手动）。
 name: Build apps
 
 on:
@@ -19,18 +19,21 @@ jobs:
         include:
           - name: macOS（universal）
             os: macos-latest
+            platform: macos
             args: --target universal-apple-darwin
             rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
             artifact: mindough-macos
             bundle: apps/client/src-tauri/target/universal-apple-darwin/release/bundle
           - name: Windows
             os: windows-latest
+            platform: windows
             args: ''
             rust-targets: ''
             artifact: mindough-windows
             bundle: apps/client/src-tauri/target/release/bundle
           - name: Linux
             os: ubuntu-22.04
+            platform: linux
             args: ''
             rust-targets: ''
             artifact: mindough-linux
@@ -60,6 +63,12 @@ jobs:
           workspaces: apps/client/src-tauri -> target
 
       - run: pnpm install --frozen-lockfile
+
+      # 按标签填版本（scripts/app-version.mjs）：合进 tauri.<平台>.conf.json，Tauri 和 tauri-action 都会读；
+      # 前端的完整版本（v0.1.0-alpha.13 / v0.1.0-dev+短哈希）写进 MINDOUGH_VERSION
+      - name: 版本号
+        shell: bash
+        run: node scripts/app-version.mjs apply ${{ matrix.platform }}
 
       - name: 打包
         uses: tauri-apps/tauri-action@v0
@@ -136,6 +145,10 @@ jobs:
       # 中文系统下显示「念头团」（values-zh / values-zh-rCN），其他语言（es、pt-rBR、ru、ja、de、fr、in）和默认都是 Mindough
       - name: 本地化显示名
         run: scripts/native-locales.sh android
+
+      # versionName 带预发布标签（0.1.0-alpha.13），versionCode 随 alpha 递增（scripts/app-version.mjs）
+      - name: 版本号
+        run: node scripts/app-version.mjs apply android
 
       - name: 打 debug APK（arm64）
         working-directory: apps/client

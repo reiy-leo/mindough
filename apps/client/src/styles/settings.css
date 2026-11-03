@@ -32,9 +32,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.settings-layout > .settings-nav {
+.settings-layout-side {
   position: sticky;
   top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .settings-nav-item:focus-visible {
   outline: 2px solid var(--accent);
@@ -61,6 +64,72 @@
 /* 关于单独一项：上面多留点空 */
 .settings-pane > .about:only-child {
   margin-top: var(--space-6);
+}
+
+/*
+ * 底部的版本号（Rei 2026-11-03）：一行小字，点了复制。三种皮肤各按自己的样子：
+ * apple 浅灰小字，悬停变深、按下变淡；winui 悬停有浅底的小圆角块；material 胶囊形，悬停、按下是强调色的淡底。
+ */
+.settings-version {
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+  padding: var(--space-3) 0 0;
+}
+.settings-side .settings-version {
+  margin-top: auto;
+  padding: var(--space-3) 0 var(--space-1);
+}
+.settings-page > .settings-version {
+  justify-content: center;
+  padding-top: var(--space-4);
+}
+.settings-version-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-version-btn:hover {
+  color: var(--text-2);
+}
+.settings-version-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+[data-skin='apple'] .settings-version-btn:active {
+  opacity: 0.6;
+}
+[data-skin='winui'] .settings-version-btn {
+  border-radius: 4px;
+  font-size: 12px;
+}
+[data-skin='winui'] .settings-version-btn:hover {
+  background: var(--surface-2);
+}
+[data-skin='material'] .settings-version-btn {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+[data-skin='material'] .settings-version-btn:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+[data-skin='material'] .settings-version-btn:active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 /* ── 窄屏：列表 + 推入 ── */

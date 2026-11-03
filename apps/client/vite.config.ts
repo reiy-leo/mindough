@@ -1,18 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { baseVersionFromConf, versionFromEnv } from '../../scripts/app-version.mjs';
 
-// 设置 → 关于里显示的版本号：取 tauri.conf.json 的 version（和安装包一致），有 git 就带上短哈希
-const appVersion = (JSON.parse(readFileSync(new URL('./src-tauri/tauri.conf.json', import.meta.url), 'utf8')) as { version?: string }).version ?? '';
-let gitSha = process.env.GITHUB_SHA?.slice(0, 7) ?? '';
-if (!gitSha) {
-  try {
-    gitSha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-  } catch {
-    /* 没有 git（比如从源码包构建）：只显示版本号 */
-  }
-}
+// 界面上显示的完整版本（设置底部、关于）：推标签的 Actions 构建是标签「v0.1.0-alpha.13」，
+// 别的构建（手动 Actions、本地、网页版）是「v0.1.0-dev+短哈希」。规则在 scripts/app-version.mjs；
+// CI 上一步已算好写进 MINDOUGH_VERSION 的就直接用。
+const resolved = versionFromEnv(process.env, baseVersionFromConf());
+const appVersion = process.env.MINDOUGH_VERSION?.trim() || resolved.display;
+const gitSha = resolved.sha;
 
 // Tauri 开发时固定端口；TAURI_ENV_PLATFORM 由 tauri cli 注入
 const host = process.env.TAURI_DEV_HOST;
