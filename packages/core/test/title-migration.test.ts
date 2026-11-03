@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { BUILTIN_TYPE_IDS as T } from '../src/seed/builtin-types';
-import { taskTitle } from '../src/preview';
+import { itemTaskBody, taskTitle } from '../src/preview';
 import { search } from '../src/search';
 import type { Task } from '../src/types';
 import { local, mkTask } from './helpers';
@@ -107,6 +107,12 @@ describe('老数据迁移：资料名补成第一行', () => {
 });
 
 describe('新建 / 挂上资料：第一行预填资料名', () => {
+  it('itemTaskBody（新建面板从资料新建时的预填）：资料名 + 模板；没模板就只有名字', () => {
+    expect(itemTaskBody('沙丘 2', TEMPLATE)).toBe('沙丘 2\n\n## 想看理由\n\n\n## 观后感');
+    expect(itemTaskBody('塞尔达 > 王国之泪', '')).toBe('塞尔达 > 王国之泪');
+    expect(itemTaskBody('- 开头', null)).toBe('\\- 开头');
+  });
+
   it('createTask 挂资料、没给正文：资料名 + 库的正文模板', async () => {
     const { s, item } = await setup(() => []);
     const t = s.createTask({ type_id: T.movie, library_item_id: item.id });

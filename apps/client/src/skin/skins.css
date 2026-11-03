@@ -1572,3 +1572,28 @@ html[data-layout='mobile'][data-skin='material'] .date-panel.has-lunar .calendar
 [data-skin='material'] .countdown-card.has-color {
   border: 0;
 }
+
+/*
+ * 列表行首的资料海报（Rei 2026-11-03：挂了电影的任务，电影只显示海报缩略图）。
+ * 高度不超过两行字（标题 + 属性小字），有海报、没海报的行一样高；没海报的行不留空位。
+ * Apple：小圆角；WinUI：直角感的 2px 圆角 + 1px 描边（像 Windows 里的缩略图）；Material：行高 56，海报大一号、8px 圆角。
+ */
+.task-row .thumb {
+  align-self: center;
+}
+[data-skin='apple'] .task-row .thumb-poster {
+  width: 24px;
+  height: 36px;
+  border-radius: 5px;
+}
+[data-skin='winui'] .task-row .thumb-poster {
+  width: 24px;
+  height: 36px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+[data-skin='material'] .task-row .thumb-poster {
+  width: 30px;
+  height: 45px;
+  border-radius: 8px;
+}

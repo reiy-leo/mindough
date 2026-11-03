@@ -102,3 +102,8 @@ export function withTitleLine(md: string, name: string): string {
   const rest = md.replace(/^(?:[ \t]*\r?\n)+/, '').replace(/\s+$/, '');
   return rest ? `${head}\n\n${rest}` : head;
 }
+
+/** 挂了资料的任务新建时的正文：资料名当第一行（纯文字），下面接库的正文模板（Rei 2026-11-03）。新建面板和 createTask 共用。 */
+export function itemTaskBody(name: string, template: string | null | undefined): string {
+  return withTitleLine(template ? dataLabel(template) : '', name);
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { Button as RacButton } from 'react-aria-components';
 import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Sparkles, Tag, X } from 'lucide-react';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsOf, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
-import { newCountConfig, shownFields, withTitleLine } from '@mindough/core';
+import { itemTaskBody, newCountConfig, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
@@ -79,11 +79,6 @@ interface Draft extends CompletionValue {
   epIgnored: boolean;
 }
 
-/** 挂上第一条资料时的正文：资料名当第一行（纯文字），下面接库的正文模板。 */
-export function prefillBody(name: string, template: string | null | undefined): string {
-  return withTitleLine(template ? dataLabel(template) : '', name);
-}
-
 function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]): Draft {
   const typeId = d.type_id ?? null;
   const type = store.get('task_type', typeId);
@@ -97,7 +92,7 @@ function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]):
   const item = d.library_item_id ? store.get('library_item', d.library_item_id) : undefined;
   const itemType = item ? store.get('task_type', item.type_id) : undefined;
   return {
-    body: d.body_md ?? (item ? prefillBody(item.name, itemType?.body_template) : ''),
+    body: d.body_md ?? (item ? itemTaskBody(item.name, itemType?.body_template) : ''),
     typeData: d.type_data ?? {},
     completion_mode: mode,
     target_value: d.target_value ?? (mode === 'timer' ? 10 * 60_000 : mode === 'count' ? 1 : null),
@@ -217,7 +212,7 @@ function Composer() {
       const type = item ? store.get('task_type', item.type_id) : undefined;
       if (item && type && !hadItem) {
         if (!x.body.trim() || x.body === prefilled.current) {
-          next.body = prefillBody(item.name, type.body_template);
+          next.body = itemTaskBody(item.name, type.body_template);
           prefilled.current = next.body;
         }
         if (!x.modeTouched) Object.assign(next, modeDefaults(type.default_completion_mode, x));
