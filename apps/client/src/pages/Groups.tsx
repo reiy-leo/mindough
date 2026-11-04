@@ -4,7 +4,7 @@ import { CalendarRange, Plus, Shapes } from 'lucide-react';
 import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
-import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, ProgressBar, Section, Tip, useContextMenuAt } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Section, Tip, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { ProjectTitle, useProjectActions } from '../components/project/ProjectActions';
 import { ProjectSheet } from '../components/project/ProjectSheet';
@@ -57,12 +57,12 @@ function GroupCard({ group: g }: { group: Group }) {
         <div className={`group-range${late ? ' is-late' : ''}`}>
           <CalendarRange size={13} /> {range(g)}
         </div>
-        <ProgressBar value={counted.length ? done / counted.length : 0} color={c?.color} />
-        <div className="group-stats">
-          <span>
-            {tr('{done}/{length} 完成', { done, length: counted.length })}</span>
-          {blocked > 0 && <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>}
-        </div>
+        {/* 卡片不显示进度（Rei 2026-11-04「项目列表中item紧凑一点，进度不显示」） */}
+        {blocked > 0 && (
+          <div className="group-stats">
+            <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>
+          </div>
+        )}
       </RacButton>
       <OverflowMenu label={tr('项目操作')} items={actions.items} className="group-card-more" />
       <MenuAt at={menu.at} label={tr('项目操作')} items={actions.items} onClose={menu.close} />
@@ -175,8 +175,7 @@ function GroupDetail({
         titleNode={<ProjectTitle key={g.id} store={store} group={g} />}
         subtitle={
           <>
-            {range(g)}
-            {' · '}
+            {/* 顶上不写起止日期（Rei 2026-11-04「项目详情页，顶部不显示日期段」） */}
             <PopoverPanel
               label={trc('分类', '类型')}
               trigger={

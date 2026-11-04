@@ -1231,14 +1231,15 @@ button {
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
 }
+/* 项目卡片紧凑（Rei 2026-11-04）：名字一行 + 起止一行，不放进度条和完成数 */
 .group-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-1);
+  padding: var(--space-3);
   text-align: left;
   cursor: pointer;
   min-width: 0;
