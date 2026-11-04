@@ -68,10 +68,13 @@ export function CategoriesPage({ id }: { id?: string }) {
   if (mobile && selected)
     return (
       <div className="page types-page">
-        <RacButton className="btn btn-quiet types-back" onPress={() => navigate({ page: 'types' })}>
-          <ChevronLeft size={16} aria-hidden />
-          {tr('全部类型')}
-        </RacButton>
+        {/* 返回条固定在顶上，详情往下滚也点得到（Rei 2026-11-04「固定，现在点了返回不了」） */}
+        <div className="types-back-bar">
+          <RacButton className="btn btn-quiet types-back" onPress={() => navigate({ page: 'types' })}>
+            <ChevronLeft size={16} aria-hidden />
+            {tr('全部类型')}
+          </RacButton>
+        </div>
         <CategoryDetail c={selected} />
       </div>
     );

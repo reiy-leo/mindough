@@ -3378,6 +3378,21 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 .types-back {
   margin-bottom: var(--space-2);
 }
+/* 手机类型详情：「全部类型」返回条粘在滚动区顶上，不透明底，详情从它下面滚过去 */
+.types-back-bar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4)) var(--space-2);
+  padding: var(--space-2) var(--space-4) 0;
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid var(--border);
+}
+.types-back-bar > .types-back {
+  margin-bottom: var(--space-2);
+}
 .app-mobile .types-layout,
 .types-page.is-narrow .types-layout {
   grid-template-columns: minmax(0, 1fr);
