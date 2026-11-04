@@ -1324,6 +1324,16 @@ Rei 2026-11-04「任务日记编辑器中，选中文本后，cmd+k后自动添�
 - ⌘? 浮层多一行「⌘K 加链接时，剪贴板里的链接会自动填上。」，九种语言。
 - 测试：`lib/clip-link.test.ts`（纯函数）、`editor/link-clip.test.tsx`（⌘K 开框、填、不覆盖）、`e2e/link-clip/run.mjs`（LightVela 上 Chromium 授权剪贴板，复制 https://example.com 选字 ⌘K 回车成链接；WebKit 没授权也照样开框）。
 
+### 类型和项目的图标统一成彩色方块，项目能选颜色 ✅（2026-11-04）
+Rei 2026-11-04 21:41「类型的图标也和项目图标一样，共用样式和图标」；问统一成哪种时答「可以，但类型的颜色很少，也不好看，优化一点，然后统一组件」。
+
+- **一个组件**：`components/IconTile.tsx` 的 `IconTile`，彩色圆角方块 + 白色 Lucide 图标，边长随传的 size，图标按比例缩（16px 以下的小块图标占得多一点）。老数据的 emoji 照常显示。类型（`CategoryTile`）、资料库编辑器的列表和头部、项目（`GroupIcon`）都调它；原来的 `.cat-badge`、`.group-glyph`、`.type-row-icon` 底色那套样式删了。形状按皮肤：Apple 圆角 28%，WinUI 22%，Material 圆形。
+- **一个面板**：`components/IconStylePicker.tsx`，上面颜色、下面图标网格（`IconPicker`）。类型页、资料库编辑器、新建 / 编辑项目、项目页左上角都用它。资料库编辑器里单独那行「颜色」去掉了，点头部的图标块改。
+- **色板**：core `icon-color.ts` 的 `ICON_COLORS`，18 个，按色相排：红、橙、琥珀、黄绿、绿、翠绿、青绿、青、天蓝、蓝、靛、堇、紫、品红、粉，加棕、蓝灰、灰。前 15 个在 OKLCH 里明度 0.61–0.65、彩度最高 0.17，每个都调到白色图标对比度约 3.5:1；亮暗主题用同一个色值。最后一格照旧能自己调。存 hex，老的 14 色和自己调的颜色照常显示。倒数日卡片的 `CARD_COLORS` 是大块浅底配字，亮暗两套，用途不一样，没合进来。
+- **项目颜色**：`group.color`（#rrggbb，可空），客户端迁移 v16 `ALTER TABLE "group" ADD COLUMN "color" TEXT`。空的（老项目）按项目 id 稳定地从前 15 个彩色里挑一个（`groupColor` / `defaultIconColor`，FNV 哈希），每台设备都一样；编辑项目不点颜色就不写。新建项目先随机给一个色板颜色，建好就存下。不认识的值当空。老客户端写来的行没有这个字段，读的时候当空（跟 v14 `my_day_auto`、v15 `card_color` 一样）；老客户端改了项目会把颜色冲掉，回到默认色。云端整行存 JSON，服务端不用改 schema。导出写 `color:`，导入认。
+- **尺寸**：侧栏 18px，任务行 14px，属性胶囊和添加框 16px，项目选择器 18px，类型页里项目列表 22px，项目卡片 26px，项目页左上角 28px，⌘K 30px，项目面板预览 40px，类型页详情 44px，资料库编辑器 48px。
+- 测试：core `group-color.test.ts`（色板、默认色、改颜色、存取、老行、同步）、`storage`、`archive`、`sync`；client `chip-colors`（新色板也查对比度）、`locales`；core、client `tsc --noEmit`。截图 `work/shots-unified-icons/`。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。
