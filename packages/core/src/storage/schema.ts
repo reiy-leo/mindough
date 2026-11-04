@@ -44,7 +44,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   dependency: { pred_id: 'text', succ_id: 'text', type: 'text', lag: 'int' },
-  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool' },
+  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool', color: 'text?' },
   category: { name: 'text', color: 'text', icon: 'text', builtin: 'bool', hidden: 'bool', sort: 'real', merged_into: 'text?' },
   task_type: {
     name: 'text',
@@ -326,6 +326,14 @@ ALTER TABLE "group" ADD COLUMN "my_day_auto" INTEGER NOT NULL DEFAULT 1;
     sql: `
 ALTER TABLE "task" ADD COLUMN "archived_at" TEXT;
 ALTER TABLE "task" ADD COLUMN "card_color" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-04：项目图标改成和类型一样的彩色方块，项目能选颜色（group.color，存 hex）。可空，老行是空（按 id 挑默认色）。
+    version: 16,
+    name: '项目颜色（group.color）',
+    sql: `
+ALTER TABLE "group" ADD COLUMN "color" TEXT;
 `,
   },
 ];

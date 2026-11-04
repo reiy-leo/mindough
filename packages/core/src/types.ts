@@ -221,6 +221,11 @@ export interface Group extends BaseRow {
    * 默认开；关掉后这些任务还像以前一样进建议。v14 加的列，老客户端写来的行没有这个字段，读的时候当成开。
    */
   my_day_auto: boolean;
+  /**
+   * 图标块的颜色（Rei 2026-11-04，和类型共用一套色板，见 icon-color.ts），存 #rrggbb。
+   * 空 = 没选过：界面按项目 id 稳定地从色板里挑一个（groupColor）。v16 加的列，老客户端写来的行没有这个字段，读的时候当成空。
+   */
+  color?: string | null;
 }
 
 /**

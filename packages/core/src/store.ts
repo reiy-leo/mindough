@@ -4,6 +4,7 @@
  */
 import { HlcClock } from './hlc';
 import { uuidv7 } from './uuid';
+import { normalizeIconColor } from './icon-color';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
@@ -416,6 +417,8 @@ export class Store {
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
       // 老客户端写来的项目没有「出现在我的一天」：当成开（默认值）
       if (c.table === 'group' && typeof (row as Group).my_day_auto !== 'boolean') (row as Group).my_day_auto = true;
+      // 老客户端写来的项目没有颜色（v16）：当成空，界面按 id 挑默认色
+      if (c.table === 'group' && (row as Group).color === undefined) (row as Group).color = null;
       table.set(row.id, row);
       applied.push({ table: c.table, row } as Change);
     }
@@ -448,6 +451,8 @@ export class Store {
 
   insert<K extends TableName>(table: K, data: NewRow<TableMap[K]>): TableMap[K] {
     const row = { ...data, id: data.id ?? uuidv7(this.now().getTime()), deleted: false, updated_at: '' } as unknown as TableMap[K];
+    // 项目颜色（v16）可以不传：存成空（界面按 id 挑默认色），别留 undefined，重开读回来才一样
+    if (table === 'group') (row as Group).color = normalizeIconColor((row as Group).color);
     this.write([{ table, row }]);
     return this.tables[table].get(row.id)!;
   }
@@ -1311,7 +1316,7 @@ export class Store {
    * 改项目的名字 / 图标。名字去掉首尾空白，改成空的不算（留原名）；图标传选择器的值（emoji 或 lucide 名，见 group.ts）。
    * 没变就不写（不进 outbox）。
    */
-  updateGroup(id: string, patch: { name?: string; icon?: string; my_day_auto?: boolean }): Group | undefined {
+  updateGroup(id: string, patch: { name?: string; icon?: string; my_day_auto?: boolean; color?: string | null }): Group | undefined {
     const g = this.get('group', id);
     if (!g) return undefined;
     const next: Partial<Group> = {};
@@ -1324,6 +1329,11 @@ export class Store {
       if (icon !== g.icon) next.icon = icon;
     }
     if (patch.my_day_auto !== undefined && patch.my_day_auto !== groupAutoMyDay(g)) next.my_day_auto = patch.my_day_auto;
+    if (patch.color !== undefined) {
+      // 认不出来的颜色当成空（= 默认色）
+      const color = normalizeIconColor(patch.color);
+      if (color !== (g.color ?? null)) next.color = color;
+    }
     if (!Object.keys(next).length) return g;
     return this.update('group', id, next);
   }

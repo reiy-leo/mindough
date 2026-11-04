@@ -16,6 +16,7 @@ import { tr } from '../i18n';
 import { normalizeTimeZone } from '../timezone';
 import { normalizeRange } from '../date-range';
 import { isCardColor } from '../card-color';
+import { normalizeIconColor } from '../icon-color';
 import { cleanQuick } from '../count';
 import type { CountConfig } from '../types';
 import { isDateKey, journalEntryId } from '../journal';
@@ -435,6 +436,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       category_id: cat && (archiveCats.has(cat) || store.get('category', cat)) ? cat : null,
       default_type_id: dt && (archiveTypes.has(dt) || store.get('task_type', dt)) ? dt : null,
       my_day_auto: p.fm.my_day !== false,
+      color: normalizeIconColor(p.fm.color),
     });
     folderGroup.set(dir, id);
     archiveGroups.add(id);
