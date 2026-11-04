@@ -20,6 +20,8 @@ describe('快捷键的写法', () => {
     expect(formatChord(['shift', 'Enter'], false)).toBe('Shift+Enter');
     expect(shortcutTexts(true).close).toContain('⌘?');
     expect(shortcutTexts(false).combo).toContain('Ctrl');
+    expect(shortcutTexts(true).clipLink).toContain('⌘K');
+    expect(shortcutTexts(false).clipLink).toContain('Ctrl+K');
   });
 
   it('⌘? / ⌘/ / Ctrl+? 都算，带 ⌥ 或不带 ⌘ 不算', () => {

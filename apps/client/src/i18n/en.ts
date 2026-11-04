@@ -473,6 +473,7 @@ export const EN: Record<string, EnValue> = {
   "第一行是标题，只能是纯文字": "The first line is the title and stays plain text.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Wavy and double: hold {mod}, press U, then 1 or 2. Do it again to remove.",
   "{keys} 或 Esc 关闭": "{keys} or Esc to close",
+  "{keys} 加链接时，剪贴板里的链接会自动填上。": "When you add a link with {keys}, a link on your clipboard is filled in automatically.",
   链接地址: 'Link URL',
   去掉链接: 'Remove Link',
   // 链接框（文字 + 链接两栏）

@@ -35,6 +35,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "第一行是标题，只能是纯文字": "La première ligne est le titre : texte brut uniquement.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Ondulé et double : maintenez {mod}, appuyez sur U puis sur 1 ou 2. Recommencez pour le retirer.",
   "{keys} 或 Esc 关闭": "{keys} ou Échap pour fermer",
+  "{keys} 加链接时，剪贴板里的链接会自动填上。": "Quand vous ajoutez un lien avec {keys}, le lien du presse-papiers est rempli automatiquement.",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──
   "归档": "Archiver",
   "打卡操作": "Actions de l’habitude",

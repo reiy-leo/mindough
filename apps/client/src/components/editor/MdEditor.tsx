@@ -348,6 +348,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
             </table>
             {plainTitle && <p className="md-keys-note">{t.title1}</p>}
             <p className="md-keys-note">{t.combo}</p>
+            <p className="md-keys-note">{t.clipLink}</p>
             <p className="md-keys-note">{t.close}</p>
           </div>
         );

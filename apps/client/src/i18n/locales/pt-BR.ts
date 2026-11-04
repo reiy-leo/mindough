@@ -35,6 +35,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "第一行是标题，只能是纯文字": "A primeira linha é o título e aceita só texto simples.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Ondulado e duplo: segure {mod}, aperte U e depois 1 ou 2. Repita para remover.",
   "{keys} 或 Esc 关闭": "{keys} ou Esc para fechar",
+  "{keys} 加链接时，剪贴板里的链接会自动填上。": "Ao adicionar um link com {keys}, o link da área de transferência é preenchido automaticamente.",
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02，待母语者看）──
   "归档": "Arquivar",
   "打卡操作": "Ações do hábito",
