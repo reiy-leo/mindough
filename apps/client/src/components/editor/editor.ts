@@ -17,7 +17,7 @@ import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type Li
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
-import { hasSchemeBody, isAppSchemeHref, isBlockedHref, schemeOf } from '../../lib/link-scheme';
+import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
@@ -90,6 +90,7 @@ export function normalizeHref(raw: string): string | null {
   if (!t) return null;
   if (t.startsWith('#')) return t;
   if (isBlockedHref(t)) return null;
+  if (opaqueSchemeOf(t)) return t; // tel:10086（不然下面会当成主机 tel、端口 10086）
   if (isAppSchemeHref(t)) return hasSchemeBody(t) && !/^[a-z][a-z0-9+.-]*:\/*$/i.test(t) ? t : null;
   const bare = t.replace(/^\/\//, '');
   const url = schemeOf(bare) ? bare : `https://${bare}`;

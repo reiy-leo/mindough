@@ -50,9 +50,23 @@ export function isBlockedHref(href: string | null | undefined): boolean {
   return s !== null && BLOCKED_SCHEMES.has(s);
 }
 
+/** 不带 // 的协议（mailto:a@b.com、tel:10086 …）。 */
+export const OPAQUE_SCHEMES: ReadonlySet<string> = new Set(['mailto', 'tel', 'sms', 'callto', 'facetime', 'facetime-audio', 'xmpp', 'matrix', 'magnet', 'geo']);
+
+/**
+ * 「tel:10086」「geo:37」这种：schemeOf 会当成「主机:端口」认不出协议，这几个协议单独认。
+ * 是就返回协议（小写），不是返回 null。协议后面得有东西、不能有空白。
+ */
+export function opaqueSchemeOf(href: string | null | undefined): string | null {
+  if (!href) return null;
+  const m = /^([a-z][a-z0-9-]*):\S+$/i.exec(href.trim());
+  const s = m?.[1]!.toLowerCase();
+  return s && OPAQUE_SCHEMES.has(s) ? s : null;
+}
+
 /** 别的 App 的链接：有协议、不是 http(s)、不在挡的名单里（mailto: tel: codex: obsidian: …）。 */
 export function isAppSchemeHref(href: string | null | undefined): boolean {
-  const s = schemeOf(href);
+  const s = schemeOf(href) ?? opaqueSchemeOf(href);
   return s !== null && s !== 'http' && s !== 'https' && !BLOCKED_SCHEMES.has(s);
 }
 

@@ -14,6 +14,8 @@
  *   两栏「文字」「链接」：在已有链接里 = 预填两栏、保存时整段换掉；选了字 = 预填文字；文字空着就用网址当名字；
  *   网址没协议补 https://，不像网址就在框里提示、不关。回车保存（输入法选字的回车不算）、Esc 取消，Tab 只在框里转。
  *   点框外面 = 取消。
+ *   ⌘K 新加链接（不在已有链接里、选中的字本身不是网址）：读剪贴板，是一条链接就填进「链接」并全选，回车就保存
+ *   （Rei 2026-11-04）。先开框、读到再填，用户已经在框里打字就不填。怎么读、什么算链接见 lib/clip-link.ts。
  * - 外面的值变了（同步下来）且不是自己刚写的：替换内容。
  * - ⌘ / Ctrl + Enter：给了 onModEnter 就交给它（日记输入框发送，Rei 2026-10-29「任务和日记 editor 要行为一致」），不给照常换行。
  * - ⌘? / ⌘/（Windows / Linux 是 Ctrl）：光标旁弹出「写法和快捷键」浮层（Rei 2026-11-03），只看不点；Esc、再按一次、点别处、离开编辑器都收起。
@@ -29,6 +31,7 @@ import { Button as RacButton, Input, Label, TextField } from 'react-aria-compone
 import { ExternalLink } from 'lucide-react';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
+import { readClipboardLink } from '../../lib/clip-link';
 import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions } from './editor';
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
@@ -116,8 +119,17 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     if (raw.startsWith('#')) window.location.hash = raw;
   };
 
-  /** 开链接框：给了链接 = 改它；否则看选区（在链接里 = 改那条；选了字 = 预填文字；空光标 = 新加）。 */
-  const openLinkForm = (existing?: LinkRange) => {
+  /** 第几次开链接框；剪贴板读回来时对一下，免得填进后来开的框。 */
+  const dialogSeq = useRef(0);
+  /** 这次开框以后用户在框里打过字没有（打过就不拿剪贴板覆盖）。 */
+  const dialogTyped = useRef(false);
+  /** 剪贴板刚填进来的那一次（seq）：渲染完把焦点放进「链接」并全选。 */
+  const clipFilled = useRef(0);
+  const dialogRef = useRef<LinkDialog | null>(null);
+  dialogRef.current = dialog;
+
+  /** 开链接框：给了链接 = 改它；否则看选区（在链接里 = 改那条；选了字 = 预填文字；空光标 = 新加）。fromShortcut：⌘K 开的，新加时读剪贴板。 */
+  const openLinkForm = (existing?: LinkRange, fromShortcut = false) => {
     const h = handle.current;
     if (!h) return;
     const sel = h.selection(); // 先把 DOM 上刚改的选区读进来
@@ -135,7 +147,23 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     const href = cur?.href ?? (/^(https?:\/\/|www\.)\S+$/i.test(text.trim()) && normalizeHref(text) ? text.trim() : '');
     setHover(null);
     const coarse = typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const seq = ++dialogSeq.current;
+    dialogTyped.current = false;
     setDialog({ range, existing: cur, text, href, textLocked, error: '', sheet: touch.current || coarse });
+    if (!fromShortcut || cur || href) return;
+    void readClipboardLink().then((link) => {
+      if (!link) return;
+      // 读得比框渲染出来还快（桌面 App）：等框出来再填，最多等十来帧
+      const fill = (tries: number) => {
+        if (seq !== dialogSeq.current || dialogTyped.current) return;
+        const d = dialogRef.current;
+        if (!d) return void (tries > 0 && setTimeout(() => fill(tries - 1), 16));
+        if (d.href) return;
+        clipFilled.current = seq;
+        setDialog({ ...d, href: link, error: '' });
+      };
+      fill(10);
+    });
   };
   const openRef = useRef(openLinkForm);
   openRef.current = openLinkForm;
@@ -162,7 +190,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     // 快捷键浮层开着：Esc 先关它，不收起编辑器 / 关详情
     onEscape: () => (helpRef.current ? setHelp(null) : cb.current.onEscape?.()),
     onHelpShortcut: () => toggleHelpRef.current(),
-    onLinkShortcut: () => openRef.current(),
+    onLinkShortcut: () => openRef.current(undefined, true),
     ...(onModEnter ? { onModEnter: () => cb.current.onModEnter?.() } : {}),
     onSelection: () => {
       const h = handle.current;
@@ -248,6 +276,16 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     const id = requestAnimationFrame(() => (toHref ? hrefInput : textInput).current?.focus());
     return () => cancelAnimationFrame(id);
   }, [dialogOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 剪贴板的链接填进来了：焦点在「链接」或还没进框 → 放进「链接」并全选；在「文字」（空光标新加）就不抢
+  useLayoutEffect(() => {
+    if (!dialog || clipFilled.current !== dialogSeq.current) return;
+    clipFilled.current = 0;
+    const el = hrefInput.current;
+    if (!el || document.activeElement === textInput.current) return;
+    el.focus();
+    el.select();
+  }, [dialog?.href]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 快捷键浮层：贴着光标（下面放不下就放上面），收在视口里；点别处收起
   const helpEl = useRef<HTMLDivElement>(null);
@@ -396,7 +434,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       <TextField
         className="md-link-row"
         value={dialog.text}
-        onChange={(v) => setDialog({ ...dialog, text: v })}
+        onChange={(v) => ((dialogTyped.current = true), setDialog({ ...dialog, text: v }))}
         isDisabled={dialog.textLocked}
       >
         <Label className="md-link-label">{tr('文字')}</Label>
@@ -405,7 +443,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       <TextField
         className="md-link-row"
         value={dialog.href}
-        onChange={(v) => setDialog({ ...dialog, href: v, error: '' })}
+        onChange={(v) => ((dialogTyped.current = true), setDialog({ ...dialog, href: v, error: '' }))}
         isInvalid={!!dialog.error}
       >
         <Label className="md-link-label">{tr('链接')}</Label>
