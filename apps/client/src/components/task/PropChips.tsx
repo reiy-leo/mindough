@@ -201,7 +201,7 @@ export function PropChips({
       case 'mode':
         return (
           <div className="pop-section">
-            <CompletionChoice compact value={task.completion_mode} onChange={(m) => patch(modeDefaults(m, task))} />
+            <CompletionChoice compact locked value={task.completion_mode} onChange={(m) => patch(modeDefaults(m, task))} />
             <CompletionSentence value={task} today={today} onChange={(p) => patch(p)} />
           </div>
         );

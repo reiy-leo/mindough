@@ -262,6 +262,12 @@
   border-color: transparent;
   background: var(--accent-soft);
 }
+.mode-card[data-disabled] {
+  /* 换不过去的完成方式（倒数日、打卡锁住的那几张；Rei 2026-11-04） */
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: transparent;
+}
 .mode-card[data-focus-visible] {
   box-shadow: var(--focus);
 }

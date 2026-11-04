@@ -172,7 +172,7 @@ export function CheckInsPage() {
           <Button
             variant="primary"
             onPress={() =>
-              ui.openQuickCreate({ recurrence: formatRecurrence({ kind: 'daily' }), category_id: cat !== 'all' && cat !== NO_CATEGORY ? cat : null })
+              ui.openQuickCreate({ recurrence: formatRecurrence({ kind: 'daily' }), completion_mode: 'count', category_id: cat !== 'all' && cat !== NO_CATEGORY ? cat : null })
             }
           >
             <Plus size={16} />

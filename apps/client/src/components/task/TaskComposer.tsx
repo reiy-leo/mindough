@@ -60,6 +60,8 @@ interface Draft extends CompletionValue {
   body: string;
   typeData: Record<string, FieldValue>;
   modeTouched: boolean;
+  /** 在倒数日页 / 打卡页新建（打开时就指定了倒数日或计时、计数）：完成方式锁在那一类（Rei 2026-11-04） */
+  modeLocked: boolean;
   recurrence: string | null;
   /** 类型（Rei 2026-10-28 起能选几个），按顺序。 */
   categoryIds: string[];
@@ -102,6 +104,7 @@ function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]):
     target_date: d.target_date ?? null,
     // 打开时指定了完成方式（比如在倒数日页新建）：挂上资料时不跟着库的默认完成方式变
     modeTouched: d.completion_mode != null,
+    modeLocked: d.completion_mode != null && d.completion_mode !== 'once',
     recurrence: d.recurrence ?? null,
     categoryIds: cat ? [cat] : [],
     date: d.scheduled_date ?? null,
@@ -425,7 +428,7 @@ function Composer() {
 
         <section className="composer-section">
           <h3 className="composer-label">{tr('怎么算完成')}</h3>
-          <CompletionChoice value={d.completion_mode} onChange={(m) => set({ ...modeDefaults(m, d), modeTouched: true })} />
+          <CompletionChoice locked={d.modeLocked} value={d.completion_mode} onChange={(m) => set({ ...modeDefaults(m, d), modeTouched: true })} />
           <CompletionSentence value={d} today={today} onChange={(p) => set(p)} />
         </section>
 

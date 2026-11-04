@@ -64,14 +64,27 @@ import { useLunarUi } from '../../lib/lunar';
 import { GroupIcon } from '../project/GroupIcon';
 export const MODE_ICON: Record<CompletionMode, typeof Timer> = { once: CircleCheck, timer: Timer, count: Hash, countdown: CalendarClock };
 
-/** 完成方式的选择：四张卡片（单选，方向键可切换）。 */
-export function CompletionChoice({ value, onChange, compact }: { value: CompletionMode; onChange: (m: CompletionMode) => void; compact?: boolean }) {
+/**
+ * 完成方式的选择：四张卡片（单选，方向键可切换）。
+ * locked：按当前完成方式锁住不能换过去的几张，灰掉、不能点（Rei 2026-11-04）：
+ * 倒数日只能是倒数日（「倒数日中的完成方式其他三个要灰掉 不能点」）；
+ * 打卡（计时 / 计数）不能换成勾选完成或倒数日（「打卡中的勾选完成、倒数日灰掉 不能点」），计时和计数之间能换。
+ * 勾选完成的任务不锁。
+ */
+export function allowedModes(value: CompletionMode): readonly CompletionMode[] {
+  if (value === 'countdown') return ['countdown'];
+  if (value === 'timer' || value === 'count') return ['timer', 'count'];
+  return COMPLETION_MODES;
+}
+
+export function CompletionChoice({ value, onChange, compact, locked }: { value: CompletionMode; onChange: (m: CompletionMode) => void; compact?: boolean; locked?: boolean }) {
+  const allowed = locked ? allowedModes(value) : COMPLETION_MODES;
   return (
     <RadioGroup aria-label={tr('怎么算完成')} className={`mode-choice${compact ? ' is-compact' : ''}`} value={value} onChange={(v) => onChange(v as CompletionMode)}>
       {COMPLETION_MODES.map((m) => {
         const Icon = MODE_ICON[m];
         return (
-          <Radio key={m} value={m} className="mode-card">
+          <Radio key={m} value={m} className="mode-card" isDisabled={!allowed.includes(m)}>
             <span className="mode-icon" aria-hidden>
               <Icon size={18} />
             </span>
