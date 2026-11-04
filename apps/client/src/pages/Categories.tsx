@@ -17,8 +17,8 @@ import { useSettings } from '../lib/settings';
 import { Empty, PopoverPanel, Section, Segmented, Select } from '../ui/primitives';
 import { PageHeader } from '../components/PageHeader';
 import { TaskRow } from '../components/TaskRow';
-import { CategoryBadge, CategoryList, categoryGroupLabel, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
-import { ColorPicker, IconPicker } from '../components/TypeManager';
+import { CategoryTile, CategoryList, categoryGroupLabel, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
+import { IconStylePicker } from '../components/IconStylePicker';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { imeBusy, typingKey } from '../lib/ime';
@@ -134,17 +134,14 @@ function CategoryHead({ c }: { c: Category }) {
       <div className="cat-head-top">
         <PopoverPanel
           label={tr('图标和颜色')}
-          className="cat-style-popover"
+          className="icon-style-popover"
           trigger={
-            <RacButton className="cat-badge-btn" aria-label={tr('换「{name}」的图标和颜色', { name: shown })}>
-              <CategoryBadge c={c} size={44} />
+            <RacButton className="tile-btn" aria-label={tr('换「{name}」的图标和颜色', { name: shown })}>
+              <CategoryTile c={c} size={44} />
             </RacButton>
           }
         >
-          <div className="cat-style">
-            <ColorPicker value={c.color} onChange={(color: string) => store.updateCategory(c.id, { color })} />
-            <IconPicker value={c.icon} onChange={(icon) => store.updateCategory(c.id, { icon })} />
-          </div>
+          <IconStylePicker color={c.color} icon={c.icon} onColor={(color) => store.updateCategory(c.id, { color })} onIcon={(icon) => store.updateCategory(c.id, { icon })} />
         </PopoverPanel>
         <TextField aria-label={tr('「{name}」的名字', { name: shown })} value={name} onChange={setName} className="cat-head-name">
           <Input className="input" onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && (e.target as HTMLInputElement).blur()} />
@@ -194,7 +191,7 @@ function CategoryUses({ c }: { c: Category }) {
           <div className="card types-groups">
             {groups.map((g) => (
               <RacButton key={g.id} className="more-item" onPress={() => navigate({ page: 'group', id: g.id })}>
-                <span className="more-icon"><GroupIcon icon={g.icon} size={16} /></span>
+                <span className="more-icon"><GroupIcon group={g} size={22} /></span>
                 <span className="grow">{g.name}</span>
               </RacButton>
             ))}

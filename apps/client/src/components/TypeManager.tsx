@@ -64,8 +64,9 @@ import {
   type TaskType,
   type TypeLayout,
 } from '@mindough/core';
-import { typeIcon } from '../lib/icons';
 import { IconPicker } from './IconPicker';
+import { IconTile } from './IconTile';
+import { IconStylePicker } from './IconStylePicker';
 export { IconPicker };
 import { AutoTextarea, Button, ConfirmDialog, IconButton, PopoverPanel, Section, Segmented, Select, Sheet } from '../ui/primitives';
 import { useStore } from '../store/StoreProvider';
@@ -94,9 +95,6 @@ const KIND_ICON: Record<FieldKind, LucideIcon> = {
   site_id: Fingerprint,
   links: Link2,
 };
-
-/** 颜色色板（Apple 系统色的亮色版，明暗都看得清）。 */
-const SWATCHES = ['#ff3b30', '#ff6b5b', '#ff9f0a', '#ffcc00', '#c58b3d', '#34c759', '#00a6a6', '#0a84ff', '#2f80ed', '#5e5ce6', '#7c5cff', '#af52de', '#ff2d55', '#8e8e93'];
 
 export function TypeManager({ isOpen, onOpenChange, initialTypeId }: { isOpen: boolean; onOpenChange: (open: boolean) => void; initialTypeId?: string | null }) {
   const store = useStore();
@@ -198,16 +196,13 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
     <>
       <GridList ref={reorderGuard.ref} aria-label={trc('资料库编辑器', '资料库')} className="type-manage-list" items={types} dragAndDropHooks={dragAndDropHooks} onAction={(k) => !isDragPress() && onOpen(String(k))}>
         {(t) => {
-          const Icon = typeIcon(t.icon);
           const name = dataLabel(t.name);
           return (
             <GridListItem id={t.id} textValue={name} className="type-row">
               <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
                 <GripVertical size={14} />
               </RacButton>
-              <span className="type-row-icon" style={{ '--chip-color': t.color } as CSSProperties} aria-hidden>
-                <Icon size={16} />
-              </span>
+              <IconTile icon={t.icon} color={t.color} size={30} className="type-row-icon" />
               <span className="type-row-text">
                 <span className="type-row-name">{name}</span>
                 <span className="type-row-sub">{usageText(store.typeUsage(t.id)) || (t.builtin ? tr('内置') : tr('自定义'))}</span>
@@ -241,13 +236,10 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
           {showArchived && (
             <ul className="type-archived-list" aria-label={tr('已归档的资料库')}>
               {archived.map((t) => {
-                const Icon = typeIcon(t.icon);
                 const name = dataLabel(t.name);
                 return (
                   <li key={t.id} className="type-row is-archived">
-                    <span className="type-row-icon" style={{ '--chip-color': t.color } as CSSProperties} aria-hidden>
-                      <Icon size={16} />
-                    </span>
+                    <IconTile icon={t.icon} color={t.color} size={30} className="type-row-icon" />
                     <span className="type-row-text">
                       <span className="type-row-name">{name}</span>
                       <span className="type-row-sub">{usageText(store.typeUsage(t.id)) || (t.builtin ? tr('内置') : tr('自定义'))}</span>
@@ -289,23 +281,24 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
   const name = useCommitted(type.name, (n) => store.updateType(type.id, { name: n }));
   const tpl = useCommitted(type.body_template, (n) => store.updateType(type.id, { body_template: n }));
   const archived = isArchivedType(type);
-  const Icon = typeIcon(type.icon);
   return (
     <div className="type-editor" style={{ '--chip-color': type.color } as CSSProperties}>
       <div className="type-head">
         <PopoverPanel
-          label={tr('图标')}
-          className="icon-pick-popover"
+          label={tr('图标和颜色')}
+          className="icon-style-popover"
           trigger={
-            <RacButton className="type-icon-btn" aria-label={tr('换图标')}>
-              <Icon size={26} />
+            <RacButton className="tile-btn" aria-label={tr('换图标和颜色')}>
+              <IconTile icon={type.icon} color={type.color} size={48} />
             </RacButton>
           }
         >
           {(close) => (
-            <IconPicker
-              value={type.icon}
-              onChange={(icon) => {
+            <IconStylePicker
+              color={type.color}
+              icon={type.icon}
+              onColor={(color) => store.updateType(type.id, { color })}
+              onIcon={(icon) => {
                 store.updateType(type.id, { icon });
                 close();
               }}
@@ -318,9 +311,6 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
       </div>
 
       <div className="type-props">
-        <PropLine label={tr('颜色')}>
-          <ColorPicker value={type.color} onChange={(color) => store.updateType(type.id, { color })} />
-        </PropLine>
         <PropLine label={tr('资料库版式')} hint={tr('资料库和卡片上图片的形状')}>
           <LayoutPicker value={type.layout} onChange={(l) => store.updateType(type.id, { layout: l })} />
         </PropLine>
@@ -390,20 +380,6 @@ function PropLine({ label, hint, children }: { label: string; hint?: string; chi
         {hint && <span className="type-prop-hint">{hint}</span>}
       </div>
       <div className="type-prop-value">{children}</div>
-    </div>
-  );
-}
-
-export function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  const custom = !SWATCHES.includes(value.toLowerCase());
-  return (
-    <div className="swatches" role="radiogroup" aria-label={tr('颜色')}>
-      {SWATCHES.map((c) => (
-        <RacButton key={c} className={`swatch${value.toLowerCase() === c ? ' is-selected' : ''}`} style={{ '--swatch': c } as CSSProperties} aria-label={c} onPress={() => onChange(c)} />
-      ))}
-      <label className={`swatch swatch-custom${custom ? ' is-selected' : ''}`} style={{ '--swatch': value } as CSSProperties} title={tr('自己调')}>
-        <input type="color" aria-label={tr('自己调颜色')} value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#5e5ce6'} onChange={(e) => onChange(e.target.value)} />
-      </label>
     </div>
   );
 }

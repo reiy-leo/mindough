@@ -6,10 +6,10 @@
 import { useState, type ReactNode } from 'react';
 import { Button as RacButton, Input, TextField } from 'react-aria-components';
 import { FolderMinus, Pencil, Trash2 } from 'lucide-react';
-import { groupIconName, type Group, type Store } from '@mindough/core';
+import { groupColor, groupIconName, type Group, type Store } from '@mindough/core';
 import { ConfirmDialog, PopoverPanel, type MenuAction } from '../../ui/primitives';
 import { ProjectSheet } from './ProjectSheet';
-import { IconPicker } from '../TypeManager';
+import { IconStylePicker } from '../IconStylePicker';
 import { GroupIcon } from './GroupIcon';
 import { groupSidebarAction } from '../../lib/library-sidebar';
 import { navigate, useRoute } from '../../lib/router';
@@ -84,18 +84,20 @@ export function ProjectTitle({ store, group }: { store: Store; group: Group }) {
   return (
     <span className="project-title">
       <PopoverPanel
-        label={tr('图标')}
-        className="icon-pick-popover"
+        label={tr('图标和颜色')}
+        className="icon-style-popover"
         trigger={
-          <RacButton className="project-icon-btn" aria-label={tr('换图标')}>
-            <GroupIcon icon={group.icon} size={18} />
+          <RacButton className="tile-btn project-icon-btn" aria-label={tr('换图标和颜色')}>
+            <GroupIcon group={group} size={28} />
           </RacButton>
         }
       >
         {(close) => (
-          <IconPicker
-            value={groupIconName(group.icon)}
-            onChange={(icon) => {
+          <IconStylePicker
+            color={groupColor(group)}
+            icon={groupIconName(group.icon)}
+            onColor={(color) => store.updateGroup(group.id, { color })}
+            onIcon={(icon) => {
               store.updateGroup(group.id, { icon });
               close();
             }}

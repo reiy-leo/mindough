@@ -402,7 +402,7 @@ export function GroupList({ store, value, onChange }: { store: Store; value: str
       </ListBoxItem>
       {groups.map((g) => (
         <ListBoxItem key={g.id} id={g.id} className="listbox-item pick-item" textValue={g.name}>
-          <span className="pick-icon"><GroupIcon icon={g.icon} size={15} /></span>
+          <span className="pick-icon"><GroupIcon group={g} size={18} /></span>
           <span className="grow">{g.name}</span>
           <Check size={14} className="pick-check" />
         </ListBoxItem>

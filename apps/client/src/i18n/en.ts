@@ -12,6 +12,8 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 图标和颜色面板（Rei 2026-11-04，待母语者看）──
+  "换图标和颜色": "Change Icon & Color",
   // ── 链接浮层「访问」按钮（Rei 2026-11-03）──
   "访问": "Open",
   // ── 我的一天：显示 / 隐藏建议（Rei 2026-11-01）──

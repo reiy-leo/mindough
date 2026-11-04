@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BUILTIN_CATEGORIES } from '@mindough/core';
+import { BUILTIN_CATEGORIES, ICON_COLOR_HEXES } from '@mindough/core';
 import { AA_TEXT, chipColors, contrastRatio, luminance, parseHex, readableInk } from './chip-colors';
 
-const SWATCHES = ['#ff3b30', '#ff6b5b', '#ff9f0a', '#ffcc00', '#c58b3d', '#34c759', '#00a6a6', '#0a84ff', '#2f80ed', '#5e5ce6', '#7c5cff', '#af52de', '#ff2d55', '#8e8e93'];
+// 色板（core icon-color.ts，2026-11-04 起类型和项目共用）+ 老色板，老数据里还有
+const SWATCHES = [...ICON_COLOR_HEXES, '#ff3b30', '#ff6b5b', '#ff9f0a', '#ffcc00', '#c58b3d', '#34c759', '#00a6a6', '#0a84ff', '#2f80ed', '#5e5ce6', '#7c5cff', '#af52de', '#ff2d55', '#8e8e93'];
 
 describe('对比度公式（WCAG 2.x）', () => {
   it('黑白 21:1，同色 1:1', () => {

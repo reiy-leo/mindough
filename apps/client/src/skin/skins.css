@@ -1398,8 +1398,14 @@
 [data-skin='material'] .cat-item.is-selected {
   border-radius: var(--radius-pill);
 }
-[data-skin='material'] .cat-badge {
+[data-skin='material'] .icon-tile,
+[data-skin='material'] .tile-btn {
   border-radius: 50%;
+}
+/* WinUI：图标块是小圆角方块（和它的按钮、卡片 4–8px 圆角一致） */
+[data-skin='winui'] .icon-tile,
+[data-skin='winui'] .tile-btn {
+  border-radius: 22%;
 }
 
 /* ───────── 日期面板（Rei 2026-11-01 方案 A，styles/task.css「日期面板」）───────── */

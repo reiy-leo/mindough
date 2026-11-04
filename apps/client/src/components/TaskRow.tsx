@@ -183,7 +183,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           )}
           {showGroup && v.group && (
             <span className="meta-group">
-              <GroupIcon icon={v.group.icon} size={12} /> {v.group.name}
+              <GroupIcon group={v.group} size={14} /> {v.group.name}
             </span>
           )}
           {showDate && task.scheduled_date && (

@@ -383,7 +383,7 @@ function Composer() {
               )}
             </PopoverPanel>
           )}
-          <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: <><GroupIcon icon={group.icon} size={13} /> {group.name}</> } : {})} />}>
+          <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: <><GroupIcon group={group} size={16} /> {group.name}</> } : {})} />}>
             {(close) => (
               <GroupList
                 store={store}

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Keyboard
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
 import { CATEGORY_GROUPS, categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroup, type CategoryState, type Store } from '@mindough/core';
-import { typeIcon } from '../lib/icons';
+import { IconTile } from './IconTile';
 import { categoryNames } from './CategoryPicker';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -54,14 +54,9 @@ export function categoryStateLabel(s: CategoryState): string {
   return s === 'frequent' ? trc('类型档', '常用') : s === 'normal' ? trc('类型档', '普通') : trc('类型档', '不显示');
 }
 
-/** 彩色图标块：圆角方块，底色是类型颜色，图标白色（方案 C：去掉旁边的颜色圆点）。 */
-export function CategoryBadge({ c, size = 28 }: { c: Pick<Category, 'icon' | 'color'>; size?: number }) {
-  const Icon = typeIcon(categoryIcon(c));
-  return (
-    <span className="cat-badge" style={{ '--chip-color': c.color, width: size, height: size } as CSSProperties} aria-hidden>
-      <Icon size={Math.round(size * 0.58)} />
-    </span>
-  );
+/** 类型的图标块：底色是类型颜色，图标白色。和项目共用 IconTile（Rei 2026-11-04）。 */
+export function CategoryTile({ c, size = 28 }: { c: Pick<Category, 'icon' | 'color'>; size?: number }) {
+  return <IconTile icon={categoryIcon(c)} color={c.color} size={size} />;
 }
 
 /** 改档 / 换组 / 新建，带「撤销」提示条。 */
@@ -244,7 +239,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
                 className={`cat-item cat-item-create${active === 'create' ? ' is-active' : ''}`}
                 onClick={() => create(term)}
               >
-                <span className="cat-badge cat-badge-add" aria-hidden>
+                <span className="icon-tile icon-tile-add" aria-hidden>
                   <Plus size={16} />
                 </span>
                 <span className="cat-item-name">{tr('新建“{q}”', { q: term })}</span>
@@ -370,7 +365,7 @@ function CategoryRow({
           onPress();
         }}
       >
-        <CategoryBadge c={c} />
+        <CategoryTile c={c} />
         <span className="cat-item-name">{name}</span>
         {state === 'frequent' && <span className="cat-item-tag">{trc('类型档', '常用')}</span>}
         {count > 0 && <span className="cat-count">{count}</span>}

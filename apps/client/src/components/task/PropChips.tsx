@@ -142,7 +142,7 @@ export function PropChips({
       }
       case 'group': {
         const s = group?.name ?? '';
-        return { icon: group ? <GroupIcon icon={group.icon} size={14} /> : <Shapes size={14} />, text: s, aria: s };
+        return { icon: group ? <GroupIcon group={group} size={16} /> : <Shapes size={14} />, text: s, aria: s };
       }
       case 'color': {
         const c = cardColorOf(task);

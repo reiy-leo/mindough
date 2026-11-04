@@ -50,7 +50,7 @@ function GroupCard({ group: g }: { group: Group }) {
         }}
       >
         <div className="group-card-head">
-          <GroupIcon icon={g.icon} size={22} className="group-icon" />
+          <GroupIcon group={g} size={26} className="group-icon" />
           <span className="group-name">{g.name}</span>
           {c && <CategoryLabel c={c} size={12} />}
         </div>

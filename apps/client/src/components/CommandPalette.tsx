@@ -225,7 +225,7 @@ export function CommandPalette() {
               return (
                 <li key={h.id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
                   <RacButton className="palette-main" onPress={() => openHit(h)}>
-                    {h.kind === 'person' ? <Avatar store={store} person={h.person} size={32} /> : h.kind === 'group' ? <span className="thumb thumb-icon"><GroupIcon icon={h.group.icon} size={16} /></span> : null}
+                    {h.kind === 'person' ? <Avatar store={store} person={h.person} size={32} /> : h.kind === 'group' ? <GroupIcon group={h.group} size={30} className="thumb-tile" /> : null}
                     <span className="palette-text">
                       <span className="palette-title">{h.title}</span>
                       <span className="palette-snippet">

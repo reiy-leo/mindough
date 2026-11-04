@@ -67,16 +67,6 @@
 .field-manage-list [data-drop-target] {
   outline: 2px solid var(--accent);
 }
-.type-row-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: none;
-  border-radius: var(--radius-sm);
-  color: var(--chip-color);
-  background: color-mix(in srgb, var(--chip-color) 14%, transparent);
-}
 .type-row-text {
   flex: 1;
   min-width: 0;
@@ -108,25 +98,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-.type-icon-btn {
-  display: inline-grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  flex: none;
-  border: 0;
-  border-radius: var(--radius-md);
-  color: var(--chip-color);
-  background: color-mix(in srgb, var(--chip-color) 15%, var(--surface-2));
-  cursor: pointer;
-  outline: none;
-}
-.type-icon-btn[data-hovered] {
-  background: color-mix(in srgb, var(--chip-color) 22%, var(--surface-2));
-}
-.type-icon-btn[data-focus-visible] {
-  box-shadow: var(--focus);
 }
 .type-name-field {
   flex: 1;

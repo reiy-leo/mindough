@@ -457,15 +457,6 @@
 }
 
 /* ───────── 项目的图标、名字、··· 菜单（Rei 2026-11-01）───────── */
-/* 项目图标：emoji 和 lucide 都画成同样大小（components/project/GroupIcon） */
-.group-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  line-height: 1;
-  vertical-align: -0.15em;
-}
 /* 项目页左上角：图标按钮 + 能点的名字 */
 .project-title {
   display: inline-flex;
@@ -474,23 +465,6 @@
   min-width: 0;
   flex: 0 1 auto;
 }
-.project-icon-btn {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  flex: none;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--accent);
-  cursor: pointer;
-}
-.project-icon-btn[data-hovered],
-.project-icon-btn[data-pressed] {
-  background: color-mix(in srgb, var(--accent-soft) 80%, var(--accent));
-}
-.project-icon-btn[data-focus-visible],
 .project-name-btn[data-focus-visible] {
   outline: none;
   box-shadow: var(--focus);
@@ -536,16 +510,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-.project-edit-preview {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  color: var(--accent);
 }
 .project-edit-name {
   flex: 1;

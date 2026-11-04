@@ -254,7 +254,7 @@ function PinnedGroupLink({ item, active, group }: { item: NavItem; active: boole
         title={item.label}
       >
         <span className="nav-icon">
-          <GroupIcon icon={group.icon} size={18} />
+          <GroupIcon group={group} size={18} />
         </span>
         <span className="nav-label">{item.label}</span>
       </a>
