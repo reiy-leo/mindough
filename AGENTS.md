@@ -61,7 +61,7 @@ apps/client/src/
   skin/                 皮肤层：tokens.css（三套令牌 × 明暗）、skins.css（平台形状）、platform.ts（检测）
   styles/app.css        结构样式（只用令牌变量）
   ui/primitives.tsx     React Aria 包装（Button、Sheet、PopoverPanel、OverflowMenu、ConfirmDialog、InlineNumber、AutoTextarea、Tip…）
-  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页 / 小窗弹窗）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel（月历是 DateGrid，自己画的 role=grid，公历 / 农历月共用）、挑任务 TaskSearch
+  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel（月历是 DateGrid，自己画的 role=grid，公历 / 农历月共用）、挑任务 TaskSearch
   components/library/   资料库共用件：占位图 ItemArt、选择框 LibraryPicker、资料编辑 ItemEditor / ItemSheet、资料卡 ItemCard
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
@@ -111,7 +111,7 @@ docs/                   PLAN.md、PRODUCT.md、COPY.md（界面文案）、EXPOR
 - 排版跟语言走：中文、日文不在数字和单位之间空格，其他语言空（CSS 用 `html:not(:lang(zh)):not(:lang(ja))`）；会比中文长两三倍的文字（按钮、提示）要在手机 390、中等宽度、右列打开时都看一遍，装不下就换行或只留图标，别靠截断。
 - 代码和文档里的概念名是固定的：任务 / 组 / 分类 / 前置 / 后续 / 可开始 / 被阻塞 / 琐事列表 / 任务类型（含显示变体与创建模板；界面上叫「资料库」）/ 完成方式（once 勾选完成、timer 计时、count 计数、countdown 倒数日）。界面上怎么叫，以 COPY.md 为准（比如“前置/后续”在界面上叫「先做完这些 / 做完后解锁」，“被阻塞”叫「还不能开始」；“组”在界面上叫「项目」/ Project，Rei 2026-10-25 改的，代码、表名、字段、`#/groups` 深链接都还叫 group，别跟着改；“任务类型”在界面上叫「资料库」/ Collection，Rei 2026-10-26 改的，`task_type`、`type_id`、`new?type=` 都不改，空的那个叫「不放进资料库」）。
 - 新建和详情是两个组件：新建是 `components/task/TaskComposer.tsx`（快速、安静，完成方式在新建时选），详情是 `components/task/TaskDetail.tsx`（内容在前、状态用操作按钮、属性、关系（前后关系 + 相关任务））；两者共用 `components/task/pickers.tsx`。详情的单值属性是一行胶囊 `components/task/PropChips.tsx`（Rei 2026-10-25 方案 A：只显示设过的；默认值、适用与否、清除回默认都在 `lib/prop-chips.ts`，加新的单值属性就在那里加 PropId 和默认值）；资料行、任务字段还是属性卡片里的 `PropRow`。
-- 三列布局（Rei 2026-10-23，PLAN「三列布局」）：任务详情不用弹窗。桌面上在右列（`components/task/DetailPane.tsx`，侧边栏 | 列表 | 详情；< 1100 侧边栏收成图标栏），手机整页推入，只有桌面置顶小窗里是弹窗（`TaskDetail mode`）。打开都用 `ui.openEditor(id)`（选中的任务写在 hash 的 `?task=` 里，别另存状态），手机上关掉用 `ui.closeDetail()`；能被 ↑ ↓ 选中、要高亮的列表项带 `data-task-id` 和 `is-selected`（参照 `TaskRow`）。别再给任务详情加新的弹窗；新弹层（挑任务、确认）可以照旧用 Sheet。
+- 三列布局（Rei 2026-10-23，PLAN「三列布局」）：任务详情不用弹窗。桌面上在右列（`components/task/DetailPane.tsx`，侧边栏 | 列表 | 详情；< 1100 侧边栏收成图标栏），手机整页推入（`TaskDetail mode`）。桌面置顶小窗 2026-11-04 删了，别再加回来。打开都用 `ui.openEditor(id)`（选中的任务写在 hash 的 `?task=` 里，别另存状态），手机上关掉用 `ui.closeDetail()`；能被 ↑ ↓ 选中、要高亮的列表项带 `data-task-id` 和 `is-selected`（参照 `TaskRow`）。别再给任务详情加新的弹窗；新弹层（挑任务、确认）可以照旧用 Sheet。
 - 进度都由 check_in 事件累加出来，不直接改写进度字段（多端合并靠的就是这个）。计数的加量、手输、撤销都在 `components/CountControls.tsx`：手输总数记成差值事件，撤销用 `store.undoCheckIn`（打墓碑）；步长和快捷按钮读 core `countStep` / `quickAmounts`，空的 `count_config` 就是老任务（+1）。
 - 资料库：类型字段分 资料字段（`scope` 省略 = item，存在 library_item 上）与 任务字段（`scope: 'task'`，存在 task.type_data）；显示任务时都用 `store.taskData(task)` / `lib/view.ts` 的 `viewOf` / `titleOf`，不要直接读 `task.type_data` 当完整数据。
 - 类型编辑（M4）：取类型列表用 `store.pickableTypes()` / `orderedTypes()` / `editableTypes()`，不要自己按 sort 排；显示字段用 `shownFields` / `itemFieldsOf` / `taskFieldsOf`（不含隐藏、删掉的），别直接遍历 `type.fields` 去显示；删字段用 `removeField`（留墓碑），不要从数组里真删。

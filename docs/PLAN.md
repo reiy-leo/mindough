@@ -321,7 +321,7 @@ M0 实现时定下的细节（Rei 2026-10-15 已确认）：
      - 键：标题里回车 → 进正文第一行（不是空段落就插一个；收起的先展开）；正文空段落回车 → 出到折叠块后面（ProseMirror 自带 liftEmptyBlock）；标题开头退格 → 拆开；收起时标题里 ↓ 跳到下一块（没有就补一段），下一块开头 ↑ 回标题；光标不管怎么进了收起的正文都会展开（appendTransaction）。
      - 样式：只读 `.md summary`（去掉原生三角，`::before` 画 chevron mask，`[open]` 转 90°）和编辑器 `.md-details-toggle::before` 共用一套；正文缩进 20px；只用令牌颜色，三皮肤 × 明暗通用。测试 `details.test.ts`（读入结构、往返、两遍稳定、工具栏、手打、回车 / 退格、展开收起不算改动）；截图 `work/shots-details/`（脚本 `work/shots-tool/details.mjs`、`details-type.mjs`）。
 3. 🟡 小组件（2026-10-16，详见 docs/WIDGETS.md）：
-   - ✅ 桌面小窗：我的一天标题旁「打开小窗」（只在桌面 app）→ Tauri 第二个窗口 `mini`（`?window=mini`，340 × 540，置顶，可调大小）：我的一天 + 今天要打卡，用 TaskRow 直接勾 / 计时 / +1，底部「加到今天…」，图钉切换置顶、「打开主窗口」。两个窗口共用 rusqlite，内存快照经 Tauri 事件 `mindough:changes` 互相 applyRemote；小窗不跑同步 / 提醒 / 登录回调。`cargo check` 通过，真机待验。
+   - ❌ 桌面小窗：做过，2026-11-04 Rei 要求删除小窗，已经删了（见「删除桌面小窗」）。
    - 🟡 Android：app 写快照 ✅（`lib/widget-snapshot.ts` → Rust `widget_snapshot` → app 数据目录 `widget-snapshot.json`，有测试）；AppWidget 的 Kotlin + 布局写在 `src-tauri/mobile/android-widget/`，**没接进构建**（gen/android 由 CI 生成、本机没 SDK 验证不了；接入步骤在 WIDGETS.md）。
    - 🟡 iOS：WidgetKit 脚手架（`src-tauri/mobile/ios-widget/MindoughWidget.swift`）+ 步骤（要 App Group，快照得写到共享容器）；待 Rei 在 Mac 上接。
 4. ✅ 桌面 app 外链用系统浏览器打开（Tauri opener）：`lib/external.ts` 在 document 上捕获 click / auxclick，指向别的源的 http(s) 和 mailto / tel 链接都交给 `openUrl`（Markdown 渲染的链接、资料卡小标签、编辑器里的链接都不用各自处理）；Web 端照常新标签页；权限沿用 `opener:default`（只放行 http / https / mailto / tel）。真机待验。
@@ -343,7 +343,7 @@ M0 实现时定下的细节（Rei 2026-10-15 已确认）：
      - 演示数据按生成时的语言写（英文界面第一次打开就是英文演示数据）；已有的中文演示数据不会变成英文（是用户数据）。
 
    - ✅ 外壳调整（Rei 2026-10-17，分支 macos-titlebar）：
-     - macOS 无标题栏（「macOS的边栏框要贯通，titlebar不展示」）：`src-tauri/tauri.macos.conf.json` 只在 macOS 合并，主窗口 `titleBarStyle: Overlay` + `hiddenTitle` + `trafficLightPosition { x: 16, y: 17 }`；前端在 Tauri + macOS + 主窗口时给 html 加 `platform-macos-overlay`（`skin/platform.ts` 的 `usesMacOverlayTitlebar`），侧边栏和内容区顶部各一条 38px（`--titlebar-h`）的 `data-tauri-drag-region` 拖动条（双击放大走 Tauri 自带的 drag 脚本，权限加 `core:window:allow-start-dragging`），内容区改由 `.main-scroll` 滚动（平时 `display: contents`，等于没有）。y 按「(条高 − 按钮高) / 2 + 按钮在容器里的 origin.y」估：Sequoia 上 origin.y≈5、按钮高≈14 → 17；Tahoe 上 origin.y≈7，红绿灯会高约 2pt，要真机再调。小窗保持系统标题栏；Windows / Linux / 网页不变；全屏时红绿灯隐藏，拖动条仍留空。
+     - macOS 无标题栏（「macOS的边栏框要贯通，titlebar不展示」）：`src-tauri/tauri.macos.conf.json` 只在 macOS 合并，主窗口 `titleBarStyle: Overlay` + `hiddenTitle` + `trafficLightPosition { x: 16, y: 17 }`；前端在 Tauri + macOS 时给 html 加 `platform-macos-overlay`（`skin/platform.ts` 的 `usesMacOverlayTitlebar`），侧边栏和内容区顶部各一条 38px（`--titlebar-h`）的 `data-tauri-drag-region` 拖动条（双击放大走 Tauri 自带的 drag 脚本，权限加 `core:window:allow-start-dragging`），内容区改由 `.main-scroll` 滚动（平时 `display: contents`，等于没有）。y 按「(条高 − 按钮高) / 2 + 按钮在容器里的 origin.y」估：Sequoia 上 origin.y≈5、按钮高≈14 → 17；Tahoe 上 origin.y≈7，红绿灯会高约 2pt，要真机再调。Windows / Linux / 网页不变；全屏时红绿灯隐藏，拖动条仍留空。
      - 侧边栏不放软件名和图标（「侧边栏不要添加软件title」），三种皮肤都去掉。
      - 新建任务改成右下角浮动按钮（「新建任务移动到右下角浮动」）：桌面和手机三种皮肤都是 `.fab`——Material 3 FAB（56dp、16dp 圆角、primary container）、Apple 强调色正圆 52px、WinUI 强调色 8px 圆角 48px；手机在标签栏上方并让开安全区；侧边栏底部和手机顶栏的新建按钮去掉，N 键不变；关系图的缩放按钮挪到左下，免得被挡。
      - 去掉全局右键菜单（「去掉全局右键菜单」）：`lib/contextmenu.ts` 在 window 上拦 `contextmenu`，输入框 / 多行文本 / contenteditable（Milkdown）/ `[data-native-menu]` 例外；Tauri 和网页都生效。
@@ -510,11 +510,11 @@ Rei 2026-10-25 原话：「拖拽文件到详情页面可以直接添加附件�
 - **「+」菜单**：最后加一项「附件」（Lucide `paperclip`，英文单数 Attachment，`trc('属性', '附件')`）。点了直接打开系统文件选择，可以多选（在这次点击里调 `input.click()`，不放进 setTimeout，不然 Safari 不认是用户点的）。别的属性设了就从菜单里消失，「附件」不会：加过附件它还在。所以能加附件时「+」一直显示，属性全设了也在。纯逻辑 `lib/prop-chips.ts` 的 `addMenuItems`，单测在 `prop-chips.test.ts`。
 - **附件区**：任务详情里不要标题「附件」、个数、「也可以把文件拖到这里」和「添加附件」按钮（`Attachments bare`）。没附件时整块不渲染，不占位；也没有分隔线。
 - **顺序**：标题和正文 →（有类型时的「X 信息」折叠块）→ 属性胶囊行 → 附件 → 资料卡片（资料行、进度条、看到哪…）→ 关系。附件紧贴胶囊，从「+」加的附件就出现在「+」下面；资料卡片原来就在胶囊下面，现在往下挪到附件后面。附件原来在正文下面、属性上面，挪走了。
-- **拖放**：拖文件到详情整列（右列 `.pane-detail` / 手机整页，包括顶栏和底栏）都能加，可以一次拖多个。拖进来时整列盖一层虚线高亮，中间「松手添加附件 · 每个文件不超过 50 MB」。50 MB 上限、类型、报错沿用原来的 `addAttachments`。桌面置顶小窗（弹窗）没有外框，照旧是内容区。
+- **拖放**：拖文件到详情整列（右列 `.pane-detail` / 手机整页，包括顶栏和底栏）都能加，可以一次拖多个。拖进来时整列盖一层虚线高亮，中间「松手添加附件 · 每个文件不超过 50 MB」。50 MB 上限、类型、报错沿用原来的 `addAttachments`。
 - **只认从页面外面拖进来的文件**：拖文字、链接不触发（types 里没有 Files）。从页面里开始的拖动也不触发（window 上记 dragstart / dragend）：Chrome 拖页面里的 `<img>` 时 types 里也带 Files，不排除的话编辑器里拖图片挪位置会变成加附件。
 - **编辑器的取舍**：当时编辑器不支持把图片文件拖进正文当插图，所以拖到哪里（包括正文）都是加附件。2026-10-25 换成 Tiptap 后分出来了：只有图片、拖到正文上，就上传插进正文；其余照旧是附件（见下面「编辑器换成 Tiptap」）。
 - **2026-11-01 改回：拖到哪里都是附件**（Rei「drag 图片到任务详情中后，没有直接开始上传」）。10-29 正文不收图片以后，拖到正文上的图片还按老规矩分给编辑器，编辑器又拦下只提示「正文里不能放图片」，结果既没进正文也没加附件。现在拖进来的文件不管落在哪（包括正文）、是不是图片，都在外框的捕获阶段接住，马上进队列上传（`attachFileDrop`）。日记输入框也能拖，只收图片，进「待发」小图。
-- **桌面版要关掉 Tauri 的拖放接管**：Tauri 2 默认 `dragDropEnabled: true`，macOS 上 wry 自己接住从访达拖进来的东西、不交给网页，Windows 上 WebView2 也一样，网页的 drop 事件根本不来，拖附件在桌面版一直不起作用。主窗口（`tauri.conf.json` 和 macOS / Windows 两份）、小窗、设置窗口都设成 `false`。改的是配置，要重新打包才生效。
+- **桌面版要关掉 Tauri 的拖放接管**：Tauri 2 默认 `dragDropEnabled: true`，macOS 上 wry 自己接住从访达拖进来的东西、不交给网页，Windows 上 WebView2 也一样，网页的 drop 事件根本不来，拖附件在桌面版一直不起作用。主窗口（`tauri.conf.json` 和 macOS / Windows 两份）、设置窗口都设成 `false`。改的是配置，要重新打包才生效。
 - **日记**：日记共用 `Attachments` 组件，但它没有胶囊行，没地方放「+」，所以保持原样：小标题、「添加附件」按钮、「也可以把文件拖到这里」、拖到日记那一块都照旧。「不认页面里开始的拖动」这一条日记也跟着生效。所以「添加附件」「也可以把文件拖到这里」两个字符串日记还在用，没删；上一轮挪到单独一行的提示（中文以外）也还是日记在用。
 - **新建面板**不改。
 - 截图 `work/shots-attach2/`（脚本 `work/shots-tool/attach2.mjs`，假 API）：三皮肤 × 宽屏 1440 / 手机 390，没附件、「+」菜单、有附件、拖入高亮、带资料卡的类型；苹果宽屏、Material 手机加暗色；苹果宽屏英文。
@@ -523,7 +523,6 @@ Rei 2026-10-25 原话：「拖拽文件到详情页面可以直接添加附件�
   2. 拖到正文外面、或者拖的不全是图片，都是加附件。只有图片拖到正文上才插进正文（2026-10-25 换 Tiptap 后加的，见下面「编辑器换成 Tiptap」）。
   3. 日记不改，仍有自己的标题和「添加附件」按钮。
   4. 菜单里的「附件」不显示已有个数。
-  5. 桌面置顶小窗里拖放范围仍是内容区，不含弹窗顶栏。
 
 ### 农历 ✅（2026-10-17，Rei：「选择日期支持选择中国农历，订阅农历可在设置中看到地址和同步频率」；澄清后确认：从外部订阅一份农历 / 节气日历（ICS），设置里显示源地址和多久同步一次）
 - **换算本地查表，不联网**：core `lunar/`——`data.ts`（农历 1900–2100 月大小 / 闰月 201 个数 + 公历 1900–2100 节气表，约 6 KB）由 `packages/core/scripts/gen-lunar-data.mjs` 从 lunar-javascript 1.7.7（MIT，6tail，寿星天文历算法）生成；它不是依赖，只在生成时用，生成时 1900-01-31 … 2100-12-31 逐日核对过农历和节气（全对）。没用 `Intl` 的 chinese 历：Node / 浏览器的 ICU 在 2027、2030、2012、2018 等年份的初一和官方差一天（如 ICU 说 2027 春节是 2-07，官方 2-06）。`lunar.ts`：`solarToLunar` / `lunarToSolar`（不存在的日子 null）、`lunarYearMonths`、`leapMonthOf`、`solarTermOf`、`lunarFestivalOf`（春节、元宵、龙抬头、端午、七夕、中元、中秋、重阳、腊八、小年、除夕；闰月不算）、`lunarYearlyDate`（每年农历 X 月 X 日落在哪天）、`lunarCellLabel`（格子小字优先级：订阅的节日名 > 传统节日 > 节气 > 初一显示月名「九月」「闰六月」> 日子「初八」）。名字在 `names.ts`（中英文界面格子里都照中文显示，同 Apple 日历；选择器、重复规则的英文说法 Month 9 / Day 8 / Leap Month 6）。
@@ -583,7 +582,7 @@ Rei：「添加从dida365导入任务的功能，在菜单栏的File/Import/Dida
 - 中等宽度（761–1099 px）：侧边栏收成图标栏（64 px，macOS 无标题栏时 80 px 给红绿灯；悬停看名字，小节标题变成细线，收起的小节照样列出），列表 + 详情两列；没选中时右列不占地方（列表铺满）。选「图标栏」而不是「侧边栏可收起」：不用多一个开关，导航一直在手边。
 - 手机（≤ 760 px，沿用原来的手机断点 `MOBILE_MAX_WIDTH`，不是 720）：详情整页推入（盖住标签栏，从右滑入），左上返回（Apple「‹ 返回」、WinUI / Material 箭头）；从屏幕左边缘右滑跟手返回；进详情时 `history.pushState`，所以浏览器 / 安卓返回键回列表；返回按钮在有这条记录时用 `history.back()`，不攒重复记录。
 - 选中的任务写在当前页面 hash 的 `?task=<id>` 上（`#/agenda?task=…`，`lib/router.ts` 的 `taskInHash` / `hashWithTask`；`parseHash` 忽略 ? 后面的参数），刷新后还在；换页面就不带（取消选中）。桌面上选中 / 换一件用 `replaceState`（不攒浏览记录）。`ui.editingId` 就是它（`lib/ui.tsx` 跟着 hashchange / popstate 走），所有入口照旧调 `ui.openEditor(id)`，不用各自改。深链接 `#/task/{id}`（Web）还是先换成 `#/myday` 再在右列打开；`mindough://task/{id}` 在当前页面的右列打开。
-- 详情外框 `DetailFrame`（`TaskDetail.tsx`）：`mode="pane"`（右列）/ `"page"`（手机整页）/ `"modal"`（桌面置顶小窗里照旧弹窗，小窗太窄放不下第三列）。右列和整页都是一栏：属性跟在正文、附件后面（`.detail.is-stacked`，原来 `.is-mobile` 的样式改名过来）。顶栏：完成状态 / 进度胶囊 | 我的一天、添加关系、··· | 关闭（整页是返回）；macOS 无标题栏时顶栏空白处可拖窗口。完成 / 关闭这件后：右列留着显示「已完成」+「重新打开」（方便撤回）；手机整页、小窗照旧收起。删除后右列回空状态。
+- 详情外框 `DetailFrame`（`TaskDetail.tsx`）：`mode="pane"`（右列）/ `"page"`（手机整页）。原来还有给桌面置顶小窗用的 `"modal"`，2026-11-04 随小窗一起删了。右列和整页都是一栏：属性跟在正文、附件后面（`.detail.is-stacked`，原来 `.is-mobile` 的样式改名过来）。顶栏：完成状态 / 进度胶囊 | 我的一天、添加关系、··· | 关闭（整页是返回）；macOS 无标题栏时顶栏空白处可拖窗口。完成 / 关闭这件后：右列留着显示「已完成」+「重新打开」（方便撤回）；手机整页照旧收起。删除后右列回空状态。
 - 新建面板（FAB）不变，还是自己的面板；新建后提示里的「查看」在右列打开。FAB 挪进中间一列（`.main-col`）右下角，不压住右列底栏的主操作。组页关系图单击节点就在右列显示（以前桌面要双击）。
 - 皮肤：Apple 像「提醒事项」检查器（白底、左边 0.5 px 细线、底栏不分色，选中行强调色浅底）；WinUI 像 Mail 阅读窗格（右边一块圆角 8 卡片、和列表留缝，选中行浅底 + 左边强调色竖条）；Material 3 list-detail 规范布局（详情是圆角 16 的 surface container，中间 4×48 的拖动把手，选中行 secondary container 色）。
 - 没改数据模型；纯逻辑（宽度上下限、↑ ↓ 选下一件、hash 读写）在 `lib/detail-pane.ts` + `lib/router.ts`，单测 `lib/detail-pane.test.ts`。
@@ -605,7 +604,7 @@ Rei：「添加从dida365导入任务的功能，在菜单栏的File/Import/Dida
 
 ### App 名字 ✅（2026-10-25）：英文 Mindough，中文「念头团」
 Rei 2026-10-24 定：英文「Mindough」，中文「思想团」；2026-10-25 中文名改成「念头团」（英文不变），全仓「思想团」→「念头团」（i18n key 一起改，英文译文不变），manifest description 跟着改，sw.js SHELL v3 → v4。
-- **界面**：core `appName()` = `tr('念头团')`（英文 Mindough）；tr 的中文原文里写「念头团」（「登录念头团」「关于念头团」），英文词典写 Mindough。设置「关于」、启动占位、手机顶栏兜底、置顶小窗标题、桌面菜单栏（关于 / 隐藏 / 退出）、通知相关说明、Worker 的原生登录结果页（只有中文）都随语言或改成念头团。没有文字字标（关于里是图标 + 文字名，文字随语言）。
+- **界面**：core `appName()` = `tr('念头团')`（英文 Mindough）；tr 的中文原文里写「念头团」（「登录念头团」「关于念头团」），英文词典写 Mindough。设置「关于」、启动占位、手机顶栏兜底、桌面菜单栏（关于 / 隐藏 / 退出）、通知相关说明、Worker 的原生登录结果页（只有中文）都随语言或改成念头团。没有文字字标（关于里是图标 + 文字名，文字随语言）。
 - **网页标题**：`lib/i18n.ts` `applyAppTitle` 在启动和换语言时改 `document.title` 与 `apple-mobile-web-app-title`；index.html 里静态写 Mindough（JS 跑之前 / 爬虫）。
 - **PWA manifest**：只有一种语言，`name` / `short_name` 保持 Mindough（装到桌面后的名字是 Mindough；iOS「添加到主屏幕」读的是 apple-mobile-web-app-title，随语言）；description 写「Mindough（念头团）：…」。改了 manifest，sw.js SHELL v2 → v3（10-25 改名再 v3 → v4）。
 - **原生**：`src-tauri/locales/`——Apple `zh-Hans.lproj` / `en.lproj` 的 `InfoPlist.strings`（CFBundleDisplayName、CFBundleName），macOS 经 `bundle.macOS.files` 打进 Contents/Resources，`src-tauri/Info.plist` 合进 CFBundleLocalizations + LSHasLocalizedDisplayName；iOS 在 ios.yml 打 ipa 前 `scripts/native-locales.sh ios` 放进 .app；Android `values-zh` / `values-zh-rCN` 的 app_name（+ main_activity_title），build.yml 在 `tauri android init` 后 `scripts/native-locales.sh android` 拷进 gen/。
@@ -728,7 +727,6 @@ Rei 2026-10-26 原话：「我的一天、待安排、可做的中间列的heade
 - **占位**：我的一天「今天要做什么？按回车添加」（不变）；待安排「想到什么先记下，按回车添加到待安排」；可做「现在想做什么？按回车添加到待安排」。读屏名「添加任务到今天」/「添加任务到待安排」。新字符串九种语言都补了。
 - **原来页头里的东西挪到哪**：
   - 副标题（我的一天的日期 · 完成数 · 农历，待安排的「N 件还没定哪天做 / 都安排好了」，可做的「N 件任务的前置都已完成…」）挪到添加框下面、列表上方的一行小字。
-  - 我的一天的「打开小窗」按钮（只在桌面 app）挪到添加框行尾，小图标，悬停提示不变。
   - 待安排页头的「新建任务」按钮去掉了：右下角新建按钮和 N 一样打开完整的新建面板，功能没丢；空状态里的「记一件事」还在。
   - 页面标题留一个读屏用的隐藏 `h1`，读屏照样知道在哪一页。
 - **macOS 无标题栏**：中间列顶上那条 38px 的拖动条（`titlebar-space`，带 `data-tauri-drag-region`）在 `App.tsx` 里，不在页面里，没动：红绿灯避让、拖窗口、双击放大照旧，添加框在拖动条下面。截图用加 `platform-macos-overlay` 类模拟过，没在真 Mac 上试。
@@ -792,8 +790,7 @@ Rei 2026-10-26 报 bug：「整个页面居然可以滚动」。截图是 macOS 
 - **结果**：这几种操作都会把整个 `.app` 往上推：在侧边栏上滚滚轮（macOS 无标题栏时侧边栏本身不滚，滚动交给外层）、时间轴页打开时 `scrollIntoView({ block: 'center' })` 定位「今天」（一打开就上移 19 px）、键盘和聚焦把行滚进视野。手机网页也一样：列表、可做、设置三页整页能滚，顶栏会被滚走。
 - **改法**：
   1. `html` 设 `overflow: hidden`；`body`、`#root`、`.app` 设 `overflow: clip`（连脚本都滚不动；老 WebKit 不认就退回 hidden）。桌面布局再加 `overscroll-behavior: none`，整页不回弹；手机网页不加，保留浏览器的下拉刷新。
-  2. 侧边栏、导航、`.main`、`.main-scroll`、详情框、`.pane-body`、小窗列表都加 `position: relative`，里面的绝对定位元素被各自那一列裁住。
-  3. 小窗高度从 `100vh` 改成 `100%`，跟着 `#root` 走。
+  2. 侧边栏、导航、`.main`、`.main-scroll`、详情框、`.pane-body` 都加 `position: relative`，里面的绝对定位元素被各自那一列裁住。
   4. 时间轴页定位「今天」、详情里方向键切换任务、Markdown 脚注跳转，改用 `lib/root-scroll` 的 `scrollIntoContainer`：只滚最近的那一列。
   5. 兜底：`installRootScrollGuard` 监听外层的滚动，桌面布局、鼠标操作时一被滚动就归零。手机、触屏、软键盘弹出（可见区域变矮）、手指放大时不拦，系统要滚整页让输入框露出来。
 - **验证**：Playwright 在 Chromium 和 WebKit 里跑（`work/shots-tool/noscroll*.mjs`）：我的一天、待安排、时间轴、项目、资料库、人物、日记、打卡、设置逐页点开，各在中列和侧边栏上滚滚轮，再按方向键、End、Home、PageDown、空格，点最后一行开详情，编辑器里连打 40 个回车，开关 ⌘K 和新建面板，窗口变矮再变高，最后脚本强行滚外层。修前列表、设置两页 `.app` 被推上去；修后每一步 `window.scrollY` 和外层 `scrollTop` 都是 0。修前修后同一状态截图逐像素比：只有列表页不一样（修前整页上移了 19 px）；其他页在 Chromium 里逐像素相同，WebKit 里资料库、打卡有一百来个像素的差别，Chromium 里没有，判断是图片和动画的抖动。
@@ -976,11 +973,11 @@ Rei 2026-10-26 19:41：「这个网站也要i18n」。
 ### 桌面窗口透出壁纸：macOS 侧边栏毛玻璃、Windows 11 Mica ✅（2026-10-26）
 Rei 2026-10-26 20:58：「mindough app的背景，侧边栏背景不像是原生app的bg sensitive的」。以前窗口和侧边栏都是不透明的纯色，看不出桌面壁纸的颜色。
 
-- macOS：主窗口、小窗、设置窗口都开透明，铺 NSVisualEffectView 的 Sidebar 材质，窗口失焦时跟系统一样变灰（`followsWindowActiveState`）。Apple 皮肤下侧边栏透明、透出材质；内容区和详情照旧不透明（`--bg` / 白底），像「提醒事项」「邮件」。侧边栏的搜索框改成半透明灰。窗口透明要用 Tauri 的 `macOSPrivateApi`，代价是不能上 Mac App Store（现在也不上）。
+- macOS：主窗口、设置窗口都开透明，铺 NSVisualEffectView 的 Sidebar 材质，窗口失焦时跟系统一样变灰（`followsWindowActiveState`）。Apple 皮肤下侧边栏透明、透出材质；内容区和详情照旧不透明（`--bg` / 白底），像「提醒事项」「邮件」。侧边栏的搜索框改成半透明灰。窗口透明要用 Tauri 的 `macOSPrivateApi`，代价是不能上 Mac App Store（现在也不上）。
 - Windows 11（build ≥ 22000）：整窗 Mica，WinUI 皮肤去掉以前假 Mica 的渐变底，卡片本来就是半透明白，直接叠在 Mica 上。Windows 10 没有 Mica：主窗口在 Rust 里按系统版本建（`tauri.windows.conf.json` 写 `create: false`），Win10 建成不透明窗口，界面照旧纯色。
 - Linux、手机、网页版、PWA：不变（浏览器透不出壁纸）。Material 皮肤也不变，背景不透明，正好盖住材质。窗口拉窄成手机布局时也不透明。
 - 深浅色：界面手动选了深色或浅色，窗口也跟着换（材质和 Mica 按窗口的深浅色画）；跟着系统时不动。
-- 怎么接：原生端 `src-tauri/src/vibrancy.rs` 的 `window_material` 说这台机器用哪种材质（vibrancy / mica / none），顺便设窗口深浅色；前端 `lib/vibrancy.ts` 拿到 vibrancy / mica 才给 html 加 `is-vibrant` 和 `data-material`，样式都在 `styles/vibrancy.css`。前端开小窗、设置窗口时用 `materialWindowOptions()` 带上同样的 transparent / windowEffects。
+- 怎么接：原生端 `src-tauri/src/vibrancy.rs` 的 `window_material` 说这台机器用哪种材质（vibrancy / mica / none），顺便设窗口深浅色；前端 `lib/vibrancy.ts` 拿到 vibrancy / mica 才给 html 加 `is-vibrant` 和 `data-material`，样式都在 `styles/vibrancy.css`。前端开设置窗口时用 `materialWindowOptions()` 带上同样的 transparent / windowEffects。
 
 待 Rei 定：
 - 内容区要不要也半透明一点（现在 macOS 内容区不透明，和系统 app 一样）。
@@ -1222,7 +1219,7 @@ Rei 2026-11-03：「任务的标题不渲染任何样式，或者列表，以及
   - 按键：扩展优先级 1800（ime-guard 2000 之下，下划线 1500 之上）。选区整个在第一块里时，⌘B / ⌘I / ⌘U / ⌘E / ⌘K、⌘⌥0–9 / X / C、⌘⇧B / X / S / E / H / M / 7 / 8 / 9 拦下（⌘K 还不让外面的搜索打开）；回车、Shift+回车只 `splitBlock`，所以 `|a|b|`、`<details>`、`$$` 回车也不变。
   - 粘贴：光标在第一块里，取 `text/plain`：第一行当文字插进去，后面的行交给 markdown 读；有文件的照旧交给拦图片 / 附件。
   - 兜底：`appendTransaction` 每次文档变了都看第一块（`normalizeTitle`）：硬换行、图片处拆段；公式、HTML 片段、脚注换回原文；格式去掉；标题等文字块改成段落；代码块取第一行；引用、列表、提示块、折叠块把第一段拆到最前面（剩下的不合规矩由 schema 补齐）；表格、分隔线、块级公式前面补空段落。光标尽量留在原来那几个字上。撤销时和原事务算一步。
-- **存**：`serializeWithTitle`：第一块写成 `escapeTitleLine(文字)`（core `md-text.ts`），后面的块照常写，中间空一行。`\ * _ \` ~ [ $` 都转，`<` 后面跟字母 / `/` / `!` / `?`、像实体的 `&` 才转，行首的 `# - + > = |`、`1.` / `1)` 才转；前后空白去掉。`firstLine` 不用改：转义先当字面量保护起来，去记号的正则碰不到，显示就是原文。添加框（`quickAdd`）、⌘K「新建」、小窗、日程、详情里新建关系任务用 `plainTitleMarkdown`（第一行转义，后面照原样）。深链接带来的 `text` 不转（外面可能就是 markdown 正文）。
+- **存**：`serializeWithTitle`：第一块写成 `escapeTitleLine(文字)`（core `md-text.ts`），后面的块照常写，中间空一行。`\ * _ \` ~ [ $` 都转，`<` 后面跟字母 / `/` / `!` / `?`、像实体的 `&` 才转，行首的 `# - + > = |`、`1.` / `1)` 才转；前后空白去掉。`firstLine` 不用改：转义先当字面量保护起来，去记号的正则碰不到，显示就是原文。添加框（`quickAdd`）、⌘K「新建」、日程、详情里新建关系任务用 `plainTitleMarkdown`（第一行转义，后面照原样）。深链接带来的 `text` 不转（外面可能就是 markdown 正文）。
 - **老数据**：打开时 `normalizeTitleDoc` 只改显示，`lastOut` 记规范后的样子，所以只看不改不写回、不触发同步；同步下来的新值同样处理。真改了才按新样子存（第一行 `# 标题` 存成 `标题`）。列表、搜索、⌘K、提醒、小组件的标题照旧用 `firstLine` 去记号，老数据显示不变。
 - **⌘? 浮层**：任务里多一行「第一行是标题，只能是纯文字」，九种语言，外语待母语者看。
 - 测试：`apps/client/src/components/editor/title.test.ts`（67 项：第一行手打 23 种写法不变、快捷键无效、第二行照常、Shift+回车 / `|a|b|` 回车、第二块上来 8 种被规范、补空段落、撤销、粘贴 4 种、老数据不写回、同步、日记不受影响）；`packages/core/test/title-text.test.ts`（46 项：33 种字面文字往返、老数据标题照旧）。
@@ -1295,6 +1292,15 @@ Rei 2026-11-04 16:12：「界面不能selection」。像原生 App 一样，侧�
 - 设置底部的版本号还是点一下复制，本身不能拖选。
 - 右键菜单早就全局关了（输入框和编辑器除外），所以 App 里右键不会出「全选」。菜单栏「编辑 → 全选」用鼠标点的那一下走原生命令，不经过 ⌘A 拦截，但它也只能选中上面那些能选的内容。
 - 拖图上传、拖动排序不受影响：`user-select` 只管选字，不管拖放。
+
+### 删除桌面小窗 ✅（2026-11-04）
+2026-11-04 Rei 要求删除小窗（16:20「删除这个小窗」，指我的一天添加框行尾那个「小窗：置顶显示今天的事」按钮）。整个功能一起删：
+- 界面：我的一天添加框行尾的按钮没了，`components/MiniWindow.tsx` 删了，`main.tsx` 不再认 `?window=mini`。
+- 窗口：`lib/windows.ts` 去掉 `openMiniWindow`、`setMiniOnTop`、`isMiniWindow`；`isAuxWindow` 现在只指设置窗口。窗口之间同步（`installWindowSync`）、`focusMainWindow`、窗口材质还给设置窗口用，留着。
+- 详情：`TaskDetail` 只剩 `pane` 和 `page` 两种，弹窗模式只有小窗在用，连同 `.modal-detail`、`.detail-side` 样式一起删了。
+- 权限：`capabilities/default.json` 的 windows 去掉 `mini`，去掉只有小窗用的 `core:window:allow-set-always-on-top`。
+- 文案：小窗的 7 条（打开小窗、悬停提示、置顶 / 不再置顶、打开主窗口、今天还没有安排。、加到今天…）9 种语言一起删。
+- 手机小组件（Android / iOS，`lib/widget-snapshot.ts`、`src-tauri/src/widget.rs`）和小窗不共用代码，没动。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。

@@ -1,21 +1,15 @@
 # 小组件（M3-3）
 
-不开 app 也能看「我的一天」和「今天要打卡」。分三块，进度不一样：
+不开 app 也能看「我的一天」和「今天要打卡」。现在只做手机，两块进度不一样：
 
 | 平台 | 形式 | 状态 |
 |---|---|---|
-| macOS / Windows / Linux | 置顶的「小窗」（Tauri 第二个窗口） | ✅ 做好；真机待验 |
 | Android | 主屏 AppWidget，读 app 写的 JSON 快照 | 快照 ✅（app 写）；Kotlin 小组件写好了，**还没接进构建** |
 | iOS | WidgetKit 扩展 | 只有脚手架（Swift 文件 + 步骤），要 Rei 在 Xcode 里加 target、开 App Group |
 
-## 桌面小窗
+## 桌面
 
-- 入口：我的一天页标题右边的「打开小窗」按钮，只有桌面 app 里有，网页和手机上没有。
-- `lib/windows.ts` 的 `openMiniWindow()` 开一个 label 为 `mini` 的 `WebviewWindow`：`index.html?window=mini#/mini`，340 × 540，`alwaysOnTop`，能调大小；已经开着就把它提到最前面。
-- `main.tsx` 看到 `?window=mini` 就只渲染 `components/MiniWindow.tsx`（+ 详情弹层 + 提示）：标题「我的一天」+ 日期和完成数、置顶开关（图钉）、「打开主窗口」；我的一天的任务（`TaskRow`，可以直接勾 / 计时 / +1）、「今天要打卡」（已经在我的一天里的不再列）；底部是「加到今天…」输入条。点一行就在小窗里打开详情。
-- 数据：两个窗口共用一个 rusqlite 连接，各自的内存快照用 Tauri 事件 `mindough:changes` 互相通知：写的一方用 `store.onLocalWrite` 发出去，另一方用 `store.applyRemote` 合进来，不进 outbox。同步、排提醒、接登录回调都归主窗口，小窗不管。
-- 权限（`capabilities/default.json`）：windows 加 `mini`；`core:webview:allow-create-webview-window`、`core:window:allow-set-always-on-top`、`allow-set-focus`、`allow-show`、`allow-unminimize`。
-- 截图：浏览器里也能打开 `?window=mini`（`work/screens/m3-mini-*`），只是「置顶」「打开主窗口」在浏览器里没用。
+桌面以前有个置顶的「小窗」（Tauri 第二个窗口）。2026-11-04 Rei 要求删除小窗，已经删了，桌面现在没有小组件。手机小组件和它不共用代码，下面的不受影响。
 
 ## Android AppWidget
 
