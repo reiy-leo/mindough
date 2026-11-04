@@ -43,6 +43,10 @@ jobs:
         run: |
           if [ ! -d src-tauri/gen/apple ]; then pnpm tauri ios init --ci; fi
 
+      # 和 Android 一样：init 只带 Tauri 默认 AppIcon，换成 icons/ios 里的念头团图标，sha256 不一致就失败
+      - name: 换上念头团图标
+        run: scripts/native-icons.sh ios
+
       # Xcode 工程里的构建脚本（tauri ios xcode-script）要 `tauri ios build` 在跑时才能编 Rust，不能直接 xcodebuild。
       # 做法：工程里关掉签名（签名交给 Sideloadly），照常 `tauri ios build`：归档（archive）能成，导出 ipa 那步要签名会失败，
       # 失败不管，直接从 .xcarchive 里拿 .app 自己打成 ipa。

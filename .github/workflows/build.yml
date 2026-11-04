@@ -142,6 +142,10 @@ jobs:
         run: |
           if [ ! -d src-tauri/gen/android ]; then pnpm tauri android init --ci; fi
 
+      # init 只拷 Tauri 默认图标（alpha.14 桌面图标还是 Tauri 的），换成 icons/android 里的念头团图标，sha256 不一致就失败
+      - name: 换上念头团图标
+        run: scripts/native-icons.sh android
+
       # 中文系统下显示「念头团」（values-zh / values-zh-rCN），其他语言（es、pt-rBR、ru、ja、de、fr、in）和默认都是 Mindough
       - name: 本地化显示名
         run: scripts/native-locales.sh android
@@ -153,6 +157,13 @@ jobs:
       - name: 打 debug APK（arm64）
         working-directory: apps/client
         run: pnpm tauri android build --apk --debug --target aarch64
+
+      # 构建后再核一遍：res 里的图标没被改回去，APK 里有自适应图标
+      - name: 核对图标
+        run: |
+          scripts/native-icons.sh android verify
+          apk=$(find apps/client/src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
+          unzip -l "$apk" | grep -E 'mipmap-(anydpi|xxxhdpi)' || { echo "APK 里没找到 mipmap 图标"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:

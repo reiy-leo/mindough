@@ -258,6 +258,7 @@ M0 实现时定下的细节（Rei 2026-10-15 已确认）：
   - Tauri 原生：`src-tauri/src/db.rs` 命令层（rusqlite bundled，单连接，`db_exec / db_run / db_all`），schema 与迁移仍在前端 core，与 Web 同一份。没用 tauri-plugin-sql：它是连接池，跨 invoke 的 BEGIN / COMMIT 不可靠。本机 `cargo check` 通过（Linux）。
   - 测试：同一套契约跑 内存 / localStorage / node:sqlite / Turso 引擎（`@tursodatabase/database`，与 wasm 同引擎）。
 - ✅ GitHub Actions：`ci.yml`（类型检查、单测、构建）；`build.yml`（手动或推 `v*` 标签）用 tauri-action 打未签名的 macOS universal、Windows（msi / nsis）、Linux（AppImage / deb），另有 Android debug APK（arm64，CI 里 `tauri android init`）；产物传 artifacts，推标签时建 Release 草稿。iOS 待签名方案。
+  - 原生图标（2026-11-04，Rei：「Android的图标还是tauri的」）：`gen/` 不进仓库，`tauri android/ios init --ci` 只带 Tauri 默认图标，不读 `src-tauri/icons/`。所以 init 之后跑 `scripts/native-icons.sh android|ios`，把 `icons/android`、`icons/ios` 拷进工程，逐个比 sha256，不一致就失败；Android 顺手删掉模板没人用的矢量前景和背景，构建后再核一遍。alpha.14 及以前的 APK 都是 Tauri 图标，下个 alpha 起换成念头团。
 - ✅ Google 登录（Worker 写好未部署）：`/auth/login`、`/auth/callback`、`/auth/logout`、`/api/me`；HMAC 签名会话 cookie（SESSION_SECRET，30 天）；`ALLOWED_EMAILS` 白名单，为空 = 谁都不能登录。失败回跳带 `?login_error=代码`，前端启动时立即用 history.replaceState 去掉并显示可关闭提示，登录成功后不再显示。`POST /api/sync/token` 当时先返回 501 未实现，M2 已签发同步凭据。客户端设置页有“账户”区；不登录也能完整离线使用。
 - ✅ 原生端登录（系统浏览器 + deep link 回调）：M2 里做完，见“原生端登录（Tauri）”；Worker 已部署，Google OAuth 客户端 Rei 配好（2026-10-15）。
 - ✅ Markdown 编辑换成 Milkdown（所见即所得），见 M3-2；2026-10-25 又换成 Tiptap，见「编辑器换成 Tiptap」。
