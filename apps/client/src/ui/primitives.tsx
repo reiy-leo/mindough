@@ -305,8 +305,13 @@ export function MenuAt({ at, label, items, onClose }: { at: { x: number; y: numb
  * 右键 + 长按（手机 480ms）打开 MenuAt。props 挂到元素上；键盘菜单键没有坐标时贴着元素左下。
  * 长按打开后，接下来那次点按要忽略：点击处理里先看 consumeLongPress()。
  */
-export function useContextMenuAt() {
+/**
+ * 右键 / 长按出菜单。`longPress: false`：手指长按不出这个菜单，留给系统（比如发出的日记正文长按出拷贝），
+ * 菜单从「···」按钮进；鼠标右键照常。
+ */
+export function useContextMenuAt({ longPress = true }: { longPress?: boolean } = {}) {
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  const touched = useRef(false);
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);
   const long = useRef(false);
   const cancel = () => {
@@ -315,6 +320,8 @@ export function useContextMenuAt() {
   };
   const props = {
     onContextMenu: (e: ReactMouseEvent<HTMLElement>) => {
+      // Android 长按也会发 contextmenu；不接长按时不拦，让系统选字和拷贝出来
+      if (!longPress && touched.current) return;
       e.preventDefault();
       let x = e.clientX;
       let y = e.clientY;
@@ -329,7 +336,8 @@ export function useContextMenuAt() {
     },
     onPointerDownCapture: (e: ReactPointerEvent<HTMLElement>) => {
       long.current = false;
-      if (e.pointerType !== 'touch') return;
+      touched.current = e.pointerType === 'touch';
+      if (e.pointerType !== 'touch' || !longPress) return;
       const x = e.clientX;
       const y = e.clientY;
       cancel();

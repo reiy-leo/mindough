@@ -65,7 +65,8 @@ export function JournalFeed({ groups, today, single }: { groups: ReadonlyArray<{
 
 function Post({ post, onDelete }: { post: JournalPost; onDelete: () => void }) {
   const store = useStore();
-  const menu = useContextMenuAt();
+  // 手机长按正文走系统拷贝，删除从「···」进（Rei 2026-11-04）
+  const menu = useContextMenuAt({ longPress: false });
   const items: MenuAction[] = [{ id: 'delete', label: tr('删除'), icon: <Trash2 size={16} />, danger: true, onAction: onDelete }];
   const ownerId = store.postAttachmentOwnerId(post);
   const time = postTime(post.created_at);
