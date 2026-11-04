@@ -714,6 +714,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "导航|打卡": "Habitudes",
   "打卡": "Cocher",
   "可做": "Disponibles",
+  // 侧栏「积压」（原「可做」，Rei 2026-11-04；待母语者看）
+  "积压": "À rattraper",
+  "已过期": "En retard",
+  "接下来": "À venir",
+  "定了日期的都做完了": "Tout ce qui a une date est fait",
+  "{n} 件定了日期还没做完": "{n} tâches datées en cours",
+  "{n} 件定了日期还没做完，{m} 件已过期": "{n} tâches datées en cours, dont {m} en retard",
   "计划": "Planifier",
   // 侧栏「计划 → 时间轴」（原名「列表」，Rei 2026-11-02 改名；译法待母语者看）
   "导航|时间轴": "Chronologie",

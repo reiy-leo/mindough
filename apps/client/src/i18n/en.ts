@@ -718,6 +718,14 @@ export const EN: Record<string, EnValue> = {
   今天没有要打卡的: 'Nothing to check in today',
   其他打卡: 'Other Check-ins',
 
+  // ── 积压（原「可做」，Rei 2026-11-04）──
+  积压: 'Backlog',
+  已过期: 'Overdue',
+  接下来: 'Coming Up',
+  定了日期的都做完了: 'Everything with a date is done',
+  '{n} 件定了日期还没做完': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open`,
+  '{n} 件定了日期还没做完，{m} 件已过期': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open, ${p.m} overdue`,
+
   // ── 可做 ──
   '{length} 件任务的前置都已完成，现在就能开始': (p) => `${n(p.length, 'task is', 'tasks are')} ready to start now`,
   没有可开始的任务: 'Nothing ready to start',

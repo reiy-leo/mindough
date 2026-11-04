@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarCheck2, CalendarDays, ChevronRight, Hourglass, Library, ListChecks, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { CalendarCheck2, CalendarClock, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
 import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
@@ -85,7 +85,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { page: 'myday', get label() { return tr('我的一天'); }, icon: Sun, match: ['myday'] },
       { page: 'backlog', get label() { return tr('待安排'); }, icon: Inbox, match: ['backlog'] },
-      { page: 'doable', get label() { return tr('可做'); }, icon: ListChecks, match: ['doable'] },
+      { page: 'doable', get label() { return tr('积压'); }, icon: CalendarClock, match: ['doable'] },
     ],
   },
   {
