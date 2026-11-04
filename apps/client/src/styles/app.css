@@ -3666,29 +3666,36 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 .cat-head-note {
   margin: 0;
 }
-/* 「图标和颜色」面板（components/IconStylePicker）：弹层里定宽，放在项目面板里占满 */
+/* 「图标和颜色」面板（components/IconStylePicker）：弹层定宽，颜色两排各 10 格，下面的图标网格自带 12px 内边距；放在项目面板里占满 */
+.icon-style-popover {
+  width: min(360px, calc(100vw - 24px));
+}
 .icon-style {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  width: min(360px, calc(100vw - 32px));
-}
-.icon-style.project-edit-style {
-  width: auto;
-  padding: 0;
+  gap: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 12px;
 }
 .icon-style .swatches {
   display: grid;
-  grid-template-columns: repeat(10, 24px);
-  justify-content: space-between;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  justify-items: center;
   gap: 10px 0;
   max-width: none;
-  padding: 3px 4px;
+  padding: 3px 9px;
 }
 .icon-style .swatch {
   width: 24px;
   height: 24px;
+}
+.icon-style.project-edit-style {
+  gap: var(--space-3);
+  padding-top: 0;
+}
+.icon-style.project-edit-style .swatches {
+  padding: 3px 0;
 }
 .types-page .types-list {
   max-height: none;
