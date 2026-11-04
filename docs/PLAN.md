@@ -1198,6 +1198,16 @@ Rei 2026-11-02 原话：「确保设计符合对应的皮肤，项目弹窗中�
 - **皮肤**（都用 token，不写死颜色）：Apple 格子浅灰填充、圆角 8、选中 `--accent` 实心 + `--accent-contrast`；WinUI 圆角 4、选中 `--accent-soft` 底 + 2px `--accent` 描边；M3 圆角 12、state layer 8% / 12%、选中 `--accent-soft`（secondaryContainer）+ `--accent-soft-text`。
 - 文案「或者用一个 emoji」「或者用一个 emoji，如 🎙️」「用这个」「没有对得上的图标，可以在下面填一个 emoji」删了。
 
+### 图标选择：整块左右滑、近 300 个图标、不要搜索和 emoji ✅（2026-11-04）
+Rei 2026-11-04 原话：「编辑项目中的图标左右滚动，删掉搜索框，emoji不支持」；16:21 更正「不对，是整个lucide icons section左右滑动，不再有文字标题，而是每列占满了占下一列，添加更多lucide icons，包括动物、植物」。先做的「每组一行」作废。
+
+- **网格**：`components/IconPicker.tsx` 只有一个 `.icon-grid`：`grid-auto-flow: column` + `grid-template-rows: repeat(var(--icon-rows), 格高)`，宽屏 5 行、手机 4 行，`overflow-x: auto`，滚动条藏起来，`scroll-snap` 贴格子。没有组名。两头还有图标时 JS 打 `data-more-start` / `data-more-end`，CSS 用 `mask-image` 渐隐 28px。打开时选中的格子滚到中间；↑↓ 同一列挪一格，←→ 跳隔壁列（按当前行数算），Home / End 到头尾，挪到的格子滚进视野。
+- **图标**：`lib/icons.ts` 从 60 个加到 295 个，`PICKER_GROUPS` 只管排列顺序：常用、娱乐、学习工作、出行、生活、健康、动物、植物。动物有 paw-print、cat、dog、bird、fish、rabbit、turtle、snail、bug、squirrel、rat、panda 等，植物有 leaf、flower、flower-2、rose、tree-pine、tree-deciduous、tree-palm、sprout、clover、wheat、shrub 等（lucide 1.57 没有 cactus、tulip，没放）。按名字一个个引入（`XxxIcon`，免得 `Map` 之类盖住全局），打包只带这些。以前的 60 个名字都留着，老数据照常画；同一个图形的别名（home / house）只放一个。
+- **去掉搜索**：搜索框、搜索结果、「没有对得上的图标」和图标中文关键词表 `lib/icon-keywords.ts` 都删了；`searchable` 参数也删了。
+- **去掉 emoji**：emoji 小格、`firstGrapheme` / `emojiFromInput` 删了，只能选 Lucide。`isEmojiIcon` 和 `typeIcon` 画 emoji 的那段留着：项目（`group.icon`）、资料库（`type.icon`）、打卡分类（`category.icon`）的老数据可能存着 emoji，照常显示，打开选择器时不选中格子，用户点了图标才改；数据不迁移、不删。`DEFAULT_GROUP_ICON` 还是 📁（老客户端认它），新建项目界面默认选 `folder`。
+- 用这个选择器的地方：项目面板（新建 / 编辑项目）、项目页左上角换图标、资料库编辑器的图标、打卡分类页的「图标和颜色」。
+- 文案「搜索图标」「搜图标，比如“书”“运动”」「搜索结果」「没有对得上的图标」「换个词试试，或者在右上角打一个 emoji」「用一个 emoji」「点下面的图标，或者在左边这格打一个 emoji」、早就没人用的「图标（emoji）」，还有组名「娱乐」「学习工作」「出行」「健康」「其它」，九种语言里都删了（「常用」「生活」别处还在用，留着）。单测 `lib/icons.test.ts`：只有 Lucide、不重复、有动物植物、老名字都在、emoji 照常能画。
+
 ### 挑任务的搜索框：退格、中文输入法、搜不到标题 ✅（2026-11-02）
 Rei 2026-11-02 原话：「bug：做完后解锁弹窗中搜索框中，删除字符会跳转，输入中文有问题，优化」；追加「做完后解锁和先做的搜索搜不到任务标题」。
 
