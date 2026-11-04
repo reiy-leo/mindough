@@ -7,7 +7,7 @@
 //!
 //! 主窗口：macOS 在 tauri.macos.conf.json 里直接带 transparent + windowEffects；Windows 在
 //! tauri.windows.conf.json 里写 `create: false`，这里按系统版本决定透不透明再建（Win10 不能建成透明窗口，开窗那一下会闪出桌面）。
-//! 小窗、设置窗口是前端开的：先问 `window_material`，再带上同样的 transparent / windowEffects。
+//! 设置窗口是前端开的：先问 `window_material`，再带上同样的 transparent / windowEffects。
 //! 前端拿到材质名后给 html 加 `is-vibrant`，只有 Apple / WinUI 皮肤会把背景改透明（Material 皮肤照旧不透明，盖住材质）。
 
 /// 这台机器上窗口能用的材质：`vibrancy`（macOS）、`mica`（Windows 11）、`none`。

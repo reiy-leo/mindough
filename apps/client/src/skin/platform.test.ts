@@ -40,9 +40,8 @@ describe('平台检测', () => {
 
 describe('macOS 无标题栏（Rei 2026-10-17）', () => {
   it('只在 Tauri + macOS 的主窗口打开', () => {
-    expect(usesMacOverlayTitlebar('macos', { tauri: true, mini: false })).toBe(true);
-    expect(usesMacOverlayTitlebar('macos', { tauri: true, mini: true })).toBe(false); // 小窗保留系统标题栏
-    expect(usesMacOverlayTitlebar('macos', { tauri: false, mini: false })).toBe(false); // 网页版不变
-    for (const p of ['windows', 'linux', 'ios', 'android', 'unknown'] as const) expect(usesMacOverlayTitlebar(p, { tauri: true, mini: false })).toBe(false);
+    expect(usesMacOverlayTitlebar('macos', { tauri: true })).toBe(true);
+    expect(usesMacOverlayTitlebar('macos', { tauri: false })).toBe(false); // 网页版不变
+    for (const p of ['windows', 'linux', 'ios', 'android', 'unknown'] as const) expect(usesMacOverlayTitlebar(p, { tauri: true })).toBe(false);
   });
 });

@@ -57,12 +57,12 @@ import { dataLabel, tr, trc } from '../../lib/i18n';
 /**
  * 任务详情怎么摆（Rei 2026-10-23「任务链不要再弹窗了，任务详情如果不弹窗最好了，最好做成三列布局」）：
  * - pane：桌面 / 平板的右列（侧边栏 | 列表 | 详情），外框在 components/task/DetailPane.tsx；
- * - page：手机上整页推入（返回按钮、右滑、系统返回键回列表）；
- * - modal：桌面置顶小窗里还是弹窗（小窗太窄放不下第三列）。
+ * - page：手机上整页推入（返回按钮、右滑、系统返回键回列表）。
+ * 以前桌面置顶小窗里还有弹窗模式，2026-11-04 小窗删了，弹窗模式也一起删了。
  */
-export type DetailMode = 'pane' | 'page' | 'modal';
+export type DetailMode = 'pane' | 'page';
 
-export function TaskDetail({ mode = 'modal' }: { mode?: DetailMode }) {
+export function TaskDetail({ mode }: { mode: DetailMode }) {
   const ui = useUi();
   const store = useStore();
   const task = store.get('task', ui.editingId);
@@ -78,7 +78,7 @@ export function useSelectedTask(): Task | undefined {
 }
 
 /**
- * 详情的外框：小窗里是弹窗（Sheet），右列和手机整页是普通的面板（顶栏 + 可滚动内容 + 底栏）。
+ * 详情的外框：右列和手机整页都是普通的面板（顶栏 + 可滚动内容 + 底栏）。
  * 手机整页：左上「返回」，从屏幕左边缘往右滑也能返回（跟着手指走，松手过一段距离才回去）。
  */
 function DetailFrame({
@@ -101,7 +101,7 @@ function DetailFrame({
   headerEnd: ReactNode;
   footer: ReactNode;
   children: ReactNode;
-  /** 右列 / 整页的外框（拖文件进来的范围是整列，Rei 2026-10-25）。弹窗不用它。 */
+  /** 右列 / 整页的外框（拖文件进来的范围是整列，Rei 2026-10-25）。 */
   frameRef?: RefObject<HTMLElement | null>;
   /** 盖在整列上的东西（拖放高亮层）。 */
   overlay?: ReactNode;
@@ -110,12 +110,6 @@ function DetailFrame({
   const ownRef = useRef<HTMLElement>(null);
   const pageRef = frameRef ?? ownRef;
   const swipe = useRef<{ x: number; y: number; dx: number; on: boolean } | null>(null);
-  if (mode === 'modal')
-    return (
-      <Sheet isOpen wide className={`modal-detail${finished ? ' is-finished' : ''}`} onOpenChange={(o) => !o && onClose()} title={title} titleHidden headerStart={headerStart} headerEnd={headerEnd} footer={footer}>
-        {children}
-      </Sheet>
-    );
   const page = mode === 'page';
   const setX = (dx: number, animate: boolean) => {
     const el = pageRef.current;
@@ -804,20 +798,16 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   const { layout } = useSettings();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addRel, setAddRel] = useState<RelKind | null>(null);
-  // 关掉详情：手机整页走「返回」（退回进来前那条浏览记录），右列 / 小窗直接取消选中
+  // 关掉详情：手机整页走「返回」（退回进来前那条浏览记录），右列直接取消选中
   const close = mode === 'page' ? ui.closeDetail : () => ui.openEditor(null);
-  // 完成 / 关闭这件：弹窗和手机整页像以前一样收起；右列留着，显示「已完成」和「重新打开」
+  // 完成 / 关闭这件：手机整页像以前一样收起；右列留着，显示「已完成」和「重新打开」
   const afterFinish = mode === 'pane' ? () => {} : close;
-  // 右列和手机整页都是一栏：属性跟在正文后面（弹窗在宽屏上属性在右边一栏）
-  const stacked = mode !== 'modal' || layout === 'mobile';
   const { primary, secondary, today, complete, addCount, counting } = useActions(store, task, afterFinish);
   // 附件：拖文件到详情整列（顶栏、正文、底栏都算）就加（Rei 2026-10-17；2026-10-25「拖拽文件到详情页面可以直接添加附件」）。
-  // 弹窗（置顶小窗）没有自己的外框 ref，照旧用内容区。
   const owner = useMemo(() => ({ type: 'task' as const, id: task.id }), [task.id]);
-  const dropRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLElement>(null);
   const addFiles = useAddFiles(owner);
-  const dropping = useFileDrop(mode === 'modal' ? dropRef : frameRef, addFiles);
+  const dropping = useFileDrop(frameRef, addFiles);
   const type = store.get('task_type', task.type_id);
   const typed = !!type && type.id !== PLAIN_TYPE_ID && shownFields(type).length > 0;
   const title = titleOf(store, task);
@@ -912,7 +902,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
           </>
         }
         frameRef={frameRef}
-        overlay={mode === 'modal' ? null : <DropOverlay active={dropping} />}
+        overlay={<DropOverlay active={dropping} />}
         footer={
           finished ? (
             <>
@@ -954,8 +944,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
           ) : null
         }
       >
-        <div ref={dropRef} className={`detail${stacked ? ' is-stacked' : ''}${layout === 'mobile' ? ' is-mobile' : ''}${dropping ? ' is-dropping' : ''}`}>
-          {mode === 'modal' && <DropOverlay active={dropping} />}
+        <div className={`detail is-stacked${layout === 'mobile' ? ' is-mobile' : ''}${dropping ? ' is-dropping' : ''}`}>
           <div className="detail-main">
             {!lib && typed && type && (
               <div className="detail-hero" style={{ '--chip-color': type.color } as CSSProperties}>
@@ -987,10 +976,10 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
                 </DisclosurePanel>
               </Disclosure>
             )}
-            {stacked && props}
+            {/* 右列和手机整页都是一栏：属性跟在正文后面 */}
+            {props}
             <Relations store={store} task={task} />
           </div>
-          {!stacked && <aside className="detail-side">{props}</aside>}
         </div>
       </DetailFrame>
       <RelationPicker store={store} task={task} kind={addRel} onClose={() => setAddRel(null)} />

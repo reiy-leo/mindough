@@ -460,23 +460,17 @@
 
 /* ═════════════ 新建面板 / 任务详情：各平台的对话框形状 ═════════════ */
 /* Apple：macOS sheet——无分隔带的底部按钮；iOS 底部弹层带拖拽条 */
-[data-skin='apple'] .modal-composer .dialog-foot,
-[data-skin='apple'] .modal-detail .dialog-foot {
+[data-skin='apple'] .modal-composer .dialog-foot {
   border-top: 0;
   background: transparent;
   padding: var(--space-3) var(--space-5) var(--space-5);
-}
-[data-skin='apple'] .modal-detail .dialog-foot {
-  border-top: 0.5px solid var(--border);
-  padding-top: var(--space-3);
 }
 [data-skin='apple'] .modal-composer .dialog-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-2);
 }
-[data-skin='apple'] .modal-center.modal-composer,
-[data-skin='apple'] .modal-center.modal-detail {
+[data-skin='apple'] .modal-center.modal-composer {
   border-radius: 12px;
 }
 [data-skin='apple'] .modal-sheet .sheet-grabber {
@@ -499,14 +493,12 @@
 
 /* WinUI：ContentDialog——标题 20px 半粗、底部按钮带等宽、圆角 8 */
 [data-skin='winui'] .modal-center.modal-composer,
-[data-skin='winui'] .modal-center.modal-detail,
 [data-skin='winui'] .modal-alert {
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 32px 64px rgba(0, 0, 0, 0.19), 0 2px 21px rgba(0, 0, 0, 0.15);
 }
 [data-skin='winui'][data-theme='dark'] .modal-center.modal-composer,
-[data-skin='winui'][data-theme='dark'] .modal-center.modal-detail,
 [data-skin='winui'][data-theme='dark'] .modal-alert {
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
@@ -519,14 +511,12 @@
 [data-skin='winui'] .modal-composer .dialog-head {
   padding: var(--space-6) var(--space-4) var(--space-3) var(--space-6);
 }
-[data-skin='winui'] .modal-composer .dialog-foot,
-[data-skin='winui'] .modal-detail .dialog-foot {
+[data-skin='winui'] .modal-composer .dialog-foot {
   padding: var(--space-6);
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.03);
 }
-[data-skin='winui'][data-theme='dark'] .modal-composer .dialog-foot,
-[data-skin='winui'][data-theme='dark'] .modal-detail .dialog-foot {
+[data-skin='winui'][data-theme='dark'] .modal-composer .dialog-foot {
   background: rgba(0, 0, 0, 0.18);
 }
 [data-skin='winui'] .modal-composer .composer-add,
@@ -599,13 +589,8 @@
 [data-skin='material'] .modal-composer .dialog-head {
   padding: var(--space-6) var(--space-4) var(--space-3) var(--space-6);
 }
-[data-skin='material'] .modal-composer .dialog-foot,
-[data-skin='material'] .modal-detail .dialog-foot {
+[data-skin='material'] .modal-composer .dialog-foot {
   padding: var(--space-4) var(--space-6) var(--space-6);
-}
-[data-skin='material'] .modal-detail .dialog-foot {
-  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-  padding-top: var(--space-4);
 }
 [data-skin='material'] .mode-card {
   border-radius: 16px;
@@ -668,15 +653,13 @@
   border-radius: 28px;
 }
 /* 全屏对话框：左上角关闭，标题，右上角“添加” */
-[data-skin='material'] .modal-sheet.modal-composer,
-[data-skin='material'] .modal-sheet.modal-detail {
+[data-skin='material'] .modal-sheet.modal-composer {
   top: 0;
   max-height: none;
   height: 100%;
   border-radius: 0;
 }
-[data-skin='material'] .modal-sheet.modal-composer .dialog-head,
-[data-skin='material'] .modal-sheet.modal-detail .dialog-head {
+[data-skin='material'] .modal-sheet.modal-composer .dialog-head {
   height: 64px;
   padding: 0 var(--space-2) 0 var(--space-1);
 }

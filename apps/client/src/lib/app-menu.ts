@@ -1,7 +1,7 @@
 /**
  * 桌面菜单栏（Tauri，src-tauri/src/menu.rs）：文件 → 导入 → 滴答清单；「设置…」（⌘, / Ctrl+,，Rei 2026-10-26 设置做成单独的窗口）。
  * 菜单在 Rust 里建，文字从这里按界面语言传过去（换语言时整棵界面重新挂载，effect 会再跑一遍）；
- * 点了菜单，Rust 发 `mindough:menu` 给主窗口，这里打开对应的窗口。小窗和 Web 端什么都不做。
+ * 点了菜单，Rust 发 `mindough:menu` 给主窗口，这里打开对应的窗口。设置窗口和 Web 端什么都不做。
  */
 import { useEffect } from 'react';
 import { isTauri } from '../store/sqlite-tauri';

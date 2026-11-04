@@ -3,7 +3,7 @@ import { DEMO_STAMP_META, SqlAdapter, Store, TABLES, WebStorageAdapter, migrateS
 import { bindSync } from '../lib/sync';
 import { installUploader } from '../lib/attachments';
 import { installAttachmentCache } from '../lib/attachment-cache';
-import { installWindowSync, isAuxWindow, isMiniWindow } from '../lib/windows';
+import { installWindowSync, isAuxWindow } from '../lib/windows';
 import { installWidgetSnapshot } from '../lib/widget-snapshot';
 import { migrateFromTurso, openWebSqlite, terminateWebSqlite, webSqliteSupported } from './sqlite-web';
 import { acquireTabLock, type TabLock } from './tab-lock';
@@ -92,8 +92,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let alive = true;
     let opened: Store | null = null;
     (async () => {
-      // 标签页锁只管浏览器；Tauri 的窗口之间另有办法（小窗不开库）
-      const lock: TabLock | null = isTauri() || isMiniWindow() ? { lost: new Promise<void>(() => {}) } : await acquireTabLock(attempt.steal);
+      // 标签页锁只管浏览器；Tauri 的窗口之间另有办法
+      const lock: TabLock | null = isTauri() ? { lost: new Promise<void>(() => {}) } : await acquireTabLock(attempt.steal);
       if (!alive) return;
       if (!lock) return setBlocked('other');
       setBlocked(null);
@@ -116,7 +116,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [attempt]);
   // 登录后多设备同步；退出登录就停（本机数据不动）
-  // 同步只在主窗口跑（小窗、设置窗口的写入经窗口事件交给主窗口，主窗口照常推）
+  // 同步只在主窗口跑（设置窗口的写入经窗口事件交给主窗口，主窗口照常推）
   useEffect(() => (store && !isAuxWindow() ? bindSync(store) : undefined), [store]);
   useEffect(() => (store ? installWindowSync(store) : undefined), [store]);
   useEffect(() => (store ? installWidgetSnapshot(store) : undefined), [store]);

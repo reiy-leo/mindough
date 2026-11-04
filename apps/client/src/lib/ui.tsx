@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { NewTaskInput } from '@mindough/core';
 import { hashWithTask, taskInHash } from './router';
 import { useSettings } from './settings';
-import { isMiniWindow } from './windows';
 
 import { tr } from './i18n';
 export interface ToastAction {
@@ -22,7 +21,7 @@ interface UiCtx {
   toast: (t: Omit<Toast, 'id'>, ms?: number) => void;
   dismiss: (id: number) => void;
   /**
-   * 选中的任务（三列布局右列 / 手机推入的详情页 / 小窗里的弹窗）。主窗口里它就是 hash 上的 ?task=<id>：
+   * 选中的任务（三列布局右列 / 手机推入的详情页）。主窗口里它就是 hash 上的 ?task=<id>：
    * 刷新还在，换页面就取消。
    */
   editingId: string | null;
@@ -55,13 +54,11 @@ const Ctx = createContext<UiCtx | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const mini = useMemo(() => isMiniWindow(), []);
-  const [editingId, setEditingId] = useState<string | null>(() => (mini ? null : taskInHash(location.hash)));
+  const [editingId, setEditingId] = useState<string | null>(() => taskInHash(location.hash));
   const { layout } = useSettings();
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
   useEffect(() => {
-    if (mini) return;
     const on = () => setEditingId(taskInHash(location.hash));
     window.addEventListener('hashchange', on);
     window.addEventListener('popstate', on);
@@ -69,10 +66,9 @@ export function UiProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('hashchange', on);
       window.removeEventListener('popstate', on);
     };
-  }, [mini]);
+  }, []);
   const openEditor = useCallback(
     (id: string | null) => {
-      if (mini) return setEditingId(id);
       const cur = taskInHash(location.hash);
       if (cur !== id) {
         const url = `${location.pathname}${location.search}${hashWithTask(location.hash, id)}`;
@@ -82,12 +78,12 @@ export function UiProvider({ children }: { children: ReactNode }) {
       }
       setEditingId(id);
     },
-    [mini],
+    [],
   );
   const closeDetail = useCallback(() => {
-    if (!mini && taskInHash(location.hash) && (history.state as { mdDetail?: boolean } | null)?.mdDetail) history.back();
+    if (taskInHash(location.hash) && (history.state as { mdDetail?: boolean } | null)?.mdDetail) history.back();
     else openEditor(null);
-  }, [mini, openEditor]);
+  }, [openEditor]);
   const [quickCreate, setQuickCreate] = useState<ComposerRequest | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [didaImportOpen, setDidaImportOpen] = useState(false);

@@ -533,7 +533,7 @@ function TypesSection() {
   );
 }
 
-/** 重置演示数据之后重新载入。设置窗口里点的：先让主窗口（和小窗）重新载入，等它生成好演示数据再载入自己，免得生成两份。 */
+/** 重置演示数据之后重新载入。设置窗口里点的：先让主窗口重新载入，等它生成好演示数据再载入自己，免得生成两份。 */
 function reloadAfterReset() {
   if (isSettingsWindow() && isTauri()) {
     relay('reload');

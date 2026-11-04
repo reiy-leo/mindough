@@ -1,10 +1,9 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "主窗口、小窗（mini）与设置窗口（settings）的权限。opener 除了默认的 http(s)/mailto/tel，还放行别的 App 的链接（codex:// obsidian:// …），挡掉的协议和 src/lib/link-scheme.ts 的 BLOCKED_SCHEMES 一致",
+  "description": "主窗口与设置窗口（settings）的权限。opener 除了默认的 http(s)/mailto/tel，还放行别的 App 的链接（codex:// obsidian:// …），挡掉的协议和 src/lib/link-scheme.ts 的 BLOCKED_SCHEMES 一致",
   "windows": [
     "main",
-    "mini",
     "settings"
   ],
   "permissions": [
@@ -72,7 +71,6 @@
     "clipboard-manager:allow-read-image",
     "clipboard-manager:allow-write-text",
     "core:webview:allow-create-webview-window",
-    "core:window:allow-set-always-on-top",
     "core:window:allow-set-focus",
     "core:window:allow-show",
     "core:window:allow-start-dragging",

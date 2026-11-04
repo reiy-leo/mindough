@@ -63,10 +63,10 @@ export function layoutForWidth(width: number): LayoutKind {
 /**
  * macOS 桌面端主窗口不要系统标题栏（Rei 2026-10-17：「macOS的边栏框要贯通，titlebar不展示」）：
  * 窗口用 titleBarStyle Overlay + hiddenTitle（src-tauri/tauri.macos.conf.json），红绿灯浮在侧边栏左上角。
- * 只在 Tauri + macOS 的主窗口打开；小窗保留系统标题栏，网页版和其他平台不变。
+ * 只在 Tauri + macOS 打开（主窗口和设置窗口），网页版和其他平台不变。
  */
 export const MAC_OVERLAY_CLASS = 'platform-macos-overlay';
 
-export function usesMacOverlayTitlebar(platform: Platform, opts: { tauri: boolean; mini: boolean }): boolean {
-  return platform === 'macos' && opts.tauri && !opts.mini;
+export function usesMacOverlayTitlebar(platform: Platform, opts: { tauri: boolean }): boolean {
+  return platform === 'macos' && opts.tauri;
 }

@@ -7,22 +7,18 @@
  *
  * - Apple：侧边栏透明，透出窗口的 Sidebar 材质（壁纸颜色）；内容区、详情照旧不透明，像「提醒事项」「邮件」。
  * - WinUI：整窗是真的 Mica，去掉以前假 Mica 的渐变底；卡片本来就是半透明白，直接叠在 Mica 上。
- * - 小窗：整窗透出材质。设置窗口：和主窗口一样，左栏透、右边不透。
+ * - 设置窗口：和主窗口一样，左栏透、右边不透。
  * 手机布局（窗口拉得很窄）不透明，保持原样。
  */
 
-/* 透明的底：主窗口（桌面布局）、小窗、设置窗口 */
+/* 透明的底：主窗口（桌面布局）、设置窗口 */
 html.is-vibrant[data-skin='apple'][data-layout='desktop'] body,
 html.is-vibrant[data-skin='winui'][data-layout='desktop'] body,
-html.is-vibrant[data-skin='apple']:has(.mini-window) body,
-html.is-vibrant[data-skin='winui']:has(.mini-window) body,
 html.is-vibrant[data-skin='apple']:has(.settings-window) body,
 html.is-vibrant[data-skin='winui']:has(.settings-window) body {
   background: transparent;
   background-image: none;
 }
-html.is-vibrant[data-skin='apple'] .mini-window,
-html.is-vibrant[data-skin='winui'] .mini-window,
 html.is-vibrant[data-skin='apple'] .settings-window,
 html.is-vibrant[data-skin='winui'] .settings-window {
   background: transparent;

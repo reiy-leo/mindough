@@ -1,5 +1,5 @@
 /**
- * 窗口之间互相打招呼（Tauri 桌面：主窗口、小窗、设置窗口）。
+ * 窗口之间互相打招呼（Tauri 桌面：主窗口、设置窗口）。
  *
  * 数据的改动走 lib/windows.ts 的 `mindough:changes`；这里只管不进数据库的东西：
  * - settings：本机设置（皮肤、明暗、布局、农历开关…）改了，别的窗口重新读 localStorage

@@ -1070,15 +1070,6 @@ html[data-layout='mobile'] .date-panel .date-chip {
 }
 
 /* ───────── 任务详情 ───────── */
-.modal-detail {
-  width: min(880px, 100%);
-}
-.modal-detail .dialog-head {
-  min-height: 52px;
-}
-.modal-detail .dialog-body {
-  padding: 0 var(--space-6) var(--space-6);
-}
 .detail {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 272px;
@@ -1094,10 +1085,6 @@ html[data-layout='mobile'] .date-panel .date-chip {
   flex-direction: column;
   gap: var(--space-5);
   min-width: 0;
-}
-.detail-side {
-  position: sticky;
-  top: 0;
 }
 .status-badge {
   display: inline-flex;
@@ -1540,12 +1527,10 @@ html[data-layout='mobile'] .date-panel .date-chip {
 }
 
 /* ───────── 手机：底部弹层 ───────── */
-.modal-sheet.modal-composer,
-.modal-sheet.modal-detail {
+.modal-sheet.modal-composer {
   max-height: 94vh;
 }
-.modal-sheet.modal-composer .dialog-body,
-.modal-sheet.modal-detail .dialog-body {
+.modal-sheet.modal-composer .dialog-body {
   padding-left: var(--space-4);
   padding-right: var(--space-4);
 }
@@ -1553,10 +1538,6 @@ html[data-layout='mobile'] .date-panel .date-chip {
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
 }
 
-.modal-detail.is-finished .detail-md,
-.modal-detail.is-finished .hero-title {
-  color: var(--text-2);
-}
 [data-layout='mobile'] .mode-card {
   padding: 8px var(--space-3);
 }

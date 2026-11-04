@@ -4,7 +4,6 @@ import { applyMaterialClass, syncWindowMaterial } from './vibrancy';
 import { detectPlatform, layoutForWidth, MAC_OVERLAY_CLASS, resolveSkin, usesMacOverlayTitlebar, type LayoutKind, type Platform, type Skin, type SkinPref, type ThemePref } from '../skin/platform';
 
 import { tr } from './i18n';
-import { isMiniWindow } from './windows';
 import { onRelay, relay } from './window-relay';
 import { isTauri } from '../store/sqlite-tauri';
 export interface Settings {
@@ -149,7 +148,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [skin, theme, layout, platform]);
   // macOS 桌面端主窗口：没有系统标题栏，侧边栏顶到窗口最上、给红绿灯让位（样式见 skin/skins.css）
   useEffect(() => {
-    document.documentElement.classList.toggle(MAC_OVERLAY_CLASS, usesMacOverlayTitlebar(platform, { tauri: isTauri(), mini: isMiniWindow() }));
+    document.documentElement.classList.toggle(MAC_OVERLAY_CLASS, usesMacOverlayTitlebar(platform, { tauri: isTauri() }));
   }, [platform]);
 
   // 桌面 app：窗口材质（macOS 侧边栏毛玻璃 / Windows 11 Mica，lib/vibrancy.ts）。界面手动选了深浅色时窗口也跟着换

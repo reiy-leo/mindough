@@ -37,10 +37,9 @@ describe('样式：外层不滚', () => {
     expect(rule("html[data-layout='desktop'], html[data-layout='desktop'] body")).toMatch(/overscroll-behavior:\s*none/);
   });
   it('会滚的列都是绝对定位的参照', () => {
-    expect(rule('.sidebar, .nav, .main, .main-scroll, .detail-pane-box, .pane-body, .mini-body')).toMatch(/position:\s*relative/);
+    expect(rule('.sidebar, .nav, .main, .main-scroll, .detail-pane-box, .pane-body')).toMatch(/position:\s*relative/);
   });
   it('外层不用 100vh', () => {
-    expect(rule('.mini-window')).not.toMatch(/100vh/);
     expect(rule('html, body, #root')).toMatch(/height:\s*100%/);
   });
 });

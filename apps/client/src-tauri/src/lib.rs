@@ -4,7 +4,7 @@
 //! - 登录：opener 用系统浏览器打开 Google 登录，deep-link 接住 mindough://auth?code=… 回调（前端 lib/native-login.ts）
 //! - 桌面端 single-instance：已经开着时，deep link 交给原来的窗口
 //! - notification：提醒（前端 lib/reminders.ts 排程）
-//! - widget：主屏小组件读的 JSON 快照（widget-snapshot.json）；桌面「小窗」是前端开的第二个窗口（label mini），设置窗口也是前端开的（label settings）
+//! - widget：主屏小组件读的 JSON 快照（widget-snapshot.json）；设置窗口是前端开的（label settings）
 //! - menu：桌面菜单栏 File → Import → Dida365、「设置…」（文字由前端按界面语言传来，点了发 mindough:menu 给主窗口）
 //! - clipboard：剪贴板里的文件 / 图片（clipboard_peek、clipboard_read_file；图片内容走 clipboard-manager 插件的 readImage）
 //! - vibrancy：窗口材质（macOS 侧边栏毛玻璃、Windows 11 Mica），前端问 window_material 决定背景透不透明

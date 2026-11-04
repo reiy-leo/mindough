@@ -1,18 +1,13 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
-import { EyeOff, GripVertical, Lightbulb, PictureInPicture2, RotateCcw, Sun } from 'lucide-react';
+import { EyeOff, GripVertical, Lightbulb, RotateCcw, Sun } from 'lucide-react';
 import { formatDateZh, myDayItems, recentlyUnlocked, suggestions, toDateKey, yesterdayUnfinished } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
-import { openMiniWindow } from '../lib/windows';
-import { isTauri } from '../store/sqlite-tauri';
 import { useReorderGuard } from '../lib/drag-guard';
 import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { titleOf } from '../lib/view';
-
-/** 小窗只在桌面 app 里有（手机、网页没有置顶窗口）。 */
-const canMini = isTauri() && !/Android|iPhone|iPad/i.test(navigator.userAgent);
 import { TaskRow } from '../components/TaskRow';
 import { LunarLine } from '../components/LunarLine';
 import { useSettings } from '../lib/settings';
@@ -71,20 +66,11 @@ export function MyDayPage() {
   return (
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）：最上面就是添加框，
-          日期和完成数挪到列表上方的小字，小窗按钮挪到添加框行尾 */}
+          日期和完成数挪到列表上方的小字 */}
       <QuickAddBar
         placeholder={tr('今天要做什么？按回车添加')}
         label={tr('添加任务到今天')}
         create={(body) => createToday(store, body, today)}
-        trailing={
-          canMini ? (
-            <Tip content={tr('小窗：置顶显示今天的事')}>
-              <RacButton className="icon-btn add-bar-btn" aria-label={tr('打开小窗')} onPress={() => void openMiniWindow()}>
-                <PictureInPicture2 size={17} />
-              </RacButton>
-            </Tip>
-          ) : undefined
-        }
         meta={
           <div className="list-meta">
             <h1 className="sr-only">{tr('我的一天')}</h1>

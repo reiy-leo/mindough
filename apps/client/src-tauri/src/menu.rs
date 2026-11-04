@@ -1,6 +1,6 @@
 //! 桌面菜单栏：File → Import → Dida365（中文界面：文件 → 导入 → 滴答清单）；「设置…」（⌘, / Ctrl+,，Rei 2026-10-26）。
 //! - macOS：全局菜单，保留标准的 App / 编辑 / 窗口菜单（复制粘贴、撤销、全选的快捷键靠「编辑」菜单）。
-//! - Windows / Linux：只给主窗口加一条「文件」菜单（导入、退出），不加编辑菜单，免得抢 WebView 自己的快捷键；小窗没有菜单。
+//! - Windows / Linux：只给主窗口加一条「文件」菜单（导入、退出），不加编辑菜单，免得抢 WebView 自己的快捷键。
 //! 启动时先用英文建好（macOS 一开窗就要有编辑菜单）；前端定下界面语言后调 set_app_menu 换成对应文字（文字走前端的 tr()）。
 //! 点「Dida365」发事件 `mindough:menu`（payload `import-dida365`）给主窗口，前端打开导入窗口。
 //! 点「设置…」发 `open-settings` 给主窗口，前端开（或叫到前面）设置窗口（label settings，lib/windows.ts）。

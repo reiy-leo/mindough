@@ -1,21 +1,21 @@
 /**
- * 多窗口（Tauri 桌面）：主窗口 + 置顶的「小窗」（?window=mini）+ 设置窗口（?window=settings，Rei 2026-10-26）。
+ * 多窗口（Tauri 桌面）：主窗口 + 设置窗口（?window=settings，Rei 2026-10-26）。
+ * 置顶小窗 2026-11-04 按 Rei 的要求删了。
  *
  * 两个窗口各有一份 Store 内存快照，底下是同一个 rusqlite 连接（src-tauri/src/db.rs）。
  * 一个窗口写了什么，经 Tauri 事件 `mindough:changes` 发给另一个，对方用 store.applyRemote 合进内存
  * （LWW、不进 outbox——写的那个窗口已经进过了；落盘是同一行，WHERE updated_at > 不会重复写）。
- * 小窗不跑同步、不排提醒（都交给主窗口）。
+ * 设置窗口不跑同步、不排提醒（都交给主窗口）。
  */
 import { appName, type Change, type Store } from '@mindough/core';
 import { isTauri } from '../store/sqlite-tauri';
 import { materialWindowOptions } from './vibrancy';
 
 const windowParam = (): string | null => (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('window') : null);
-export const isMiniWindow = (): boolean => windowParam() === 'mini';
 /** 设置窗口（桌面端单独一个窗口）；Web 用 ?window=settings 也能看这个布局（截图、调试）。 */
 export const isSettingsWindow = (): boolean => windowParam() === 'settings';
-/** 副窗口（小窗、设置窗口）：不跑同步、不排提醒、不传附件，都交给主窗口。 */
-export const isAuxWindow = (): boolean => isMiniWindow() || isSettingsWindow();
+/** 副窗口（现在只有设置窗口）：不跑同步、不排提醒、不传附件，都交给主窗口。 */
+export const isAuxWindow = (): boolean => isSettingsWindow();
 
 const EVENT = 'mindough:changes';
 
@@ -41,34 +41,6 @@ export function installWindowSync(store: Store): () => void {
     unlisten?.();
     stopWrites?.();
   };
-}
-
-/** 打开（或叫到前面）小窗：320 × 520，置顶，可以调大小。 */
-export async function openMiniWindow(): Promise<void> {
-  if (!isTauri()) return;
-  const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-  const existing = await WebviewWindow.getByLabel('mini');
-  if (existing) {
-    await existing.show();
-    await existing.setFocus();
-    return;
-  }
-  const material = await materialWindowOptions();
-  new WebviewWindow('mini', {
-    url: 'index.html?window=mini#/mini',
-    title: appName(),
-    width: 340,
-    height: 540,
-    minWidth: 280,
-    minHeight: 320,
-    alwaysOnTop: true,
-    resizable: true,
-    skipTaskbar: false,
-    // 关掉 Tauri 自己的拖放接管，网页的 HTML5 拖放才收得到文件（拖附件进来要用），见 tauri.conf.json
-    dragDropEnabled: false,
-    // 和主窗口同一种材质（macOS 毛玻璃 / Windows 11 Mica），见 lib/vibrancy.ts
-    ...material,
-  });
 }
 
 /** 设置窗口里换到某一项（主窗口按 ⌘, 或深链打开时，窗口已经开着就发这个）。 */
@@ -124,7 +96,7 @@ export function openSettingsWindow(opts: { section?: string; title: string; macO
   return opening;
 }
 
-/** 小窗里：把主窗口叫到前面（打开某件任务时也用它）。 */
+/** 把主窗口叫到前面（设置窗口重置演示数据后用它）。 */
 export async function focusMainWindow(): Promise<void> {
   if (!isTauri()) return;
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
@@ -132,11 +104,4 @@ export async function focusMainWindow(): Promise<void> {
   await main?.show();
   await main?.unminimize();
   await main?.setFocus();
-}
-
-/** 小窗置顶开关。 */
-export async function setMiniOnTop(on: boolean): Promise<void> {
-  if (!isTauri()) return;
-  const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-  await getCurrentWebviewWindow().setAlwaysOnTop(on);
 }

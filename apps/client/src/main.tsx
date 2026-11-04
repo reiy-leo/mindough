@@ -4,9 +4,7 @@ import { SettingsProvider } from './lib/settings';
 import { StoreProvider } from './store/StoreProvider';
 import { UiProvider } from './lib/ui';
 import { App, Toasts } from './App';
-import { MiniWindow } from './components/MiniWindow';
-import { TaskDetail } from './components/task/TaskDetail';
-import { isAuxWindow, isMiniWindow, isSettingsWindow } from './lib/windows';
+import { isAuxWindow, isSettingsWindow } from './lib/windows';
 import { installCrossWindow } from './lib/cross-window';
 import { SettingsWindow } from './pages/Settings';
 import { initLoginError, startAccountWatch } from './lib/account';
@@ -39,8 +37,7 @@ import './styles/vibrancy.css';
 // 登录失败回跳带的 ?login_error：先取出并从地址栏去掉，再渲染
 initLoginError();
 // 账户状态（同步跟着它开 / 停）；原生端监听登录回调的 deep link
-// 小窗、设置窗口不跑同步、不接登录回调（都交给主窗口）
-const mini = isMiniWindow();
+// 设置窗口不跑同步、不接登录回调（都交给主窗口）
 const settingsWin = isSettingsWindow();
 if (!isAuxWindow()) {
   registerServiceWorker();
@@ -68,7 +65,7 @@ void loadLocale(resolveLocale(pref))
   .then(() => {
     applyLocalePref(pref);
     // 账户状态里有给人看的说明（「同步服务尚未上线」），要等词典好了再查，不然德语界面里冒出中文
-    if (!mini) startAccountWatch();
+    startAccountWatch();
     render();
   });
 
@@ -82,12 +79,6 @@ createRoot(document.getElementById('root')!).render(
             {settingsWin ? (
               <>
                 <SettingsWindow />
-                <Toasts />
-              </>
-            ) : mini ? (
-              <>
-                <MiniWindow />
-                <TaskDetail />
                 <Toasts />
               </>
             ) : (

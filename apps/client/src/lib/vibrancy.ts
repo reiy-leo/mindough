@@ -36,7 +36,7 @@ export function applyMaterialClass(el: HTMLElement, m: WindowMaterial): void {
 }
 
 /**
- * 前端开新窗口（小窗、设置窗口）时带上的选项：和主窗口一样透明 + 同一种材质。
+ * 前端开新窗口（设置窗口）时带上的选项：和主窗口一样透明 + 同一种材质。
  * 主窗口启动时已经问过（SettingsProvider）；没问过或没有材质就什么都不带，窗口照旧不透明。
  */
 export async function materialWindowOptions(): Promise<Pick<WindowOptions, 'transparent' | 'windowEffects'>> {

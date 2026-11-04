@@ -9,7 +9,7 @@ import { getAccount, refreshAccount, subscribeAccount } from './account';
 import { reloadReminderSettings } from './reminders';
 import { getSyncView, mirrorSyncFromMain, setSyncNowForwarder, subscribeSyncView, syncNow, type SyncView } from './sync';
 import { onRelay, relay } from './window-relay';
-import { isMiniWindow, isSettingsWindow } from './windows';
+import { isSettingsWindow } from './windows';
 import { isTauri } from '../store/sqlite-tauri';
 
 const accountKey = () => {
@@ -18,13 +18,7 @@ const accountKey = () => {
 };
 
 export function installCrossWindow(): void {
-  if (!isTauri() || isMiniWindow()) {
-    if (isTauri()) {
-      onRelay('reload', () => location.reload());
-      onRelay('reminders', reloadReminderSettings);
-    }
-    return;
-  }
+  if (!isTauri()) return;
   let last = accountKey();
   subscribeAccount(() => {
     const k = accountKey();
