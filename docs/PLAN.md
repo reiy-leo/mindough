@@ -1312,6 +1312,15 @@ Rei 2026-11-04 16:12：「界面不能selection」。像原生 App 一样，侧�
 - 文案：小窗的 7 条（打开小窗、悬停提示、置顶 / 不再置顶、打开主窗口、今天还没有安排。、加到今天…）9 种语言一起删。
 - 手机小组件（Android / iOS，`lib/widget-snapshot.ts`、`src-tauri/src/widget.rs`）和小窗不共用代码，没动。
 
+### 编辑器：⌘K 加链接自动填剪贴板里的链接 ✅（2026-11-04）
+Rei 2026-11-04「任务日记编辑器中，选中文本后，cmd+k后自动添加剪贴板中的链接到链接input中」。
+
+- 按 ⌘K 新加链接时读剪贴板，是一条链接就填进「链接」并全选，回车就保存。光标在已有链接里不读，照旧显示原网址。
+- 什么算链接：`lib/clip-link.ts` 的 `clipLink`。http(s)、mailto、tel、sms、`www.`（补 https://）、`codex://` 这类别的 App 的链接；先去首尾空白，中间有空白就是一段话，不收；`javascript:` 这类照旧挡掉。`tel:10086` 以前保存不了（会当成主机加端口），这次 `normalizeHref`、`isAppSchemeHref` 也一起认了。
+- 怎么读：桌面 App 用 clipboard-manager 的 `readText`（capabilities 加 `clipboard-manager:allow-read-text`，Rust 没改）；网页用 `navigator.clipboard.readText()`，权限已经是 denied 就不问；手机 App 不读。都是先开框再填，用户已经在框里打字就不填。
+- ⌘? 浮层多一行「⌘K 加链接时，剪贴板里的链接会自动填上。」，九种语言。
+- 测试：`lib/clip-link.test.ts`（纯函数）、`editor/link-clip.test.tsx`（⌘K 开框、填、不覆盖）、`e2e/link-clip/run.mjs`（LightVela 上 Chromium 授权剪贴板，复制 https://example.com 选字 ⌘K 回车成链接；WebKit 没授权也照样开框）。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。
