@@ -95,7 +95,6 @@ export function ProjectTitle({ store, group }: { store: Store; group: Group }) {
         {(close) => (
           <IconPicker
             value={groupIconName(group.icon)}
-            searchable
             onChange={(icon) => {
               store.updateGroup(group.id, { icon });
               close();

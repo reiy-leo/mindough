@@ -394,7 +394,6 @@ function PropLine({ label, hint, children }: { label: string; hint?: string; chi
   );
 }
 
-/** 图标选择：lucide 图标网格 + 自己填一个 emoji。searchable：网格上面加一个搜索框（类型页用，Rei 2026-10-28 方案 C）。 */
 export function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   const custom = !SWATCHES.includes(value.toLowerCase());
   return (

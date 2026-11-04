@@ -140,7 +140,7 @@ function CategoryHead({ c }: { c: Category }) {
         >
           <div className="cat-style">
             <ColorPicker value={c.color} onChange={(color: string) => store.updateCategory(c.id, { color })} />
-            <IconPicker value={c.icon} searchable onChange={(icon) => store.updateCategory(c.id, { icon })} />
+            <IconPicker value={c.icon} onChange={(icon) => store.updateCategory(c.id, { icon })} />
           </div>
         </PopoverPanel>
         <TextField aria-label={tr('「{name}」的名字', { name: shown })} value={name} onChange={setName} className="cat-head-name">

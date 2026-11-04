@@ -58,7 +58,7 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
             <Input className="input" placeholder={tr('项目名字')} onKeyDown={(e) => e.key === 'Enter' && !imeBusy(e.nativeEvent) && save()} />
           </TextField>
         </div>
-        <IconPicker value={icon} searchable onChange={setIcon} />
+        <IconPicker value={icon} onChange={setIcon} />
         <div className="setting project-edit-myday">
           <div className="setting-text">
             <div className="setting-name">{tr('出现在我的一天')}</div>
