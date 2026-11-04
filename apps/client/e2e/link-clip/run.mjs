@@ -40,7 +40,25 @@ async function open(page, md) {
 }
 async function cmdK(page, word, clip) {
   if (clip !== undefined) await page.evaluate((t) => navigator.clipboard.writeText(t), clip);
-  await page.locator('.ProseMirror').getByText(word, { exact: false }).first().dblclick();
+  // 选中那个词（像用户拖选一样改 DOM 选区；双击链接会直接打开它，所以不用双击）
+  await page.locator('.ProseMirror').focus();
+  await page.evaluate((w) => {
+    const root = document.querySelector('.ProseMirror');
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      const i = n.data.indexOf(w);
+      if (i < 0) continue;
+      const r = document.createRange();
+      r.setStart(n, i);
+      r.setEnd(n, i + w.length);
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      return;
+    }
+    throw new Error(`找不到 ${w}`);
+  }, word);
+  await page.waitForTimeout(100);
   await page.keyboard.press('ControlOrMeta+k');
   await page.waitForSelector('.md-link-dialog');
   await page.waitForTimeout(400);
