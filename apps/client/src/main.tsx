@@ -14,6 +14,7 @@ import { registerServiceWorker } from './lib/reminders';
 import { initNativeLogin } from './lib/native-login';
 import { installExternalLinks } from './lib/external';
 import { installContextMenuBlock } from './lib/contextmenu';
+import { installSelectAllGuard } from './lib/no-select';
 import { installRootScrollGuard } from './lib/root-scroll';
 import { applyLocalePref, initialLocalePref, loadLocale, resolveLocale } from './lib/i18n';
 import { LocaleRoot } from './lib/locale';
@@ -51,6 +52,8 @@ installCrossWindow();
 installExternalLinks();
 // 浏览器 / WebView 自带的右键菜单不出（能打字的地方除外）
 installContextMenuBlock();
+// 界面文字不能选：⌘A 不在输入框里时不选整页（样式在 app.css 开头）
+installSelectAllGuard();
 // 整页不滚：外层万一被滚动了就复位（桌面布局才管，手机软键盘要滚整页）
 installRootScrollGuard();
 

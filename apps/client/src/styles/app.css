@@ -47,6 +47,25 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+/* 界面文字不能选（Rei 2026-11-04「界面不能selection」）：像原生 App，侧栏、按钮、列表行、标签、菜单、浮层
+   拖选和双击都不出选区，手机长按不出系统选字和放大镜。下面这些再打开，能选能复制：
+   输入框、编辑器（含只读的）、Markdown 只读内容（发出去的日记、资料备注等）、标了 data-selectable 的。
+   ⌘A 不在输入框里时不选整页，见 lib/no-select.ts。 */
+html {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+[contenteditable]:not([contenteditable='false']),
+.ProseMirror,
+.md,
+[data-selectable] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
 a {
   color: inherit;
   text-decoration: none;
