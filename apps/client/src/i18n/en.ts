@@ -842,7 +842,7 @@ export const EN: Record<string, EnValue> = {
   '今天要做什么？按回车添加': 'What’s on today? Press Return to add',
   今天的任务: 'Today’s tasks',
   今天还是空的: 'Nothing Here Yet',
-  '在上面直接写，或按 ⌘K / Ctrl+K 从全部任务里挑几件加进来': 'Type above, or press ⌘K / Ctrl+K to pick from all your tasks',
+  '在上面直接写，或按 ⌘F / Ctrl+F 从全部任务里挑几件加进来': 'Type above, or press ⌘F / Ctrl+F to pick from all your tasks',
   昨天没做完: 'Left from Yesterday',
   全部带回今天: 'Bring All to Today',
   带回今天: 'Bring to Today',

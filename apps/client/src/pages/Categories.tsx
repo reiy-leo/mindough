@@ -39,7 +39,8 @@ export function CategoriesPage({ id }: { id?: string }) {
   const { setState } = useCategoryActions();
   const target = active ?? selected?.id ?? null;
 
-  // 键盘：⌘F / 直接打字 → 搜索框；⌘1/2/3 → 三档
+  // 键盘：⌘F / 直接打字 → 类型搜索框；⌘1/2/3 → 三档。
+  // ⌘F 在别的页面开全局搜索（lib/global-keys.ts）；类型页先在捕获阶段拦下、preventDefault，全局那边就不开（弹层里不拦）。
   useEffect(() => {
     if (mobile) return;
     const on = (e: KeyboardEvent) => {
@@ -53,7 +54,7 @@ export function CategoriesPage({ id }: { id?: string }) {
         setState(target, STATES[Number(e.key) - 1]!);
         return;
       }
-      if (mod && !e.altKey && e.key.toLowerCase() === 'f') {
+      if (mod && !e.altKey && !inDialog && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         searchRef.current?.focus();
         searchRef.current?.select();
@@ -61,8 +62,8 @@ export function CategoriesPage({ id }: { id?: string }) {
       }
       if (!typing && !inDialog && !mod && !e.altKey && e.key.length === 1 && e.key !== ' ') searchRef.current?.focus();
     };
-    window.addEventListener('keydown', on);
-    return () => window.removeEventListener('keydown', on);
+    window.addEventListener('keydown', on, true);
+    return () => window.removeEventListener('keydown', on, true);
   }, [mobile, target, setState]);
 
   if (mobile && selected)

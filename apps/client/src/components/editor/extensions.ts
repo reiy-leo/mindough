@@ -766,10 +766,11 @@ export function behaviorExtension(opts: BehaviorOptions) {
                 opts.onModEnter();
                 return true;
               }
-              if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k' && opts.onLinkShortcut) {
+              // ⌘K / Ctrl+K 只管加链接（Rei 2026-11-05：全局搜索改成 ⌘F）。组字时不管；没有链接框的编辑器也吃掉，不往外传。
+              if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k' && !event.isComposing && event.keyCode !== 229 && !view.composing) {
                 event.preventDefault();
                 event.stopPropagation();
-                opts.onLinkShortcut();
+                if (!event.repeat) opts.onLinkShortcut?.();
                 return true;
               }
               return tableOnEnter(view, event);

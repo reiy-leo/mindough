@@ -98,7 +98,7 @@ export function MyDayPage() {
           )}
         </GridList>
       ) : (
-        <Empty icon={<Sun size={28} />} title={tr('今天还是空的')} hint={tr('在上面直接写，或按 ⌘K / Ctrl+K 从全部任务里挑几件加进来')} />
+        <Empty icon={<Sun size={28} />} title={tr('今天还是空的')} hint={tr('在上面直接写，或按 ⌘F / Ctrl+F 从全部任务里挑几件加进来')} />
       )}
 
       {yesterday.length > 0 && (

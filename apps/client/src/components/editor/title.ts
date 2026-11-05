@@ -317,7 +317,7 @@ export function plainTitleExtension(opts: PlainTitleOptions) {
               if (!selectionInTitle(state)) return false;
               if (isFormatShortcut(event)) {
                 event.preventDefault();
-                // ⌘K：也不让外面的 ⌘K（搜索）接着开
+                // ⌘K：第一行不开链接框，也不往外传
                 if (keyName(event) === 'k') event.stopPropagation();
                 return true;
               }

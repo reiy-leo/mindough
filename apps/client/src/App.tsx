@@ -45,6 +45,7 @@ const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) =>
 
 import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
+import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
 interface NavItem {
   page: Route['page'];
   label: string;
@@ -415,7 +416,7 @@ export function App() {
   useLunarSubScheduler(store);
   useAutoMyDay(store);
   const { setDidaImportOpen } = ui;
-  const { layout, skin, platform } = useSettings();
+  const { layout, platform } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面
   const settingsInWindow = isTauri() && (platform === 'macos' || platform === 'windows' || platform === 'linux');
   const openSettings = useCallback(
@@ -436,14 +437,14 @@ export function App() {
   const [collapsed, toggleSection] = useCollapsed();
   const todayCount = store.list('my_day').filter((e) => e.date === toDateKey(store.now()) && store.get('task', e.task_id)).length;
 
-  // 快捷键：⌘K / Ctrl+K 搜索；⌘, / Ctrl+, 设置；N 快速新建（不在输入框时）
+  // 快捷键：⌘F / Ctrl+F 搜索（lib/global-keys.ts，编辑器里也开；⌘K 只留给编辑器加链接）；⌘, / Ctrl+, 设置；N 快速新建（不在输入框时）
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === ',') {
         e.preventDefault();
         if (settingsInWindow) openSettings();
         else navigate({ page: 'settings' });
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      } else if (isSearchShortcut(e)) {
         e.preventDefault();
         ui.setPaletteOpen(true);
       } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !typingKey(e) && !ui.paletteOpen && !ui.quickCreate) {
@@ -475,7 +476,7 @@ export function App() {
           <RacButton className="sidebar-search" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
             <Search size={15} />
             <span className="grow">{tr('搜索')}</span>
-            <kbd className="kbd">{skin === 'apple' ? '⌘K' : 'Ctrl K'}</kbd>
+            <kbd className="kbd">{searchKeyLabel()}</kbd>
           </RacButton>
           <nav className="nav" aria-label={tr('主导航')}>
             {sections.map((sec) => {
@@ -506,7 +507,7 @@ export function App() {
               {!(settingsInWindow && route.page === 'settings') && <ErrorBoundary resetKey={route}><Page route={route} /></ErrorBoundary>}
             </div>
           </main>
-          {/* 日记页不放新建按钮（改版 B 按原型默认，待 Rei 确认）：写作区像一页纸，按钮会压在正文上；N 和 ⌘K 照常能新建任务 */}
+          {/* 日记页不放新建按钮（改版 B 按原型默认，待 Rei 确认）：写作区像一页纸，按钮会压在正文上；N 和 ⌘F 搜索照常能新建任务 */}
           {!hideFab && (
             <Tip content={<>{tr('新建任务')} <kbd className="kbd">N</kbd></>}>
               <NewTaskFab onPress={newTask} />

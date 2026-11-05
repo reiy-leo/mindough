@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * 换成 Tiptap 后要守住的行为（Rei 2026-10-25）：老数据打开不写回、只读、粘贴 markdown、粘贴 / 拖进图片上传、
- * 清单手打和回车、撤销重做、全局快捷键（⌘Enter、⌘K）不被吞。
+ * 清单手打和回车、撤销重做、全局快捷键（⌘Enter、⌘F）不被吞，⌘K 只管加链接。
  */
 import { describe, expect, it, vi } from 'vitest';
 import { TextSelection } from '@tiptap/pm/state';
@@ -272,15 +272,35 @@ describe('清单、撤销、快捷键', () => {
     done();
   });
 
-  it('⌘Enter / Ctrl+Enter 不被吃掉（新建面板用它添加）；没开链接框时 ⌘K 也不被吃掉（全局搜索）', () => {
+  it('⌘Enter / Ctrl+Enter 不被吃掉（新建面板用它添加）；⌘K 只管加链接，不往外传（Rei 2026-11-05 全局搜索改 ⌘F）', () => {
     const { view, done } = setup('一段');
     expect(key(view, 'Enter', { metaKey: true })).toBe(false);
     expect(key(view, 'Enter', { ctrlKey: true })).toBe(false);
-    expect(key(view, 'k', { metaKey: true })).toBe(false);
+    // 没有链接框的编辑器也吃掉 ⌘K，不让它冒到外面
+    expect(key(view, 'k', { metaKey: true })).toBe(true);
     done();
-    const withLink = setup('一段', { onLinkShortcut: () => {} });
+    let opened = 0;
+    const withLink = setup('一段', { onLinkShortcut: () => opened++ });
     expect(key(withLink.view, 'k', { metaKey: true })).toBe(true);
+    expect(key(withLink.view, 'k', { ctrlKey: true })).toBe(true);
+    expect(opened).toBe(2);
     withLink.done();
+  });
+
+  it('⌘K 冒不到 window，⌘F / Ctrl+F 冒得到（全局搜索在 window 上听）；组字时 ⌘K 不开链接框', () => {
+    let opened = 0;
+    const { view, done } = setup('一段', { onLinkShortcut: () => opened++ });
+    const seen: string[] = [];
+    const on = (e: KeyboardEvent) => seen.push(`${e.metaKey ? 'meta' : 'ctrl'}-${e.key}`);
+    window.addEventListener('keydown', on);
+    key(view, 'k', { metaKey: true });
+    expect(key(view, 'f', { metaKey: true, code: 'KeyF' })).toBe(false);
+    expect(key(view, 'f', { ctrlKey: true, code: 'KeyF' })).toBe(false);
+    key(view, 'k', { metaKey: true, isComposing: true });
+    window.removeEventListener('keydown', on);
+    expect(seen).toEqual(['meta-f', 'ctrl-f', 'meta-k']);
+    expect(opened).toBe(1);
+    done();
   });
 
   it('Shift+Enter 是真换行（写成 \\），单换行的老数据仍是单换行', () => {

@@ -1167,7 +1167,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "今天要做什么？按回车添加": "O que tem para hoje? Pressione Return para adicionar",
   "今天的任务": "Tarefas de hoje",
   "今天还是空的": "Nada aqui ainda",
-  "在上面直接写，或按 ⌘K / Ctrl+K 从全部任务里挑几件加进来": "Digite acima ou pressione ⌘K / Ctrl+K para escolher entre todas as suas tarefas",
+  "在上面直接写，或按 ⌘F / Ctrl+F 从全部任务里挑几件加进来": "Digite acima ou pressione ⌘F / Ctrl+F para escolher entre todas as suas tarefas",
   "昨天没做完": "Ficou de ontem",
   "全部带回今天": "Trazer tudo para hoje",
   "带回今天": "Trazer para hoje",
