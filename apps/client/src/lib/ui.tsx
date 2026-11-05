@@ -16,7 +16,7 @@ export interface Toast {
   actions?: ToastAction[];
 }
 
-interface UiCtx {
+export interface UiCtx {
   toasts: Toast[];
   toast: (t: Omit<Toast, 'id'>, ms?: number) => void;
   dismiss: (id: number) => void;

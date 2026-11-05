@@ -19,7 +19,8 @@ export function DoablePage() {
   const now = store.now();
   const today = toDateKey(now);
   const last = (t: Task) => (t.end_date && t.scheduled_date && t.end_date > t.scheduled_date ? t.end_date : t.scheduled_date!);
-  const open = store.tasks().filter((t) => t.scheduled_date && !isFinished(t.status) && !t.recurrence && t.completion_mode !== 'countdown');
+  // 归档了的项目里的任务不算（Rei 2026-11-05）
+  const open = store.activeTasks().filter((t) => t.scheduled_date && !isFinished(t.status) && !t.recurrence && t.completion_mode !== 'countdown');
   const overdue = open.filter((t) => isTaskOverdue(t, now, today)).sort((a, b) => compareDateKey(last(b), last(a)));
   const upcoming = open.filter((t) => !isTaskOverdue(t, now, today)).sort((a, b) => compareDateKey(a.scheduled_date!, b.scheduled_date!));
   return (

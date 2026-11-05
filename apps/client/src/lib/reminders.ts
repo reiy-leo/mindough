@@ -217,7 +217,7 @@ export function startReminders(deps: SchedulerDeps): () => void {
     const fired = pruneFired(readMap(FIRED), now);
     const snoozed = readMap(SNOOZED);
     const opts = { now, fired: new Set(fired.keys()), snoozed };
-    const list = [...upcomingReminders(store.list('task'), store.list('check_in'), opts), ...journalReminders(journalRemindTime(store), opts)].sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+    const list = [...upcomingReminders(store.activeTasks(), store.list('check_in'), opts), ...journalReminders(journalRemindTime(store), opts)].sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
     const due = dueReminders(list, now);
     if (due.length) {
       for (const r of due) {

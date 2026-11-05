@@ -3936,3 +3936,33 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 .app-mobile .types-page .cat-list-scroll {
   padding-bottom: 88px;
 }
+
+/* 项目归档（Rei 2026-11-05）：项目列表最下面折叠的「已归档（N）」，开关样式借打卡页的 habit-archived-*；归档项目页顶上的提示 */
+.group-archived {
+  margin-top: var(--space-6);
+}
+.group-archived.is-open .habit-archived-chevron {
+  transform: rotate(90deg);
+}
+.group-archived .card-grid {
+  margin-top: var(--space-2);
+}
+.group-card.is-archived .group-name {
+  color: var(--text-2);
+}
+.banner.project-archived-banner {
+  margin: 0 0 var(--space-3);
+  width: auto;
+  max-width: none;
+  flex-wrap: wrap;
+}
+.project-archived-banner > svg {
+  color: var(--text-2);
+}
+.project-archived-banner .grow {
+  min-width: 12em;
+}
+.project-archived-banner .btn {
+  gap: 4px;
+  white-space: nowrap;
+}

@@ -13,6 +13,7 @@ import { LunarLine } from '../components/LunarLine';
 import { useSettings } from '../lib/settings';
 import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
+import { visibleDayEntries } from '../lib/project-archive';
 
 import { tr } from '../lib/i18n';
 
@@ -26,7 +27,8 @@ export function MyDayPage() {
   const inlineCheckIn = layout !== 'mobile';
   const tasks = store.list('task');
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  const entries = store.list('my_day');
+  // 归档了的项目里的任务不显示（lib/project-archive，Rei 2026-11-05）
+  const entries = visibleDayEntries(store, store.list('my_day'));
   const checkIns = store.list('check_in');
   const items = myDayItems(entries, byId, checkIns, today, now);
   const yesterday = yesterdayUnfinished(entries, byId, checkIns, today, now);

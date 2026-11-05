@@ -393,9 +393,9 @@ export function RepeatEditor({ value, onChange, today, children }: { value: stri
 
 export const NO_GROUP = '__none';
 
-/** 组列表（弹层里用）。 */
+/** 组列表（弹层里用）。归档了的项目不列（Rei 2026-11-05），只有任务现在就在那个项目里时留着它，好看出选的是哪个。 */
 export function GroupList({ store, value, onChange }: { store: Store; value: string | null; onChange: (id: string | null) => void }) {
-  const groups = store.list('group');
+  const groups = store.list('group').filter((g) => !g.archived_at || g.id === value);
   return (
     <ListBox
       aria-label={trc('属性', '项目')}

@@ -6,6 +6,7 @@
 import { dueToday, myDayItems, toDateKey, type Store } from '@mindough/core';
 import { isTauri } from '../store/sqlite-tauri';
 import { titleOf } from './view';
+import { visibleDayEntries } from './project-archive';
 
 export interface WidgetSnapshot {
   version: 1;
@@ -21,9 +22,9 @@ export function buildWidgetSnapshot(store: Store, now = store.now()): WidgetSnap
   const tasks = store.list('task');
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const checkIns = store.list('check_in');
-  const items = myDayItems(store.list('my_day'), byId, checkIns, today, now);
+  const items = myDayItems(visibleDayEntries(store, store.list('my_day')), byId, checkIns, today, now);
   const inDay = new Set(items.map((i) => i.task.id));
-  const due = store.tasks().filter((t) => dueToday(t, today) && !inDay.has(t.id));
+  const due = store.activeTasks().filter((t) => dueToday(t, today) && !inDay.has(t.id));
   return {
     version: 1,
     at: now.toISOString(),

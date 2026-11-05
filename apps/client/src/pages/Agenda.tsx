@@ -22,7 +22,8 @@ export function AgendaPage() {
   const [draft, setDraft] = useState('');
   const todayRef = useRef<HTMLLIElement>(null);
 
-  const dated = store.tasks().filter((t) => t.scheduled_date && !t.recurrence);
+  // 归档了的项目里的任务不上时间轴（Rei 2026-11-05）
+  const dated = store.activeTasks().filter((t) => t.scheduled_date && !t.recurrence);
   const from = addDays(today, -pastDays);
   // 日期段（Rei 2026-10-26）：放在开始那天；跨过今天的，今天也放一份，标「第 3/5 天」
   const { byDate, hiddenPast } = agendaBuckets(dated, from, today);

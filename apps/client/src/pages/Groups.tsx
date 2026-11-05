@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarRange, Plus, Shapes } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarRange, ChevronRight, Plus, Shapes } from 'lucide-react';
 import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Section, Tip, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
-import { ProjectTitle, useProjectActions } from '../components/project/ProjectActions';
+import { ProjectTitle, unarchiveProject, useProjectActions } from '../components/project/ProjectActions';
+import { useUi } from '../lib/ui';
 import { ProjectSheet } from '../components/project/ProjectSheet';
 import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
 import { TaskRow } from '../components/TaskRow';
@@ -43,7 +44,7 @@ function GroupCard({ group: g }: { group: Group }) {
   return (
     <div className="group-card-wrap" {...menu.props}>
       <RacButton
-        className="card group-card"
+        className={`card group-card${g.archived_at ? ' is-archived' : ''}`}
         onPress={() => {
           if (menu.consumeLongPress()) return;
           navigate({ page: 'group', id: g.id });
@@ -75,8 +76,11 @@ export function GroupsPage() {
   const store = useStore();
   const [creating, setCreating] = useState(false);
   const [cat, setCat] = useState('all');
+  // 归档了的（Rei 2026-11-05「项目可以归档」）不在主列表，放在最下面折叠的「已归档（N）」一节，默认收起；筛选只管主列表
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const archived = store.archivedGroups();
   // 类型（Rei 2026-10-26，和任务、打卡共用一套）：筛选只列有项目挂着的类型，空的不显示
-  const all = store.list('group');
+  const all = store.activeGroups();
   const catOf = (g: Group) => store.category(g.category_id);
   const usedCats = store.categories(true).filter((c) => all.some((g) => catOf(g)?.id === c.id));
   const hasNone = all.some((g) => !catOf(g));
@@ -111,13 +115,29 @@ export function GroupsPage() {
         )}
       </div>
       {groups.length === 0 ? (
-        <Empty title={tr('还没有项目')} hint={tr('项目用来装一批相关任务，比如“搬家”“开发某个功能”')} />
+        archived.length ? null : <Empty title={tr('还没有项目')} hint={tr('项目用来装一批相关任务，比如“搬家”“开发某个功能”')} />
       ) : (
         <div className="card-grid">
           {groups.map((g) => (
             <GroupCard key={g.id} group={g} />
           ))}
         </div>
+      )}
+      {archived.length > 0 && (
+        <section className={`section group-archived${archivedOpen ? ' is-open' : ''}`}>
+          <RacButton className="habit-archived-toggle" aria-expanded={archivedOpen} aria-controls="group-archived-list" onPress={() => setArchivedOpen((o) => !o)}>
+            <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
+            <Archive size={15} aria-hidden />
+            <span className="section-title">{tr('已归档（{n}）', { n: archived.length })}</span>
+          </RacButton>
+          {archivedOpen && (
+            <div id="group-archived-list" className="card-grid">
+              {archived.map((g) => (
+                <GroupCard key={g.id} group={g} />
+              ))}
+            </div>
+          )}
+        </section>
       )}
       {creating && <ProjectSheet store={store} onClose={() => setCreating(false)} />}
     </div>
@@ -161,6 +181,7 @@ function GroupDetail({
   create: (text: string) => string;
 }) {
   const store = useStore();
+  const ui = useUi();
   const actions = useProjectActions(store, g);
   const c = store.category(g.category_id);
   const open = tasks.filter((t) => !isFinished(t.status));
@@ -209,6 +230,19 @@ function GroupDetail({
           </>
         }
       />
+      {g.archived_at && (
+        <div className="banner project-archived-banner" role="status">
+          <Archive size={18} aria-hidden />
+          <span className="grow">
+            <strong>{tr('这个项目已归档')}</strong>
+            <span className="muted"> {tr('里面的任务不会进我的一天，也不在待安排、积压、时间轴里。')}</span>
+          </span>
+          <Button variant="tonal" className="small" onPress={() => unarchiveProject(store, ui, g)}>
+            <ArchiveRestore size={15} aria-hidden />
+            {tr('取消归档')}
+          </Button>
+        </div>
+      )}
       <QuickAddBar label={tr('添加任务到这个项目')} placeholder={tr('这个项目里要做什么？按回车添加')} create={create} />
       {prefs.view === 'board' ? (
         <ProjectBoard store={store} tasks={tasks} />

@@ -36,7 +36,8 @@ export function CheckInsPage() {
   const now = useNow();
   const today = toDateKey(now);
   const lunarUi = useLunarUi();
-  const tasks = store.tasks();
+  // 归档了的项目里的打卡不列（Rei 2026-11-05），在项目页里还看得到
+  const tasks = store.activeTasks();
   const checkIns = store.list('check_in');
   const idx = useMemo(() => buildRatioIndex(tasks, checkIns, now), [store.version, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const dayRatio = useCallback((d: DateKey) => idx.dayRatio(d), [idx]);

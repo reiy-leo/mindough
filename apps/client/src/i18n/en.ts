@@ -1313,6 +1313,11 @@ export const EN: Record<string, EnValue> = {
   "打卡操作": "Check-in actions",
   "已归档「{title}」，在打卡页最下面「已归档」里": "Archived “{title}”. Find it under Archived at the bottom of Check-ins.",
   "已取消归档「{title}」": "Unarchived “{title}”",
+  // ── 项目归档（Rei 2026-11-05）──
+  "已归档「{name}」，在项目列表最下面「已归档」里": "Archived “{name}”. Find it under Archived at the bottom of Projects.",
+  "已归档（{n}）": "Archived ({n})",
+  "这个项目已归档": "This project is archived",
+  "里面的任务不会进我的一天，也不在待安排、积压、时间轴里。": "Its tasks won’t be added to My Day and don’t show in Inbox, Backlog or Timeline.",
   "卡片颜色": "Card Color",
   "颜色…": "Color…",
   "倒数日操作": "Countdown actions",

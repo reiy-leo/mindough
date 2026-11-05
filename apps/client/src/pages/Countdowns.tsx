@@ -92,8 +92,9 @@ export function CountdownsPage() {
   const today = toDateKey(now);
   const dateMode = useDateDisplay();
   const daysOf = (t: Task) => store.progress(t.id, today)?.value ?? 0;
+  // 归档了的项目里的倒数日不列（Rei 2026-11-05）
   const countdowns = store
-    .tasks()
+    .activeTasks()
     .filter((t) => t.completion_mode === 'countdown' && t.target_date && t.status !== '关闭')
     .map((t) => ({ t, n: daysOf(t) }))
     .sort((a, b) => (a.n >= 0) === (b.n >= 0) ? Math.abs(a.n) - Math.abs(b.n) : a.n >= 0 ? -1 : 1);
