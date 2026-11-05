@@ -38,6 +38,7 @@ import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import { isRemoteImage, remoteImageText } from '../../lib/remote-image';
 import { isBlockedHref, schemeOf } from '../../lib/link-scheme';
 import { ghExtensions } from './gh-syntax';
+import { flattenDetails, unwrapOpenDetails } from './copy-details';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
@@ -696,7 +697,23 @@ function markdownClipboard(opts: BehaviorOptions) {
           return false;
         }
       },
-      clipboardTextSerializer(slice) {
+      // 选区在折叠块里：复制出去不带外面那层 <details>（copy-details.ts，Rei 2026-11-05）
+      transformCopied(slice) {
+        try {
+          return unwrapOpenDetails(slice);
+        } catch {
+          return slice;
+        }
+      },
+      clipboardTextSerializer(copied) {
+        let slice = copied;
+        try {
+          // 整块选上的折叠块：纯文字里也只要标题和正文，不要标签
+          const flat = flattenDetails(copied.content);
+          if (flat !== copied.content) slice = new Slice(flat, 0, 0);
+        } catch {
+          /* 照原样 */
+        }
         try {
           const doc = slice.content.firstChild?.isInline ? null : opts.io();
           if (!doc) return slice.content.textBetween(0, slice.content.size, '\n\n');
