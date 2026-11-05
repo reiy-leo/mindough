@@ -1349,9 +1349,9 @@ Rei 2026-11-05 原话：「项目可以归档」。
 
 - **存法**：项目上新加 `archived_at`（归档时间，可空），客户端迁移 v17 `ALTER TABLE "group" ADD COLUMN "archived_at" TEXT`。同步照常是整行 LWW，云端整行存 JSON，不用改服务端。老客户端不认这一列：它推上来的行没有这个字段时当没归档（`applyRemote` 补 null，和 v15 `task.archived_at`、v16 `group.color` 一样）；老客户端改了这个项目会把归档冲掉。导出 `_group.md` 写 `archived:`，导入认。
 - **core**：`isGroupArchived`、`inArchivedGroup`（`group.ts`）；`Store.archiveGroup` / `unarchiveGroup`（没变不写）、`activeGroups`、`archivedGroups`（最近归档的在前）、`activeTasks`（去掉归档项目里的任务）、`inArchivedGroup(task)`。`myday.ts` 里归档的项目不算「出现在我的一天」，`suggestions` 也跳过归档项目的任务；`backlog` 用 `activeTasks`；`sidebarGroups` 不给归档的（侧栏偏好还记着，取消归档就回来）。
-- **为什么只是不显示**：归档不改任务、不删我的一天的行，所以「取消归档后一切恢复」什么都不用补。我的一天按 `lib/project-archive.ts` 的 `visibleDayEntries` 过滤：放进来的时间早于归档时间的藏起来，晚于的（归档后自己从 ⌘K 加的）照常显示。
-- **界面**：项目 ··· 菜单（`ProjectActions`）加「归档」/「取消归档」，归档了的不给「在侧边栏显示」；项目列表最下面折叠的「已归档（N）」（默认收起）；归档项目页顶上一条提示 + 「取消归档」；积压、时间轴、打卡、倒数日、提醒、小组件用 `activeTasks`；项目选择器 `GroupList` 不列归档的（当前选中的除外）。⌘K 不过滤。
-- **测试**：core `group-archive.test.ts`（归档 / 取消、列表和侧栏、任务不动、自动进我的一天、建议、待安排、⌘K、v16 → v17 迁移、老客户端的行、同步）；client `lib/project-archive.test.ts`（我的一天、小组件）、`locales`。
+- **为什么只是不显示**：归档不改任务、不删我的一天的行，所以「取消归档后一切恢复」什么都不用补。我的一天按 `lib/project-archive.ts` 的 `visibleDayEntries` 过滤：放进来的时间早于归档时间的藏起来，晚于的（归档后自己从 全局搜索（⌘F）加的）照常显示。
+- **界面**：项目 ··· 菜单（`ProjectActions`）加「归档」/「取消归档」，归档了的不给「在侧边栏显示」；项目列表最下面折叠的「已归档（N）」（默认收起）；归档项目页顶上一条提示 + 「取消归档」；积压、时间轴、打卡、倒数日、提醒、小组件用 `activeTasks`；项目选择器 `GroupList` 不列归档的（当前选中的除外）。全局搜索（⌘F）不过滤。
+- **测试**：core `group-archive.test.ts`（归档 / 取消、列表和侧栏、任务不动、自动进我的一天、建议、待安排、全局搜索（⌘F）、v16 → v17 迁移、老客户端的行、同步）；client `lib/project-archive.test.ts`（我的一天、小组件）、`locales`。
 - **没做**：项目页里的看板、时间轴、任务链视图照常显示归档项目的任务（打开项目就是要看）；类型页里挂着这个类型的项目列表也照常列出归档的。
 
 ### M5 项目视角

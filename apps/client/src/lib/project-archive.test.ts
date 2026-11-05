@@ -31,7 +31,7 @@ describe('我的一天里的归档项目任务', () => {
     expect(new Set(ids(store))).toEqual(new Set([manual.id, auto.id, loose.id]));
   });
 
-  it('归档以后自己又放进今天的（比如 ⌘K 搜到）照常显示', async () => {
+  it('归档以后自己又放进今天的（比如用全局搜索（⌘F）搜到）照常显示', async () => {
     const { store, g, advance } = await setup();
     const t = store.createTask({ body_md: '打包', group_id: g.id });
     store.archiveGroup(g.id);

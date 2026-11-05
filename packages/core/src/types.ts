@@ -228,7 +228,7 @@ export interface Group extends BaseRow {
   color?: string | null;
   /**
    * 归档时间（Rei 2026-11-05「项目可以归档」）；空 = 没归档。归档了的项目不在项目列表主列表、侧栏里，
-   * 里面的任务不自动进我的一天、不出现在待安排 / 积压 / 时间轴等列表和项目选择器里，⌘K 还能搜到（见 group.ts isGroupArchived）。
+   * 里面的任务不自动进我的一天、不出现在待安排 / 积压 / 时间轴等列表和项目选择器里，全局搜索（⌘F）还能搜到（见 group.ts isGroupArchived）。
    * v17 加的列，老客户端写来的行没有这个字段，读的时候当成空。
    */
   archived_at?: Timestamp | null;

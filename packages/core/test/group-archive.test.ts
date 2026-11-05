@@ -1,6 +1,6 @@
 /**
  * 项目归档（Rei 2026-11-05「项目可以归档」）：group.archived_at（v17）、Store.archiveGroup / unarchiveGroup，
- * 归档项目的任务不自动进我的一天、不进建议 / 待安排、不在 activeTasks 里；⌘K 还能搜到；老客户端的行不出错。
+ * 归档项目的任务不自动进我的一天、不进建议 / 待安排、不在 activeTasks 里；全局搜索（⌘F）还能搜到；老客户端的行不出错。
  */
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
