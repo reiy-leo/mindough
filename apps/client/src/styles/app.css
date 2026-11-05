@@ -3951,18 +3951,25 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   color: var(--text-2);
 }
 .banner.project-archived-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   margin: 0 0 var(--space-3);
   width: auto;
   max-width: none;
-  flex-wrap: wrap;
 }
 .project-archived-banner > svg {
   color: var(--text-2);
 }
-.project-archived-banner .grow {
-  min-width: 12em;
-}
 .project-archived-banner .btn {
   gap: 4px;
   white-space: nowrap;
+}
+/* 手机上按钮放到文字下面，和文字左对齐 */
+html[data-layout='mobile'] .project-archived-banner {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+html[data-layout='mobile'] .project-archived-banner .btn {
+  grid-column: 2;
+  justify-self: start;
 }

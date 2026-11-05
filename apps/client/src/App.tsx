@@ -3,6 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
 import { CalendarCheck2, CalendarClock, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
+import { visibleDayEntries } from './lib/project-archive';
 import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
 import { useSettings } from './lib/settings';
@@ -435,7 +436,8 @@ export function App() {
   const sections = navSections(store);
   const nav = sections.flatMap((s) => s.items);
   const [collapsed, toggleSection] = useCollapsed();
-  const todayCount = store.list('my_day').filter((e) => e.date === toDateKey(store.now()) && store.get('task', e.task_id)).length;
+  // 归档项目里藏起来的不算（lib/project-archive）
+  const todayCount = visibleDayEntries(store, store.list('my_day')).filter((e) => e.date === toDateKey(store.now()) && store.get('task', e.task_id)).length;
 
   // 快捷键：⌘F / Ctrl+F 搜索（lib/global-keys.ts，编辑器里也开；⌘K 只留给编辑器加链接）；⌘, / Ctrl+, 设置；N 快速新建（不在输入框时）
   useEffect(() => {
