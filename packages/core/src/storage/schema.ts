@@ -44,7 +44,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   dependency: { pred_id: 'text', succ_id: 'text', type: 'text', lag: 'int' },
-  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool', color: 'text?' },
+  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool', color: 'text?', archived_at: 'text?' },
   category: { name: 'text', color: 'text', icon: 'text', builtin: 'bool', hidden: 'bool', sort: 'real', merged_into: 'text?' },
   task_type: {
     name: 'text',
@@ -334,6 +334,14 @@ ALTER TABLE "task" ADD COLUMN "card_color" TEXT;
     name: '项目颜色（group.color）',
     sql: `
 ALTER TABLE "group" ADD COLUMN "color" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-05：项目可以归档（group.archived_at，归档时间）。可空，老行是空（没归档）。
+    version: 17,
+    name: '项目归档（group.archived_at）',
+    sql: `
+ALTER TABLE "group" ADD COLUMN "archived_at" TEXT;
 `,
   },
 ];

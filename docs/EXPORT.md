@@ -125,7 +125,7 @@ checkins:
 
 ## 其他文件
 
-- `_group.md`：`id`、`name`、`icon`、`start`、`end`、`category`（id）、`default_type`（id）；正文是一行 `# 项目名`（导入时忽略）。
+- `_group.md`：`id`、`name`、`icon`、`start`、`end`、`category`（id）、`default_type`（id）、`my_day`（关掉了才写 false）、`color`、`archived`（归档了才写归档时间，ISO 8601）；正文是一行 `# 项目名`（导入时忽略）。
 - `library/…/x.md`：`id`、`type`（id）、`name`、`image`（`assets/…`，或没取到文件时的 asset id / 链接）、`fields`（资料字段：年份、作者、IMDb 编号、价格 `{ amount, currency }`、更多链接 `[{ url, label? }]`…）、`created`；正文是备注。
 - `people/x.md`：`id`、`name`、`avatar`、`relation`、`birthday`；正文是备注。
 - `journal/2026/10/2026-10-17.md`（日记，方案见 JOURNAL.md）：`id`（由日期算出的固定 id，只用来核对）、`date`（YYYY-MM-DD）、`mood`（心情的英文 id：happy、calm、tired…，没填不写）、`created`；正文是日记内容（图片同任务改成相对路径）。导入时按日期认，同一天就是同一篇：日期不对的算「没导入」，id 和日期对不上的按日期导入并提示。规则和任务一样（新建 / 跳过 / 可选覆盖、整批撤销），预览里数「N 篇日记」。「这一天」汇总是算出来的，不导出。把按日期命名的普通 Markdown（Obsidian 每日笔记）当日记导入，留到 J2 做。

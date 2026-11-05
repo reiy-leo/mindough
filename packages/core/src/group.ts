@@ -48,3 +48,18 @@ export interface GroupRemovalResult {
   tasks: number;
   undo: GroupRemovalUndo;
 }
+
+/**
+ * 项目归档（Rei 2026-11-05「项目可以归档」）：group.archived_at 有值就是归档了。
+ * 归档只是收起来：项目和任务都留着、不改任务本身；取消归档后一切照旧。
+ */
+export function isGroupArchived(group: { archived_at?: string | null } | null | undefined): boolean {
+  return !!group?.archived_at;
+}
+
+/** 任务在归档了的项目里吗（不在项目里、项目删了的都不算）。groups 传 id → 项目。 */
+export function inArchivedGroup(task: { group_id: string | null }, groups: ReadonlyMap<string, { deleted?: boolean; archived_at?: string | null }>): boolean {
+  if (!task.group_id) return false;
+  const g = groups.get(task.group_id);
+  return !!g && !g.deleted && isGroupArchived(g);
+}

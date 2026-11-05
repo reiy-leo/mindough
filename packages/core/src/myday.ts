@@ -4,6 +4,7 @@
 import { addDays } from './dates';
 import { dueToday, progressOn } from './checkin';
 import type { DerivedStatus } from './dag';
+import { inArchivedGroup, isGroupArchived } from './group';
 import { isFinished, type CheckIn, type DateKey, type Group, type MyDayEntry, type Task } from './types';
 import { formatHlc } from './hlc';
 
@@ -142,20 +143,23 @@ export function groupAutoMyDay(group: Pick<Group, 'my_day_auto'> | null | undefi
   return !!group && group.my_day_auto !== false;
 }
 
-/** 任务在开着「出现在我的一天」的项目里（项目删了的不算）。 */
+/** 任务在开着「出现在我的一天」的项目里（项目删了的、归档了的不算）。 */
 function inAutoGroup(task: Task, groups: ReadonlyMap<string, Group>): boolean {
   if (!task.group_id) return false;
   const g = groups.get(task.group_id);
-  return !!g && !g.deleted && groupAutoMyDay(g);
+  return !!g && !g.deleted && !isGroupArchived(g) && groupAutoMyDay(g);
 }
 
 const groupMap = (groups: readonly Group[] | undefined) => new Map((groups ?? []).map((g) => [g.id, g]));
 
-/** 建议区：今天到期的、今天要打卡的、刚解锁的；已在今天清单里的、会自动进我的一天的（开着开关的项目里的）不再建议。 */
+/**
+ * 建议区：今天到期的、今天要打卡的、刚解锁的；已在今天清单里的、会自动进我的一天的（开着开关的项目里的）不再建议。
+ * 归档了的项目里的任务也不建议（Rei 2026-11-05）。
+ */
 export function suggestions(input: SuggestionInput): Suggestion[] {
   const inToday = new Set(entriesFor(input.entries, input.today).map((e) => e.task_id));
   const groups = groupMap(input.groups);
-  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !inAutoGroup(s.task, groups));
+  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups));
 }
 
 /**

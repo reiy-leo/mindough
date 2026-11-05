@@ -437,6 +437,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       default_type_id: dt && (archiveTypes.has(dt) || store.get('task_type', dt)) ? dt : null,
       my_day_auto: p.fm.my_day !== false,
       color: normalizeIconColor(p.fm.color),
+      archived_at: iso(p.fm.archived) ?? null,
     });
     folderGroup.set(dir, id);
     archiveGroups.add(id);

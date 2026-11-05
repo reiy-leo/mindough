@@ -47,7 +47,7 @@ import { fieldText, itemTitleOf, needsTitleLine, withTitleLine } from './preview
 import { parseHlc } from './hlc';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, normalizeDayStart, type MoodId } from './journal';
 import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
-import { groupIconFromPicker, normalizeGroupName, type GroupRemovalResult, type GroupRemovalUndo } from './group';
+import { groupIconFromPicker, isGroupArchived, normalizeGroupName, type GroupRemovalResult, type GroupRemovalUndo } from './group';
 import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './journal-feed';
 import { renamedFileName, safeFileName, sortAttachments } from './attachments';
 export interface StoreOptions {
@@ -419,6 +419,8 @@ export class Store {
       if (c.table === 'group' && typeof (row as Group).my_day_auto !== 'boolean') (row as Group).my_day_auto = true;
       // 老客户端写来的项目没有颜色（v16）：当成空，界面按 id 挑默认色
       if (c.table === 'group' && (row as Group).color === undefined) (row as Group).color = null;
+      // 老客户端写来的项目没有归档时间（v17）：当成没归档
+      if (c.table === 'group' && (row as Group).archived_at === undefined) (row as Group).archived_at = null;
       table.set(row.id, row);
       applied.push({ table: c.table, row } as Change);
     }
@@ -452,7 +454,11 @@ export class Store {
   insert<K extends TableName>(table: K, data: NewRow<TableMap[K]>): TableMap[K] {
     const row = { ...data, id: data.id ?? uuidv7(this.now().getTime()), deleted: false, updated_at: '' } as unknown as TableMap[K];
     // 项目颜色（v16）可以不传：存成空（界面按 id 挑默认色），别留 undefined，重开读回来才一样
-    if (table === 'group') (row as Group).color = normalizeIconColor((row as Group).color);
+    if (table === 'group') {
+      (row as Group).color = normalizeIconColor((row as Group).color);
+      // 归档时间（v17）同理：不传就是没归档
+      (row as Group).archived_at = (row as Group).archived_at ?? null;
+    }
     this.write([{ table, row }]);
     return this.tables[table].get(row.id)!;
   }
@@ -1338,6 +1344,51 @@ export class Store {
     return this.update('group', id, next);
   }
 
+  /**
+   * 归档项目（Rei 2026-11-05「项目可以归档」）：记下归档时间，项目和任务都不动。
+   * 归档了的不在项目列表主列表和侧栏里，任务不自动进我的一天、不出现在待安排 / 积压 / 时间轴等列表和项目选择器里；⌘K 还能搜到。
+   * 已经归档的不再写。
+   */
+  archiveGroup(id: string): Group | undefined {
+    const g = this.get('group', id);
+    if (!g || isGroupArchived(g)) return g;
+    return this.update('group', id, { archived_at: this.now().toISOString() });
+  }
+
+  /** 取消归档：一切照旧（今天该做的照常自动进我的一天）。没归档的不写。 */
+  unarchiveGroup(id: string): Group | undefined {
+    const g = this.get('group', id);
+    if (!g || !isGroupArchived(g)) return g;
+    return this.update('group', id, { archived_at: null });
+  }
+
+  /** 没归档的项目（项目列表主列表、项目选择器用）。 */
+  activeGroups(): Group[] {
+    return this.list('group').filter((g) => !isGroupArchived(g));
+  }
+
+  /** 归档了的项目，最近归档的在前（项目列表底部「已归档」一节）。 */
+  archivedGroups(): Group[] {
+    return this.list('group')
+      .filter((g) => isGroupArchived(g))
+      .sort((a, b) => (a.archived_at! < b.archived_at! ? 1 : a.archived_at! > b.archived_at! ? -1 : 0));
+  }
+
+  /** 任务在归档了的项目里吗。 */
+  inArchivedGroup(task: Pick<Task, 'group_id'>): boolean {
+    return isGroupArchived(this.get('group', task.group_id));
+  }
+
+  /**
+   * 不在归档项目里的任务（顺序同 tasks()）。待安排、积压、时间轴、打卡、倒数日这些跨项目的列表用它；
+   * ⌘K 搜索、项目页自己还用 tasks()。
+   */
+  activeTasks(): Task[] {
+    const archived = new Set(this.list('group').filter((g) => isGroupArchived(g)).map((g) => g.id));
+    const all = this.tasks();
+    return archived.size ? all.filter((t) => !t.group_id || !archived.has(t.group_id)) : all;
+  }
+
   /** 解散项目：项目打墓碑，里面的任务留着、移出项目（没日期的回到待安排，有日期的照旧在那天）。 */
   dissolveGroup(id: string): GroupRemovalResult | null {
     const g = this.get('group', id);
@@ -1582,7 +1633,8 @@ export class Store {
 
   /** 待安排：没结束、只做一次、没日期、今天的我的一天里没有的任务（见 backlog.ts）。 */
   backlog(today: string = toDateKey(this.now())): Task[] {
-    return backlogTasks(this.tasks(), this.list('my_day'), today);
+    // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
+    return backlogTasks(this.activeTasks(), this.list('my_day'), today);
   }
 
   /** 待安排里拖动排序：这几件按新顺序重新占用它们原来的那些 sort 值（不影响别的任务的相对顺序）。 */
@@ -2236,10 +2288,10 @@ export class Store {
     this.setPref(LIBRARY_SIDEBAR_PREF, withSidebarLibrary(ids, id, on));
   }
 
-  /** 放进侧边栏的项目：顺序跟项目页一样，删掉的不出现（见 library.ts GROUP_SIDEBAR_PREF）。 */
+  /** 放进侧边栏的项目：顺序跟项目页一样，删掉的、归档了的不出现（见 library.ts GROUP_SIDEBAR_PREF；归档的取消归档后回来）。 */
   sidebarGroups(): TableMap['group'][] {
     const ids = sidebarLibraryIds(this.pref(GROUP_SIDEBAR_PREF));
-    return this.list('group').filter((g) => ids.includes(g.id));
+    return this.list('group').filter((g) => ids.includes(g.id) && !isGroupArchived(g));
   }
 
   /** 这个项目在不在侧边栏。 */

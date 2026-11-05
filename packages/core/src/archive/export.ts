@@ -428,6 +428,8 @@ function groupFront(g: Group, store: Store): Record<string, unknown> {
     my_day: g.my_day_auto === false ? false : undefined,
     // 没选过颜色就不写
     color: g.color || undefined,
+    // 归档了才写归档时间（Rei 2026-11-05）
+    archived: g.archived_at ?? undefined,
   };
 }
 
