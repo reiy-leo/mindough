@@ -151,4 +151,27 @@ describe('折叠块里复制不带标签', () => {
     expect(copy(view).text).toBe('**粗** 和 `码`\n\n- a\n');
     done();
   });
+
+  it('整块复制再粘回编辑器：还是折叠块（text/html 里留着）', () => {
+    const { view, h, done } = setup(MD);
+    let at = -1;
+    view.state.doc.forEach((n, off) => {
+      if (n.type.name === 'details') at = off;
+    });
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    const { html, text } = copy(view);
+    const target = setup('');
+    const ev = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(ev, 'clipboardData', {
+      value: { getData: (t: string) => (t === 'text/html' ? html : t === 'text/plain' ? text : ''), files: [], types: ['text/html', 'text/plain'], items: [] },
+    });
+    target.view.dom.dispatchEvent(ev);
+    let n = 0;
+    target.view.state.doc.descendants((x) => void (x.type.name === 'details' && n++));
+    expect(n).toBe(1);
+    expect(target.h.getMarkdown()).toContain('<summary>标题</summary>');
+    target.done();
+    void h;
+    done();
+  });
 });
