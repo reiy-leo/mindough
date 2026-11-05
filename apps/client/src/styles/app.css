@@ -36,6 +36,19 @@ html[data-layout='mobile'],
 html[data-layout='mobile'] body {
   overscroll-behavior-x: none;
 }
+/* 手机 / 平板不能双指放大缩小、也不双击放大（Rei 2026-11-05「安卓界面禁用双指放大缩小」）：
+   index.html 的 viewport 写了 maximum-scale=1, user-scalable=no，这里再用 touch-action 只留平移
+   （子元素的 touch-action 是和祖先取交集，写在 html 上就全页生效；依赖图那种自己处理手势的地方本来就是 none，不受影响）。
+   安卓 App 的 WebView 另外在 MainActivity 里关了缩放（scripts/android-webview.sh）。
+   只管触屏：桌面浏览器的 ⌘+ / Ctrl+ 缩放、触控板缩放照旧。 */
+html[data-layout='mobile'] {
+  touch-action: pan-x pan-y;
+}
+@media (hover: none) and (pointer: coarse) {
+  html {
+    touch-action: pan-x pan-y;
+  }
+}
 body {
   font-family: var(--font);
   font-size: var(--fs-body);

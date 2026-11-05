@@ -150,6 +150,10 @@ jobs:
       - name: 本地化显示名
         run: scripts/native-locales.sh android
 
+      # 关掉 WebView 双指缩放（Rei 2026-11-05）：MainActivity 是 init 现生成的，加 onWebViewCreate
+      - name: WebView 不能缩放
+        run: scripts/android-webview.sh
+
       # versionName 带预发布标签（0.1.0-alpha.13），versionCode 随 alpha 递增（scripts/app-version.mjs）
       - name: 版本号
         run: node scripts/app-version.mjs apply android
@@ -162,6 +166,7 @@ jobs:
       - name: 核对图标
         run: |
           scripts/native-icons.sh android verify
+          scripts/android-webview.sh verify
           apk=$(find apps/client/src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
           unzip -l "$apk" | grep -E 'mipmap-(anydpi|xxxhdpi)' || { echo "APK 里没找到 mipmap 图标"; exit 1; }
 
