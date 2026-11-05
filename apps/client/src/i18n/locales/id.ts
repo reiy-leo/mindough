@@ -6,6 +6,19 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──
+  "心情河流（{range}）：还没有日记": "Sungai suasana hati ({range}): belum ada entri",
+  "心情河流（{range}）：{n} 条日记": "Sungai suasana hati ({range}): {n} entri",
+  "写下第一篇日记，这里就有颜色了": "Tulis entri pertamamu dan bagian ini akan berwarna",
+  "{mood} {n} 条": "{mood} {n}",
+  "没选心情": "Tanpa suasana hati",
+  "{date} · 没写": "{date} · tidak menulis",
+  "{date} · {moods}": "{date} · {moods}",
+  "选月份": "Pilih bulan",
+  "心情河流的范围：{range}": "Rentang sungai suasana hati: {range}",
+  "上一年": "Tahun sebelumnya",
+  "下一年": "Tahun berikutnya",
+  "{month}：没有日记": "{month}: tidak ada entri",
   // ── 图标和颜色面板（Rei 2026-11-04，待母语者看）──
   "换图标和颜色": "Ubah ikon dan warna",
   // ── 链接浮层「访问」按钮（Rei 2026-11-03，待母语者看）──

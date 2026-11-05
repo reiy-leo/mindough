@@ -12,6 +12,19 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 日记的心情河流（Rei 2026-11-05）──
+  "心情河流（{range}）：还没有日记": (p) => `Mood river (${p.range}): no entries yet`,
+  "心情河流（{range}）：{n} 条日记": (p) => `Mood river (${p.range}): ${n(p.n, 'entry', 'entries')}`,
+  "写下第一篇日记，这里就有颜色了": "Write your first entry and this fills with color",
+  "{mood} {n} 条": (p) => `${p.mood} ${p.n}`,
+  "没选心情": "No mood",
+  "{date} · 没写": (p) => `${p.date} · Nothing written`,
+  "{date} · {moods}": (p) => `${p.date} · ${p.moods}`,
+  "选月份": "Choose Month",
+  "心情河流的范围：{range}": (p) => `Mood river range: ${p.range}`,
+  "上一年": "Previous Year",
+  "下一年": "Next Year",
+  "{month}：没有日记": (p) => `${p.month}: no entries`,
   // ── 图标和颜色面板（Rei 2026-11-04，待母语者看）──
   "换图标和颜色": "Change Icon & Color",
   // ── 链接浮层「访问」按钮（Rei 2026-11-03）──

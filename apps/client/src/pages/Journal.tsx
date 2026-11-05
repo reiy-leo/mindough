@@ -2,7 +2,7 @@
  * 日记页（2026-10-28 改成 Feed 流，docs/JOURNAL.md 顶部「2026-10-28 改版：Feed 流」）。
  * Rei：「我更喜欢Feed流，一天可以添加很多条。每一条都可以标记心情」「两栏，左侧顶部显示activity图，点击可以切换」
  * 「左侧除了activity图，还可以显示一个心情列表」。
- * - 宽屏两栏：左边是活动图（格子颜色 = 当天各条心情色混合）+ 心情列表；右边是输入框 + 按天分组的条目。
+ * - 宽屏两栏：左边是活动图（格子颜色 = 当天各条心情色混合）+ 心情河流（Rei 2026-11-05，取代心情列表）；右边是输入框 + 按天分组的条目。
  * - 点活动图的一天：右边只看那天（再点一次或点「全部」回来）；点心情列表的一行：只看这个心情，能和某天叠加。
  * - 选中的不是今天时不显示输入框（过去不补写，将来不能写）。
  * - 窄屏：活动图、心情在上，输入框和条目在下。
@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { NotebookPen, Search, X } from 'lucide-react';
-import { filterPosts, groupPostsByDay, isDateKey, journalHeatRange, moodCounts, moodLabel, postsByDay, type MoodId } from '@mindough/core';
+import { filterPosts, groupPostsByDay, isDateKey, journalHeatRange, moodCounts, moodLabel, postsByDay, riverData, riverDays, riverMonths, riverSpan, riverYears, type MoodId, type RiverRange } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useSettings } from '../lib/settings';
 import { navigate } from '../lib/router';
@@ -20,7 +20,7 @@ import { onJournalCompose, takeJournalCompose } from '../lib/journal-compose';
 import { PageHeader } from '../components/PageHeader';
 import { Button, Empty } from '../ui/primitives';
 import { JournalHeatmap } from '../components/journal/JournalHeatmap';
-import { MoodList } from '../components/journal/MoodList';
+import { MoodChips, MoodRiver, RiverRangePicker } from '../components/journal/MoodRiver';
 import { JournalComposer, type ComposerHandle } from '../components/journal/JournalComposer';
 import { useStuck } from '../components/QuickAddBar';
 import { sendJournalPost } from '../lib/journal-send';
@@ -62,7 +62,16 @@ export function JournalPage({ date: wanted }: { date?: string }) {
   const range = useMemo(() => journalHeatRange(all, today), [all, today]);
   // 按心情筛着：活动图也只画这个心情的条目（哪些天有、有几条）
   const days = useMemo(() => postsByDay(mood ? all.filter((p) => p.mood === mood) : all), [all, mood]);
-  const counts = useMemo(() => moodCounts(all, range), [all, range]);
+  // 心情河流：默认最近 30 天，也能选某个月（Rei 2026-11-05）；胶囊的数字跟着这段时间
+  const [riverRange, setRiverRange] = useState<RiverRange>({ kind: 'recent' });
+  const river = useMemo(() => riverData(all, riverDays(riverRange, today)), [all, riverRange, today]);
+  const counts = useMemo(() => {
+    const span = riverSpan(river.days);
+    const list = span ? moodCounts(all, span) : [];
+    // 筛着的心情这段时间没有：照样留一个 0 的胶囊，好点掉
+    return mood && !list.some((c) => c.id === mood) ? [...list, { id: mood as MoodId, count: 0 }] : list;
+  }, [all, river.days, mood]);
+  const years = useMemo(() => riverYears(all, today), [all, today]);
   const shown = useMemo(() => groupPostsByDay(filterPosts(all, { day, mood })), [all, day, mood]);
   const canWrite = !day || day === today;
 
@@ -126,7 +135,15 @@ export function JournalPage({ date: wanted }: { date?: string }) {
       <section className="jf-heat" aria-label={tr('写日记的日子')}>
         <JournalHeatmap days={days} weeks={range.weeks} today={today} selected={day} onSelect={selectDay} />
       </section>
-      <MoodList counts={counts} selected={mood} onSelect={setMood} />
+      <section className="jriver" aria-label={tr('心情')}>
+        <div className="jriver-head">
+          <h2 className="jside-title">{tr('心情')}</h2>
+          <span className="grow" />
+          <RiverRangePicker range={riverRange} onChange={setRiverRange} years={years} monthsOf={(y) => riverMonths(all, y)} thisYear={Number(today.slice(0, 4))} />
+        </div>
+        <MoodRiver data={river} focus={mood} range={riverRange} />
+        <MoodChips counts={counts} selected={mood} onSelect={setMood} />
+      </section>
     </>
   );
   // 筛选条和输入框固定在右栏顶上，条目在下面滚（Rei 2026-11-02「日记中的输入框也不滚动」）

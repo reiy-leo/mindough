@@ -276,61 +276,210 @@
   overflow: visible;
 }
 
-/* ───────── 心情列表 ───────── */
+/* ───────── 心情河流（Rei 2026-11-05）：活动图下面占满剩下的高度，下面一排心情胶囊 ───────── */
+.jriver {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 300px;
+}
+.jriver-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.jriver-head .jside-title {
+  margin: 0;
+}
+.jriver-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.jriver-range:hover,
+.jriver-range[data-pressed],
+.jriver-range[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+  color: var(--text);
+}
+.jriver-range[data-focus-visible] {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.jriver-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 200px;
+  touch-action: pan-y;
+}
+.jriver-canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* 低分辨率画布放大：要平滑，不要马赛克 */
+  image-rendering: auto;
+}
+.jriver-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 var(--space-5);
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  pointer-events: none;
+}
+.jriver-tip {
+  position: absolute;
+  left: 50%;
+  top: var(--ty);
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 16px);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* 月份选择器：年份左右翻 + 12 个月，没日记的灰掉；底部「最近 30 天」 */
+.popover.jriver-pop {
+  max-height: none;
+  padding: var(--space-3);
+}
+.jriver-picker {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.jriver-year {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.jriver-year-title {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.jriver-months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.jriver-month,
+.jriver-recent {
+  padding: 6px 0;
+  border: 0;
+  border-radius: var(--jpick-r, 7px);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.jriver-month[data-hovered],
+.jriver-recent[data-hovered] {
+  background: var(--surface-hover);
+}
+.jriver-month[data-disabled] {
+  color: var(--text-3);
+  opacity: 0.55;
+  cursor: default;
+  background: transparent;
+}
+.jriver-month.is-selected {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.jriver-recent {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.jriver-recent.is-selected {
+  color: var(--accent);
+  font-weight: 600;
+}
+.jriver-month[data-focus-visible],
+.jriver-recent[data-focus-visible] {
+  outline: none;
+  box-shadow: var(--focus);
+}
+html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-picker {
+  width: 100%;
+}
+html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-month,
+html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-recent {
+  min-height: 44px;
+}
+
+/* 心情胶囊：名字 + 这段时间的条数 */
 .jmoods-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .jmoods-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 26px minmax(3.5em, max-content) minmax(0, 1fr) 2.5em;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 6px var(--space-2);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
+  gap: 6px;
+  padding: 3px 10px 3px 5px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--text);
   font: inherit;
-  text-align: left;
+  font-size: var(--fs-small);
+  white-space: nowrap;
   cursor: pointer;
 }
 .jmoods-row:hover {
-  background: var(--surface-hover);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }
 .jmoods-row:focus-visible {
   outline: none;
   box-shadow: var(--focus);
 }
 .jmoods-row.is-selected {
-  background: color-mix(in srgb, var(--jm) 16%, transparent);
+  background: color-mix(in srgb, var(--jm) 18%, transparent);
+  border-color: color-mix(in srgb, var(--jm) 45%, transparent);
 }
 .jmoods-row.is-selected .jmoods-name {
   color: color-mix(in srgb, var(--jm) 70%, var(--text));
   font-weight: 600;
 }
-.jmoods-name {
-  white-space: nowrap;
-}
-.jmoods-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--jm) var(--jw), transparent var(--jw));
-  opacity: 0.55;
-}
-.jmoods-row.is-selected .jmoods-bar {
-  opacity: 0.9;
+.jmoods-row .mood-icon {
+  width: 20px;
+  height: 20px;
 }
 .jmoods-count {
-  text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
-  font-size: var(--fs-small);
 }
 
 /* ───────── 筛选条 ───────── */
@@ -682,12 +831,16 @@
   gap: var(--space-4);
   margin-top: var(--space-4);
 }
-.jf.is-mobile .jside-title {
-  display: none;
+.jf.is-mobile .jriver {
+  min-height: 0;
+}
+.jf.is-mobile .jriver-canvas {
+  flex: none;
+  height: 190px;
+  min-height: 0;
 }
 .jf.is-mobile .jmoods-list {
-  flex-direction: row;
-  gap: var(--space-2);
+  flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--space-4));
@@ -697,25 +850,13 @@
   display: none;
 }
 .jf.is-mobile .jmoods-row {
-  grid-template-columns: 22px auto auto;
-  gap: 6px;
-  width: auto;
   padding: 4px 12px 4px 6px;
-  border-radius: var(--radius-pill);
   background: var(--surface);
-  border: 1px solid var(--border);
-  white-space: nowrap;
+  border-color: var(--border);
 }
 .jf.is-mobile .jmoods-row.is-selected {
   background: color-mix(in srgb, var(--jm) 18%, var(--surface));
   border-color: color-mix(in srgb, var(--jm) 45%, transparent);
-}
-.jf.is-mobile .jmoods-row .mood-icon {
-  width: 22px;
-  height: 22px;
-}
-.jf.is-mobile .jmoods-bar {
-  display: none;
 }
 .jf.is-mobile .jpost {
   grid-template-columns: 42px minmax(0, 1fr) 28px;

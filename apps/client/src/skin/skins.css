@@ -1043,6 +1043,18 @@
   border-color: transparent;
   box-shadow: 0 0 0 0.5px var(--border), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+/* 心情河流的月份选择器：Apple 像 macOS 日历的月份弹层，大圆角、半透明材质，选中的月份是强调色圆角块 */
+[data-skin='apple'] .jriver-pop {
+  --jpick-r: 8px;
+  border-radius: 14px;
+  border-color: transparent;
+  box-shadow: 0 0 0 0.5px var(--border), 0 12px 32px rgba(0, 0, 0, 0.18);
+  backdrop-filter: saturate(180%) blur(20px);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+[data-skin='apple'][data-layout='mobile'] .popover.popover-panel.is-sheet.jriver-pop {
+  border-radius: 14px 14px 0 0;
+}
 /* WinUI：方一点的格子，输入框和列表是 8px 圆角卡片，发送按钮是强调色的 4px 圆角按钮 */
 [data-skin='winui'] .journal-page.jf {
   --jcell-r: 2px;
@@ -1060,8 +1072,21 @@
   box-shadow: inset 0 -2px 0 var(--accent);
   border-color: var(--border);
 }
-[data-skin='winui'] .jmoods-row {
+[data-skin='winui'] .jmoods-row,
+[data-skin='winui'] .jriver-range {
   border-radius: 4px;
+}
+/* 心情河流的月份选择器：WinUI 像 CalendarView 的月份页，方角、选中是强调色描边加底 */
+[data-skin='winui'] .jriver-pop {
+  --jpick-r: 4px;
+  border-radius: 8px;
+}
+[data-skin='winui'] .jriver-month.is-selected {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-contrast) 40%, transparent);
+}
+[data-skin='winui'] .jriver-recent {
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 /* Material 3：surface 容器、大圆角，格子圆一点，发送是 FAB 色的胶囊 */
 [data-skin='material'] .journal-page.jf {
@@ -1090,6 +1115,31 @@
 }
 [data-skin='material'] .jmoods-row {
   border-radius: 999px;
+}
+/* 心情河流：Material 3 的胶囊和大圆角弹层，选中的月份是实心胶囊，「最近 30 天」是 tonal 按钮 */
+[data-skin='material'] .jriver-range {
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+[data-skin='material'] .jriver-pop {
+  --jpick-r: 999px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--surface-2);
+  padding: var(--space-4);
+}
+[data-skin='material'] .jriver-month {
+  padding: 8px 0;
+}
+[data-skin='material'] .jriver-recent {
+  border-radius: 999px;
+  padding: 9px 0;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+[data-skin='material'][data-layout='mobile'] .popover.popover-panel.is-sheet.jriver-pop {
+  border-radius: 28px 28px 0 0;
 }
 
 /* ═════════════ 三列布局的右列 / 手机整页详情（Rei 2026-10-23） ═════════════ */
