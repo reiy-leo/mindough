@@ -11,7 +11,7 @@
  * - 离线时没缓存的附件下载不了（按钮灰掉，点了提示）
  * - 云端文件清掉了（撤销删除、别的设备恢复了这一行）：本机有就补传，没有就显示「文件已删除」，下载、缓存灰掉（lib/attachment-gone.ts）
  */
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, type TouchEvent as ReactTouchEvent } from 'react';
 import { Button as RacButton, Dialog, Heading, Input, Modal, ModalOverlay, TextField } from 'react-aria-components';
 import { Download, HardDrive, HardDriveDownload, Paperclip, Pencil, RotateCw, Trash2, Upload, X } from 'lucide-react';
 import {
@@ -28,6 +28,7 @@ import {
 } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
+import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../../lib/long-press';
 import { useSettings } from '../../lib/settings';
 import {
   addAttachments,
@@ -372,6 +373,7 @@ function useItemMenu(enabled: boolean) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const fired = useRef(false);
   const armed = useRef(false);
+  const lastPointer = useRef<string | null>(null);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
@@ -390,6 +392,8 @@ function useItemMenu(enabled: boolean) {
         onContextMenu: (e: ReactMouseEvent) => {
           e.preventDefault();
           if (armed.current) return; // 长按已经在处理（Android 也会发 contextmenu）
+          // 手指发的 contextmenu（Android 滑动时也会发）不开，只认自己计时（lib/long-press，Rei 2026-11-05）
+          if (isTouchContextMenu(e, lastPointer.current)) return;
           clear();
           setOpen(true);
         },
@@ -397,9 +401,15 @@ function useItemMenu(enabled: boolean) {
         onPointerDownCapture: (e: ReactPointerEvent) => {
           fired.current = false;
           armed.current = false;
+          lastPointer.current = e.pointerType;
           if (e.pointerType !== 'touch') return;
+          installLongPressGuard();
           start.current = { x: e.clientX, y: e.clientY };
+          const pressedAt = longPressNow();
           timer.current = setTimeout(() => {
+            timer.current = null;
+            if (!longPressStillValid(pressedAt)) return; // 是在滑
+
             fired.current = true;
             armed.current = true;
             timer.current = null;
@@ -408,7 +418,12 @@ function useItemMenu(enabled: boolean) {
         },
         onPointerMoveCapture: (e: ReactPointerEvent) => {
           const s = start.current;
-          if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 10) clear();
+          if (s && movedTooFar(s, { x: e.clientX, y: e.clientY })) clear();
+        },
+        onTouchMoveCapture: (e: ReactTouchEvent) => {
+          const s = start.current;
+          const t = e.touches[0];
+          if (s && t && movedTooFar(s, { x: t.clientX, y: t.clientY })) clear();
         },
         onPointerUpCapture: release,
         onTouchEndCapture: release,

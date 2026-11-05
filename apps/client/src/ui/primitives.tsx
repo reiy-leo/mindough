@@ -1,7 +1,7 @@
 /**
  * Headless React Aria 组件 + 语义类名。外观全部来自皮肤层（tokens.css / app.css / skins.css）。
  */
-import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type CSSProperties, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type CSSProperties, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import {
   Switch as RacSwitch,
   Button as RacButton,
@@ -37,6 +37,7 @@ import { Check, ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import { useSettings } from '../lib/settings';
 
 import { tr } from '../lib/i18n';
+import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
 import { chipColors } from '../lib/chip-colors';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-solid' | 'tonal' | 'quiet';
 
@@ -311,8 +312,8 @@ export function MenuAt({ at, label, items, onClose }: { at: { x: number; y: numb
  */
 export function useContextMenuAt({ longPress = true }: { longPress?: boolean } = {}) {
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
-  const touched = useRef(false);
-  const press = useRef<{ x: number; y: number; timer: number } | null>(null);
+  const lastPointer = useRef<string | null>(null);
+  const press = useRef<{ x: number; y: number; at: number; timer: number } | null>(null);
   const long = useRef(false);
   const cancel = () => {
     if (press.current) window.clearTimeout(press.current.timer);
@@ -320,8 +321,12 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
   };
   const props = {
     onContextMenu: (e: ReactMouseEvent<HTMLElement>) => {
-      // Android 长按也会发 contextmenu；不接长按时不拦，让系统选字和拷贝出来
-      if (!longPress && touched.current) return;
+      // 手指发的 contextmenu（Android 长按、滑动时也会发，Rei 2026-11-05）：不开菜单，手指长按只认下面自己的计时（lib/long-press）
+      if (isTouchContextMenu(e, lastPointer.current)) {
+        // 不接长按时不拦，让系统选字和拷贝出来
+        if (longPress) e.preventDefault();
+        return;
+      }
       e.preventDefault();
       let x = e.clientX;
       let y = e.clientY;
@@ -336,16 +341,21 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
     },
     onPointerDownCapture: (e: ReactPointerEvent<HTMLElement>) => {
       long.current = false;
-      touched.current = e.pointerType === 'touch';
+      lastPointer.current = e.pointerType;
       if (e.pointerType !== 'touch' || !longPress) return;
+      installLongPressGuard();
       const x = e.clientX;
       const y = e.clientY;
       cancel();
+      const pressedAt = longPressNow();
       press.current = {
         x,
         y,
+        at: pressedAt,
         timer: window.setTimeout(() => {
           press.current = null;
+          // 按下以后列表滚过、或刚滚完：是在滑，不是长按
+          if (!longPressStillValid(pressedAt)) return;
           long.current = true;
           setAt({ x, y });
         }, 480),
@@ -353,7 +363,13 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
     },
     onPointerMoveCapture: (e: ReactPointerEvent<HTMLElement>) => {
       const p = press.current;
-      if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) cancel();
+      if (p && movedTooFar(p, { x: e.clientX, y: e.clientY })) cancel();
+    },
+    // 浏览器接手去滚动时 pointer 事件会停（先发 pointercancel），touchmove 还会来：也看它
+    onTouchMoveCapture: (e: ReactTouchEvent<HTMLElement>) => {
+      const p = press.current;
+      const t = e.touches[0];
+      if (p && t && movedTooFar(p, { x: t.clientX, y: t.clientY })) cancel();
     },
     onPointerUpCapture: cancel,
     onPointerCancelCapture: cancel,

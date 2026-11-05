@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
+import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
 import { Ban, Check, CirclePlay, Globe, Link2, Lock, LockOpen, PanelRight, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
@@ -8,6 +8,7 @@ import { toggleDone, toggleMyDay } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
 import { isDragPress } from '../lib/drag-guard';
+import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
 import { typeIcon } from '../lib/icons';
 import { TaskDateText } from './TaskDateText';
 import { useLunarUi } from '../lib/lunar';
@@ -87,8 +88,11 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
     }
     setMenuAt({ x, y });
   };
+  const lastPointer = useRef<string | null>(null);
   const onContextMenu = (e: MouseEvent) => {
     e.preventDefault();
+    // 手指发的 contextmenu 不开：Android 滑列表时也会发（Rei 2026-11-05「滑动任务列表会触发右键菜单」），手指长按只认自己计时
+    if (isTouchContextMenu(e, lastPointer.current)) return;
     openMenuAt(e.clientX, e.clientY);
   };
   const cancelPress = () => {
@@ -97,14 +101,19 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   };
   const onPointerDown = (e: PointerEvent) => {
     longPressed.current = false;
+    lastPointer.current = e.pointerType;
     if (e.pointerType !== 'touch') return;
+    installLongPressGuard();
     const { clientX: x, clientY: y } = e;
     cancelPress();
+    const pressedAt = longPressNow();
     press.current = {
       x,
       y,
       timer: window.setTimeout(() => {
         press.current = null;
+        // 按下以后列表滚过、或刚滚完：是在滑，不是长按
+        if (!longPressStillValid(pressedAt)) return;
         longPressed.current = true;
         openMenuAt(x, y);
       }, 500),
@@ -112,7 +121,13 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   };
   const onPointerMove = (e: PointerEvent) => {
     const p = press.current;
-    if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) cancelPress();
+    if (p && movedTooFar(p, { x: e.clientX, y: e.clientY })) cancelPress();
+  };
+  // 浏览器接手滚动后 pointermove 不来了，touchmove 还来
+  const onTouchMove = (e: TouchEvent) => {
+    const p = press.current;
+    const t = e.touches[0];
+    if (p && t && movedTooFar(p, { x: t.clientX, y: t.clientY })) cancelPress();
   };
 
   return (
@@ -124,6 +139,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       // 捕获阶段：行里的按钮（React Aria usePress）会拦住冒泡的 pointerdown
       onPointerDownCapture={onPointerDown}
       onPointerMoveCapture={onPointerMove}
+      onTouchMoveCapture={onTouchMove}
       onPointerUpCapture={cancelPress}
       onPointerCancelCapture={cancelPress}
     >

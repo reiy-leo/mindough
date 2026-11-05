@@ -42,6 +42,7 @@ import { LinkChips } from '../components/library/LinkFields';
 import { DuplicatesSheet, MergeIntoSheet, MergeSheet } from '../components/library/MergeSheet';
 import { PersonDialog } from './People';
 import { imageUrl } from '../lib/view';
+import { longPressNow, longPressStillValid } from '../lib/long-press';
 
 import { dataLabel, tr } from '../lib/i18n';
 function useLibraries(): TaskType[] {
@@ -66,7 +67,10 @@ function Tile({ entry, type, onPress, selected, onSelect }: { entry: LibraryEntr
       onPressStart={(e) => {
         long.current = false;
         if (e.pointerType !== 'touch' || selecting) return;
+        const pressedAt = longPressNow();
         timer.current = setTimeout(() => {
+          // 按下以后滚过：是在滑，不进选择模式（lib/long-press）
+          if (!longPressStillValid(pressedAt)) return;
           long.current = true;
           onSelect();
         }, 480);
