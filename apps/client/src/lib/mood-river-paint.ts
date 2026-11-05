@@ -3,7 +3,7 @@
  * 纯函数：给一块低分辨率 RGBA 缓冲（画布的 ImageData.data），按每行各股水流的份量（core riverProfile）、
  * 每股的颜色、时间 t 填颜色和透明度。画布再用 CSS 放大，看起来是连续的渐变。
  *
- * - 颜色：每个像素 = 各股颜色按 (份量 + 0.05) × 横向高斯（以这股此刻的路线为中心）加权平均，像几股水流混在一起。
+ * - 颜色：每个像素 = 各股颜色按 (份量 + 一点底) × 横向高斯（以这股此刻的路线为中心）加权平均，像几股水流混在一起。
  * - 路线：每股有基准位置（core laneBase），沿高度正弦摆动 + 一点噪声，随时间缓慢漂移。
  * - 软边：四边距离用 smooth-min 合成（圆滑的角），再减去一圈噪声决定的边宽，smoothstep 淡出；边形随数据的 seed 变。
  * - 呼吸：约 6 秒一个周期，透明度 0.8–1.0、亮度 ±4%，边宽 ±6px。t 固定为 0 就是静止画面（减少动态效果时用）。
@@ -70,7 +70,10 @@ export function paintRiver(out: Uint8ClampedArray, p: RiverPaint): void {
   const lum = 1 + 0.04 * br;
   const alphaK = maxAlpha * (0.9 + 0.1 * br);
   const laneX = new Float32Array(L);
-  const sigmaX = W * 0.32;
+  // 份量的底：股数少时 0.05（第七版稿），多时按比例压低，少见的心情只占一点点
+  const floor = L > 5 ? 0.25 / L / 5 : 0.05;
+  // 股数多时每股窄一点，免得十来种颜色全混成灰
+  const sigmaX = W * (L > 5 ? 0.26 : 0.32);
   for (let py = 0; py < ch; py++) {
     const y = (py + 0.5) * scale;
     const yr = y / H;
@@ -84,7 +87,7 @@ export function paintRiver(out: Uint8ClampedArray, p: RiverPaint): void {
       let b = 0;
       for (let k = 0; k < L; k++) {
         const dx = (x - laneX[k]!) / sigmaX;
-        const w = ((profile[row + k] ?? 0) + 0.05) * Math.exp(-dx * dx) + 0.002;
+        const w = ((profile[row + k] ?? 0) + floor) * Math.exp(-dx * dx) + 0.002;
         const c = colors[k]!;
         ws += w;
         r += w * c[0];

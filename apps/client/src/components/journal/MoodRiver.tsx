@@ -115,7 +115,7 @@ function laneColors(p: Palette, lanes: ReadonlyArray<MoodId | null>, focus: Mood
   }
   return lanes.map((m) => {
     const base = m ? (p.moods[m] ?? p.text) : mixOklabTo(p.text, p.bg, 0.55);
-    let c = p.dark ? mixOklabTo(base, p.bg, 0.16, 0.82) : mixOklabTo(base, '#ffffff', 0.3, 0.85);
+    let c = p.dark ? mixOklabTo(base, p.bg, 0.12, 0.9) : mixOklabTo(base, '#ffffff', 0.22, 0.95);
     if (focus) c = m === focus ? (p.dark ? mixOklabTo(base, p.bg, 0.06, 0.95) : mixOklabTo(base, '#ffffff', 0.12, 1)) : mixOklabTo(c, p.bg, 0.5, 0.6);
     return fromHex(c);
   });
