@@ -211,6 +211,23 @@ export function mixOklab(colors: readonly string[]): string | null {
 }
 
 /**
+ * 两种颜色在 OKLab 里按比例混：t = 0 是 a，1 是 b；chroma 再把色度乘一下（< 1 更柔和）。读不出来返回 a 原样。
+ * 心情河流用它把心情色调柔和（往背景色靠一点）。
+ */
+export function mixOklabTo(a: string, b: string, t: number, chroma = 1): string {
+  const ra = parseHex(a);
+  const rb = parseHex(b);
+  if (!ra || !rb) return a;
+  const la = rgbToOklab(ra);
+  const lb = rgbToOklab(rb);
+  const L = la[0] * (1 - t) + lb[0] * t;
+  const A = (la[1] * (1 - t) + lb[1] * t) * chroma;
+  const B = (la[2] * (1 - t) + lb[2] * t) * chroma;
+  const [r, g, bl] = oklabToRgb([L, A, B]);
+  return `#${hex2(r)}${hex2(g)}${hex2(bl)}`;
+}
+
+/**
  * 一天的格子颜色（Rei 2026-10-28「activity图的颜色根据心情的颜色mix」）：每条按它的心情色算一份，没心情的（和不认识的心情）算 neutral，取平均。
  * palette：心情 id → 颜色（客户端从皮肤令牌 --mood-* 读出来）。没有条目返回 null。
  */
