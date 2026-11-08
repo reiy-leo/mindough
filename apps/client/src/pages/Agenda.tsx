@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Form, Input, TextField, Button as RacButton } from 'react-aria-components';
+import { Form, TextField, Button as RacButton } from 'react-aria-components';
+import { WrapInput, stripNewlines } from '../components/WrapInput';
 import { CalendarDays, ChevronsUp, Plus } from 'lucide-react';
 import { weekdayLabel, addDays, agendaBuckets, compareDateKey, diffDays, formatTaskDateRange, formatDateZh, relativeDayZh, toDateKey, weekday, type AgendaItem, type Task, plainTitleMarkdown } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
@@ -84,8 +85,8 @@ export function AgendaPage() {
                       submit(d);
                     }}
                   >
-                    <TextField aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateZh(d) })} value={draft} onChange={setDraft} className="add-bar-field" autoFocus onBlur={() => submit(d)}>
-                      <Input className="add-bar-input" placeholder={tr('写下一件事，按回车添加')} />
+                    <TextField aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateZh(d) })} value={draft} onChange={(v) => setDraft(stripNewlines(v))} className="add-bar-field" autoFocus onBlur={() => submit(d)}>
+                      <WrapInput value={draft} placeholder={tr('写下一件事，按回车添加')} onSubmit={() => submit(d)} />
                     </TextField>
                   </Form>
                 ) : (

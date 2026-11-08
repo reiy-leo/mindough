@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Form, Input, TextField } from 'react-aria-components';
+import { Form, TextField } from 'react-aria-components';
+import { WrapInput, stripNewlines } from './WrapInput';
 import { Plus } from 'lucide-react';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
@@ -35,7 +36,7 @@ export function QuickAddBar({ placeholder, label, create, trailing, meta }: { pl
   const ui = useUi();
   const { layout } = useSettings();
   const [draft, setDraft] = useState('');
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
   const { sentinel, stuck } = useStuck();
   const add = () => {
     const id = quickAdd({ create, openEditor: ui.openEditor }, draft);
@@ -55,8 +56,9 @@ export function QuickAddBar({ placeholder, label, create, trailing, meta }: { pl
           }}
         >
           <Plus size={18} className="add-bar-icon" aria-hidden />
-          <TextField aria-label={label} value={draft} onChange={setDraft} className="add-bar-field">
-            <Input ref={input} className="add-bar-input" placeholder={placeholder} />
+          {/* 长了折行长高，不左右滚（Rei 2026-11-08）；回车照旧添加，不能换行 */}
+          <TextField aria-label={label} value={draft} onChange={(v) => setDraft(stripNewlines(v))} className="add-bar-field">
+            <WrapInput ref={input} value={draft} placeholder={placeholder} onSubmit={add} />
           </TextField>
           {trailing}
         </Form>

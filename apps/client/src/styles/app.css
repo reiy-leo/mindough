@@ -4063,3 +4063,26 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   background: none;
   border-bottom: 0;
 }
+
+/* 添加框折行（Rei 2026-11-08）：textarea 看着是一行，长了往下长，最多 6 行（高度由 WrapInput 算），不左右滚。
+   多行时图标和行尾按钮贴在第一行，所以按顶对齐，再用外边距把它们对到第一行中间（框高 34px）。 */
+.add-bar-input.is-wrap {
+  display: block;
+  height: 34px;
+  min-height: 34px;
+  padding: 7px 0;
+  line-height: 20px;
+  resize: none;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.add-bar:has(.add-bar-input.is-wrap) {
+  align-items: flex-start;
+}
+.add-bar:has(.add-bar-input.is-wrap) > .add-bar-icon {
+  margin-top: 8px;
+}
+.add-bar:has(.add-bar-input.is-wrap) > :is(button, .icon-btn) {
+  margin-top: 1px;
+}
