@@ -4111,6 +4111,8 @@ html[data-layout='mobile'] .project-archived-banner .btn {
    页面里把 --bg 换成混好的颜色，固定页头（.project-head-sticky 用 var(--bg)）跟着一样；WinUI 的 Mica 渐变这时不画。 */
 .app-mobile .main[data-project-tint] {
   --tint-base: var(--bg);
+  --tint-text-2: var(--text-2);
+  --tint-text-3: var(--text-3);
   --tint-mix: 10%;
   background: color-mix(in srgb, var(--project-tint) var(--tint-mix), var(--tint-base));
 }
@@ -4120,4 +4122,7 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .app-mobile .main[data-project-tint] .project-page {
   --bg: color-mix(in srgb, var(--project-tint) var(--tint-mix), var(--tint-base));
   --bg-image: none;
+  /* 底色带了颜色，次要文字对比度会掉（Apple 亮色 --text-2 量出 4.17）：往主文字色靠 30%，保住 4.5:1 */
+  --text-2: color-mix(in srgb, var(--tint-text-2) 70%, var(--text));
+  --text-3: color-mix(in srgb, var(--tint-text-3) 70%, var(--text));
 }

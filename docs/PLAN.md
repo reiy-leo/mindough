@@ -1580,6 +1580,7 @@ Rei 2026-11-08 23:40「移动端的项目 任务列表背景颜色为图标背�
 
 - 只在手机布局、项目自己设了颜色（`group.color`，`normalizeIconColor` 认得的 hex）时；没设过的（图标用 `defaultIconColor` 按 id 挑的）保持原样，宽屏不变。
 - 做法：`pages/Groups.tsx` `useProjectTint` 给外层 `.main` 挂 `--project-tint` 和 `data-project-tint`；`app.css` 里 `.main` 背景 = `color-mix(in srgb, 项目色 10%, 皮肤原来的 --bg)`（暗色 14%），页面里的 `--bg` 换成同一个混色，`--bg-image` 去掉（WinUI 的 Mica 渐变这时不画）。固定页头 `.project-head-sticky` 用的是 `var(--bg)`，所以和底色一样不露缝。
+- 对比度：截图量过，Apple 亮色次要文字 `--text-2` 在淡底上只有 4.17，所以淡底页面里 `--text-2`、`--text-3` 往主文字色靠 30%；量下来三皮肤亮暗标题都在 12 以上、小字 ≥ 4.5。
 - 列表、看板、时间轴、任务链同一页，都跟着变。任务行本身没有底色（透明），字直接压在淡色上；看板卡片、时间轴条等原来就有底色的照旧。手机顶栏、标签栏不变。
 
 ### 详情顶栏心情按钮 ✅（2026-11-08）
