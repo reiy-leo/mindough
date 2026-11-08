@@ -36,6 +36,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   checkin.ts            check_in 事件折叠出进度（计时/计量/点一下/倒数日）、热力图比例索引
   count.ts              计数的步长和快捷按钮（Rei 2026-10-26）：单位 → 默认步长、task.count_config 读写、手输「1200 / +330」解析
   heatmap.ts myday.ts   热力图网格与档位、我的一天（昨天没做完、建议）
+  done-list.ts          已完成页（Rei 2026-11-08）：完成 / 关闭的任务按结束时间排、按本机日期分段、段标题
   preview.ts search.ts  无标题任务的预览、全局搜索（⌘F / Ctrl+F）
   library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色
   typedef.ts            类型编辑器（界面叫资料库编辑器）的纯逻辑：字段增改排序隐藏、删字段留墓碑（key 不变、值保留）、类型顺序（同步偏好 type_order）；类型不能删、只能归档（存 hidden 列，Store.archiveType）
