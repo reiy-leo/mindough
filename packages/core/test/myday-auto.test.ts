@@ -6,7 +6,7 @@ import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { SyncEngine } from '../src/sync/engine';
 import { MemoryRemote } from '../src/sync/memory-remote';
-import { AUTO_MY_DAY_HLC, entriesFor, myDayEntryId, recentlyUnlocked, suggestions } from '../src/myday';
+import { AUTO_MY_DAY_HLC, entriesFor, isAutoEntry, isStaleAutoEntry, myDayEntryId, recentlyUnlocked, suggestions } from '../src/myday';
 import { toDateKey } from '../src/dates';
 import { local } from './helpers';
 
@@ -39,7 +39,7 @@ const sugg = (s: Store) => {
 };
 
 describe('项目里的任务直接进我的一天', () => {
-  it('今天到期、过期、日期段含今天、倒数日到了的项目任务自动加进来，不再进建议；不在项目里的照旧只建议', async () => {
+  it('今天到期、日期段含今天、倒数日到了的项目任务自动加进来，不再进建议；过期、没到的不加（2026-11-08）；不在项目里的照旧只建议', async () => {
     const { store } = await open();
     const g = group(store);
     const d = today(store);
@@ -49,8 +49,10 @@ describe('项目里的任务直接进我的一天', () => {
     const cd = store.createTask({ body_md: '交房', group_id: g.id, completion_mode: 'countdown', target_date: d });
     const later = store.createTask({ body_md: '下周的事', group_id: g.id, scheduled_date: '2026-11-09' });
     const loose = store.createTask({ body_md: '不在项目里', scheduled_date: d });
-    expect(store.syncAutoMyDay()).toBe(4);
-    expect(new Set(inDay(store))).toEqual(new Set([due.id, late.id, range.id, cd.id]));
+    expect(store.syncAutoMyDay()).toBe(3);
+    expect(new Set(inDay(store))).toEqual(new Set([due.id, range.id, cd.id]));
+    // 只有当前的才自动进（Rei 2026-11-08）：过期的、没到的都不加
+    expect(inDay(store)).not.toContain(late.id);
     expect(inDay(store)).not.toContain(later.id);
     expect(inDay(store)).not.toContain(loose.id);
     expect(sugg(store)).toEqual([loose.id]);
@@ -75,7 +77,7 @@ describe('项目里的任务直接进我的一天', () => {
   it('移出后当天不再冒出来，第二天还该做就再加', async () => {
     const { store, advance } = await open();
     const g = group(store);
-    const t = store.createTask({ body_md: '退押金', group_id: g.id, scheduled_date: '2026-10-30' });
+    const t = store.createTask({ body_md: '退押金', group_id: g.id, scheduled_date: '2026-11-01', end_date: '2026-11-05' });
     store.syncAutoMyDay();
     store.removeFromMyDay(t.id);
     expect(store.syncAutoMyDay()).toBe(0);
@@ -191,5 +193,38 @@ describe('多端：同一件不重复，移出不复活', () => {
     await B.sync();
     expect(inDay(A.store)).toEqual([]);
     expect(inDay(B.store)).toEqual([]);
+  });
+});
+
+describe('只有当前的才自动进（Rei 2026-11-08）', () => {
+  it('过期的、没到的不加；日期改到今天就加；打卡、没日期的刚解锁照旧', async () => {
+    const { store } = await open();
+    const g = group(store);
+    const late = store.createTask({ body_md: '过期', group_id: g.id, scheduled_date: '2026-10-30' });
+    const rangeOver = store.createTask({ body_md: '段已过', group_id: g.id, scheduled_date: '2026-10-28', end_date: '2026-11-01' });
+    const future = store.createTask({ body_md: '下周', group_id: g.id, scheduled_date: '2026-11-09' });
+    const habit = store.createTask({ body_md: '喝水', group_id: g.id, recurrence: 'FREQ=DAILY', completion_mode: 'count', target_value: 8 });
+    expect(store.syncAutoMyDay()).toBe(1);
+    expect(inDay(store)).toEqual([habit.id]);
+    store.updateTask(late.id, { scheduled_date: today(store) });
+    expect(store.syncAutoMyDay()).toBe(1);
+    expect(inDay(store)).toContain(late.id);
+    expect(inDay(store)).not.toContain(rangeOver.id);
+    expect(inDay(store)).not.toContain(future.id);
+  });
+
+  it('早上自动加进来的（规则改之前），现在过期了：当天不显示；手动加的过期任务照常显示', async () => {
+    const { store } = await open();
+    const g = group(store);
+    const d = today(store);
+    const auto = store.createTask({ body_md: '自动的', group_id: g.id, scheduled_date: '2026-10-30' });
+    const manual = store.createTask({ body_md: '手动的', group_id: g.id, scheduled_date: '2026-10-30' });
+    // 老版本写的自动行：added_at 是那天 00:00Z
+    store.insert('my_day', { task_id: auto.id, date: d, sort: 0, added_at: `${d}T00:00:00.000Z` });
+    store.addToMyDay(manual.id);
+    const rows = store.list('my_day').filter((e) => e.date === d);
+    const stale = rows.filter((e) => isStaleAutoEntry(e, store.get('task', e.task_id), store.now())).map((e) => e.task_id);
+    expect(stale).toEqual([auto.id]);
+    expect(isAutoEntry(rows.find((e) => e.task_id === manual.id)!)).toBe(false);
   });
 });

@@ -185,7 +185,28 @@ export function suggestions(input: SuggestionInput): Suggestion[] {
  */
 export function autoMyDayTasks(input: Omit<SuggestionInput, 'entries' | 'groups'> & { groups: readonly Group[]; seen: ReadonlySet<string> }): Suggestion[] {
   const groups = groupMap(input.groups);
-  return dueTodayCandidates(input).filter((s) => !input.seen.has(s.task.id) && inAutoGroup(s.task, groups));
+  return dueTodayCandidates(input).filter((s) => !input.seen.has(s.task.id) && inAutoGroup(s.task, groups) && isCurrentFor(s.task, input.today, input.now));
+}
+
+/**
+ * 有日期的任务「当前」吗（Rei 2026-11-08「项目"出现在我的一天"，只有当前的显示在我的一天，过期的、没到的都不显示」）：
+ * 日期是今天，或日期段含今天（设备的今天或任务时区的今天）。没日期的（打卡、倒数日、刚解锁的没日期任务）不看这条，照旧。
+ */
+export function isCurrentFor(task: Pick<Task, 'scheduled_date' | 'end_date' | 'time_zone' | 'recurrence'>, today: DateKey, now: Date): boolean {
+  if (!task.scheduled_date || task.recurrence) return true;
+  return keepsMyDayAfterDate(task.scheduled_date, task.end_date ?? null, [today, taskToday(task, now, today)]);
+}
+
+/** 自动加进来的行（syncAutoMyDay 写的：added_at 是那天 00:00Z 的字面值；拖过排序也不变）。手动加的 added_at 是真实时刻。 */
+export function isAutoEntry(e: Pick<MyDayEntry, 'added_at' | 'date'>): boolean {
+  return e.added_at === `${e.date}T00:00:00.000Z`;
+}
+
+/**
+ * 自动加进来、现在已经不当前的行（比如早上加进来时还算，规则改了以后过期的那批）：那天就不显示。手动加的不受影响。只是不显示，不删行。
+ */
+export function isStaleAutoEntry(e: Pick<MyDayEntry, 'added_at' | 'date'>, task: Task | undefined, now: Date): boolean {
+  return !!task && isAutoEntry(e) && !isCurrentFor(task, e.date, now);
 }
 
 /**
