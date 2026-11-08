@@ -11,7 +11,7 @@ import { useLocked } from '../lib/strict';
 import { MoodIcon } from './journal/MoodIcon';
 import { isMoodId, moodLabel } from '@mindough/core';
 import { isDragPress } from '../lib/drag-guard';
-import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
+import { installLongPressGuard, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
 import { typeIcon } from '../lib/icons';
 import { TaskDateText } from './TaskDateText';
 import { useLunarUi } from '../lib/lunar';
@@ -80,35 +80,21 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 三列布局：右列正在显示这件
   const selected = ui.editingId === task.id;
 
-  // 行的右键 / 长按菜单：查看详情 ｜ 加入 / 移出我的一天（Rei 2026-10-25 去掉建议行尾的「+ 加入」后的入口）
+  // 行的长按菜单（手机）：查看详情 ｜ 加入 / 移出我的一天、置顶。
+  // 右键不再开菜单（Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）：onContextMenu 只 preventDefault，也不落回浏览器 / 系统菜单。
+  // 菜单里的事详情都能做：顶栏太阳、「…」里的我的一天和置顶；点行本身就是查看详情。
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);
   const longPressed = useRef(false);
-  const openMenuAt = (x: number, y: number) => {
-    // 键盘（菜单键 / Shift+F10）触发时没有坐标：挂在行的右上
-    if (!x && !y && rowRef.current) {
-      const r = rowRef.current.getBoundingClientRect();
-      x = r.right - 16;
-      y = r.top + r.height / 2;
-    }
-    setMenuAt({ x, y });
-  };
-  const lastPointer = useRef<string | null>(null);
-  const onContextMenu = (e: MouseEvent) => {
-    e.preventDefault();
-    // 手指发的 contextmenu 不开：Android 滑列表时也会发（Rei 2026-11-05「滑动任务列表会触发右键菜单」），手指长按只认自己计时
-    if (isTouchContextMenu(e, lastPointer.current)) return;
-    openMenuAt(e.clientX, e.clientY);
-  };
+  const onContextMenu = (e: MouseEvent) => e.preventDefault();
   const cancelPress = () => {
     if (press.current) window.clearTimeout(press.current.timer);
     press.current = null;
   };
   const onPointerDown = (e: PointerEvent) => {
     longPressed.current = false;
-    lastPointer.current = e.pointerType;
     if (e.pointerType !== 'touch') return;
     installLongPressGuard();
     const { clientX: x, clientY: y } = e;
@@ -122,7 +108,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         // 按下以后列表滚过、或刚滚完：是在滑，不是长按
         if (!longPressStillValid(pressedAt)) return;
         longPressed.current = true;
-        openMenuAt(x, y);
+        setMenuAt({ x, y });
       }, 500),
     };
   };
