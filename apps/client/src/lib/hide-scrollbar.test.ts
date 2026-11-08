@@ -9,13 +9,17 @@ const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.met
 
 describe('滚动条不显示', () => {
   const css = read('../styles/app.css');
+  // 按规则拆：选择器列表 → 规则体。只查「某条规则的选择器列表里有它、规则体里有那句」，不管它排在列表第几个。
+  const rules = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    sels: (m[1] ?? '').split(',').map((s) => s.trim()),
+    body: m[2] ?? '',
+  }));
+  const ruleHas = (sel: string, decl: RegExp) => rules.some((r) => r.sels.includes(sel) && decl.test(r.body));
   it('侧栏、标了 data-hide-scrollbar 的 .main（含 macOS 的 .main-scroll）两种写法都有', () => {
-    for (const sel of ['.sidebar', '.main[data-hide-scrollbar]', '.main[data-hide-scrollbar] .main-scroll']) {
-      expect(css).toContain(`${sel},`);
-      expect(css).toContain(`${sel}::-webkit-scrollbar`);
+    for (const sel of ['.sidebar', '.sidebar .nav', '.main[data-hide-scrollbar]', '.main[data-hide-scrollbar] .main-scroll']) {
+      expect(ruleHas(sel, /scrollbar-width:\s*none/), `${sel} 缺 scrollbar-width: none`).toBe(true);
+      expect(ruleHas(`${sel}::-webkit-scrollbar`, /display:\s*none/), `${sel}::-webkit-scrollbar 缺 display: none`).toBe(true);
     }
-    expect(css).toMatch(/\.main\[data-hide-scrollbar\] \.main-scroll \{\s*scrollbar-width: none;/);
-    expect(css).toMatch(/::-webkit-scrollbar \{\s*display: none;/);
   });
   it('只给任务列表：我的一天、待安排、积压、时间轴、项目页、已完成；日记、设置不在里面', () => {
     const app = read('../App.tsx');
