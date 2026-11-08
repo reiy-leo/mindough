@@ -335,11 +335,12 @@
 }
 
 /* 心情颜色（日记，Rei 2026-10-17）：12 个心情 × 三套皮肤 × 明暗。图标线条和月历小点都用它。 */
+/* Apple 亮色的开心、满足原来对白底不到 3:1（2.51 / 3.07，在 #f5f5f7 上更低），2026-11-08 心情色用到任务上时加深：#d29a00 → #b07f00、#2fa84f → #28a046 */
 [data-skin='apple'] {
-  --mood-happy: #d29a00;
+  --mood-happy: #b07f00;
   --mood-excited: #e86a00;
   --mood-grateful: #e5336b;
-  --mood-content: #2fa84f;
+  --mood-content: #28a046;
   --mood-calm: #0a97ad;
   --mood-okay: #6e7781;
   --mood-bored: #8b8576;
