@@ -1668,4 +1668,4 @@ Rei 2026-11-09 01:31：打卡页、倒数日页的「新建」不再弹窗，直
 - 字段：弹窗里的完成方式、目标、单位、重复、目标日期、提醒、类型、项目、相关任务在详情本来都有（属性胶囊 + 相关任务）；卡片颜色本来只在详情有。没补新字段，没新文案。
 - 原来「没有空任务规则」：代码里以前没有「空着离开就删」，这次是新加的，只管从这两个入口建出来的。
 - 测试：client `blank-task.test.ts` 6 项。
-
+- 修：MdEditor 的 autoFocus 原来在 useEffect 里直接 `editor.commands.focus`，从详情第一次挂上时 view 还没挂、抛「reading 'commands' of null」，详情显示「这里出错了」。改成等 `editor.view.dom.isConnected` 再聚焦（最多重试 10 次、每次 30ms，卸载时清掉）。
