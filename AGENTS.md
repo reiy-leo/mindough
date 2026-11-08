@@ -132,6 +132,7 @@ docs/                   PLAN.md、PRODUCT.md、COPY.md（界面文案）、EXPOR
 - 滴答清单导入（docs/IMPORT-DIDA.md）：解析、拉取、映射都在 core `dida/`，客户端只做界面；两种来源都先变成 `DidaRow`，再走 `planDida` / `applyDida`，别另写一套写入。任务 id 用滴答清单的 taskId 算（`didaTaskId`），重复导入不出重复任务就靠它，别改算法。令牌只存本机（`lib/dida.ts`），不进同步表、不发给云端库；Worker 代理只转发白名单路径。改菜单栏文字时，要同时改 `menu.rs` 的 `MenuLabels` 和 `lib/app-menu.ts`。
 - 外链：在 Tauri 里都走 `lib/external.ts`（全局拦截 + `openExternal`），交给系统浏览器打开；不要自己 `window.open` 或另装 opener 调用。
 - 资料 / 人物合并后，并进去的那条变成墓碑并记下 `merged_into`：读任务挂的资料都走 `store.itemOf(task)` / `resolveItemId` / `resolvePersonId`（会顺着 merged_into 找到留下的那条），不要直接 `get('library_item', task.library_item_id)`。
+- 任务置顶（PLAN「任务置顶」，Rei 2026-11-08）：置顶的任务在我的一天里是算出来的虚拟行（core `pinnedDayItems` / `withPinned`，id 前缀 `pinned:`），不写 my_day 表；界面上要当天清单都用 `lib/myday-items.ts` 的 `dayItems`（我的一天页、侧栏数字、小组件），别自己拿 `myDayItems` 拼，否则会漏掉置顶的。别对虚拟行做移出、排序。
 - 相关任务（task_link）不是依赖：不进 dependency 表，不过环检测，不影响派生状态；同一对任务如果有前后关系，只按前后关系显示。
 - 加依赖边必须过环检测；组件外观只写在皮肤层（tokens + 平台样式），业务组件不写死某个平台的样式；改界面后在三种皮肤（Apple / WinUI / Material）× 桌面 / 手机下截图检查。
 

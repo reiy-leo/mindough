@@ -89,6 +89,7 @@ checkins:
 | `category` | category_id | 类型（id + 名字注释，2026-10-26 起）；旧文件写的 `checkin_category` 导入时当 `category` |
 | `remind` | remind_time | 「HH:MM」，加了引号（有的 YAML 1.1 解析器会把 08:00 当数字） |
 | `time_zone` | time_zone | 任务时区，IANA 名（如 America/New_York），没设不写；导入时不认识的当没设（2026-10-25） |
+| `pinned` | pinned_at | 置顶时间（ISO 8601），置顶了才写；没有就是没置顶（2026-11-08，v18） |
 | `sort` | sort | |
 | `people` | task_person | 人物 id 列表 |
 | `after` | dependency（FS） | **先做完这些**：前置任务的 id；后续不用写，从对方文件的 after 推出来 |
