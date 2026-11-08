@@ -1,6 +1,6 @@
 /**
  * 新建项目和编辑项目用的同一个面板（Rei 2026-11-02「新建项目的弹窗需要优化，删掉默认资料库，开始结束删掉。和编辑窗口统一」）。
- * 两边字段一样：图标预览 + 名字 + 颜色和图标（IconStylePicker，2026-11-04 起项目能选颜色）+「出现在我的一天」开关（Rei 2026-11-02，存在 group.my_day_auto，默认开）。只有标题和主按钮不同：新建是「新建项目」+「创建」，编辑是「编辑项目」+「保存」。
+ * 两边字段一样：图标预览 + 名字 + 颜色和图标（IconStylePicker，2026-11-04 起项目能选颜色）+「出现在我的一天」开关（Rei 2026-11-02，存在 group.my_day_auto，默认开）+「默认日期：今天」开关（Rei 2026-11-09，group.default_date_today，默认关）。只有标题和主按钮不同：新建是「新建项目」+「创建」，编辑是「编辑项目」+「保存」。
  * 开始 / 结束、类型、默认资料库界面上不再填，数据字段还在（老项目照常读）；新建的项目这几项都是空的。
  */
 import { useState } from 'react';
@@ -22,10 +22,12 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
   const shownColor = group ? (color ?? groupColor(group)) : color!;
   // 「出现在我的一天」（Rei 2026-11-02），新建默认开
   const [myDay, setMyDay] = useState(group ? groupAutoMyDay(group) : true);
+  // 「默认日期：今天」（Rei 2026-11-09 03:52）：项目里新建的任务日期填今天，新建默认关；存在 group.default_date_today，跟着同步
+  const [dateToday, setDateToday] = useState(group?.default_date_today === true);
   const save = () => {
     if (!name.trim()) return;
     if (group) {
-      store.updateGroup(group.id, { name, icon, my_day_auto: myDay, ...(color !== (group.color ?? null) ? { color } : {}) });
+      store.updateGroup(group.id, { name, icon, my_day_auto: myDay, default_date_today: dateToday, ...(color !== (group.color ?? null) ? { color } : {}) });
       onClose();
       return;
     }
@@ -38,6 +40,7 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
       default_type_id: null,
       my_day_auto: myDay,
       color,
+      default_date_today: dateToday,
     });
     onClose();
     navigate({ page: 'group', id: g.id });
@@ -67,6 +70,13 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
             <div className="setting-hint">{myDay ? tr('到了该做的那天，项目里的任务直接放进我的一天。') : tr('项目里的任务不会自己出现在我的一天，到了那天只放在建议里。')}</div>
           </div>
           <Switch label={tr('出现在我的一天')} isSelected={myDay} onChange={setMyDay} />
+        </div>
+        <div className="setting project-edit-myday">
+          <div className="setting-text">
+            <div className="setting-name">{tr('默认日期：今天')}</div>
+            <div className="setting-hint">{tr('在这个项目里新建的任务，日期自动填今天。')}</div>
+          </div>
+          <Switch label={tr('默认日期：今天')} isSelected={dateToday} onChange={setDateToday} />
         </div>
       </div>
     </Sheet>

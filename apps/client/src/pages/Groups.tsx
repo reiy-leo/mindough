@@ -13,6 +13,7 @@ import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/Catego
 import { TaskRow } from '../components/TaskRow';
 import { PageHeader } from '../components/PageHeader';
 import { QuickAddBar, useStuck } from '../components/QuickAddBar';
+import { todayDefaults } from '../lib/quick-add';
 import { ProjectBoard } from '../components/project/ProjectBoard';
 import { ProjectTimeline } from '../components/project/ProjectTimeline';
 import { ProjectChains } from '../components/project/ProjectChains';
@@ -166,7 +167,8 @@ export function GroupDetailPage({ id }: { id: string }) {
     prefs.dir,
   );
   // 回车建到本项目（带项目的默认类型），马上打开；看板里新任务是「待办」，自然在待办列
-  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id }).id;
+  // 项目开着「默认日期：今天」（Rei 2026-11-09）：日期填今天
+  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id, ...todayDefaults(g.default_date_today === true, toDateKey(store.now())) }).id;
   return <GroupDetail g={g} tasks={tasks} prefs={prefs} setPrefs={setPrefs} create={create} />;
 }
 

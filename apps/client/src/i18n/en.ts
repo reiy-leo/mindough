@@ -71,8 +71,13 @@ export const EN: Record<string, EnValue> = {
   "隐藏建议": "Hide Suggestions",
   "显示建议": "Show Suggestions",
   "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Lists tasks due today, check-ins due today, and tasks just unlocked under My Day. Only applies on this device.",
-  "资料库、我的一天、日期显示、农历": "Collections, My Day, date display, Chinese calendar",
-  "资料库、我的一天、日期显示": "Collections, My Day, date display",
+  "我的一天、严格模式、日期显示、农历": "My Day, strict mode, date display, Chinese calendar",
+  "我的一天、严格模式、日期显示": "My Day, strict mode, date display",
+  "默认日期：今天": "Default Date: Today",
+  "开源组件": "Open-Source Components",
+  "桌面和手机 app 用 Tauri 打包。还用到这些开源库，感谢作者们：": "The desktop and mobile apps are built with Tauri. We also use these open-source libraries — thanks to their authors:",
+  "在这个项目里新建的任务，日期自动填今天。": "New tasks in this project get today’s date.",
+  "在我的一天里新建的任务，日期自动填今天。只在这台设备上生效。": "New tasks in My Day get today’s date. Only on this device.",
   // ── 日期面板方案 A（Rei 2026-11-01）──
   "已选的日期": "Selected dates",
   "加结束日，变成日期段": "Add an end date to make it a range",
@@ -749,7 +754,8 @@ export const EN: Record<string, EnValue> = {
   记一件事: 'Add to Inbox',
 
   // ── 打卡页 ──
-  '连续 {current} · 最长 {best}': 'Streak {current} · Best {best}',
+  '连续 {current} 天': (p) => `Streak: ${n(p.current, 'day', 'days')}`,
+  '最长 {best} 天': (p) => `Best streak: ${n(p.best, 'day', 'days')}`,
   '{title} 的打卡记录': 'Check-in history for {title}',
   显示活动图: 'Show Activity',
   隐藏活动图: 'Hide Activity',
@@ -879,9 +885,6 @@ export const EN: Record<string, EnValue> = {
   '「{name}」会从{name2}里删除，删除后不能恢复。': '“{name}” will be deleted from {name2}. This can’t be undone.',
 
   // ── 我的一天 ──
-  '{doneCount}/{counted} 已完成 · {closed} 个已关闭': '{doneCount}/{counted} done · {closed} closed',
-  '{doneCount}/{counted} 已完成': '{doneCount}/{counted} done',
-  还没有安排: 'Nothing planned',
   添加任务到今天: 'Add a task to today',
   '想到什么先记下，按回车添加到待安排': 'Jot it down, press Return to add to Inbox',
   '添加任务到待安排': 'Add a task to Inbox',
@@ -1098,9 +1101,6 @@ export const EN: Record<string, EnValue> = {
   加一个选项: 'Add an option',
   '选项「{name}」': 'Option “{name}”',
   '去掉「{name}」': 'Remove “{name}”',
-  全部资料库: 'All Collections',
-  '{n} 个，另有 {h} 个已归档。改字段、图标、版式，或新建自己的资料库。': (p) => `${n(p.n, 'collection', 'collections')}, plus ${p.h} archived. Change fields, icons and layouts, or create your own.`,
-  '{n} 个。改字段、图标、版式，或新建自己的资料库。': (p) => `${n(p.n, 'collection', 'collections')}. Change fields, icons and layouts, or create your own.`,
   编辑资料库: 'Edit Collections',
   // ── 资料合并（M4） ──
   '已合并到「{name}」': 'Merged into “{name}”',

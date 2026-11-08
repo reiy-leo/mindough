@@ -39,6 +39,7 @@ import { DeepLinks } from './components/DeepLinks';
 import { TaskComposer } from './components/task/TaskComposer';
 import { CommandPalette } from './components/CommandPalette';
 import { toDateKey } from '@mindough/core';
+import { todayDefaults } from './lib/quick-add';
 import { LoginErrorBanner } from './components/LoginErrorBanner';
 import { MovedBanner } from './components/MovedBanner';
 import { ReminderHost } from './components/ReminderHost';
@@ -407,9 +408,11 @@ export function Toasts() {
   );
 }
 
-/** N 快速新建的默认值：项目页带上项目。打卡页、倒数日页的 N 和页头「新建」一样，直接建空任务进详情（lib/blank-task）。 */
-function newTaskDefaults(route: Route) {
-  if (route.page === 'group') return { group_id: route.id };
+/** N 快速新建的默认值：项目页带上项目，「默认日期：今天」开着带上今天。打卡页、倒数日页的 N 和页头「新建」一样，直接建空任务进详情（lib/blank-task）。 */
+function newTaskDefaults(route: Route, store: Store, myDayDefaultToday: boolean, today: string) {
+  // 「默认日期：今天」（Rei 2026-11-09）：项目开着（group.default_date_today）、我的一天页设置里开着，日期填今天
+  if (route.page === 'group') return { group_id: route.id, ...todayDefaults(store.get('group', route.id)?.default_date_today === true, today) };
+  if (route.page === 'myday') return todayDefaults(myDayDefaultToday, today);
   return {};
 }
 
@@ -466,12 +469,12 @@ export function App() {
       } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !typingKey(e) && !ui.paletteOpen && !ui.quickCreate) {
         e.preventDefault();
         if (route.page === 'checkin' || route.page === 'countdown') createBlankTask(store, ui.openEditor, route.page);
-        else ui.openQuickCreate(newTaskDefaults(route), { myDay: route.page === 'myday' });
+        else ui.openQuickCreate(newTaskDefaults(route, store, settings.myDayDefaultToday, toDateKey(store.now())), { myDay: route.page === 'myday' });
       }
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
-  }, [ui, store, route, settingsInWindow, openSettings]);
+  }, [ui, store, route, settingsInWindow, openSettings, settings.myDayDefaultToday]);
 
   const backlogCount = store.backlog(toDateKey(store.now())).length;
   const current = [...nav, SETTINGS].find(isActive);

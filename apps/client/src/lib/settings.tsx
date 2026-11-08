@@ -38,6 +38,11 @@ export interface Settings {
    * 关掉后建议那段不显示，也不算建议。读经 lib/myday-suggest 的 suggestionsOn()，写在设置 → 任务，或建议那段标题右边的「…」→「隐藏建议」。
    */
   myDaySuggestions: boolean;
+  /**
+   * 我的一天新建的任务默认日期是今天（Rei 2026-11-09 03:49「设置 - 任务 - 我的一天中，添加"默认日期：今天" switch，on 则我的一天中新建任务自动添加目标日期今天」）：
+   * 默认关（Rei 没说，按以前的行为）。和「显示建议」「严格模式」一样只记在本机，不同步。管我的一天的添加框（lib/quick-add createToday）和我的一天页按 N（App newTaskDefaults）。
+   */
+  myDayDefaultToday: boolean;
   /** 我的一天「已完成」那段展开着吗（Rei 2026-11-08 分两段）：默认展开，只记在本机。 */
   myDayDoneOpen: boolean;
   /** 打卡页「已打卡」那段展开着吗（Rei 2026-11-09「今天打卡完成的放在已打卡section」）：默认展开，只记在本机。 */
@@ -66,7 +71,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {}, colorLevel: 'standard' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {}, colorLevel: 'standard' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

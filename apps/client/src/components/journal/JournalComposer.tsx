@@ -2,7 +2,8 @@
  * 日记的输入框（Rei 2026-10-28 附图：深色圆角输入框，占位「What's on your mind? Capture it…」，底部左边图标，右边「Send」）。
  * 正文用和任务一样的 Tiptap 编辑器（Rei 2026-10-29「任务和日记 editor 要行为一致」）：写法、快捷键、粘贴都一样，
  * 正文里也不收图片（粘贴 / 拖进来的图片拦下，提示「正文里不能放图片」）。
- * - 左边：心情（可选，点一个再发；再点一次取消）、图片、列表（toggleBulletList）、剪贴板（剪贴板里有图片时才出现）。
+ * - 左边：心情（可选，点一个再发；再点一次取消）、图片、剪贴板（剪贴板里有图片时才出现）。
+ *   列表按钮去掉了（Rei 2026-11-09 03:52「日记页 输入框 功能栏 去掉列表按钮」）；正文里打「- 」「1. 」照样变列表（编辑器自带的 Markdown 输入规则）。
  *   标签不做（Rei 2026-10-28「标签不做」），所以没有 # 按钮。
  * - 图片（Rei 2026-10-29「日记的工具栏保留图标，限制只能是图片」）：只收图片，选了先放在编辑器下面的「待发」小图里（能去掉），
  *   发送时跟着这条走，挂成这条的附件（lib/journal-send.ts）。别的文件提示「只能加图片」。
@@ -11,7 +12,7 @@
  */
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { ImagePlus, List, Send, Smile, X } from 'lucide-react';
+import { ImagePlus, Send, Smile, X } from 'lucide-react';
 import { canSendPost, moodLabel, type MoodId } from '@mindough/core';
 import { PopoverPanel, Tip } from '../../ui/primitives';
 import { useUi } from '../../lib/ui';
@@ -143,11 +144,6 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
         <Tip content={tr('添加图片')}>
           <RacButton className="jcomposer-tool" aria-label={tr('添加图片')} onPress={() => file.current?.click()}>
             <ImagePlus size={18} />
-          </RacButton>
-        </Tip>
-        <Tip content={tr('列表')}>
-          <RacButton className="jcomposer-tool" aria-label={tr('列表')} onPress={() => editor.current?.editor.chain().focus().toggleBulletList().run()}>
-            <List size={18} />
           </RacButton>
         </Tip>
         <ClipboardButton className="jcomposer-tool" imagesOnly onFiles={addImages} />

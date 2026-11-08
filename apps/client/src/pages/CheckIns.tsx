@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { ListBox, ListBoxItem, Menu, MenuItem, MenuTrigger, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
-import { Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Flame, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -27,6 +27,7 @@ import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
 import { MakeupButton } from '../components/MakeupButton';
 import { PageHeader } from '../components/PageHeader';
+import { HoverTip } from '../ui/HoverTip';
 import { titleOf } from '../lib/view';
 
 import { tr, trc } from '../lib/i18n';
@@ -121,7 +122,7 @@ export function CheckInsPage() {
     const heatId = `habit-heat-${t.id}`;
     return (
       <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, store.categoriesOfTask(t)[0]?.color ?? color, '--ci-color')} {...bindMenu(t.id)}>
-        {/* 左上角圆点：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
+        {/* 左上角活动图标：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
         <TipButton
           tip={open ? tr('隐藏活动图') : tr('显示活动图')}
           isExpanded={open}
@@ -129,7 +130,8 @@ export function CheckInsPage() {
           className={`habit-heat-dot${open ? ' is-on' : ''}`}
           onPress={() => set('habitHeatmapOpen', toggleHeatmapOpen(settings.habitHeatmapOpen, t.id))}
         >
-          <span className="habit-heat-dot-mark" style={color ? ({ '--heat-color-local': color } as CSSProperties) : undefined} aria-hidden />
+          {/* 圆点换成 activity 图标（Rei 2026-11-09 03:46「打卡左上角的"显示活动图"小圆点换成activity」）：收起是淡灰，展开是打卡颜色 */}
+          <Activity size={15} className="habit-heat-dot-mark" style={color ? ({ '--heat-color-local': color } as CSSProperties) : undefined} aria-hidden />
         </TipButton>
         <RacButton
           className="habit-main"
@@ -144,10 +146,18 @@ export function CheckInsPage() {
             {arrange !== 'category' && catOf(t) && <CategoryLabels cats={store.categoriesOfTask(t)} size={12} />}
             {describeRecurrence(parseRecurrence(t.recurrence), { lunar: lunarUi, today })}
             {s && (
-              <span className="habit-streak">
-                <Flame size={12} className={s.current > 0 ? 'flame-on' : ''} />
-                {tr('连续 {current} · 最长 {best}', { current: s.current, best: s.best })}
-              </span>
+              // 只放图标 + 数字（Rei 2026-11-09 03:43「连续用grip-horizontal。连续和最长(图标用ellipsis)的文字都不显示」）；
+              // 「连续 N 天」「最长 N 天」在悬停提示和读屏名里
+              <>
+                <HoverTip className="habit-streak" tip={tr('连续 {current} 天', { current: s.current })}>
+                  <GripHorizontal size={12} className={s.current > 0 ? 'streak-on' : ''} aria-hidden />
+                  {s.current}
+                </HoverTip>
+                <HoverTip className="habit-streak" tip={tr('最长 {best} 天', { best: s.best })}>
+                  <Ellipsis size={12} aria-hidden />
+                  {s.best}
+                </HoverTip>
+              </>
             )}
           </span>
         </RacButton>

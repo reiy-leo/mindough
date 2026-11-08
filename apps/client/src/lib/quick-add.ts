@@ -11,7 +11,7 @@ import { plainTitleMarkdown } from '@mindough/core';
 import type { LayoutKind } from '../skin/platform';
 
 export interface QuickAddDeps {
-  createTask: (input: { body_md: string }) => { id: string };
+  createTask: (input: { body_md: string; scheduled_date?: string }) => { id: string };
   addToMyDay: (taskId: string, date: string) => void;
   openEditor: (taskId: string | null) => void;
 }
@@ -27,15 +27,28 @@ export function quickAdd(deps: { create: (text: string) => string; openEditor: (
 }
 
 /** 我的一天：建任务、放进今天、打开详情。空白不建，返回 null。 */
-export function quickAddToday(deps: QuickAddDeps, text: string, today: string): string | null {
-  return quickAdd({ create: (body) => createToday(deps, body, today), openEditor: deps.openEditor }, text);
+export function quickAddToday(deps: QuickAddDeps, text: string, today: string, opts: { dateToday?: boolean } = {}): string | null {
+  return quickAdd({ create: (body) => createToday(deps, body, today, opts), openEditor: deps.openEditor }, text);
 }
 
-/** 我的一天的 create：建任务并放进今天。 */
-export function createToday(deps: Pick<QuickAddDeps, 'createTask' | 'addToMyDay'>, body: string, today: string): string {
-  const t = deps.createTask({ body_md: body });
+/**
+ * 我的一天的 create：建任务并放进今天。
+ * dateToday（设置 → 任务 → 我的一天「默认日期：今天」，Rei 2026-11-09）：日期也填今天。
+ * 这时 Store.createTask 自己会把它放进今天（joinMyDayOnToday），下面的 addToMyDay 找到同一行直接返回，不会多一行。
+ */
+export function createToday(deps: Pick<QuickAddDeps, 'createTask' | 'addToMyDay'>, body: string, today: string, opts: { dateToday?: boolean } = {}): string {
+  const t = deps.createTask({ body_md: body, ...todayDefaults(!!opts.dateToday, today) });
   deps.addToMyDay(t.id, today);
   return t.id;
+}
+
+/**
+ * 「默认日期：今天」（Rei 2026-11-09）的新建默认值：开着就带上今天的日期，关着什么都不加。
+ * 我的一天（设置 → 任务，本机）和项目（group.default_date_today，同步）共用：添加框、按 N 打开的新建面板都走它。
+ * 日期是今天的任务 Store.createTask 会自己放进今天的我的一天（joinMyDayOnToday），行 id 由任务 + 日期算，后面再 addToMyDay / 自动加都是同一行。
+ */
+export function todayDefaults(on: boolean, today: string): { scheduled_date?: string } {
+  return on ? { scheduled_date: today } : {};
 }
 
 let scrollToken = 0;

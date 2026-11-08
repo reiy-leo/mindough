@@ -140,6 +140,18 @@
   background: transparent;
   color: var(--text-2);
 }
+/* 色块去掉以后图标撑满整块（Rei 2026-11-09 03:48「色彩-素净模式中，项目的图标非常小」）：
+ * 原来图标只占块的 58–68%，没了底色就只剩半个侧栏图标大；撑满后和侧栏其它 Lucide 图标一样大（Lucide 自带 2/24 留白） */
+:root[data-color-level='plain'] .icon-tile > svg {
+  width: var(--tile-size);
+  height: var(--tile-size);
+}
+/* emoji 的尺寸写在行内 style 里，要 !important 才盖得过 */
+:root[data-color-level='plain'] .icon-tile > .emoji-icon {
+  width: var(--tile-size) !important;
+  height: var(--tile-size) !important;
+  font-size: calc(var(--tile-size) * 0.92) !important;
+}
 :root[data-color-level='plain'] .nav-item.is-active .icon-tile {
   color: var(--nav-active-icon);
 }
@@ -172,8 +184,8 @@
 :root[data-color-level='plain'] .art:not(.has-image) {
   filter: grayscale(1);
 }
-/* 写死颜色的小图标：我的一天的太阳、连续打卡的火苗、调色板「加」 */
-:root[data-color-level='plain'] :is(.myday-btn.is-on, .flame-on, .palette-add.is-on) {
+/* 写死颜色的小图标：我的一天的太阳、连续打卡的图标、调色板「加」 */
+:root[data-color-level='plain'] :is(.myday-btn.is-on, .streak-on, .palette-add.is-on) {
   color: var(--text);
 }
 /* 开关：Apple 原来开 = 绿 */

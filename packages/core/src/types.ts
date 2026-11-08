@@ -243,6 +243,12 @@ export interface Group extends BaseRow {
    * v17 加的列，老客户端写来的行没有这个字段，读的时候当成空。
    */
   archived_at?: Timestamp | null;
+  /**
+   * 「默认日期：今天」（Rei 2026-11-09 03:52「项目编辑、新建弹窗中，添加"默认日期：今天" switch，on 则新建任务自动添加目标日期今天」）：
+   * 开着时在项目页添加框、项目页按 N 新建的任务，日期填今天。默认关。v20 加的列；老客户端写来的行没有这个字段，读的时候当成关
+   * （老客户端改了这个项目会把它带丢，回到关；和 my_day_auto、color 一样的 LWW 限制）。
+   */
+  default_date_today?: boolean;
 }
 
 /**

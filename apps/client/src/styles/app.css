@@ -1137,6 +1137,36 @@ span.drag-handle.is-pin {
 .add-bar-sticky > .add-bar:last-child {
   margin-bottom: var(--space-3);
 }
+/* 我的一天：添加框上面的大号日期 + 右边排序 / 分区（Rei 2026-11-09 03:48）。日期字号跟各皮肤的页标题（.page-title），
+   农历小字跟在日期后面；按钮靠右、和日期垂直居中；太窄时农历折到下一行，按钮不被挤走 */
+.myday-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-1) var(--space-3);
+}
+.myday-head-text {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: var(--space-2);
+  row-gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.myday-date {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.myday-lunar {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.myday-head .list-tools {
+  margin-block: 0;
+}
 /* 列表上方的小字：原来页头副标题里的日期、件数（Rei 2026-10-26 去掉中间列页头后挪到这里） */
 .list-meta {
   display: flex;
@@ -1571,7 +1601,7 @@ span.drag-handle.is-pin {
   row-gap: var(--space-2);
   padding: var(--space-3) var(--space-4) var(--space-3) var(--space-2);
 }
-/* 左上角圆点：展开 / 收起这张卡片的活动图（Rei 2026-10-25）。收起是空心淡圈，展开是实心（打卡颜色） */
+/* 左上角 activity 图标：展开 / 收起这张卡片的活动图（Rei 2026-10-25；03:46 起圆点换成图标）。收起是灰色，展开是打卡颜色 */
 .habit-heat-dot {
   align-self: start;
   display: grid;
@@ -1593,19 +1623,14 @@ span.drag-handle.is-pin {
   box-shadow: 0 0 0 2px var(--accent);
 }
 .habit-heat-dot-mark {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--text-2) 55%, transparent);
-  background: transparent;
-  transition: background-color 0.15s, border-color 0.15s;
+  color: var(--text-2);
+  transition: color 0.15s;
 }
 .habit-heat-dot[data-hovered] .habit-heat-dot-mark {
-  border-color: var(--text-2);
+  color: var(--text);
 }
 .habit-heat-dot.is-on .habit-heat-dot-mark {
-  border-color: var(--heat-color-local, var(--heat-color));
-  background: var(--heat-color-local, var(--heat-color));
+  color: var(--heat-color-local, var(--heat-color));
 }
 /* 展开的活动图：卡片里单独一整行，撑满宽度 */
 .habit-heat {
@@ -1662,7 +1687,7 @@ span.drag-handle.is-pin {
   color: var(--text-2);
   flex-wrap: wrap;
 }
-.flame-on {
+.streak-on {
   color: #ff6b2c;
 }
 .habit-action {
@@ -1686,17 +1711,20 @@ span.drag-handle.is-pin {
     display: none;
   }
 }
-/* 桌面上中间一列很窄时（右列打开、中等宽度），打卡按钮挪到第二行，别压住标题 */
-[data-layout='desktop'] .habit-list {
+/* 打卡进度和补打卡都在右边（Rei 2026-11-09 03:43「打卡进度和补打卡图标都放在右侧。如果宽度窄，则上下结构」）：
+ * 列表宽的时候并排；列表窄（手机，或桌面右列打开、中等宽度，≤ 520px）时上下叠，补打卡在上、进度在下，靠右对齐 */
+.habit-list {
   container: habits / inline-size;
 }
 @container habits (max-width: 520px) {
   .habit-row {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .habit-action {
-    grid-column: 2 / -1;
-    justify-content: flex-start;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
     min-width: 0;
   }
 }
@@ -1707,6 +1735,16 @@ span.drag-handle.is-pin {
 }
 [data-layout='mobile'] .habit-action {
   min-width: 0;
+}
+/* 我的一天等列表里的打卡行：补打卡 + 打卡进度。宽屏不多包一层（和原来一样并排），手机上下叠、靠右 */
+.row-checkin {
+  display: contents;
+}
+[data-layout='mobile'] .row-checkin:has(> :nth-child(2)) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 .countdown-grid {
   display: grid;

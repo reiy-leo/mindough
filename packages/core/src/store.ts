@@ -442,6 +442,8 @@ export class Store {
       if (c.table === 'group' && (row as Group).color === undefined) (row as Group).color = null;
       // 老客户端写来的项目没有归档时间（v17）：当成没归档
       if (c.table === 'group' && (row as Group).archived_at === undefined) (row as Group).archived_at = null;
+      // 老客户端写来的项目没有「默认日期：今天」（v20）：当成关
+      if (c.table === 'group' && typeof (row as Group).default_date_today !== 'boolean') (row as Group).default_date_today = false;
       table.set(row.id, row);
       applied.push({ table: c.table, row } as Change);
     }
@@ -479,6 +481,8 @@ export class Store {
       (row as Group).color = normalizeIconColor((row as Group).color);
       // 归档时间（v17）同理：不传就是没归档
       (row as Group).archived_at = (row as Group).archived_at ?? null;
+      // 「默认日期：今天」（v20）同理：不传就是关
+      (row as Group).default_date_today = (row as Group).default_date_today === true;
     }
     this.write([{ table, row }]);
     return this.tables[table].get(row.id)!;
@@ -1381,7 +1385,7 @@ export class Store {
    * 改项目的名字 / 图标。名字去掉首尾空白，改成空的不算（留原名）；图标传选择器的值（emoji 或 lucide 名，见 group.ts）。
    * 没变就不写（不进 outbox）。
    */
-  updateGroup(id: string, patch: { name?: string; icon?: string; my_day_auto?: boolean; color?: string | null }): Group | undefined {
+  updateGroup(id: string, patch: { name?: string; icon?: string; my_day_auto?: boolean; color?: string | null; default_date_today?: boolean }): Group | undefined {
     const g = this.get('group', id);
     if (!g) return undefined;
     const next: Partial<Group> = {};
@@ -1394,6 +1398,7 @@ export class Store {
       if (icon !== g.icon) next.icon = icon;
     }
     if (patch.my_day_auto !== undefined && patch.my_day_auto !== groupAutoMyDay(g)) next.my_day_auto = patch.my_day_auto;
+    if (patch.default_date_today !== undefined && patch.default_date_today !== (g.default_date_today === true)) next.default_date_today = patch.default_date_today;
     if (patch.color !== undefined) {
       // 认不出来的颜色当成空（= 默认色）
       const color = normalizeIconColor(patch.color);

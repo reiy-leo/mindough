@@ -50,11 +50,6 @@ export function MyDayPage() {
     set('myDaySuggestions', false);
     ui.toast({ message: tr('建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。'), actions: [{ label: tr('撤销'), onPress: () => set('myDaySuggestions', true) }] }, 6000);
   };
-  // 关闭的算结束（沉底）但不算成就：不计入“已完成 x/y”
-  const closedCount = items.filter((i) => i.task.status === '关闭').length;
-  const counted = items.length - closedCount;
-  const doneCount = items.filter((i) => i.done && i.task.status !== '关闭').length;
-
   // 分两段（Rei 2026-11-08）：未完成在上、已完成在下；各段自己拖动排序，勾上就挪到已完成段
   const { open, done } = myDaySections(items);
   const doneOpen = settings.myDayDoneOpen !== false;
@@ -76,20 +71,22 @@ export function MyDayPage() {
 
   return (
     <div className="page">
-      {/* 中间列不放页头（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）：最上面就是添加框，
-          日期和完成数挪到列表上方的小字 */}
+      {/* 中间列不放页头（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）。
+          日期和排序 / 分区挪到添加框上面（Rei 2026-11-09 03:48「把输入框下面的日期（去掉进度），排序和分区按钮，移动到上面，日期放大」）：
+          日期用页标题的字号（各皮肤的 .page-title），不再显示完成数；这一行和添加框一起固定在顶上 */}
       <QuickAddBar
         placeholder={tr('今天要做什么？按回车添加')}
         label={tr('添加任务到今天')}
-        create={(body) => createToday(store, body, today)}
-        meta={
-          <div className="list-meta">
-            <h1 className="sr-only">{tr('我的一天')}</h1>
-            <span className="list-meta-text">
-              {`${formatDateZh(today)} · ${items.length ? (closedCount ? tr('{doneCount}/{counted} 已完成 · {closed} 个已关闭', { doneCount, counted, closed: closedCount }) : tr('{doneCount}/{counted} 已完成', { doneCount, counted })) : tr('还没有安排')}`}
-              <LunarLine date={today} className="page-subtitle-lunar" />
-            </span>
-            {/* 右边：排序、分区（Rei 2026-11-08） */}
+        create={(body) => createToday(store, body, today, { dateToday: settings.myDayDefaultToday })}
+        head={
+          <div className="myday-head">
+            <div className="myday-head-text">
+              <h1 className="page-title myday-date">
+                <span className="sr-only">{tr('我的一天')} · </span>
+                {formatDateZh(today)}
+              </h1>
+              <LunarLine date={today} className="myday-lunar" />
+            </div>
             <span className="list-tools">
               <DaySortMenu value={view.sort} onChange={(sort) => setView({ sort })} />
               <SectionMenu value={view.section as SectionBy} options={MYDAY_SECTIONS} onChange={(section) => setView({ section })} />

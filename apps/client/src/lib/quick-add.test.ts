@@ -4,7 +4,7 @@
  * 建好、进今天（待安排 / 可做页进待安排）、选中；空白不建；连着加以最后一件为准；手机收起键盘，宽屏光标留在添加框；新行滚进视野。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { afterQuickAdd, quickAdd, quickAddToday, type QuickAddDeps } from './quick-add';
+import { afterQuickAdd, quickAdd, quickAddToday, todayDefaults, type QuickAddDeps } from './quick-add';
 
 function deps() {
   let n = 0;
@@ -14,7 +14,7 @@ function deps() {
     opened: [],
     createTask: (i) => {
       const id = `t${++n}`;
-      log.push(`create ${id} ${i.body_md}`);
+      log.push(`create ${id} ${i.body_md}${i.scheduled_date ? ` @${i.scheduled_date}` : ''}`);
       return { id };
     },
     addToMyDay: (id, date) => log.push(`myday ${id} ${date}`),
@@ -31,6 +31,17 @@ describe('quickAddToday', () => {
     const d = deps();
     expect(quickAddToday(d, '  买牛奶  ', '2026-10-26')).toBe('t1');
     expect(d.log).toEqual(['create t1 买牛奶', 'myday t1 2026-10-26', 'open t1']);
+  });
+
+  it('「默认日期：今天」开着：日期填今天，照样放进今天一次（Rei 2026-11-09）', () => {
+    const d = deps();
+    expect(quickAddToday(d, '买牛奶', '2026-11-09', { dateToday: true })).toBe('t1');
+    expect(d.log).toEqual(['create t1 买牛奶 @2026-11-09', 'myday t1 2026-11-09', 'open t1']);
+  });
+
+  it('todayDefaults：开着带今天，关着什么都不加', () => {
+    expect(todayDefaults(true, '2026-11-09')).toEqual({ scheduled_date: '2026-11-09' });
+    expect(todayDefaults(false, '2026-11-09')).toEqual({});
   });
 
   it('空白不建也不打开', () => {

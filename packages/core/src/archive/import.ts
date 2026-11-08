@@ -439,6 +439,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       my_day_auto: p.fm.my_day !== false,
       color: normalizeIconColor(p.fm.color),
       archived_at: iso(p.fm.archived) ?? null,
+      default_date_today: p.fm.default_date_today === true,
     });
     folderGroup.set(dir, id);
     archiveGroups.add(id);

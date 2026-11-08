@@ -46,7 +46,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   dependency: { pred_id: 'text', succ_id: 'text', type: 'text', lag: 'int' },
-  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool', color: 'text?', archived_at: 'text?' },
+  group: { name: 'text', icon: 'text', start_at: 'text?', end_at: 'text?', category_id: 'text?', default_type_id: 'text?', my_day_auto: 'bool', color: 'text?', archived_at: 'text?', default_date_today: 'bool' },
   category: { name: 'text', color: 'text', icon: 'text', builtin: 'bool', hidden: 'bool', sort: 'real', merged_into: 'text?' },
   task_type: {
     name: 'text',
@@ -360,6 +360,14 @@ ALTER TABLE "task" ADD COLUMN "pinned_at" TEXT;
     name: '任务心情（task.mood）',
     sql: `
 ALTER TABLE "task" ADD COLUMN "mood" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-09：项目的「默认日期：今天」（group.default_date_today）。老行是 0（关）。
+    version: 20,
+    name: '项目的「默认日期：今天」（group.default_date_today）',
+    sql: `
+ALTER TABLE "group" ADD COLUMN "default_date_today" INTEGER NOT NULL DEFAULT 0;
 `,
   },
 ];

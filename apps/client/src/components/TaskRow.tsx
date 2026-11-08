@@ -299,9 +299,14 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         </span>
       </RacButton>
       <AvatarStack store={store} people={v.people.filter((p) => !(v.mediaIsAvatar && v.data.person === p.id))} />
-      {/* 补打卡（Rei 2026-11-09 01:52）：能补的时候在打卡控件前面出一个按钮（勾选完成的重复打卡也出），在我的一天里是按下的样子 */}
-      {!!rec && showCheckIn && <MakeupButton store={store} task={task} />}
-      {isCheckInRow && showCheckIn && <CheckInControl store={store} task={task} compact />}
+      {/* 补打卡（Rei 2026-11-09 01:52）：能补的时候在打卡控件前面出一个按钮（勾选完成的重复打卡也出），在我的一天里是按下的样子。
+          两个包在一起（Rei 2026-11-09 03:43「打卡进度和补打卡图标都放在右侧。如果宽度窄，则上下结构」）：宽屏照旧并排，手机上下叠 */}
+      {showCheckIn && (!!rec || isCheckInRow) && (
+        <span className="row-checkin">
+          {!!rec && <MakeupButton store={store} task={task} />}
+          {isCheckInRow && <CheckInControl store={store} task={task} compact />}
+        </span>
+      )}
       {trailing}
       {showMyDay && (
         <RacButton

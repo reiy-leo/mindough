@@ -17,7 +17,6 @@ import { JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from 
 import { formatRemindTime } from '../components/task/RemindPanel';
 import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPermission, setRemindersEnabled, type NotifyPermission } from '../lib/reminders';
 import { PageHeader } from '../components/PageHeader';
-import { TypeManager } from '../components/TypeManager';
 import { LunarSection } from '../components/LunarSettings';
 import { normalizeColorLevel, useSettings, type Settings } from '../lib/settings';
 import { suggestionsOn } from '../lib/myday-suggest';
@@ -25,6 +24,7 @@ import { PLATFORM_LABEL, SKIN_LABEL, skinForPlatform } from '../skin/platform';
 import { storageInfo, useNow, useStore } from '../store/StoreProvider';
 
 import { appName, getLocale, LOCALE_NAMES, LOCALES, tr, trc } from '../lib/i18n';
+import { THIRD_PARTY } from '../lib/third-party';
 import tmdbLogo from '../assets/tmdb-logo.svg';
 import { versionLabel } from '../lib/version';
 import { useLocalePref } from '../lib/locale';
@@ -40,7 +40,7 @@ import type { LocalePref } from '../lib/i18n';
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
- * - 任务：类型、我的一天（显示建议）、日期显示、农历
+ * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示、农历（资料库入口 2026-11-09 删了，从侧栏「管理」进）
  * - 日记：一天从几点开始、每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
  * 桌面 app（Tauri）里设置是单独的窗口（SettingsWindow，?window=settings）；Web 和手机是页面：
@@ -53,7 +53,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
-  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('资料库、我的一天、日期显示、农历') : tr('资料库、我的一天、日期显示')) },
+  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('我的一天、严格模式、日期显示、农历') : tr('我的一天、严格模式、日期显示')) },
   { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('一天从几点开始、每天提醒写日记') },
   { id: 'about', icon: Info, label: () => tr('关于'), hint: () => tr('版本、数据来源') },
 ];
@@ -89,7 +89,6 @@ function SectionBody({ id }: { id: SettingsSection }) {
     case 'tasks':
       return (
         <>
-          <TypesSection />
           <MyDaySection />
           <StrictSection />
           <DateDisplaySection />
@@ -461,6 +460,7 @@ function DataSection() {
 
 /**
  * 我的一天（Rei 2026-11-01「我的一天中的建议，可以toggle on/off」）：「显示建议」开关，默认开，只存在这台设备上。
+ * 「默认日期：今天」（Rei 2026-11-09）：我的一天里新建的任务日期填今天，默认关，也只存本机。
  * 我的一天里建议那段标题右边「…」→「隐藏建议」关的也是它。
  */
 function MyDaySection() {
@@ -474,6 +474,14 @@ function MyDaySection() {
             <div className="setting-hint">{tr('在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。')}</div>
           </div>
           <Switch label={tr('显示建议')} isSelected={suggestionsOn(settings)} onChange={(v) => set('myDaySuggestions', v)} />
+        </div>
+        {/* Rei 2026-11-09 03:49「添加"默认日期：今天" switch，on 则我的一天中新建任务自动添加目标日期今天」：默认关，只存本机 */}
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('默认日期：今天')}</div>
+            <div className="setting-hint">{tr('在我的一天里新建的任务，日期自动填今天。只在这台设备上生效。')}</div>
+          </div>
+          <Switch label={tr('默认日期：今天')} isSelected={settings.myDayDefaultToday} onChange={(v) => set('myDayDefaultToday', v)} />
         </div>
       </div>
     </Section>
@@ -542,31 +550,6 @@ function DateDisplaySection() {
           </div>
         </div>
       </div>
-    </Section>
-  );
-}
-
-/** 类型：影视、书籍…与自定义类型。打开类型编辑器（和资料库页标签条末尾的「编辑」是同一个）。 */
-function TypesSection() {
-  const store = useStore();
-  const [open, setOpen] = useState(false);
-  const types = store.editableTypes();
-  const archived = store.archivedTypes().length;
-  return (
-    <Section title={trc('资料库编辑器', '资料库')}>
-      <div className="card settings-card">
-        <div className="setting">
-          <div className="setting-text">
-            <div className="setting-name">{tr('全部资料库')}</div>
-            <div className="setting-hint">
-              {archived ? tr('{n} 个，另有 {h} 个已归档。改字段、图标、版式，或新建自己的资料库。', { n: types.length, h: archived }) : tr('{n} 个。改字段、图标、版式，或新建自己的资料库。', { n: types.length })}
-            </div>
-          </div>
-          <Button variant="secondary" onPress={() => setOpen(true)}>
-            {tr('编辑资料库')}</Button>
-        </div>
-      </div>
-      <TypeManager isOpen={open} onOpenChange={setOpen} />
     </Section>
   );
 }
@@ -671,6 +654,21 @@ function AboutSection() {
             {tr('游戏资料来自 IGDB.com')}
           </a>
         </p>
+        {/* 开源组件（Rei 2026-11-09 04:02「关于中写上tauri，以及其他的三方库」）：默认收起；列表在 lib/third-party.ts，测试核对和依赖文件一致 */}
+        <details className="about-oss">
+          <summary>{tr('开源组件')}</summary>
+          <p className="about-credit-text">{tr('桌面和手机 app 用 Tauri 打包。还用到这些开源库，感谢作者们：')}</p>
+          <ul className="about-oss-list">
+            {THIRD_PARTY.map((e) => (
+              <li key={e.name}>
+                <a href={e.url} target="_blank" rel="noopener noreferrer">
+                  {e.name}
+                </a>
+                <span className="about-oss-license">{e.license}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
     </section>
   );

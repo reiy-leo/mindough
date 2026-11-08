@@ -434,6 +434,8 @@ function groupFront(g: Group, store: Store): Record<string, unknown> {
     color: g.color || undefined,
     // 归档了才写归档时间（Rei 2026-11-05）
     archived: g.archived_at ?? undefined,
+    // 「默认日期：今天」只在开着时写（默认关）
+    default_date_today: g.default_date_today === true ? true : undefined,
   };
 }
 
