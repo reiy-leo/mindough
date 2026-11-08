@@ -6,6 +6,11 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 已完成页（Rei 2026-11-08，待母语者看）──
+  "导航|已完成": "Completadas",
+  "还没有做完的任务": "Aún no hay tareas completadas",
+  "做完或关闭的任务会按时间排在这里。": "Las tareas que completes o cierres aparecen aquí, las más recientes primero.",
+  "更早": "Antes",
   // ── 我的一天分两段（Rei 2026-11-08，待母语者看）──
   "今天做完的任务": "Tareas hechas hoy",
   // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──

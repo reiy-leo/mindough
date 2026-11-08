@@ -29,6 +29,8 @@ export type Route =
   | { page: 'settings'; section?: SettingsSection }
   /** 类型（统一的分类，Rei 2026-10-26）：#/types，#/types/<id> 看挂了它的任务和项目。 */
   | { page: 'types'; id?: string }
+  /** 已完成（Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」）：完成和关闭的任务，按结束时间从新到旧。#/done，别名 #/completed。 */
+  | { page: 'done' }
   | { page: 'more' };
 
 /** hash 里 ? 之前的路径部分（?task= 等参数不算路由）。 */
@@ -70,6 +72,9 @@ export function parseHash(hash: string): Route {
     case 'types':
     case 'categories':
       return b ? { page: 'types', id: decodeURIComponent(b) } : { page: 'types' };
+    case 'done':
+    case 'completed':
+      return { page: 'done' };
     case 'more':
       return { page: 'more' };
     default:

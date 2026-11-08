@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarCheck2, CalendarClock, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
 import { visibleDayEntries } from './lib/project-archive';
 import { openSettingsWindow } from './lib/windows';
@@ -27,6 +27,7 @@ import { COUNTDOWN_DEFAULTS, CountdownsPage } from './pages/Countdowns';
 import { SettingsPage } from './pages/Settings';
 import { JournalPage } from './pages/Journal';
 import { CategoriesPage } from './pages/Categories';
+import { DonePage } from './pages/Done';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
 import { WIDE_MIN } from './lib/detail-pane';
@@ -69,6 +70,7 @@ interface NavItem {
  * 今天（要动手的）· 计划（怎么安排）· 持续（天天记、慢慢攒的）· 管理（资料库、放进侧边栏的库、类型）；设置固定在底部。手机标签栏按同样的顺序，其余放进「更多」并分同样的组。
  * 「管理」（Rei 2026-10-26 18:02「主窗口侧边栏的“资料”section，更改成“管理”，任务入口删掉，添加一个“类型”入口」）：原来叫「资料」；
  *   小节 id 还是 library（本机记的收起状态不丢）。小节里本来没有「任务」入口，只加了「类型」。
+ * 「已完成」（Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」）：排在「类型」下面，完成和关闭的任务按结束时间列出（pages/Done.tsx）。
  * 「人物」入口删掉（Rei 2026-10-26 18:54「侧边栏的：管理-人物入口删掉」）：人物页、#/people、深链、⌘K 都照旧，从资料库标签条「人物」进。
  * 放进侧边栏的库（Rei 2026-10-26 18:55「资料库中，任何一个资料库都可以“在侧边栏显示”，“取消在侧边栏显示”」）：
  *   排在「资料库」下面，按资料库顺序；存同步偏好（core LIBRARY_SIDEBAR_PREF），所以这一节由 navSections(store) 现算。
@@ -114,6 +116,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { page: 'library', get label() { return tr('资料库'); }, icon: Library, match: ['library', 'libitem', 'people', 'person'] },
       { page: 'types', get label() { return trc('分类', '类型'); }, icon: Tags, match: ['types'] },
+      { page: 'done', get label() { return trc('导航', '已完成'); }, icon: CircleCheck, match: ['done'] },
     ],
   },
 ];
@@ -122,6 +125,7 @@ const LIBRARY_ITEM = NAV.find((n) => n.page === 'library')!;
 const AGENDA_ITEM = NAV.find((n) => n.page === 'agenda')!;
 const GROUPS_ITEM = NAV.find((n) => n.page === 'groups')!;
 const TYPES_ITEM = NAV.find((n) => n.page === 'types')!;
+const DONE_ITEM = NAV.find((n) => n.page === 'done')!;
 
 /** 侧边栏各节；「计划」一节带上放进侧边栏的项目（lib/nav.ts planEntries），「管理」一节带上放进侧边栏的库（manageEntries）。 */
 function navSections(store: Store): NavSection[] {
@@ -152,6 +156,7 @@ function navSections(store: Store): NavSection[] {
     const items = manageEntries(pinned).map((e): NavItem => {
       if (e.kind === 'library') return { ...LIBRARY_ITEM, activeFor: (r) => activeLibraryEntry(r, pinnedIds) === 'library' };
       if (e.kind === 'types') return TYPES_ITEM;
+      if (e.kind === 'done') return DONE_ITEM;
       const t = pinned.find((x) => x.id === e.typeId)!;
       const to = libraryRoute(t.id);
       return {
@@ -171,7 +176,7 @@ function navSections(store: Store): NavSection[] {
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
 const MOBILE_TABS: Route['page'][] = ['myday', 'backlog', 'checkin', 'agenda'];
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。 */
-const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown'];
+const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown', 'done'];
 /** 中间列不放页头、最上面是添加框的页面（Rei 2026-10-26）：手机上标题显示在顶栏。 */
 const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable'];
 const COLLAPSED_KEY = 'mindough:nav_collapsed';
@@ -327,6 +332,8 @@ function Page({ route }: { route: Route }) {
       return <SettingsPage {...(route.section ? { section: route.section } : {})} />;
     case 'types':
       return <CategoriesPage {...(route.id ? { id: route.id } : {})} />;
+    case 'done':
+      return <DonePage />;
     case 'more':
       return <MorePage />;
   }
@@ -411,7 +418,7 @@ function newTaskDefaults(route: Route) {
 }
 
 /** 不显示滚动条（还能滚）的页面：任务列表（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）；侧栏总是不显示。编辑器、日记、设置等照旧。 */
-const HIDE_SCROLLBAR_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'group'];
+const HIDE_SCROLLBAR_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'group', 'done'];
 
 export function App() {
   const route = useRoute();

@@ -38,6 +38,9 @@ const VIEWS: Record<string, Route> = {
   people: { page: 'people' },
   // 类型（Rei 2026-10-26 侧栏「管理 → 类型」）；categories 是别名
   types: { page: 'types' },
+  // 已完成（Rei 2026-11-08 侧栏「管理 → 已完成」）；completed 是别名
+  done: { page: 'done' },
+  completed: { page: 'done' },
   categories: { page: 'types' },
   settings: { page: 'settings' },
 };

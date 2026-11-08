@@ -3990,7 +3990,7 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 
 /* 侧栏和任务列表不显示滚动条，照样能滚（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）。
    Firefox / 新 Chromium 认 scrollbar-width，WebKit（macOS / iOS App）、WebView2、安卓 WebView 认 ::-webkit-scrollbar；两样都写。
-   任务列表的页面由 App 在 .main 上标 data-hide-scrollbar（我的一天、待安排、积压、时间轴、项目页），macOS 无标题栏时滚的是 .main-scroll。 */
+   任务列表的页面由 App 在 .main 上标 data-hide-scrollbar（我的一天、待安排、积压、时间轴、项目页、已完成），macOS 无标题栏时滚的是 .main-scroll。 */
 .sidebar,
 .sidebar .nav,
 .main[data-hide-scrollbar],

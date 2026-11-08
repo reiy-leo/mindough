@@ -42,10 +42,13 @@ export function activeLibraryEntry(route: Route, pinnedIds: readonly string[]): 
   return id && pinnedIds.includes(id) ? id : 'library';
 }
 
-/** 「管理」一节的入口，按顺序：资料库、放进侧边栏的库（按资料库顺序，调用方传 store.sidebarLibraries()）、类型。没有「人物」。 */
-export type ManageEntry = { kind: 'library' } | { kind: 'pinned'; typeId: string } | { kind: 'types' };
+/**
+ * 「管理」一节的入口，按顺序：资料库、放进侧边栏的库（按资料库顺序，调用方传 store.sidebarLibraries()）、类型、已完成。没有「人物」。
+ * 「已完成」Rei 2026-11-08 加（「侧边栏 管理 添加一个"已完成"入口」），排在最后。
+ */
+export type ManageEntry = { kind: 'library' } | { kind: 'pinned'; typeId: string } | { kind: 'types' } | { kind: 'done' };
 export function manageEntries(pinned: ReadonlyArray<{ id: string }>): ManageEntry[] {
-  return [{ kind: 'library' }, ...pinned.map((t) => ({ kind: 'pinned' as const, typeId: t.id })), { kind: 'types' }];
+  return [{ kind: 'library' }, ...pinned.map((t) => ({ kind: 'pinned' as const, typeId: t.id })), { kind: 'types' }, { kind: 'done' }];
 }
 
 // ───────────── 「计划」一节里的项目（Rei 2026-10-28） ─────────────

@@ -14,6 +14,7 @@ export * from './count';
 export * from './heatmap';
 export * from './myday';
 export * from './backlog';
+export * from './done-list';
 export * from './reminders';
 export * from './timezone';
 export * from './preview';

@@ -4,14 +4,24 @@ import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, mana
 import { href, parseHash } from './router';
 
 describe('侧边栏「管理」一节（Rei 2026-10-26）', () => {
-  it('没有「人物」入口：资料库、放进侧边栏的库、类型', () => {
-    expect(manageEntries([])).toEqual([{ kind: 'library' }, { kind: 'types' }]);
+  it('没有「人物」入口：资料库、放进侧边栏的库、类型、已完成', () => {
+    expect(manageEntries([])).toEqual([{ kind: 'library' }, { kind: 'types' }, { kind: 'done' }]);
     expect(manageEntries([{ id: T.movie }, { id: T.person }])).toEqual([
       { kind: 'library' },
       { kind: 'pinned', typeId: T.movie },
       { kind: 'pinned', typeId: T.person },
       { kind: 'types' },
+      { kind: 'done' },
     ]);
+  });
+
+  it('「已完成」入口（Rei 2026-11-08）：#/done，别名 #/completed，带 ?task= 还是这页', () => {
+    expect(parseHash('#/done')).toEqual({ page: 'done' });
+    expect(parseHash('#/completed')).toEqual({ page: 'done' });
+    expect(parseHash('#/done?task=t1')).toEqual({ page: 'done' });
+    expect(href({ page: 'done' })).toBe('#/done');
+    // 「已完成」不算资料库页面，不会让「资料库」亮
+    expect(activeLibraryEntry({ page: 'done' }, [])).toBeNull();
   });
 
   it('人物页照旧能打开：#/people、#/people/<id> 路由还在', () => {

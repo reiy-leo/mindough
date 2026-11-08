@@ -12,6 +12,11 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 已完成页（Rei 2026-11-08）──
+  "导航|已完成": "Completed",
+  "还没有做完的任务": "Nothing completed yet",
+  "做完或关闭的任务会按时间排在这里。": "Tasks you complete or close show up here, newest first.",
+  "更早": "Earlier",
   // ── 我的一天分两段（Rei 2026-11-08）──
   "今天做完的任务": "Tasks done today",
   // ── 日记的心情河流（Rei 2026-11-05）──

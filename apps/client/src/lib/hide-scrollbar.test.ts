@@ -17,10 +17,10 @@ describe('滚动条不显示', () => {
     expect(css).toMatch(/\.main\[data-hide-scrollbar\] \.main-scroll \{\s*scrollbar-width: none;/);
     expect(css).toMatch(/::-webkit-scrollbar \{\s*display: none;/);
   });
-  it('只给任务列表：我的一天、待安排、积压、时间轴、项目页；日记、设置不在里面', () => {
+  it('只给任务列表：我的一天、待安排、积压、时间轴、项目页、已完成；日记、设置不在里面', () => {
     const app = read('../App.tsx');
     const pages = /HIDE_SCROLLBAR_PAGES: Route\['page'\]\[\] = \[([^\]]+)\]/.exec(app)?.[1] ?? '';
-    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group']);
+    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done']);
     expect(app.match(/data-hide-scrollbar=/g)?.length).toBe(2);
   });
 });
