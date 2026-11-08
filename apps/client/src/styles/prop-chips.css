@@ -181,6 +181,17 @@
 .icon-btn.mood-quick[data-hovered] {
   color: var(--text-2);
 }
+/* 有心情：按钮带这个心情色的淡底（Rei 2026-11-08 23:49「心情颜色应用到任务」）。按钮行内 color = var(--mood-<id>)，
+   小脸本身也是这个色；底色按皮肤：Apple 14%（和强调色的软底一样轻）、WinUI 10%（Fluent 的 subtle 填充）、Material 18%（tonal） */
+.icon-btn.mood-quick.is-set {
+  --mood-tint: 14%;
+  background: color-mix(in srgb, currentColor var(--mood-tint), transparent);
+}
+[data-skin='winui'] .icon-btn.mood-quick.is-set { --mood-tint: 10%; }
+[data-skin='material'] .icon-btn.mood-quick.is-set { --mood-tint: 18%; }
+.icon-btn.mood-quick.is-set[data-hovered] {
+  background: color-mix(in srgb, currentColor calc(var(--mood-tint) + 8%), transparent);
+}
 .icon-btn.mood-quick[data-focus-visible] {
   outline: none;
   box-shadow: var(--focus);

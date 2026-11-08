@@ -1,6 +1,6 @@
 /**
  * 详情顶栏的心情按钮（Rei 2026-11-08 23:44「任务详情 顶部工具栏添加一个心情按钮，点击后可以换心情」）。
- * 放在日期按钮右边、剪贴板按钮左边。没心情时是暗淡的 Lucide SmilePlus，有心情时是那张小脸；
+ * 放在日期按钮右边、剪贴板按钮左边。没心情时是暗淡的 Lucide SmilePlus，有心情时是那张小脸，按钮带一层这个心情色的淡底（23:49）；
  * 点开是共用的 MoodGrid，和属性胶囊里的「心情」是同一份数据（task.mood），选了就换、点已选的那张取消。
  * 只给能有心情的任务（lib/prop-chips canHaveMood：不重复、不是倒数日）；严格模式下锁住的任务灰掉。
  */
@@ -24,6 +24,7 @@ export function MoodQuickButton({ store, task, isDisabled = false }: { store: St
         <RacButton
           ref={ref}
           className={`icon-btn mood-quick${mood ? ' is-set' : ''}`}
+          {...(mood ? { style: { color: `var(--mood-${mood})` } } : {})}
           aria-label={label}
           aria-haspopup="dialog"
           aria-expanded={open}

@@ -41,6 +41,8 @@ export function SectionedList<T extends Task>({
               <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
               <SectionIcon s={s as ListSection<Task>} />
               <span className="section-title">
+                {/* 按心情分区：标题前一个心情色的小圆点，「没有心情」用中性灰（Rei 2026-11-08 23:49） */}
+                {s.kind === 'mood' && <span className={`section-dot mood-dot${s.key === 'none' ? ' is-none' : ` mood-${s.key}`}`} aria-hidden />}
                 {s.label} <span className="count">{s.tasks.length}</span>
               </span>
             </RacButton>

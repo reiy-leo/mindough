@@ -56,6 +56,8 @@ describe('详情顶栏心情按钮', () => {
     render(t.id);
     expect(btn().getAttribute('aria-label')).toMatch(/^心情：/);
     expect(btn().classList.contains('is-set')).toBe(true);
+    // 心情色（Rei 23:49）：按钮的 color 是这个心情的令牌，淡底在 CSS 里按 currentColor 混
+    expect(btn().style.color).toBe('var(--mood-happy)');
     click(btn());
     const sel = document.querySelector('.jmood-opt.is-selected')!;
     click(sel);
