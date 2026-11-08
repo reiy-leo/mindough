@@ -1648,6 +1648,17 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} von {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "{value} von {target} erledigt",
   "撤销今天的打卡": "Heutigen Check-in rückgängig machen",
+  "文本「{name}」": "Text „{name}“",
+  "文本": "Text",
+  "排版": "Formatiert",
+  "表格": "Tabelle",
+  "原文": "Quelltext",
+  "只显示了前 {limit}，整个文件 {size}，下载后能看全部": "Nur die ersten {limit} von {size} werden angezeigt. Zum Lesen der ganzen Datei herunterladen.",
+  "看起来不是 UTF-8 编码，可能显示成乱码，可以下载后用别的应用打开": "Das sieht nicht nach UTF-8 aus und kann unleserlich angezeigt werden. Zum Öffnen in einer anderen App herunterladen.",
+  "（空文件）": "(Leere Datei)",
+  "这个文件不是纯文本，没法预览，可以下载后打开": "Diese Datei ist kein reiner Text und kann nicht in der Vorschau angezeigt werden. Zum Öffnen herunterladen.",
+  "没读出文件内容，可以下载后打开": "Die Datei konnte nicht gelesen werden. Zum Öffnen herunterladen.",
+  "预览「{name}」": "Vorschau von „{name}“",
 };
 
 export const DATA: Record<string, string> = {

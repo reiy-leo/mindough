@@ -1648,6 +1648,17 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} dari {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "{value} dari {target} selesai",
   "撤销今天的打卡": "Batalkan check-in hari ini",
+  "文本「{name}」": "Teks “{name}”",
+  "文本": "Teks",
+  "排版": "Berformat",
+  "表格": "Tabel",
+  "原文": "Sumber",
+  "只显示了前 {limit}，整个文件 {size}，下载后能看全部": "Hanya {limit} pertama dari {size} yang ditampilkan. Unduh untuk melihat seluruh file.",
+  "看起来不是 UTF-8 编码，可能显示成乱码，可以下载后用别的应用打开": "Sepertinya bukan UTF-8 sehingga bisa tampil berantakan. Unduh untuk membukanya di aplikasi lain.",
+  "（空文件）": "(File kosong)",
+  "这个文件不是纯文本，没法预览，可以下载后打开": "File ini bukan teks biasa sehingga tidak bisa dipratinjau. Unduh untuk membukanya.",
+  "没读出文件内容，可以下载后打开": "File tidak dapat dibaca. Unduh untuk membukanya.",
+  "预览「{name}」": "Pratinjau “{name}”",
 };
 
 export const DATA: Record<string, string> = {

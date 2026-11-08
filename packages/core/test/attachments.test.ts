@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { textPreviewFormat } from '../src/attachments';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { SyncEngine } from '../src/sync/engine';
@@ -329,5 +330,29 @@ describe('导出 / 导入', () => {
     expect(stripAttachmentBlock(`abc\n\n\n${ATTACHMENTS_MARKER}\n`)).toBe('abc\n');
     expect(stripAttachmentBlock(`\n\n${ATTACHMENTS_MARKER}\n`)).toBe('');
     expect(stripAttachmentBlock('no block')).toBe('no block');
+  });
+});
+
+describe('textPreviewFormat（纯文本预览，Rei 2026-11-09）', () => {
+  it('按扩展名分出 markdown / csv / tsv / text', () => {
+    expect(textPreviewFormat('笔记.MD', '')).toBe('markdown');
+    expect(textPreviewFormat('a.markdown', 'application/octet-stream')).toBe('markdown');
+    expect(textPreviewFormat('a.csv', 'application/vnd.ms-excel')).toBe('csv');
+    expect(textPreviewFormat('a.tsv', '')).toBe('tsv');
+    for (const n of ['a.txt', 'a.log', 'a.json', 'a.yaml', 'a.xml', 'a.py', 'a.srt', 'x.env']) expect(textPreviewFormat(n, '')).toBe('text');
+  });
+  it('扩展名不认识时看 MIME', () => {
+    expect(textPreviewFormat('README', 'text/plain; charset=utf-8')).toBe('text');
+    expect(textPreviewFormat('notes', 'text/markdown')).toBe('markdown');
+    expect(textPreviewFormat('data', 'text/csv')).toBe('csv');
+    expect(textPreviewFormat('x', 'application/json')).toBe('text');
+    expect(textPreviewFormat('x', 'application/octet-stream')).toBeNull();
+  });
+  it('图片、文档、表格、RTF、ipynb 不当纯文本', () => {
+    expect(textPreviewFormat('a.png', 'text/plain')).toBeNull();
+    expect(textPreviewFormat('a.xlsx', '')).toBeNull();
+    expect(textPreviewFormat('a.rtf', 'text/rtf')).toBeNull();
+    expect(textPreviewFormat('a.ipynb', 'application/json')).toBeNull();
+    expect(textPreviewFormat('a.pdf', 'text/plain')).toBeNull();
   });
 });

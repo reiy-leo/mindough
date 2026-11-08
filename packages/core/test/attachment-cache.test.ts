@@ -90,6 +90,19 @@ describe('过期清理（假时钟）', () => {
 });
 
 describe('图片 / 非图片', () => {
+  it('纯文本开文本预览（.txt / .md / .csv / .log / .json，Rei 2026-11-09）', () => {
+    for (const [n, m] of [
+      ['a.txt', 'text/plain'],
+      ['a.md', ''],
+      ['a.csv', 'text/csv'],
+      ['a.log', 'application/octet-stream'],
+      ['a.json', 'application/json'],
+      ['README', 'text/plain'],
+    ] as const)
+      expect(attachmentPressAction({ file_name: n, mime: m, thumb_key: null })).toBe('text');
+    expect(attachmentPressAction({ file_name: 'a.rtf', mime: 'text/rtf', thumb_key: null })).toBe('download');
+    expect(attachmentPressAction({ file_name: 'a.xlsx', mime: 'text/plain', thumb_key: null })).toBe('download');
+  });
   it('图片开灯箱，其他文件不预览（点一下下载）', () => {
     expect(attachmentPressAction({ file_name: 'a.png', mime: 'image/png', thumb_key: null })).toBe('lightbox');
     expect(attachmentPressAction({ file_name: 'a.heic', mime: 'image/heic', thumb_key: 'k' })).toBe('lightbox');

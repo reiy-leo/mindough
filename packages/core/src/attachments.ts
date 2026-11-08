@@ -63,6 +63,37 @@ export function isViewableImage(a: Pick<Attachment, 'file_name' | 'mime' | 'thum
   return !!a.thumb_key;
 }
 
+/**
+ * 纯文本附件点开能直接看（Rei 2026-11-09「附件是.txt文件，点击可以和图片一样预览」「加上.md、.csv吧」）。
+ * markdown：排好版只读显示（可切回原文）；csv / tsv：简单表格（太大退回原文）；text：原文。不是纯文本给 null（点了照旧下载）。
+ * 认法：先看扩展名；扩展名不认识时 MIME 是 text/*、json、xml、yaml 也算。RTF、ipynb 不算（看原文没意义）。
+ */
+export type TextPreviewFormat = 'text' | 'markdown' | 'csv' | 'tsv';
+const TEXT_EXT: Record<string, TextPreviewFormat> = {};
+'txt text log md markdown csv tsv json jsonl ndjson yaml yml toml xml ini conf cfg env properties srt vtt sql sh bash zsh ps1 bat py rb go rs java kt swift c h cpp hpp cs php js jsx ts tsx mjs cjs css scss less html htm vue svelte lua r dart diff patch gitignore'
+  .split(' ')
+  .forEach((e) => (TEXT_EXT[e] = 'text'));
+TEXT_EXT.md = TEXT_EXT.markdown = 'markdown';
+TEXT_EXT.csv = 'csv';
+TEXT_EXT.tsv = 'tsv';
+/** 扩展名明说不是纯文本的（就算 MIME 写成 text/* 也不预览）。 */
+const NOT_TEXT = new Set(['rtf', 'ipynb', 'pdf', 'doc', 'docx']);
+
+export function textPreviewFormat(name: string, mime: string): TextPreviewFormat | null {
+  const ext = extOf(name);
+  if (NOT_TEXT.has(ext)) return null;
+  const byExt = TEXT_EXT[ext];
+  if (byExt) return byExt;
+  if (EXT[ext]) return null; // 认得的别的类型（图片、表格、压缩包…）
+  const m = (mime || '').toLowerCase().split(';')[0]!.trim();
+  if (m === 'text/markdown' || m === 'text/x-markdown') return 'markdown';
+  if (m === 'text/csv') return 'csv';
+  if (m === 'text/tab-separated-values') return 'tsv';
+  if (m === 'text/rtf') return null;
+  if (m.startsWith('text/') || /^application\/(json|ld\+json|xml|x-yaml|yaml|toml|x-sh|javascript|x-ndjson)$/.test(m)) return 'text';
+  return null;
+}
+
 /** 能在浏览器里生成缩略图的图片（SVG 不用缩，原图就小）。 */
 export function canThumbnail(mime: string): boolean {
   return /^image\/(png|jpeg|gif|webp|avif|bmp|heic|heif)$/i.test(mime);

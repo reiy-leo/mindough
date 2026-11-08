@@ -2,7 +2,8 @@
  * 附件区（Rei 2026-10-17）：日记的正文下面；任务详情里在属性胶囊正下方（bare，Rei 2026-10-25）。
  * - 任务详情（bare）：没有标题、没有「添加附件」按钮，没附件时整块不渲染；加附件走胶囊行「+」菜单的「附件」或拖文件到详情整列
  * - 图片：方形小图网格，点开灯箱（Lightbox：关闭、下载、← → 切换，只翻图片）
- * - 其他文件（PDF、视频、音频、文档…）一律不预览：按类型的图标（FileIcon）+ 文件名 + 大小，点一下下载（保留原文件名）
+ * - 纯文本（.txt、.md、.csv、.log、.json…，Rei 2026-11-09）：和其他文件一样一行（图标 + 文件名 + 大小），点一下开文本预览（TextPreview，同一个深色浮层），右边下载按钮照旧
+ * - 其他文件（PDF、视频、音频、文档…）不预览：按类型的图标（FileIcon）+ 文件名 + 大小，点一下下载（保留原文件名）
  * - 「添加附件」选文件（可多选；手机上能选相册），或把文件拖到整块区域上（useFileDrop + DropOverlay）
  * - 上传中显示进度、可取消；失败可重试；离线 / 没登录排队，说明为什么在等
  * - 每个附件：下载、缓存 / 删除缓存（Rei 2026-10-25，本机副本 24 小时后自动清除）、重命名、删除（提示里可撤销）
@@ -49,6 +50,7 @@ import { checkAttachment, goneState, useGoneState, useGoneVersion, type GoneStat
 import { Button, OverflowMenu, Tip, type MenuAction } from '../../ui/primitives';
 import { FileIcon } from './FileIcon';
 import { Lightbox } from './Lightbox';
+import { TextPreview } from './TextPreview';
 import { tr } from '../../lib/i18n';
 
 export interface AttachmentOwner {
@@ -190,11 +192,13 @@ export function Attachments({ owner, disabled, bare, readOnly = false }: { owner
   const images = list.filter((a) => attachmentPressAction(a) === 'lightbox');
   // 灯箱只翻还在的图片
   const viewable = images.filter((a) => goneState(a) !== 'gone');
-  const files = list.filter((a) => attachmentPressAction(a) === 'download');
+  const files = list.filter((a) => attachmentPressAction(a) !== 'lightbox');
   const online = useOnline();
   const input = useRef<HTMLInputElement>(null);
   const add = useAddFiles(owner);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [reading, setReading] = useState<string | null>(null);
+  const readingAtt = reading ? (list.find((a) => a.id === reading) ?? null) : null;
   const [renaming, setRenaming] = useState<Attachment | null>(null);
 
   const remove = (a: Attachment) => {
@@ -270,7 +274,7 @@ export function Attachments({ owner, disabled, bare, readOnly = false }: { owner
       {files.length > 0 && (
         <ul className="att-files" aria-label={tr('文件')}>
           {files.map((a) => (
-            <FileRow key={a.id} a={a} actions={actions} />
+            <FileRow key={a.id} a={a} actions={actions} onPreview={attachmentPressAction(a) === 'text' ? () => setReading(a.id) : undefined} />
           ))}
         </ul>
       )}
@@ -278,6 +282,12 @@ export function Attachments({ owner, disabled, bare, readOnly = false }: { owner
         images={viewable}
         openId={viewing}
         onClose={() => setViewing(null)}
+        onDownload={(a) => void download(a)}
+        canDownload={(a) => actionStateOf(a, online).download}
+      />
+      <TextPreview
+        attachment={readingAtt}
+        onClose={() => setReading(null)}
         onDownload={(a) => void download(a)}
         canDownload={(a) => actionStateOf(a, online).download}
       />
@@ -537,7 +547,8 @@ function ImageTile({ a, onOpen, actions }: { a: Attachment; onOpen: () => void; 
   );
 }
 
-function FileRow({ a, actions }: { a: Attachment; actions: Actions }) {
+/** onPreview：纯文本，点一下开文本预览（不给就是点一下下载）。 */
+function FileRow({ a, actions, onPreview }: { a: Attachment; actions: Actions; onPreview?: () => void }) {
   const s = useUploadState(a.id);
   const gone = useGoneState(a);
   const status = uploadText(s, a, gone);
@@ -547,18 +558,19 @@ function FileRow({ a, actions }: { a: Attachment; actions: Actions }) {
   const st = actionStateOf(a, actions.online, !!s, gone);
   const menu = useItemMenu(!s);
   const meta: ReactNode = status ? <span className={s?.phase === 'failed' || gone === 'gone' ? 'is-error' : undefined}>{status}</span> : `${fileKindLabel(kind)} · ${formatFileSize(a.size)}`;
-  // 不预览：点一下就是下载；离线又没缓存、云端文件没了时只提示
+  // 纯文本点一下预览，其余点一下下载；离线又没缓存、云端文件没了时只提示
   const press = () => {
     if (menu.consume()) return;
     if (gone === 'gone') actions.goneHint();
     else if (gone) return;
     else if (st.downloadBlocked === 'offline') actions.offlineHint();
+    else if (onPreview) onPreview();
     else void actions.download(a);
   };
   const dlTip = gone === 'gone' ? tr('文件已删除') : st.download ? tr('下载') : tr('离线中，没缓存的附件下载不了');
   return (
     <li className={`att-file${s ? ` is-${s.phase}` : ''}${gone ? ` is-${gone}` : ''}${st.download ? '' : ' is-unavailable'}${menu.open ? ' is-menu-open' : ''}`} {...menu.bind}>
-      <RacButton className="att-file-btn" aria-label={tr('下载「{name}」', { name: a.file_name })} onPress={press}>
+      <RacButton className="att-file-btn" aria-label={onPreview ? tr('预览「{name}」', { name: a.file_name }) : tr('下载「{name}」', { name: a.file_name })} onPress={press}>
         <FileIcon name={a.file_name} mime={a.mime} kind={kind} size={36} />
         <span className="att-file-text">
           <span className="att-file-name">{a.file_name}</span>

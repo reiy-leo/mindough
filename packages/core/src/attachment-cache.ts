@@ -4,7 +4,7 @@
  * 每个附件能做哪些操作（下载 / 缓存 / 删除缓存 / 重命名 / 删除）、点一下做什么（图片开灯箱，其他文件不预览）。
  * 文件本身存在哪由客户端决定（Web：Cache Storage；Tauri：app 缓存目录）。
  */
-import { isViewableImage } from './attachments';
+import { isViewableImage, textPreviewFormat } from './attachments';
 import type { Attachment } from './types';
 
 /** 缓存的附件留多久：24 小时。 */
@@ -100,10 +100,14 @@ export function cacheHoursLeft(r: Pick<AttachmentCacheRecord, 'cached_at'>, now:
   return Math.max(1, Math.ceil(left / 3_600_000));
 }
 
-/** 点一下附件做什么：图片开灯箱看大图；其他文件（PDF、视频、音频、文档…）一律不预览，点一下就是下载。 */
-export type AttachmentPressAction = 'lightbox' | 'download';
+/**
+ * 点一下附件做什么：图片开灯箱看大图；纯文本（.txt、.md、.csv、.log、.json…，Rei 2026-11-09）开文本预览，
+ * 用同一个深色浮层；其他文件（PDF、视频、音频、文档…）不预览，点一下就是下载。
+ */
+export type AttachmentPressAction = 'lightbox' | 'text' | 'download';
 export function attachmentPressAction(a: Pick<Attachment, 'file_name' | 'mime' | 'thumb_key'>): AttachmentPressAction {
-  return isViewableImage(a) ? 'lightbox' : 'download';
+  if (isViewableImage(a)) return 'lightbox';
+  return textPreviewFormat(a.file_name, a.mime) ? 'text' : 'download';
 }
 
 export interface AttachmentActionContext {
