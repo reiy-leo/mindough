@@ -33,7 +33,7 @@ describe('严格模式', () => {
     expect(() => store.addDependency(done.id, other.id)).toThrow(StrictModeError);
     expect(() => store.addDependency(other.id, done.id)).toThrow(StrictModeError);
     expect(() => store.linkTasks(done.id, other.id)).toThrow(StrictModeError);
-    expect(() => store.checkIn(done.id, 'done')).toThrow(StrictModeError);
+    expect(() => store.checkIn(done.id, 'add')).toThrow(StrictModeError);
     const cat = store.categories()[0]!;
     expect(() => store.addTaskCategory(done.id, cat.id)).toThrow(StrictModeError);
     expect(store.get('task', done.id)).toEqual(before);
@@ -60,7 +60,7 @@ describe('严格模式', () => {
     const fresh = store.createTask({ body_md: '新的' }, { joinMyDay: false });
     expect(() => store.addDependency(other.id, fresh.id)).toThrow(StrictModeError);
     expect(() => store.addDependency(fresh.id, other.id)).toThrow(StrictModeError);
-    expect(() => store.checkIn(other.id, 'done')).toThrow(StrictModeError);
+    expect(() => store.checkIn(other.id, 'add')).toThrow(StrictModeError);
     expect(() => store.addTaskCategory(other.id, store.categories()[0]!.id)).toThrow(StrictModeError);
     expect(store.get('task', other.id)).toEqual(before);
   });
