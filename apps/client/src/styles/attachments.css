@@ -580,6 +580,10 @@ html:not(:lang(zh)) .att-hint {
 }
 
 /* ── 纯文本预览（Rei 2026-11-09，TextPreview.tsx）：灯箱同一个深色底和顶栏，中间一张跟着皮肤和亮暗走的纸 ── */
+.lightbox-overlay.textpv-overlay {
+  /* 比看图深一点：顶栏的字和后面 app 顶栏的图标不叠在一起 */
+  background: rgba(0, 0, 0, 0.94);
+}
 .textpv-stage {
   flex: 1;
   min-height: 0;

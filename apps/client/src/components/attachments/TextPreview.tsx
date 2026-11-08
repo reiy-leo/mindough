@@ -60,7 +60,7 @@ export function TextPreview({
   );
 
   return (
-    <ModalOverlay isOpen={!!a} onOpenChange={(o) => !o && onClose()} isDismissable className="lightbox-overlay">
+    <ModalOverlay isOpen={!!a} onOpenChange={(o) => !o && onClose()} isDismissable className="lightbox-overlay textpv-overlay">
       <Modal className="lightbox-modal">
         <Dialog className="lightbox" aria-label={a ? tr('文本「{name}」', { name: a.file_name }) : tr('文本')}>
           {a && (
