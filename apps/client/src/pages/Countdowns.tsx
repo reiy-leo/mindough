@@ -8,6 +8,7 @@ import { useUi } from '../lib/ui';
 import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, Section, Segmented, Tip, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { CardColorPicker } from '../components/CardColorPicker';
 import { cardColorVars } from '../lib/card-colors';
+import { useColorLevel } from '../lib/color-level';
 import { useSettings } from '../lib/settings';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { PageHeader } from '../components/PageHeader';
@@ -32,6 +33,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
   const store = useStore();
   const ui = useUi();
   const { theme } = useSettings();
+  const colorLevel = useColorLevel();
   const today = toDateKey(useNow());
   const dateMode = useDateDisplay();
   const menu = useContextMenuAt();
@@ -40,7 +42,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
   const type = store.get('task_type', t.type_id);
   const Icon = typeIcon(type?.icon);
   const c = withCat ? store.categoryOf(t) : undefined;
-  const vars = cardColorVars(t, theme);
+  const vars = cardColorVars(t, theme, colorLevel);
   const items: MenuAction[] = [
     { id: 'open', label: tr('查看详情'), icon: <PanelRight size={16} />, onAction: () => ui.openEditor(t.id) },
     { id: 'color', label: tr('颜色…'), icon: <Paintbrush size={16} />, separator: true, onAction: () => window.setTimeout(() => setPicking(true), 0) },

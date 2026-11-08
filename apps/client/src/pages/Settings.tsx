@@ -19,7 +19,7 @@ import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPe
 import { PageHeader } from '../components/PageHeader';
 import { TypeManager } from '../components/TypeManager';
 import { LunarSection } from '../components/LunarSettings';
-import { useSettings, type Settings } from '../lib/settings';
+import { normalizeColorLevel, useSettings, type Settings } from '../lib/settings';
 import { suggestionsOn } from '../lib/myday-suggest';
 import { PLATFORM_LABEL, SKIN_LABEL, skinForPlatform } from '../skin/platform';
 import { storageInfo, useNow, useStore } from '../store/StoreProvider';
@@ -37,7 +37,7 @@ import type { LocalePref } from '../lib/i18n';
  * 设置分成七项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
  * 又说「农历、类型、日记这三个可以放在一个」；同一天又说「这个页面的底部的关于念头团的说明，可以放在一个单独的选项卡：关于」「设置中日记单独一个tab」）：
  * - 账户：登录、同步状态、数据怎么走
- * - 外观：皮肤、语言、明暗、布局、热力图每月 1 号标记
+ * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
  * - 任务：类型、我的一天（显示建议）、日期显示、农历
@@ -50,7 +50,7 @@ type SettingsItem = { id: SettingsSection; icon: LucideIcon; label: () => string
 
 export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'account', icon: CircleUser, label: () => tr('账户'), hint: () => tr('登录与同步') },
-  { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、布局') },
+  { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
   { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('资料库、我的一天、日期显示、农历') : tr('资料库、我的一天、日期显示')) },
@@ -299,7 +299,7 @@ export function SettingsWindow() {
   );
 }
 
-/** 外观：皮肤、语言、明暗、布局、热力图每月 1 号标记（都是本机设置，语言除外：语言跟着账户同步）。 */
+/** 外观：皮肤、语言、明暗、色彩（素净 / 标准 / 多彩）、布局、热力图每月 1 号标记（都是本机设置，语言除外：语言跟着账户同步）。 */
 function AppearanceSection() {
   const { settings, set, platform, skin } = useSettings();
   const [localePref, setLocalePref] = useLocalePref();
@@ -350,6 +350,22 @@ function AppearanceSection() {
             { id: 'system', label: tr('跟随系统') },
             { id: 'light', label: tr('浅色') },
             { id: 'dark', label: tr('深色') },
+          ]}
+        />
+      </div>
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('色彩')}</div>
+          <div className="setting-hint">{tr('素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上')}</div>
+        </div>
+        <Segmented<Settings['colorLevel']>
+          label={tr('色彩')}
+          value={normalizeColorLevel(settings.colorLevel)}
+          onChange={(v) => set('colorLevel', v)}
+          options={[
+            { id: 'plain', label: tr('素净') },
+            { id: 'standard', label: tr('标准') },
+            { id: 'vivid', label: tr('多彩') },
           ]}
         />
       </div>

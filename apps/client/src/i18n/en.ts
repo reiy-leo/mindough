@@ -1326,7 +1326,7 @@ export const EN: Record<string, EnValue> = {
   '设置分区|任务': 'Tasks',
   '设置分区': 'Settings sections',
   '登录与同步': 'Sign-in and sync',
-  '皮肤、语言、明暗、布局': 'Skin, language, theme, layout',
+  "皮肤、语言、明暗、色彩、布局": "Skin, language, theme, color, layout",
   "导入导出、本机存储": "Import, export, storage",
   "版本 {version}": "Version {version}",
   "已复制版本号": "Version copied",
@@ -1399,4 +1399,9 @@ export const EN: Record<string, EnValue> = {
   "这个类型下没有归档的打卡": "No archived check-ins in this category",
   "没有归档的打卡": "No archived check-ins",
   "还没有打卡": "No check-ins yet",
+  "色彩": "Color",
+  "素净": "Plain",
+  "标准": "Standard",
+  "多彩": "Vivid",
+  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Plain uses only black, white and gray; Vivid spreads project and type colors further. This device only",
 };

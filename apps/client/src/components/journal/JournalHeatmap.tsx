@@ -16,14 +16,15 @@ export interface DayInfo {
 
 /** 从皮肤令牌读出 12 个心情色和主色（换皮肤、明暗时重新读）。 */
 function usePalette(el: HTMLElement | null) {
-  const { skin, theme } = useSettings();
+  const { skin, theme, settings } = useSettings();
+  const colorLevel = settings.colorLevel;
   const [palette, setPalette] = useState<{ moods: Record<string, string>; neutral: string } | null>(null);
   useLayoutEffect(() => {
     const cs = getComputedStyle(el ?? document.documentElement);
     const moods: Record<string, string> = {};
     for (const id of MOOD_IDS) moods[id] = cs.getPropertyValue(`--mood-${id}`).trim();
     setPalette({ moods, neutral: cs.getPropertyValue('--accent').trim() || '#888888' });
-  }, [el, skin, theme]);
+  }, [el, skin, theme, colorLevel]);
   return palette;
 }
 

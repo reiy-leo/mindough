@@ -1625,7 +1625,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "设置分区|任务": "Tarefas",
   "设置分区": "Seções de ajustes",
   "登录与同步": "Login e sincronização",
-  "皮肤、语言、明暗、布局": "Visual, idioma, tema, layout",
+  "皮肤、语言、明暗、色彩、布局": "Visual, idioma, tema, cor, layout",
   "导入导出、本机存储": "Importar, exportar, armazenamento",
   "版本 {version}": "Versão {version}",
   "已复制版本号": "Versão copiada",
@@ -1673,6 +1673,11 @@ export const MESSAGES: Record<string, MessageValue> = {
   "这个类型下没有归档的打卡": "Nenhum hábito arquivado neste tipo",
   "没有归档的打卡": "Nenhum hábito arquivado",
   "还没有打卡": "Ainda não há hábitos",
+  "色彩": "Cor",
+  "素净": "Sóbrio",
+  "标准": "Padrão",
+  "多彩": "Vivo",
+  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Sóbrio usa só preto, branco e cinza; Vivo espalha mais as cores de projetos e tipos. Só neste dispositivo",
 };
 
 export const DATA: Record<string, string> = {

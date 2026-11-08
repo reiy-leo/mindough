@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Archive, ArchiveRestore, CalendarRange, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
-import { formatDateZh, isFinished, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
+import { formatDateZh, isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Tip, useContextMenuAt } from '../ui/primitives';
@@ -20,6 +20,7 @@ import { SectionMenu, SortMenu, ViewMenu } from '../components/project/ProjectMe
 import { SectionedList } from '../components/SectionedList';
 import { sectionTasks } from '../lib/sections';
 import { useSettings } from '../lib/settings';
+import { useColorLevel } from '../lib/color-level';
 import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
@@ -171,14 +172,17 @@ export function GroupDetailPage({ id }: { id: string }) {
 
 /**
  * 手机上项目页的底色用项目图标的颜色，淡一点（Rei 2026-11-08 23:40「移动端的项目 任务列表背景颜色为图标背景颜色，但要淡一点」）。
- * 只在手机布局、项目自己设了颜色（group.color）时；宽屏不变。列表、看板、时间轴、任务链同一页，都跟着变。
+ * 标准档只在手机布局、项目自己设了颜色（group.color）时；宽屏不变。多彩档宽屏也铺，素净档不铺（色彩设置，Rei 2026-11-09）。列表、看板、时间轴、任务链同一页，都跟着变。
  * 颜色挂在外层 .main 上（--project-tint + data-project-tint），混色在 app.css：亮色 10%、暗色 14% 混进皮肤原来的 --bg，
  * 页面里的 --bg 换成混好的颜色，所以固定的页头和添加框（用 var(--bg)）跟底色一样，不露缝。
  */
-function useProjectTint(color: string | null | undefined) {
+function useProjectTint(g: Pick<Group, 'id' | 'color'>) {
   const { layout } = useSettings();
+  const level = useColorLevel();
   const ref = useRef<HTMLDivElement>(null);
-  const tint = layout === 'mobile' && color ? color : null;
+  // 色彩设置（Rei 2026-11-09）：素净不铺；多彩宽屏也铺，没设颜色的项目用它图标的默认色；标准照旧只在手机、项目设了颜色时铺
+  const color = normalizeIconColor(g.color);
+  const tint = level === 'plain' ? null : level === 'vivid' ? groupColor(g) : layout === 'mobile' && color ? color : null;
   useLayoutEffect(() => {
     const main = ref.current?.closest<HTMLElement>('.main');
     if (!main || !tint) return;
@@ -216,7 +220,7 @@ function GroupDetail({
   const sections = prefs.view === 'list' ? sectionTasks(open, prefs.section, { now: store.now(), today: toDateKey(store.now()), weekStart: weekStartsOn() }) : null;
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
-  const pageRef = useProjectTint(normalizeIconColor(g.color));
+  const pageRef = useProjectTint(g);
   return (
     <div ref={pageRef} className={`page project-page is-${prefs.view}`}>
       {/* 页头、归档提示、添加框一起固定在顶上，只有下面的任务滚（Rei 2026-11-08） */}

@@ -30,9 +30,12 @@ export function cardColorStyle(color: CardColor, theme: ChipTheme): CardColorSty
   return { bg: toHex(bg), fg: toHex(fg), fg2: toHex(fg2), border: toHex(border) };
 }
 
-/** 卡片上要挂的 CSS 变量；默认颜色返回 undefined（照原来的样子）。 */
-export function cardColorVars(task: { card_color?: string | null }, theme: ChipTheme): CSSProperties | undefined {
-  const c = cardColorOf(task);
+/**
+ * 卡片上要挂的 CSS 变量；默认颜色返回 undefined（照原来的样子）。
+ * 素净档（色彩设置，Rei 2026-11-09）不管选了什么颜色，卡片都是同一种浅灰（core 的 gray）。
+ */
+export function cardColorVars(task: { card_color?: string | null }, theme: ChipTheme, level: 'plain' | 'standard' | 'vivid' = 'standard'): CSSProperties | undefined {
+  const c = level === 'plain' ? 'gray' : cardColorOf(task);
   if (!c) return undefined;
   const s = cardColorStyle(c, theme);
   return { '--cd-bg': s.bg, '--cd-fg': s.fg, '--cd-fg2': s.fg2, '--cd-border': s.border } as CSSProperties;

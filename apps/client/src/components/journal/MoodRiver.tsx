@@ -70,10 +70,13 @@ interface Palette {
   bg: string;
   text: string;
   moods: Record<string, string>;
+  /** 素净档（色彩设置）：空状态那股也不带紫 */
+  plain?: boolean;
 }
 
 function usePalette(host: HTMLElement | null): Palette | null {
-  const { skin, theme } = useSettings();
+  const { skin, theme, settings } = useSettings();
+  const colorLevel = settings.colorLevel;
   const [p, setP] = useState<Palette | null>(null);
   useLayoutEffect(() => {
     if (!host) return;
@@ -85,8 +88,8 @@ function usePalette(host: HTMLElement | null): Palette | null {
     const text = toHex(read(v('--text'), dark ? [242, 242, 247] : [28, 28, 30]));
     const moods: Record<string, string> = {};
     for (const name of Object.keys(MOOD_FALLBACK)) moods[name] = toHex(read(v(`--mood-${name}`), MOOD_FALLBACK[name]!));
-    setP({ dark, bg, text, moods });
-  }, [host, skin, theme]);
+    setP({ dark, bg, text, moods, plain: document.documentElement.dataset.colorLevel === 'plain' });
+  }, [host, skin, theme, colorLevel]);
   return p;
 }
 const MOOD_FALLBACK: Record<string, Rgb> = {
@@ -111,7 +114,7 @@ const MOOD_FALLBACK: Record<string, Rgb> = {
 function laneColors(p: Palette, lanes: ReadonlyArray<MoodId | null>, focus: MoodId | null, empty: boolean): Rgb[] {
   if (empty) {
     const ts = p.dark ? [0.74, 0.8, 0.72, 0.78, 0.76] : [0.88, 0.92, 0.89, 0.9, 0.91];
-    return ts.map((t, i) => fromHex(mixOklabTo(i === 2 ? mixOklabTo(p.text, '#8f7fe0', 0.5) : p.text, p.bg, t, i === 2 ? 0.5 : 1)));
+    return ts.map((t, i) => fromHex(mixOklabTo(i === 2 && !p.plain ? mixOklabTo(p.text, '#8f7fe0', 0.5) : p.text, p.bg, t, i === 2 ? 0.5 : 1)));
   }
   return lanes.map((m) => {
     const base = m ? (p.moods[m] ?? p.text) : mixOklabTo(p.text, p.bg, 0.55);

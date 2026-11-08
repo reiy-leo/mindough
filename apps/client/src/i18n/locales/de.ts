@@ -1625,7 +1625,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "设置分区|任务": "Aufgaben",
   "设置分区": "Einstellungsbereiche",
   "登录与同步": "Anmeldung und Synchronisierung",
-  "皮肤、语言、明暗、布局": "Design, Sprache, Hell/Dunkel, Layout",
+  "皮肤、语言、明暗、色彩、布局": "Design, Sprache, Hell/Dunkel, Farbe, Layout",
   "导入导出、本机存储": "Import, Export, Speicher",
   "版本 {version}": "Version {version}",
   "已复制版本号": "Version kopiert",
@@ -1673,6 +1673,11 @@ export const MESSAGES: Record<string, MessageValue> = {
   "这个类型下没有归档的打卡": "Keine archivierten Gewohnheiten in dieser Kategorie",
   "没有归档的打卡": "Keine archivierten Gewohnheiten",
   "还没有打卡": "Noch keine Gewohnheiten",
+  "色彩": "Farbe",
+  "素净": "Schlicht",
+  "标准": "Standard",
+  "多彩": "Bunt",
+  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Schlicht nutzt nur Schwarz, Weiß und Grau; Bunt zeigt Projekt- und Typfarben großflächiger. Nur auf diesem Gerät",
 };
 
 export const DATA: Record<string, string> = {

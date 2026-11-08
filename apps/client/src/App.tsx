@@ -20,6 +20,7 @@ import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough
 import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries } from './lib/nav';
 import { typeIcon } from './lib/icons';
 import { librarySidebarAction } from './lib/library-sidebar';
+import { useColorLevel, useDetailTint, vividVar } from './lib/color-level';
 import { GroupIcon } from './components/project/GroupIcon';
 import { useProjectActions } from './components/project/ProjectActions';
 import { DoablePage } from './pages/Doable';
@@ -280,6 +281,8 @@ function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean })
   const Icon = item.icon;
   const t = item.libraryId ? store.get('task_type', item.libraryId) : null;
   const action = t ? librarySidebarAction(store, t) : null;
+  // 多彩档（色彩设置，Rei 2026-11-09）：置顶的资料库图标用类型颜色
+  const colorLevel = useColorLevel();
   return (
     <>
       <a
@@ -292,7 +295,7 @@ function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean })
         aria-current={active ? 'page' : undefined}
         title={item.label}
       >
-        <span className="nav-icon">
+        <span className="nav-icon" style={vividVar(colorLevel, t?.color)}>
           <Icon size={18} />
         </span>
         <span className="nav-label">{item.label}</span>
@@ -423,6 +426,8 @@ export function App() {
   useEffect(() => void sweepBlankTasks(store, ui.editingId), [store, ui.editingId]);
   // 严格模式（Rei 2026-11-08）：开关告诉 Store；漏网的写入被拦时给提示
   useStrictSync(store);
+  // 多彩档（色彩设置，Rei 2026-11-09）：详情栏顶部的项目 / 类型淡色
+  useDetailTint(store, ui.editingId);
   useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
   const { setDidaImportOpen } = ui;
   const { layout, platform, settings } = useSettings();

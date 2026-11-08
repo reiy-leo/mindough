@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, t
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
 import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
-import { categoryIcon, checkInMode, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
+import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useUi } from '../lib/ui';
 import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
@@ -22,6 +22,8 @@ import { ItemArt, layoutShape } from './library/Library';
 
 import { dataLabel, tr } from '../lib/i18n';
 import { GroupIcon } from './project/GroupIcon';
+import { useColorLevel, vividText, vividVar } from '../lib/color-level';
+import { useSettings } from '../lib/settings';
 export interface TaskRowProps {
   store: Store;
   task: Task;
@@ -110,6 +112,10 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const relatedCount = store.relatedTasks(task.id).length;
   // 三列布局：右列正在显示这件
   const selected = ui.editingId === task.id;
+  // 色彩设置（Rei 2026-11-09）：多彩档第二行的项目名、类型名用各自颜色（调到能读），打卡进度环用打卡类型的颜色
+  const colorLevel = useColorLevel();
+  const { theme } = useSettings();
+  const typeTint = (c: string | null | undefined) => vividText(colorLevel, c, theme) ?? c ?? undefined;
 
   // 行的长按菜单（手机）：查看详情 ｜ 加入 / 移出我的一天、置顶。
   // 右键不再开菜单（Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）：onContextMenu 只 preventDefault，也不落回浏览器 / 系统菜单。
@@ -159,6 +165,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       ref={rowRef}
       className={`task-row ${STATE_CLASS[state ?? ''] ? `row-${STATE_CLASS[state!]}` : ''}${done ? ' is-done' : ''}${closed ? ' is-closed' : ''}${selected ? ' is-selected' : ''}`}
       data-task-id={task.id}
+      style={isCheckInRow ? vividVar(colorLevel, v.type?.color, '--ci-color') : undefined}
       onContextMenu={onContextMenu}
       // 捕获阶段：行里的按钮（React Aria usePress）会拦住冒泡的 pointerdown
       onPointerDownCapture={onPointerDown}
@@ -209,7 +216,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         <span className="row-meta">
           {/* 类型（Rei 2026-10-28 能挂多个）：克制地写「游戏 +2」——第一个类型，其余类型和资料合成 +N，悬停看全部 */}
           {cats.length > 0 && (
-            <span className="meta-type meta-refs" style={{ color: cats[0]?.color ?? v.type?.color }}>
+            <span className="meta-type meta-refs" style={{ color: typeTint(cats[0]?.color ?? v.type?.color) }}>
               <CategoryIcon size={12} />
               {dataLabel(cats[0]!.name)}
               {more > 0 && (
@@ -220,7 +227,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
             </span>
           )}
           {!cats.length && v.type && v.type.layout !== 'text' && (
-            <span className="meta-type" style={{ color: v.type.color }}>
+            <span className="meta-type" style={{ color: typeTint(v.type.color) }}>
               <TypeIcon size={12} />
               {dataLabel(v.type.name)}
               {more > 0 && (
@@ -231,7 +238,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
             </span>
           )}
           {showGroup && v.group && (
-            <span className="meta-group">
+            <span className="meta-group" style={colorLevel === 'vivid' ? { color: vividText(colorLevel, groupColor(v.group), theme) } : undefined}>
               <GroupIcon group={v.group} size={14} /> {v.group.name}
             </span>
           )}

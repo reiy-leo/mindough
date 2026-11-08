@@ -1625,7 +1625,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "设置分区|任务": "Tugas",
   "设置分区": "Bagian pengaturan",
   "登录与同步": "Masuk dan sinkronisasi",
-  "皮肤、语言、明暗、布局": "Skin, bahasa, tema, tata letak",
+  "皮肤、语言、明暗、色彩、布局": "Skin, bahasa, tema, warna, tata letak",
   "导入导出、本机存储": "Impor, ekspor, penyimpanan",
   "版本 {version}": "Versi {version}",
   "已复制版本号": "Versi disalin",
@@ -1673,6 +1673,11 @@ export const MESSAGES: Record<string, MessageValue> = {
   "这个类型下没有归档的打卡": "Tidak ada kebiasaan diarsipkan di jenis ini",
   "没有归档的打卡": "Tidak ada kebiasaan diarsipkan",
   "还没有打卡": "Belum ada kebiasaan",
+  "色彩": "Warna",
+  "素净": "Polos",
+  "标准": "Standar",
+  "多彩": "Berwarna",
+  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Polos hanya memakai hitam, putih, dan abu-abu; Berwarna menampilkan warna proyek dan tipe lebih luas. Hanya di perangkat ini",
 };
 
 export const DATA: Record<string, string> = {

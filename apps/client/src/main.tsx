@@ -35,6 +35,7 @@ import './styles/project.css';
 import './styles/multi-type.css';
 import './skin/skins.css';
 import './styles/vibrancy.css';
+import './styles/color-level.css';
 
 // 登录失败回跳带的 ?login_error：先取出并从地址栏去掉，再渲染
 initLoginError();

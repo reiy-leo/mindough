@@ -1,0 +1,240 @@
+/*
+ * 色彩三档（Rei 2026-11-09「设置 → 外观 → 色彩」）：<html data-color-level="plain|standard|vivid">，默认 standard，只存本机。
+ * 标准 = 什么都不改。这个文件放在 skins.css 后面引入，选择器都带 :root，盖得过皮肤里的 [data-skin][data-theme]。
+ *
+ * 素净 plain：只有黑白灰。
+ * - 强调色换中性色：亮色近黑、暗色近白；按钮、选中态、勾选圈、进度环、日期按钮都跟着变灰阶。
+ * - 状态色（完成、可开始、受阻、提醒块、热力图）、心情色都换成深浅不同的灰；过期、删除不用红，用「灰掉一点」的颜色，
+ *   过期的日期再加粗、前面加一个小圆圈感叹号，和普通小字分得开；对比度都按 4.5:1 挑。
+ * - 项目 / 类型图标去掉色块底，只留单色线条；类型胶囊灰底 + 细描边；倒数日卡片统一浅灰（lib/card-colors）；手机项目页不铺淡色（pages/Groups）。
+ * - Material 的中性色本来带一点紫，WinUI 的 Mica 底带一点蓝粉，这一档都换成纯灰。
+ *
+ * 多彩 vivid：项目 / 类型颜色铺开（任务行项目名、类型名在 TaskRow 里算好能读的颜色；这里管分区标题、看板 / 时间轴顶边、
+ * 详情栏顶部淡色、侧栏置顶资料库图标、打卡进度环）。不加行左侧色条（Rei 不喜欢）。
+ */
+
+/* ═════════════════════════════ 素净 ═════════════════════════════ */
+:root[data-color-level='plain'][data-theme='light'] {
+  --accent: #1d1d1f;
+  --accent-hover: #3a3a3c;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(0, 0, 0, 0.07);
+  --accent-soft-text: #1d1d1f;
+  --nav-active-icon: var(--text);
+  /* 过期、删除：灰掉一点，白底上 5:1 */
+  --danger: #6e6e73;
+  --success: #3a3a3c;
+  --warning: #48484a;
+  --state-done: #8e8e93;
+  --state-blocked: #6e6e73;
+  --state-closed: #aeaeb2;
+  --heat-color: #3a3a3c;
+  --plain-switch-on: #1d1d1f;
+  --alert-note: #48484a;
+  --alert-tip: #48484a;
+  --alert-important: #48484a;
+  --alert-warning: #48484a;
+  --alert-caution: #48484a;
+  /* 心情：从深到浅的灰（小脸对白底都 ≥ 3:1），心情河流按这个分股 */
+  --mood-happy: #1d1d1f;
+  --mood-excited: #2c2c2e;
+  --mood-grateful: #3a3a3c;
+  --mood-content: #48484a;
+  --mood-calm: #545458;
+  --mood-okay: #636366;
+  --mood-bored: #6e6e73;
+  --mood-tired: #7a7a7e;
+  --mood-anxious: #5a5a5e;
+  --mood-sad: #838388;
+  --mood-irritated: #3f3f42;
+  --mood-angry: #2a2a2c;
+}
+:root[data-color-level='plain'][data-theme='dark'] {
+  --accent: #ececf0;
+  --accent-hover: #ffffff;
+  --accent-contrast: #1c1c1e;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --accent-soft-text: #f5f5f7;
+  --nav-active-icon: var(--text);
+  --danger: #a1a1a6;
+  --success: #d1d1d6;
+  --warning: #c7c7cc;
+  --state-done: #8e8e93;
+  --state-blocked: #a1a1a6;
+  --state-closed: #636366;
+  --heat-color: #d1d1d6;
+  --plain-switch-on: #98989d;
+  --alert-note: #c7c7cc;
+  --alert-tip: #c7c7cc;
+  --alert-important: #c7c7cc;
+  --alert-warning: #c7c7cc;
+  --alert-caution: #c7c7cc;
+  --mood-happy: #f5f5f7;
+  --mood-excited: #e5e5ea;
+  --mood-grateful: #d1d1d6;
+  --mood-content: #c7c7cc;
+  --mood-calm: #b8b8bd;
+  --mood-okay: #aeaeb2;
+  --mood-bored: #a1a1a6;
+  --mood-tired: #98989d;
+  --mood-anxious: #b0b0b5;
+  --mood-sad: #8e8e93;
+  --mood-irritated: #c0c0c5;
+  --mood-angry: #dcdce0;
+}
+/* 焦点圈：Apple / Material 原来是半透明强调色，换成半透明正文色（WinUI 本来就是黑白双线） */
+:root[data-color-level='plain']:not([data-skin='winui']) {
+  --focus: 0 0 0 3px color-mix(in srgb, var(--text) 32%, transparent);
+}
+/* WinUI：Mica 底的蓝粉渐变不画 */
+:root[data-color-level='plain'][data-skin='winui'] {
+  --bg-image: none;
+}
+/* Material：M3 基线色板的中性色带紫，换成纯灰 */
+:root[data-color-level='plain'][data-skin='material'][data-theme='light'] {
+  --bg: #fcfcfc;
+  --sidebar-bg: #f5f5f5;
+  --surface: #f5f5f5;
+  --surface-2: #f0f0f0;
+  --surface-3: #e8e8e8;
+  --surface-hover: rgba(28, 28, 28, 0.08);
+  --border: #c8c8c8;
+  --border-strong: #767676;
+  --text: #1c1c1c;
+  --text-2: #474747;
+  --text-3: #5e5e5e;
+  --accent-soft: #e4e4e4;
+  --accent-soft-text: #1c1c1c;
+  --nav-active-bg: #e4e4e4;
+  --nav-active-text: #1c1c1c;
+  --nav-active-icon: #1c1c1c;
+  --tabbar-bg: #f0f0f0;
+  --heat-empty: #e5e5e5;
+}
+:root[data-color-level='plain'][data-skin='material'][data-theme='dark'] {
+  --bg: #121212;
+  --sidebar-bg: #1c1c1c;
+  --surface: #1c1c1c;
+  --surface-2: #202020;
+  --surface-3: #2a2a2a;
+  --surface-hover: rgba(230, 230, 230, 0.08);
+  --border: #474747;
+  --border-strong: #8f8f8f;
+  --text: #e6e6e6;
+  --text-2: #c8c8c8;
+  --text-3: #ababab;
+  --accent-soft: #454545;
+  --accent-soft-text: #f0f0f0;
+  --nav-active-bg: #454545;
+  --nav-active-text: #f0f0f0;
+  --nav-active-icon: #f0f0f0;
+  --tabbar-bg: #202020;
+  --heat-empty: #2a2a2a;
+}
+
+/* 项目 / 类型图标：没有色块底，只留单色线条 */
+:root[data-color-level='plain'] .icon-tile {
+  background: transparent;
+  color: var(--text-2);
+}
+:root[data-color-level='plain'] .nav-item.is-active .icon-tile {
+  color: var(--nav-active-icon);
+}
+/* 数据里带颜色的地方（行内 style 写的类型 / 项目色）：一律换中性色。!important 才盖得过行内 style */
+:root[data-color-level='plain'] [style*='--chip-color'] {
+  --chip-color: var(--text-2) !important;
+}
+:root[data-color-level='plain'] [style*='--heat-color-local'] {
+  --heat-color-local: var(--heat-color) !important;
+}
+:root[data-color-level='plain'] [style*='--project-tint'] {
+  --project-tint: var(--text-3) !important;
+}
+:root[data-color-level='plain'] :is(.meta-type, .thumb-icon, .ref-option-lib, .row-lead svg, .meta-group) {
+  color: var(--text-2) !important;
+}
+/* 类型胶囊（筛选条）：灰底 + 细描边，选中用强调色（近黑 / 近白） */
+:root[data-color-level='plain'] .chip-pick.has-tint {
+  --chip-bg: var(--surface-2) !important;
+  --chip-fg: var(--text) !important;
+  --chip-border: var(--border-strong) !important;
+  --chip-sel-bg: var(--accent) !important;
+  --chip-sel-fg: var(--accent-contrast) !important;
+}
+/* 资料没图时按名字生成的彩色渐变占位：去色 */
+:root[data-color-level='plain'] .art:not(.has-image) {
+  filter: grayscale(1);
+}
+/* 写死颜色的小图标：我的一天的太阳、连续打卡的火苗、调色板「加」 */
+:root[data-color-level='plain'] :is(.myday-btn.is-on, .flame-on, .palette-add.is-on) {
+  color: var(--text);
+}
+/* 开关：Apple 原来开 = 绿 */
+:root[data-color-level='plain'][data-skin='apple'] .switch[data-selected] .switch-track {
+  background: var(--plain-switch-on);
+}
+/* Material 提示条：原来带紫 */
+:root[data-color-level='plain'][data-skin='material'] .toast {
+  background: #303030;
+  color: #f2f2f2;
+}
+:root[data-color-level='plain'][data-skin='material'] .toast .toast-action {
+  color: #ffffff;
+}
+:root[data-color-level='plain'][data-skin='material'][data-theme='dark'] .toast {
+  background: #e6e6e6;
+  color: #1c1c1c;
+}
+:root[data-color-level='plain'][data-skin='material'][data-theme='dark'] .toast .toast-action {
+  color: #000000;
+}
+/* 删除按钮（实心）：暗色下底是浅灰，白字不够，换深字 */
+:root[data-color-level='plain'][data-theme='dark'] :is(.btn-danger-solid, .att-tile-status.is-error) {
+  color: #1c1c1e;
+}
+/* 过期：灰掉一点 + 加粗 + 前面一个圆圈感叹号（Lucide circle-alert），和普通小字分得开 */
+:root[data-color-level='plain'] :is(.meta-date.is-overdue, .chain-when.is-overdue) {
+  color: var(--danger);
+  font-weight: 600;
+}
+:root[data-color-level='plain'] :is(.meta-date.is-overdue, .chain-when.is-overdue)::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  width: 11px;
+  height: 11px;
+  margin-inline-end: 2px;
+  vertical-align: -1px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* ═════════════════════════════ 多彩 ═════════════════════════════ */
+/* 侧栏置顶的资料库：图标用类型颜色（App.tsx PinnedLibraryLink 挂 --vivid-color） */
+:root[data-color-level='vivid'] .nav-icon[style*='--vivid-color'] {
+  color: var(--vivid-color);
+}
+/* 分区标题：彩色文字，混 35% 正文色保住对比度（components/SectionedList） */
+:root[data-color-level='vivid'] .section-title.is-tinted {
+  color: color-mix(in srgb, var(--section-tint) 65%, var(--text));
+}
+:root[data-color-level='vivid'] .section-title.is-tinted .count {
+  color: var(--text-3);
+}
+/* 看板卡片、时间轴条的顶边：项目色（项目页 .main 上的 --project-tint，pages/Groups useProjectTint） */
+:root[data-color-level='vivid'] .main[data-project-tint] .board-card {
+  border-top: 3px solid var(--project-tint);
+}
+:root[data-color-level='vivid'] .main[data-project-tint] .tl-bar {
+  box-shadow: inset 0 3px 0 var(--project-tint);
+}
+/* 详情栏顶部一条淡色：项目色，没有项目用类型色（App 用 lib/color-level useDetailTint 挂在 <html> 的 --detail-tint 上） */
+:root[data-color-level='vivid'][style*='--detail-tint'] .pane-detail {
+  background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
+  background-repeat: no-repeat;
+}
+/* 打卡进度环：打卡自己的类型颜色（TaskRow / 打卡页行上挂 --ci-color） */
+:root[data-color-level='vivid'] .ci-ring .ring-fill {
+  stroke: var(--ci-color, var(--accent));
+}

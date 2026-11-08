@@ -18,6 +18,7 @@ import { CategoryLabel, CategoryLabels, NO_CATEGORY, openCategoryPage } from '..
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { Button, Empty, MenuAt, Section, Segmented, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { useColorLevel, vividVar } from '../lib/color-level';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
 import { createBlankTask } from '../lib/blank-task';
@@ -34,6 +35,7 @@ export function CheckInsPage() {
   const store = useStore();
   const ui = useUi();
   const { layout, settings, set } = useSettings();
+  const colorLevel = useColorLevel();
   const now = useNow();
   const today = toDateKey(now);
   const lunarUi = useLunarUi();
@@ -118,7 +120,7 @@ export function CheckInsPage() {
     const open = isHeatmapOpen(settings.habitHeatmapOpen, t.id);
     const heatId = `habit-heat-${t.id}`;
     return (
-      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} {...bindMenu(t.id)}>
+      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, color, '--ci-color')} {...bindMenu(t.id)}>
         {/* 左上角圆点：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
         <TipButton
           tip={open ? tr('隐藏活动图') : tr('显示活动图')}

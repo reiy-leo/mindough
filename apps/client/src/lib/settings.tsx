@@ -52,9 +52,21 @@ export interface Settings {
    * 页名（myday / doable / done）→ { section, sort, collapsed }。只记在本机，不同步（同 projectViews）。读写经 lib/list-views。
    */
   listViews: Record<string, unknown>;
+  /**
+   * 色彩（Rei 2026-11-09「设置 → 外观 → 色彩」）：素净 plain / 标准 standard / 多彩 vivid，默认标准。
+   * 只记在本机，不同步（同严格模式）。挂在 <html data-color-level>，样式在 styles/color-level.css，读经 lib/color-level 的 useColorLevel()。
+   */
+  colorLevel: ColorLevel;
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {} };
+export type ColorLevel = 'plain' | 'standard' | 'vivid';
+export const COLOR_LEVELS: readonly ColorLevel[] = ['plain', 'standard', 'vivid'];
+/** 存的值认不出来（老数据、手改）就当标准。 */
+export function normalizeColorLevel(v: unknown): ColorLevel {
+  return v === 'plain' || v === 'vivid' ? v : 'standard';
+}
+
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {}, colorLevel: 'standard' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {
@@ -76,6 +88,8 @@ function urlOverrides(): Partial<Settings> {
   const dates = p.get('dates');
   if (dates === 'auto' || dates === 'relative' || dates === 'ymd' || dates === 'ymd-tz') out.dateDisplay = dates;
   if (p.get('strict') === '1') out.strictMode = true;
+  const color = p.get('color');
+  if (color === 'plain' || color === 'standard' || color === 'vivid') out.colorLevel = color;
   return out;
 }
 
@@ -161,6 +175,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     el.dataset.platform = platform;
     el.style.colorScheme = theme;
   }, [skin, theme, layout, platform]);
+  // 色彩档位在渲染时直接挂（幂等）：子组件的 useLayoutEffect 读 CSS 变量（心情河流、日记热力图）比这里的 effect 早，得先挂好
+  const colorLevel = normalizeColorLevel(settings.colorLevel);
+  if (document.documentElement.dataset.colorLevel !== colorLevel) document.documentElement.dataset.colorLevel = colorLevel;
   // macOS 桌面端主窗口：没有系统标题栏，侧边栏顶到窗口最上、给红绿灯让位（样式见 skin/skins.css）
   useEffect(() => {
     document.documentElement.classList.toggle(MAC_OVERLAY_CLASS, usesMacOverlayTitlebar(platform, { tauri: isTauri() }));

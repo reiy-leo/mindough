@@ -82,3 +82,19 @@ export function chipColors(color: string | null | undefined, theme: ChipTheme): 
   const selFg = readableInk(c, INK_LIGHT, INK_DARK);
   return { bg: toHex(bg), fg: toHex(fg), border: toHex(border), selBg: toHex(c), selFg: toHex(selFg) };
 }
+
+/**
+ * 把一个颜色当字色用（多彩档：任务行里的项目名、类型名、分区标题，Rei 2026-11-09）：
+ * 和主题底色（BASE）对比不到 4.5:1 就往黑（亮色）或白（暗色）一点点靠，直到够为止。认不出来返回 null。
+ */
+export function readableTint(color: string | null | undefined, theme: ChipTheme): string | null {
+  const c = parseHex(color);
+  if (!c) return null;
+  const base = BASE[theme];
+  const toward: Rgb = theme === 'light' ? BLACK : INK_LIGHT;
+  for (let t = 0; t <= 1; t += 0.05) {
+    const ink = mix(toward, c, t);
+    if (contrastRatio(ink, base) >= AA_TEXT) return toHex(ink);
+  }
+  return toHex(toward);
+}
