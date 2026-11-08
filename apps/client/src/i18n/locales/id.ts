@@ -1641,6 +1641,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Cara tanggal ditampilkan di daftar tugas, detail, pengingat, hitung mundur, rantai tugas, dan linimasa proyek. Hanya disimpan di perangkat ini.",
   "一天从几点开始、每天提醒写日记": "Kapan hari dimulai, pengingat jurnal harian",
   "菜单|设置…": "Pengaturan…",
+  "这次的打卡已经达标了，不能再加": "Target check-in ini sudah tercapai, tidak bisa ditambah lagi",
+  "今天要打的都打完了": "Semua check-in hari ini sudah selesai",
 };
 
 export const DATA: Record<string, string> = {

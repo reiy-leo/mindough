@@ -4,7 +4,7 @@
  */
 import { diffDays, toDateKey } from './dates';
 import { ONCE_PERIOD, isDueOn, parseRecurrence, periodKeyFor, computeStreak, type Streak } from './recurrence';
-import { isFinished, type CheckIn, type CompletionMode, type DateKey, type Task } from './types';
+import { isFinished, type CheckIn, type CheckInKind, type CompletionMode, type DateKey, type Task } from './types';
 
 import { tr } from './i18n';
 export interface Progress {
@@ -122,6 +122,35 @@ export function computeProgress(task: ProgressTask, events: readonly CheckIn[], 
       return { ...base, value: remaining, target: null, ratio: met ? 1 : 0, met };
     }
   }
+}
+
+/**
+ * 这个周期已经达标了还要再记（Rei 2026-11-09 01:05「打卡 计数 完成4/4 居然还能继续加，不应该这样」）。
+ * Store.checkIn 抛它；界面上按钮本来就灰掉，这是兜底（深链接、快捷方式、手输数字）。
+ */
+export class CheckInMetError extends Error {
+  constructor() {
+    super(tr('这次的打卡已经达标了，不能再加'));
+    this.name = 'CheckInMetError';
+  }
+}
+
+/**
+ * 记一条打卡之前先看能不能记、记多少（Rei 2026-11-09）：
+ * - 点一下 / 计数 / 计时：这个周期已经达标，再加量（add 正数）、开始、继续都不行（blocked）。
+ *   减量（手输改小）、撤销照常，计数从 4/4 能退回 3/4。暂停、结束不拦（计时的达标要先结束才算）。
+ * - 计数还没达标：加的量最多加到目标为止（3/4 再 +2 记成 +1，喝水 1800/2000 再 +330 记成 +200）。
+ * - 倒数日不管。
+ */
+export function capCheckIn(mode: CompletionMode, before: Pick<Progress, 'met' | 'value' | 'target'> | null, kind: CheckInKind, amount: number): { blocked: boolean; amount: number } {
+  if (mode === 'countdown' || !before) return { blocked: false, amount };
+  const adding = (kind === 'add' && amount > 0) || kind === 'start' || kind === 'resume';
+  if (before.met && adding) return { blocked: true, amount };
+  if (mode === 'count' && kind === 'add' && amount > 0 && before.target) {
+    const room = before.target - before.value;
+    if (amount > room) return { blocked: false, amount: Math.round(room * 1e9) / 1e9 };
+  }
+  return { blocked: false, amount };
 }
 
 /** 按周期键分组事件。 */

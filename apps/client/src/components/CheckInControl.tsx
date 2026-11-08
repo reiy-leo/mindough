@@ -1,5 +1,5 @@
 import { Check, Pause, Play, Square } from 'lucide-react';
-import { formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
+import { CheckInMetError, formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
 import { CountNumber, CountQuickButtons, useCountAdd } from './CountControls';
 import { Button, ProgressRing } from '../ui/primitives';
 import { useUi } from '../lib/ui';
@@ -19,7 +19,14 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
 
   const record = (kind: Parameters<Store['checkIn']>[1], amount = 0) => {
     const prev = task.status;
-    const r = store.checkIn(task.id, kind, amount, today);
+    let r: ReturnType<Store['checkIn']>;
+    try {
+      r = store.checkIn(task.id, kind, amount, today);
+    } catch (e) {
+      // 达标了不能再加（Rei 2026-11-09）：按钮本来灰掉，别的设备同步过来刚好达标时兜底
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      throw e;
+    }
     if (r.completed) announceComplete(store, ui, r.completed, prev);
     else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: tr('今天的打卡完成了 🎉') }, 2500);
   };
@@ -33,7 +40,7 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
         </Button>
       );
     case 'count':
-      return <CountCheckIn store={store} task={task} today={today} compact={compact} ratio={p.ratio} value={p.value} target={p.target ?? 1} />;
+      return <CountCheckIn store={store} task={task} today={today} compact={compact} ratio={p.ratio} value={p.value} target={p.target ?? 1} met={p.met} />;
     case 'timer': {
       const target = p.target ? ` / ${formatDuration(p.target).replace(/ 00 分$/, '')}` : '';
       return (
@@ -96,7 +103,7 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
 }
 
 /** 计数：进度环、点数字手输、快捷加量（列表行只放第一个快捷按钮）。 */
-function CountCheckIn({ store, task, today, compact, ratio, value, target }: { store: Store; task: Task; today: string; compact?: boolean; ratio: number; value: number; target: number }) {
+function CountCheckIn({ store, task, today, compact, ratio, value, target, met }: { store: Store; task: Task; today: string; compact?: boolean; ratio: number; value: number; target: number; met: boolean }) {
   const add = useCountAdd(store, task, today);
   const unit = task.unit ?? '';
   return (
@@ -109,7 +116,14 @@ function CountCheckIn({ store, task, today, compact, ratio, value, target }: { s
           <span className="ci-unit">{unit}</span>
         </span>
       </CountNumber>
-      <CountQuickButtons task={task} add={add} compact={compact} />
+      {/* 达标了 +1 灰掉，改成「已达标」的勾（Rei 2026-11-09 01:05「完成4/4 居然还能继续加」）；点数字还能改小、详情里能撤销 */}
+      {met ? (
+        <Button variant="tonal" className="ci-btn ci-met" isDisabled aria-label={tr('今天已达标')}>
+          <Check size={16} />
+        </Button>
+      ) : (
+        <CountQuickButtons task={task} add={add} compact={compact} />
+      )}
     </div>
   );
 }

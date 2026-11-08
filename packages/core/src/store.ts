@@ -12,7 +12,7 @@ import { backlogTasks } from './backlog';
 import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
-import { computeProgress, periodKeyForTask, type Progress } from './checkin';
+import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
 import { BUILTIN_TASK_TYPES, BUILTIN_TYPE_IDS, BUILTIN_TYPES_REVISION, PLAIN_TYPE_ID, isBuiltinStamp, withNewBuiltinFields } from './seed/builtin-types';
 import {
@@ -1738,6 +1738,10 @@ export class Store {
     if (!task) throw new Error(tr('任务不存在'));
     const period_key = periodKeyForTask(task, date);
     const before = this.progress(taskId, date);
+    // 达标了不能再加，计数最多加到目标（Rei 2026-11-09，见 checkin.ts capCheckIn）
+    const cap = capCheckIn(task.completion_mode, before, kind, amount);
+    if (cap.blocked) throw new CheckInMetError();
+    amount = cap.amount;
     const event = this.insert('check_in', { task_id: taskId, period_key, kind, amount, at: this.now().toISOString() });
     const progress = this.progress(taskId, date)!;
     let completed: CompleteResult | null = null;

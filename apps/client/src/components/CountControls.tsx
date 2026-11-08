@@ -8,7 +8,7 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Input, TextField } from 'react-aria-components';
 import { Plus, Undo2 } from 'lucide-react';
-import { formatAmount, formatDelta, parseCountInput, quickAmounts, type Store, type Task } from '@mindough/core';
+import { CheckInMetError, formatAmount, formatDelta, parseCountInput, quickAmounts, type Store, type Task } from '@mindough/core';
 import { Button } from '../ui/primitives';
 import { useUi } from '../lib/ui';
 import { announceComplete } from '../lib/actions';
@@ -28,8 +28,19 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
   const ui = useUi();
   return (amount: number, how: 'add' | 'set' = 'add') => {
     if (!amount) return;
+    // 达标了不能再加（Rei 2026-11-09 01:05）：按钮本来就灰掉，手输加量走到这里提示一下；减量照常
+    if (amount > 0 && store.progress(task.id, today)?.met) {
+      ui.toast({ message: tr('这次的打卡已经达标了，不能再加') }, 2500);
+      return;
+    }
     const prev = task.status;
-    const r = store.checkIn(task.id, 'add', amount, today);
+    let r: ReturnType<Store['checkIn']>;
+    try {
+      r = store.checkIn(task.id, 'add', amount, today);
+    } catch (e) {
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      throw e;
+    }
     const undo = () => store.undoCheckIn(r.event.id);
     if (r.completed) {
       announceComplete(store, ui, r.completed, prev, undo);
@@ -49,7 +60,7 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
 }
 
 /** 快捷加量按钮（最多三个）。compact：列表行里只放第一个。 */
-export function CountQuickButtons({ task, add, compact, variant = 'tonal', className = 'ci-btn' }: { task: Task; add: (n: number) => void; compact?: boolean; variant?: 'tonal' | 'primary' | 'secondary'; className?: string }) {
+export function CountQuickButtons({ task, add, compact, variant = 'tonal', className = 'ci-btn', isDisabled = false }: { task: Task; add: (n: number) => void; compact?: boolean; variant?: 'tonal' | 'primary' | 'secondary'; className?: string; /** 这个周期达标了：加量按钮灰掉（Rei 2026-11-09） */ isDisabled?: boolean }) {
   const quick = quickAmounts(task);
   const shown = compact ? quick.slice(0, 1) : quick;
   const unit = task.unit ?? '';
@@ -61,6 +72,7 @@ export function CountQuickButtons({ task, add, compact, variant = 'tonal', class
           variant={i === 0 ? variant : 'secondary'}
           className={`${className} count-quick`}
           onPress={() => add(q)}
+          isDisabled={isDisabled}
           aria-label={unit ? tr('加 {amount} {unit}', { amount: formatAmount(q), unit }) : tr('加 {amount} 次', { amount: formatAmount(q) })}
         >
           {q === 1 && compact ? <Plus size={16} /> : <span className="count-quick-text">{formatDelta(q)}</span>}

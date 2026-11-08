@@ -12,6 +12,7 @@ const count = (n: unknown, one: string, other: string) => `${n} ${pl(n, one, oth
 export const CORE_EN: Record<string, V> = {
   '发出去的日记不能改': 'Sent entries can’t be edited',
   '严格模式下已完成或已关闭的任务不能修改': 'Strict mode is on: completed or closed tasks can’t be changed',
+  '这次的打卡已经达标了，不能再加': 'This check-in has already hit its goal; you can’t add more',
   '周末和小林窝在家：先看片，再一起打游戏': 'A weekend in with Lin: a movie first, then games together',
   // ── 类型（统一的分类，2026-10-26）──
   "类型不能删，可以设成不显示": "Categories can’t be deleted, but you can hide them",

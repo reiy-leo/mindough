@@ -92,7 +92,8 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
       }
       if (isFinished(t.status)) return ui.toast({ message: tr('「{title}」已经结束了', { title }) });
       const before = store.progress(t.id, today);
-      if (t.completion_mode === 'once' && before?.met) return ui.toast({ message: tr('「{title}」今天已经打过卡了', { title }) });
+      // 计数达标了也不再加（Rei 2026-11-09 01:05）
+      if (before?.met) return ui.toast({ message: tr('「{title}」今天已经打过卡了', { title }) });
       const prevStatus = t.status;
       const seen = new Set(store.checkInsOf(t.id).map((c) => c.id));
       const r = store.checkIn(t.id, 'add', t.completion_mode === 'once' ? 1 : a.amount, today);
@@ -104,7 +105,7 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
       const p = r.progress;
       const message =
         t.completion_mode === 'count'
-          ? tr('「{title}」+{amount}，{value}/{target}{unit}', { title, amount: a.amount, value: p.value, target: p.target ?? '', unit: t.unit ?? '' })
+          ? tr('「{title}」+{amount}，{value}/{target}{unit}', { title, amount: r.event.amount, value: p.value, target: p.target ?? '', unit: t.unit ?? '' })
           : r.completed
             ? tr('已完成「{title}」', { title })
             : tr('「{title}」打卡了', { title });

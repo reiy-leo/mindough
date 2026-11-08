@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, CircleCheck, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -92,9 +92,13 @@ export function CheckInsPage() {
   const recurring = byCat(allRecurring);
   const archived = byCat(allArchived);
   const dueNow = recurring.filter((t) => dueToday(t, today));
-  const others = recurring.filter((t) => !dueToday(t, today));
+  // 按今天排（Rei 2026-11-09 01:05「今天打卡完成的放在已打卡section，不是今天的打卡不显示」）：
+  // 今天要打、还没达标的在上；今天达标的进「已打卡」（可折叠，本机记住，默认展开）；今天不用打的不列（「按类型」里还看得到）
+  const dueOpen = dueNow.filter((t) => !store.progress(t.id, today)?.met);
+  const dueMet = dueNow.filter((t) => store.progress(t.id, today)?.met);
+  const doneOpen = settings.checkInsDoneOpen !== false;
   const metToday = dueNow.filter((t) => store.progress(t.id, today)?.met).length;
-  const running = tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running);
+  const running = byCat(tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running));
   const streaks = recurring.map((t) => taskStreak(t, store.checkInsOf(t.id), now)?.current ?? 0);
   const best = Math.max(0, ...streaks);
   const title = (t: Task) => titleOf(store, t);
@@ -240,13 +244,29 @@ export function CheckInsPage() {
       )}
 
       <Section title={<><Flame size={15} /> {tr('今天要打卡')}</>}>
-        {dueNow.length ? <div className="habit-list">{dueNow.filter((t) => !running.includes(t)).map(row)}</div> : <Empty title={tr('今天没有要打卡的')} />}
+        {dueOpen.some((t) => !running.includes(t)) ? (
+          <div className="habit-list">{dueOpen.filter((t) => !running.includes(t)).map(row)}</div>
+        ) : dueNow.length ? (
+          running.length ? null : <Empty title={tr('今天要打的都打完了')} />
+        ) : (
+          <Empty title={tr('今天没有要打卡的')} />
+        )}
       </Section>
 
-      {others.length > 0 && (
-        <Section title={tr('其他打卡')}>
-          <div className="habit-list">{others.map(row)}</div>
-        </Section>
+      {dueMet.length > 0 && (
+        <section className={`section habit-archived habit-done${doneOpen ? ' is-open' : ''}`}>
+          <RacButton className="habit-archived-toggle" aria-expanded={doneOpen} aria-controls="habit-done-list" onPress={() => set('checkInsDoneOpen', !doneOpen)}>
+            <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
+            <CircleCheck size={15} aria-hidden />
+            <span className="section-title">{tr('已打卡')}</span>
+            <span className="muted small">{tr('{length} 项', { length: dueMet.length })}</span>
+          </RacButton>
+          {doneOpen && (
+            <div id="habit-done-list" className="habit-list">
+              {dueMet.map(row)}
+            </div>
+          )}
+        </section>
       )}
         </>
       )}

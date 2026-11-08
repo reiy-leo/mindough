@@ -1619,3 +1619,12 @@ Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本dra
 - **颜色**：图钉用 `--danger`（Apple #ff3b30 / 暗 #ff453a，WinUI #c42b1c / 暗 #ff99a4，Material #b3261e / 暗 #f2b8b5）；插头用 `--success`。
 - **可开始**：第二行状态图标 `LockOpen` → Lucide `Plug`，绿色，提示和读屏仍是「可开始」，没改文案。
 - **测试**：`components/RowLead.test.tsx` 4 项；`ProjectBoard.test.tsx` 的 TaskRow 替身补上 RowLead。
+
+### 打卡达标后不能再加；打卡页分「今天要打卡 / 已打卡」，不列今天不用打的 ✅（2026-11-09）
+Rei 2026-11-09 01:05「打卡 计数 完成4/4 居然还能继续加，不应该这样，今天打卡完成的放在已打卡section，不是今天的打卡不显示。」
+
+- **以前**：计数达标后 +1 照样能点（4/4 → 5/4），Store 不拦；计时达标后「开始」是灰的，点一下的打卡达标后是灰的。
+- **core**：`checkin.ts` 加 `capCheckIn(mode, before, kind, amount)` 和 `CheckInMetError`；`Store.checkIn` 记之前先算：周期已达标时 add 正数 / start / resume 抛错，不写；计数没达标时 add 的量截到目标（浮点按 1e-9 取整）。减量、pause、stop、撤销（undoCheckIn 打墓碑）都不拦；倒数日不管。
+- **界面**：`CheckInControl` 计数达标后不放快捷按钮，换成灰掉的「今天已达标」勾按钮（列表行、我的一天、打卡页同一个组件）；`CountQuickButtons` 加 `isDisabled`，详情底栏和进度弹层传 `progress.met`；`useCountAdd` 达标时加正数直接提示不调 Store；`CheckInControl` / `TaskDetail` 的 record 接住 `CheckInMetError` 提示；`DeepLinks` 计数达标也走「今天已经打过卡了」，提示里的 +N 用实际记下的量。
+- **打卡页**：「按今天」：正在计时 / 今天要打卡（未达标）/ 已打卡（`section.habit-archived.habit-done`，同「已归档」的折叠样式，设置 `checkInsDoneOpen` 本机记住，默认展开）/ 已归档；去掉「其他打卡」。「按类型」不变，照旧列出全部（今天要打的在前），是看今天不用打的打卡的地方；没加新入口。正在计时那段也跟着类型筛选走了（以前不跟）。
+- **测试**：`packages/core/test/checkin-cap.test.ts` 5 项。

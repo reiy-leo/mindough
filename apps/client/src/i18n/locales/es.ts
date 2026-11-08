@@ -1641,6 +1641,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Cómo se muestran las fechas en las listas de tareas, detalles, recordatorios, cuentas atrás, cadenas de tareas y líneas de tiempo de proyectos. Solo se guarda en este dispositivo.",
   "一天从几点开始、每天提醒写日记": "Cuándo empieza el día, recordatorio diario del diario",
   "菜单|设置…": "Ajustes…",
+  "这次的打卡已经达标了，不能再加": "Ya alcanzaste la meta de este registro; no puedes añadir más",
+  "今天要打的都打完了": "Ya completaste todos los registros de hoy",
 };
 
 export const DATA: Record<string, string> = {

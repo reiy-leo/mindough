@@ -30,7 +30,7 @@ import {
   type Task,
   type TaskType,
 } from '@mindough/core';
-import { plainTitleMarkdown, shownFields } from '@mindough/core';
+import { CheckInMetError, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
 import { RefList, RefPicker } from '../library/RefPicker';
@@ -285,7 +285,13 @@ function useActions(store: Store, task: Task, done: () => void) {
   const recurring = !!task.recurrence;
   const record = (kind: Parameters<Store['checkIn']>[1], amount = 0) => {
     const prev = task.status;
-    const r = store.checkIn(task.id, kind, amount, today);
+    let r: ReturnType<Store['checkIn']>;
+    try {
+      r = store.checkIn(task.id, kind, amount, today);
+    } catch (e) {
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      throw e;
+    }
     if (r.completed) {
       announceComplete(store, ui, r.completed, prev);
       done();
@@ -424,7 +430,7 @@ function CompletionPill({ store, task, today, primary, secondary, addCount, coun
             <div className="completion-pop-actions count-pop-actions">
               <CountUndoButton store={store} task={task} today={today} />
               <span className="grow" />
-              <CountQuickButtons task={task} add={addCount} variant="primary" className="btn-sm" />
+              <CountQuickButtons task={task} add={addCount} variant="primary" className="btn-sm" isDisabled={!!store.progress(task.id, today)?.met} />
             </div>
           )}
           {(primary || secondary) && (
@@ -947,7 +953,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
             <>
               <CountUndoButton store={store} task={task} today={today} className="" />
               <span className="grow" />
-              <CountQuickButtons task={task} add={addCount} variant="primary" className="primary-action" />
+              <CountQuickButtons task={task} add={addCount} variant="primary" className="primary-action" isDisabled={!!store.progress(task.id, today)?.met} />
             </>
           ) : primary || secondary ? (
             <>

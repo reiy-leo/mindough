@@ -1368,4 +1368,5 @@ export const EN: Record<string, EnValue> = {
   "棕": "Brown",
   "灰": "Gray",
   "常用": "Frequently Used",
+  "今天要打的都打完了": "All of today’s check-ins are done",
 };

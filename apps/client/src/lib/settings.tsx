@@ -40,6 +40,8 @@ export interface Settings {
   myDaySuggestions: boolean;
   /** 我的一天「已完成」那段展开着吗（Rei 2026-11-08 分两段）：默认展开，只记在本机。 */
   myDayDoneOpen: boolean;
+  /** 打卡页「已打卡」那段展开着吗（Rei 2026-11-09「今天打卡完成的放在已打卡section」）：默认展开，只记在本机。 */
+  checkInsDoneOpen: boolean;
   /**
    * 严格模式（Rei 2026-11-08「设置-任务中，添加严格模式switch，严格模式开启后完成的任务不能修改」）：默认关。
    * 和同一页的「显示建议」「日期显示」一样只记在本机，不同步。打开后告诉 Store（store.strictDone），界面经 lib/strict 的 useLocked()。
@@ -52,7 +54,7 @@ export interface Settings {
   listViews: Record<string, unknown>;
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, strictMode: false, listViews: {} };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {} };
 const KEY = 'mindough:settings';
 
 function load(): Settings {
