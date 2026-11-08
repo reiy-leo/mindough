@@ -1686,6 +1686,8 @@ span.drag-handle.is-pin {
   font-size: 12px;
   color: var(--text-2);
   flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
 }
 .streak-on {
   color: #ff6b2c;
@@ -1711,20 +1713,23 @@ span.drag-handle.is-pin {
     display: none;
   }
 }
-/* 打卡进度和补打卡都在右边（Rei 2026-11-09 03:43「打卡进度和补打卡图标都放在右侧。如果宽度窄，则上下结构」）：
- * 列表宽的时候并排；列表窄（手机，或桌面右列打开、中等宽度，≤ 520px）时上下叠，补打卡在上、进度在下，靠右对齐 */
+/* 打卡进度和补打卡都在右边（Rei 2026-11-09 03:43「打卡进度和补打卡图标都放在右侧」）；05:19 起不再上下叠
+ * （「打卡进度和补打卡图标始终左右结构」）：什么宽度都并排在右边，补打卡在左、进度在右（和 Tab 顺序一样）。
+ * 列表窄（手机，或桌面右列打开、中等宽度，≤ 520px）时标题列可以缩到 0，标题、说明截断，按钮不换行 */
 .habit-list {
   container: habits / inline-size;
+}
+.habit-action {
+  flex-wrap: nowrap;
+}
+.habit-action > * {
+  flex: none;
 }
 @container habits (max-width: 520px) {
   .habit-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .habit-action {
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 4px;
     min-width: 0;
   }
 }
@@ -1736,15 +1741,12 @@ span.drag-handle.is-pin {
 [data-layout='mobile'] .habit-action {
   min-width: 0;
 }
-/* 我的一天等列表里的打卡行：补打卡 + 打卡进度。宽屏不多包一层（和原来一样并排），手机上下叠、靠右 */
+/* 我的一天等列表里的打卡行：补打卡 + 打卡进度包成一组，始终并排、不缩、不换行，挤的时候让标题截断 */
 .row-checkin {
-  display: contents;
-}
-[data-layout='mobile'] .row-checkin:has(> :nth-child(2)) {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  flex: none;
 }
 .countdown-grid {
   display: grid;
