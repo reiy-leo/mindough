@@ -1386,6 +1386,13 @@ Rei 2026-11-08「弹窗的搜索框，backspace删除时会错误地关闭窗口
   - 字母键：全局 N、方向键、类型页打字跳搜索框都已经用 `typingKey`（焦点在能打字的地方或在组字就让路），这次没改。
 - **测试**：`lib/backspace-guard.test.tsx` 7 项（页面上退格被拦、输入框 / 文本框 / 编辑器 / 组字不拦、转发的那份不拦、挑任务和币种选择删字时退格 Delete 不再转发到列表而方向键照转）；`TaskSearch.test.tsx` 跟着改。浏览器里逐个弹窗（⌘F、三种关系、属性的类型 / 项目 / 资料 / 日期、新建面板的相关任务）打字、退格到空再多按、Delete，看弹窗还在、地址没变、焦点在框里：`work/shots-tool/popup-backspace.mjs`（LightVela，Chromium + WebKit）。
 
+### 侧栏和任务列表不显示滚动条 ✅（2026-11-08）
+Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」。
+
+- 只藏滚动条，照样能滚。两套写法都写：`scrollbar-width: none`（Firefox、新 Chromium）和 `::-webkit-scrollbar { display: none; width: 0 }`（WKWebView、WebView2、安卓 WebView 都认）。
+- 范围：侧栏（`.sidebar`，macOS 无标题栏时滚的是 `.sidebar .nav`）；任务列表的页面由 `App.tsx` 的 `HIDE_SCROLLBAR_PAGES`（我的一天、待安排、积压、时间轴、项目页）在 `.main` 上标 `data-hide-scrollbar`，样式管 `.main`、macOS 无标题栏时的 `.main-scroll` 和项目页的 `.project-scroll`。日记、设置、资料库、类型、打卡、倒数日、编辑器、弹窗都不动。要加页面就加进那个数组。
+- 测试：`lib/hide-scrollbar.test.ts`；截图脚本量 `offsetWidth - clientWidth` 为 0（三皮肤）。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。
