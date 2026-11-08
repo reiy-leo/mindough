@@ -18,7 +18,8 @@ function isTyping(el: EventTarget | null) {
  * 外框用通用的 .modal.modal-center，各皮肤按自己的惯例画（skin/skins.css）：Apple 是居中的 sheet（圆角卡片、淡入上浮），
  * WinUI 是 ContentDialog 式的居中对话框（暗底、浅灰底栏），Material 是大的基本对话框（28px 圆角、surface-2 底，宽屏不用全屏对话框）。
  * 里面就是右列那份详情（TaskDetail mode="modal"）：严格模式只读、完成后留着显示「重新打开」都和右列一样。
- * 在正文或输入框里按 Esc 只让它们失焦（编辑器自己存），再按一次才关浮层。
+ * 在正文或输入框里按 Esc 只让它们失焦（编辑器自己存），焦点回到浮层本身，再按一次才关浮层。
+ * 正文编辑器自己接 Esc 并原生 stopPropagation，到不了这里：它的 onEscape（TaskDetail 的 Body）在浮层里同样把焦点交给浮层。
  */
 export function DetailModal() {
   const ui = useUi();
@@ -27,9 +28,10 @@ export function DetailModal() {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Escape' || e.nativeEvent.isComposing || !isTyping(e.target)) return;
     e.stopPropagation();
-    (e.target as HTMLElement).blur?.();
-    // 焦点交回浮层本身，不然落到 body 上，下一次 Esc 浮层收不到
-    e.currentTarget.closest<HTMLElement>('[role="dialog"]')?.focus();
+    // 焦点交回浮层本身（输入框跟着失焦）；只 blur 的话焦点落到 body，React Aria 的焦点圈会把它拉回输入框，再按 Esc 还是关不了
+    const dlg = e.currentTarget.closest<HTMLElement>('[role="dialog"]');
+    if (dlg) dlg.focus();
+    else (e.target as HTMLElement).blur?.();
   };
   return (
     <ModalOverlay isOpen={!!task} onOpenChange={(open) => !open && ui.openEditor(null)} isDismissable className="overlay overlay-detail">

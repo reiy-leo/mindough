@@ -257,7 +257,11 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
         onBlur={commit}
         onEscape={() => {
           commit();
-          (document.activeElement as HTMLElement | null)?.blur();
+          // 看板详情浮层里（Rei 2026-11-09）：焦点交给浮层本身，不然落到 body，React Aria 的焦点圈又把它拉回正文，下一次 Esc 关不了浮层
+          const el = document.activeElement as HTMLElement | null;
+          const dlg = el?.closest<HTMLElement>('.modal-detail [role="dialog"]');
+          if (dlg) dlg.focus();
+          else el?.blur();
         }}
       />
     </div>
