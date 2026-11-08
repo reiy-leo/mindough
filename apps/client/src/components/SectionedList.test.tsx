@@ -8,6 +8,7 @@ import type { ListSection } from '../lib/sections';
 
 vi.mock('./project/GroupIcon', () => ({ GroupIcon: () => null }));
 import { SectionedList } from './SectionedList';
+import { SettingsProvider } from '../lib/settings';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -42,5 +43,37 @@ describe('分区标题的心情色圆点', () => {
   it('按项目、按日期没有圆点', () => {
     render([{ kind: 'due', key: 'today', label: '今天', tasks: [t] }]);
     expect(host.querySelector('.section-dot')).toBeNull();
+  });
+});
+
+describe('多彩档（色彩设置，Rei 2026-11-09）', () => {
+  it('心情、项目分区标题换成彩色文字，不画色点；「没有心情」照旧灰点', () => {
+    localStorage.setItem('mindough:settings', JSON.stringify({ colorLevel: 'vivid' }));
+    act(() =>
+      root.render(
+        <SettingsProvider>
+          <SectionedList
+            sections={[
+              { kind: 'mood', key: 'happy', label: '开心', tasks: [t] },
+              { kind: 'mood', key: 'none', label: '没有心情', tasks: [t] },
+              { kind: 'project', key: 'g1', label: '搬家', tasks: [t], group: { id: 'g1', color: '#af52de' } as never },
+            ]}
+            collapsed={[]}
+            onCollapsedChange={() => {}}
+            idPrefix="v"
+            renderList={() => null}
+          />
+        </SettingsProvider>,
+      ),
+    );
+    localStorage.removeItem('mindough:settings');
+    const titles = [...host.querySelectorAll<HTMLElement>('.section-title')];
+    expect(titles[0]!.classList.contains('is-tinted')).toBe(true);
+    expect(titles[0]!.style.getPropertyValue('--section-tint')).toBe('var(--mood-happy)');
+    expect(titles[0]!.querySelector('.section-dot')).toBeNull();
+    expect(titles[1]!.classList.contains('is-tinted')).toBe(false);
+    expect(titles[1]!.querySelector('.section-dot.is-none')).not.toBeNull();
+    expect(titles[2]!.style.getPropertyValue('--section-tint')).toBe('#af52de');
+    expect(document.documentElement.dataset.colorLevel).toBe('vivid');
   });
 });

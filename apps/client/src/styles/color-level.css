@@ -86,9 +86,12 @@
 :root[data-color-level='plain']:not([data-skin='winui']) {
   --focus: 0 0 0 3px color-mix(in srgb, var(--text) 32%, transparent);
 }
-/* WinUI：Mica 底的蓝粉渐变不画 */
+/* WinUI：Mica 底的蓝粉渐变不画；底变成纯 #f3f3f3 后第三级文字（rgba 0.5 黑）只有 3.9:1，加深到 0.58（5.2:1） */
 :root[data-color-level='plain'][data-skin='winui'] {
   --bg-image: none;
+}
+:root[data-color-level='plain'][data-skin='winui'][data-theme='light'] {
+  --text-3: rgba(0, 0, 0, 0.58);
 }
 /* Material：M3 基线色板的中性色带紫，换成纯灰 */
 :root[data-color-level='plain'][data-skin='material'][data-theme='light'] {
