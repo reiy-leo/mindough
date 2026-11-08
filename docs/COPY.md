@@ -103,7 +103,7 @@
 | 从 TMDB、豆瓣找 / 从 Open Library 找 / 从 Steam、IGDB 找 | 在线搜索 / 网络结果 | 选择框里本地结果下方的分组标题；每行「2024 · 电影 · 原名」，右边来源名；还在找「正在找…」，没有「在线也没有找到」；没配置「TMDB 还没配置」；出错「暂时找不到（502 网关错误）」/「Open Library 暂时连不上（504 网关超时）」（豆瓣连不上不提）。来源名只写 TMDB / The Movie Database、豆瓣、Open Library、Steam、IGDB |
 | 资料来自 TMDB | 数据来源：TMDB / Powered by | 资料卡、资料页名字下面的小字，来源名可点开 |
 | 自动补全 | 智能填充 / 一键获取 | 编辑资料底部的按钮（只在登录且在线时出现）；面板里「选一条来补全」→ 逐项「片名 沙丘2 现在：星际穿越 已有，不动 / 覆盖」，按钮「换一条」「不用了」「填进去 N 项」（拉图时「正在拉图片…」）；没有可补的「没有要补的，资料都已经填好了」；没名字「先填名字，或者 IMDb / 豆瓣编号」；按编号没取到「按编号没取到：TMDB 还没配置」 |
-| 设置的七项：账户、外观、数据、提醒、任务、日记、关于 | 通用 / 偏好设置 / 高级 / 个性化 | 设置的侧栏和手机列表（Rei 2026-10-26；「日记」「关于」同一天从「任务」「数据」里拆出来）。英文 Account、Appearance、Data、Reminders、Tasks、Journal、About（「提醒」「任务」这两个用语境 `设置分区|…`，英文是复数）。侧栏名字太长就截断加省略号，不左右滚。手机列表每项下面一行小字：「登录与同步」「皮肤、语言、明暗、布局」「导入导出、本机存储」「任务提醒的通知」「资料库、我的一天、日期显示、农历」（非中文界面没有农历：「资料库、我的一天、日期显示」；2026-10-28 起设置里没有类型，2026-11-01 加了「我的一天」）「一天从几点开始、每天提醒写日记」「版本、数据来源」。窄屏推入页左上角「‹ 设置」返回；读屏给侧栏的名字「设置分区」 |
+| 设置的七项：账户、外观、数据、提醒、任务、日记、关于 | 通用 / 偏好设置 / 高级 / 个性化 | 设置的侧栏和手机列表（Rei 2026-10-26；「日记」「关于」同一天从「任务」「数据」里拆出来）。英文 Account、Appearance、Data、Reminders、Tasks、Journal、About（「提醒」「任务」这两个用语境 `设置分区|…`，英文是复数）。侧栏名字太长就截断加省略号，不左右滚。手机列表每项下面一行小字：「登录与同步」「皮肤、语言、明暗、色彩、布局」「导入导出、本机存储」「任务提醒的通知」「资料库、我的一天、日期显示、农历」（非中文界面没有农历：「资料库、我的一天、日期显示」；2026-10-28 起设置里没有类型，2026-11-01 加了「我的一天」）「一天从几点开始、每天提醒写日记」「版本、数据来源」。窄屏推入页左上角「‹ 设置」返回；读屏给侧栏的名字「设置分区」 |
 | 设置… | 偏好设置… / 选项… | 桌面菜单项（macOS 在 App 菜单「关于」下面，Windows / Linux 在「文件」里），快捷键 ⌘, / Ctrl+,；英文 Settings…。设置窗口的标题就叫「设置」 |
 | 关于 | — | 设置 → 关于（2026-10-26 从数据页底部挪成单独一项，Lucide Info 图标）：app 图标、app 名（念头团 / 英文 Mindough）、「版本 v0.1.0-alpha.13」（2026-11-03 起：推标签构建是标签本身，别的构建是「`v0.1.0-dev+<短哈希>`」，规则在 scripts/app-version.mjs；英文 Version v0.1.0-alpha.13）、一句「数据先存在这台设备上，离线也能用」；TMDB logo + 原文 “This product uses the TMDB API but is not endorsed or certified by TMDB.”，中文界面附「本产品使用 TMDB 的 API，但没有得到 TMDB 的认可或认证。」 |
 | 设置底部的版本号 | 版本信息 / Build | 设置页最下面一行小字（2026-11-03）：「版本 v0.1.0-alpha.13」，和关于里同一个字符串。点了复制，提示「已复制版本号」，失败「没能复制版本号」；悬停提示「点一下复制版本号」；读屏「版本 v0.1.0-alpha.13，点一下复制」。英文 Version copied / Couldn’t copy the version / Click to copy the version |
@@ -226,6 +226,7 @@
 | 没有待安排的事 | Inbox Zero | |
 | 影视库 / 书库 / 游戏库 … / 好物清单 / 菜谱 | Movies & TV / Books / Games … / Wish List / Recipes | 条数 7 titles / 5 books / 3 items |
 | 皮肤 / 明暗 / 语言 | Style / Theme / Language | |
+| 色彩：素净 / 标准 / 多彩 | Color: Plain / Standard / Vivid | 设置 → 外观的三段（2026-11-09），默认标准；说明「素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上」= Plain uses only black, white and gray; Vivid spreads project and type colors further. This device only |
 | 链接框 | Link dialog | 链接框 Text / Link，Add / Save / Cancel；? 提示 “Type these and they format as you go:”（编辑器没有工具栏了，原来的按钮文字已删） |
 | 资料库 · 编辑资料库 · 新建资料库 · 资料（任务上）· 添加资料 | Collection · Edit Collections · New Collection · Collections（任务上的「资料」和导航用同一个词，没另起英文）· Add Item | Rei 2026-10-26 类型改叫资料库；2026-10-28 起任务上没有「不放进资料库」（No Collection），改成挂资料；和导航「资料」= Collections 对上，资料库页本身仍是 Library。项目页标题下「默认资料库：X」= Default collection: X（只有老项目有，2026-11-02 起新建、编辑都不再设）|
 | 归档这个资料库 / 取消归档 / 已归档 N 个 / 已归档 | Archive This Collection / Unarchive / N archived / Archived | 资料库编辑器（标题 Collections）；提示 Archived “X” + Undo；设置里 “9 collections, plus 2 archived. …” |
