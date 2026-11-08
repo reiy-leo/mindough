@@ -1486,3 +1486,10 @@ Rei 2026-11-08 21:51「项目的已结束section默认折叠，点击可展开�
 - 记在哪：每个项目一份，放进已有的本机设置 `settings.projectViews[项目 id].endedOpen`（`lib/project-view.ts` `ProjectViewPrefs`，`normalizePrefs` 只认 `true`，默认 `false`），和视图、排序在一起，不同步。没像 `myDayDoneOpen` 那样全局一份：项目有大有小，在一个项目里展开不该把别的项目也展开。
 - 看板按状态分列，「完成」「关闭」本来就是单独两列，不收；时间轴、任务链不分「已结束」段，不变。
 - 没加新文案：用已有的「已结束」，件数单独放在 `.count` 里。
+
+### 看板点卡片打不开详情 ✅（2026-11-08）
+Rei 2026-11-08 21:53「项目 看板 不显示详情第三列，点击不显示详情」。按 bug 修：右列本来就在（宽屏一直有，空着时是「点一件任务」），是点了没打开。
+
+- **根因**：看板卡片是 `GridListItem`，里面放 `TaskRow`，能打开详情的只有 `TaskRow` 的标题按钮 `.row-main`。列宽 208px 起，`.row-main` 只有七八十像素宽，卡片的内边距、拖动把手旁、勾选框周围、标题和太阳之间的空隙（量下来约占卡片一半）点了都没反应，GridList 也没有 `onAction`。点到标题文字是能开的，所以时灵时不灵。不是布局把右列藏了，也不是拖动吃掉了点击，`?task=` 在点到标题时照常写。
+- **修法**：`ProjectBoard` 的 GridList 加 `onAction` → `ui.openEditor(key)`，卡片任何地方点按 / 回车都打开；卡片里的按钮（勾选、太阳、把手、标题）自己处理，不冒上来，不会开两次。拖动的尾巴（`isDragPress`）、手指长按弹出行菜单后松手（有 `[role="menu"]`）不算。选中的卡片加 `is-selected`，整张卡片染色（原来只染 `.task-row` 那块，左边把手那段不染），`cursor: pointer`。
+- **测试**：`components/project/ProjectBoard.test.tsx` 4 项（点留白、点卡片本身都打开，拖动尾巴不开，选中带 `is-selected`）；去掉 `onAction` 时前两项挂。截图脚本 `work/board-tool/probe.mjs`（LightVela，三皮肤宽屏 + 手机，点卡片空隙、拖卡片换列）。

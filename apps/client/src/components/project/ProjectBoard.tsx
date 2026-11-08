@@ -3,6 +3,9 @@
  * 按任务状态分四列（待办 / 进行中 / 完成 / 关闭），列内按当前排序。
  * 卡片拖到别的列就改成那一列的状态（结束态照常弹解锁提示、能撤销）；键盘：聚焦卡片左边的拖动把手按回车，方向键选列，回车放下（React Aria 拖放）。
  * 宽度不够时整个看板横向滚动。
+ * 点卡片任何地方都打开详情（Rei 2026-11-08「项目 看板 不显示详情第三列，点击不显示详情」）：
+ * 以前只有卡片里的标题按钮（TaskRow 的 .row-main，列窄时只占卡片一小半）会开，点到卡片的留白、勾选框和太阳旁边的空隙没反应。
+ * 现在 GridList 的 onAction 接住卡片本身的点按 / 回车；勾选、太阳、拖动把手这些按钮自己处理，不会冒上来；拖动的尾巴（lib/drag-guard）、长按弹出行菜单后松手不算。
  */
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton, type DropItem } from 'react-aria-components';
 import { GripVertical } from 'lucide-react';
@@ -10,7 +13,7 @@ import { TASK_STATUS_LABEL, type Store, type Task, type TaskStatus } from '@mind
 import { useUi } from '../../lib/ui';
 import { changeStatus } from '../../lib/actions';
 import { boardColumns } from '../../lib/project-view';
-import { useReorderGuard } from '../../lib/drag-guard';
+import { isDragPress, useReorderGuard } from '../../lib/drag-guard';
 import { titleOf } from '../../lib/view';
 import { TaskRow } from '../TaskRow';
 
@@ -58,10 +61,15 @@ function Column({ store, status, tasks }: { store: Store; status: TaskStatus; ta
         dragAndDropHooks={dragAndDropHooks}
         dependencies={[ui.editingId, store.version]}
         items={tasks}
+        onAction={(key) => {
+          // 拖动的尾巴、手指长按刚弹出行菜单（松手那下）都不算点开
+          if (isDragPress() || document.querySelector('[role="menu"]')) return;
+          ui.openEditor(String(key));
+        }}
         renderEmptyState={() => <div className="board-empty">{tr('拖到这里')}</div>}
       >
         {(t) => (
-          <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className="board-card">
+          <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`board-card${ui.editingId === t.id ? ' is-selected' : ''}`}>
             <RacButton slot="drag" className="drag-handle" aria-label={tr('拖到别的状态')}>
               <GripVertical size={14} />
             </RacButton>

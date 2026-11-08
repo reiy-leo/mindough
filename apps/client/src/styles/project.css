@@ -185,6 +185,17 @@
   min-width: 0;
   padding-left: 2px;
 }
+/* 整张卡片都能点开（Rei 2026-11-08）：手指形状、选中时整张卡片染色（左边拖动把手那段也染，同 .list-item） */
+.board-card {
+  cursor: pointer;
+}
+.board-card.is-selected {
+  background: var(--row-selected-bg, var(--accent-soft));
+}
+.board-card .task-row.is-selected,
+.board-card .task-row.is-selected:hover {
+  background: transparent;
+}
 /* 列窄：标题最多两行，不再一行省略 */
 .board-card .row-title {
   white-space: normal;
