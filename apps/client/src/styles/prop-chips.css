@@ -186,3 +186,13 @@
   outline: none;
   box-shadow: var(--focus);
 }
+
+/* 严格模式下完成的任务（Rei 2026-11-08）：胶囊只显示、不能点；去掉关系和资料的 × */
+.pchip[data-disabled] {
+  cursor: default;
+  opacity: 1;
+}
+.detail.is-locked .rel-remove,
+.detail.is-locked .ref-remove {
+  display: none;
+}

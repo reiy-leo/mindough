@@ -63,7 +63,7 @@ export function TaskDatePicker({ store, task, today, onDone }: { store: Store; t
 const QUICK_ICON = { none: Calendar, today: CalendarCheck, future: CalendarChevronsRight, past: CalendarChevronsLeft } as const;
 
 /** 详情顶栏左边的日期快捷按钮：图标按没日期 / 今天 / 以后 / 以前换，以后 / 以前旁边写差几天。 */
-export function DateQuickButton({ store, task, today }: { store: Store; task: Task; today: string }) {
+export function DateQuickButton({ store, task, today, isDisabled = false }: { store: Store; task: Task; today: string; isDisabled?: boolean }) {
   const mode = useDateDisplay();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
@@ -82,6 +82,7 @@ export function DateQuickButton({ store, task, today }: { store: Store; task: Ta
           aria-label={aria}
           aria-haspopup="dialog"
           aria-expanded={open}
+          isDisabled={isDisabled}
           onPress={() => setOpen(true)}
         >
           <Icon size={18} aria-hidden />

@@ -10,6 +10,7 @@
  * - 菜单最后一项「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
  * 资料行和任务字段（进度、看到哪…）不在这里，仍在原来的属性卡片里。
  */
+import { useLocked } from '../../lib/strict';
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Tag, X } from 'lucide-react';
@@ -91,6 +92,8 @@ export function PropChips({
 }) {
   const ui = useUi();
   const { theme } = useSettings();
+  // 严格模式下完成的任务（Rei 2026-11-08）：胶囊只显示、点不开，没有 × 和「+」
+  const locked = useLocked(task);
   const lunarUi = useLunarUi();
   const dateMode = useDateDisplay();
   const [open, setOpen] = useState<{ id: PropId; via: 'chip' | 'add' } | null>(null);
@@ -266,6 +269,7 @@ export function PropChips({
               aria-label={tr('{label}：{value}', { label, value: v.aria })}
               aria-haspopup="dialog"
               aria-expanded={open?.id === id}
+              isDisabled={locked}
               onPress={(e) => openFor(id, 'chip', e.target as HTMLElement)}
               onKeyDown={(e) => {
                 if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -279,13 +283,13 @@ export function PropChips({
               </span>
               <span className="pchip-text">{v.text}</span>
             </RacButton>
-            <RacButton className="pchip-x" excludeFromTabOrder aria-label={tr('清除{label}', { label })} onPress={() => clear(id)}>
+            {!locked && <RacButton className="pchip-x" excludeFromTabOrder aria-label={tr('清除{label}', { label })} onPress={() => clear(id)}>
               <X size={10} strokeWidth={3} aria-hidden />
-            </RacButton>
+            </RacButton>}
           </span>
         );
       })}
-      {showAdd && (
+      {showAdd && !locked && (
         <MenuTrigger>
           <RacButton ref={addRef} className={`pchip pchip-add${empty ? ' has-label' : ''}`} aria-label={tr('添加属性')}>
             <Plus size={14} aria-hidden />

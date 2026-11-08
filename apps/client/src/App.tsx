@@ -1,3 +1,4 @@
+import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
@@ -426,6 +427,9 @@ export function App() {
   const store = useStore();
   useLunarSubScheduler(store);
   useAutoMyDay(store);
+  // 严格模式（Rei 2026-11-08）：开关告诉 Store；漏网的写入被拦时给提示
+  useStrictSync(store);
+  useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
   const { setDidaImportOpen } = ui;
   const { layout, platform } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面

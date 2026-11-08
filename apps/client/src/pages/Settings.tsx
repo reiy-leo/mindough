@@ -91,6 +91,7 @@ function SectionBody({ id }: { id: SettingsSection }) {
         <>
           <TypesSection />
           <MyDaySection />
+          <StrictSection />
           <DateDisplaySection />
           <LunarSection />
         </>
@@ -457,6 +458,27 @@ function MyDaySection() {
             <div className="setting-hint">{tr('在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。')}</div>
           </div>
           <Switch label={tr('显示建议')} isSelected={suggestionsOn(settings)} onChange={(v) => set('myDaySuggestions', v)} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * 严格模式（Rei 2026-11-08「设置-任务中，添加严格模式switch，严格模式开启后完成的任务不能修改」）：默认关，只存在这台设备上（同「显示建议」）。
+ * 规则见 lib/strict.ts 和 core strict.ts。
+ */
+function StrictSection() {
+  const { settings, set } = useSettings();
+  return (
+    <Section title={tr('严格模式')}>
+      <div className="card settings-card">
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('严格模式')}</div>
+            <div className="setting-hint">{tr('打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。')}</div>
+          </div>
+          <Switch label={tr('严格模式')} isSelected={settings.strictMode} onChange={(v) => set('strictMode', v)} />
         </div>
       </div>
     </Section>

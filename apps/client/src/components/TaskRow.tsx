@@ -7,6 +7,7 @@ import { useUi } from '../lib/ui';
 import { toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
+import { useLocked } from '../lib/strict';
 import { isDragPress } from '../lib/drag-guard';
 import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
 import { typeIcon } from '../lib/icons';
@@ -56,6 +57,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const lunarUi = useLunarUi();
   const tzBadge = timeZoneBadge(task, task.scheduled_date);
   const checkIn = isCheckInTask(task);
+  // 严格模式下完成的任务（Rei 2026-11-08）：不能加入 / 移出我的一天、置顶
+  const locked = useLocked(task);
   const closed = task.status === '关闭';
   const done = !closed && (doneOverride ?? task.status === '完成');
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
@@ -268,6 +271,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         <RacButton
           className={`icon-btn myday-btn${inDay ? ' is-on' : ''}`}
           aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')}
+          isDisabled={locked}
           onPress={() => toggleMyDay(store, ui, task.id)}
         >
           {inDay ? <Sun size={17} /> : <SunDim size={17} />}
@@ -295,7 +299,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
                 else if (k === 'pin' || k === 'unpin') togglePin(store, ui, task.id);
               }}
             >
-              {rowMenu(inDay, pinned).flatMap((i, n) => [
+              {rowMenu(inDay, pinned).filter((i) => !locked || i.id === 'open').flatMap((i, n) => [
                 ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
                 <MenuItem key={i.id} id={i.id} className="menu-item" textValue={i.label}>
                   {i.id === 'open' ? <PanelRight size={16} /> : i.id === 'pin' ? <Pin size={16} /> : i.id === 'unpin' ? <PinOff size={16} /> : inDay ? <Sun size={16} /> : <SunDim size={16} />}

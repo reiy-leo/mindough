@@ -51,6 +51,7 @@ import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachmen
 import { ChainToggle, TaskChainInline } from './TaskChain';
 import { PropChips } from './PropChips';
 import { DateQuickButton } from './TaskDatePicker';
+import { useLocked } from '../../lib/strict';
 import { ClipboardButton } from '../attachments/ClipboardButton';
 import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '../CountControls';
 
@@ -182,7 +183,7 @@ function DetailFrame({
  * 正文：所见即所得的 Markdown 编辑器（写的时候就是排好版的样子，存的还是 markdown）。
  * 打字先记在本地，离开编辑器、按 Esc 或关掉面板时存下来（同步一次一段，不是每个字一次）。
  */
-function Body({ store, task, placeholder }: { store: Store; task: Task; placeholder: string }) {
+function Body({ store, task, placeholder, readOnly = false }: { store: Store; task: Task; placeholder: string; readOnly?: boolean }) {
   const [body, setBody] = useState(task.body_md);
   const latest = useRef(body);
   latest.current = body;
@@ -195,7 +196,8 @@ function Body({ store, task, placeholder }: { store: Store; task: Task; placehol
   useEffect(
     () => () => {
       const cur = store.get('task', task.id);
-      if (cur && latest.current !== cur.body_md) store.updateTask(task.id, { body_md: latest.current });
+      // 严格模式下刚标完成的：存不进去（StrictModeError），丢掉这点没存的，别让卸载报错
+      if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
     },
     [store, task.id],
   );
@@ -242,6 +244,7 @@ function Body({ store, task, placeholder }: { store: Store; task: Task; placehol
         label={tr('内容')}
         placeholder={placeholder}
         value={body}
+        readOnly={readOnly}
         onChange={(v) => {
           editing.current = true;
           latest.current = v;
@@ -534,13 +537,13 @@ type RelKind = 'pred' | 'succ' | 'related';
 const REL_LABEL: Record<RelKind, string> = { get pred() { return tr('先做完这些'); }, get succ() { return tr('做完后解锁'); }, get related() { return tr('相关任务'); } };
 
 /** 「添加关系」菜单：三种关系各一项，选了打开挑任务的弹层。 */
-function RelationMenu({ onPick, className }: { onPick: (k: RelKind) => void; className?: string }) {
+function RelationMenu({ onPick, className, isDisabled }: { onPick: (k: RelKind) => void; className?: string; isDisabled?: boolean }) {
   const items: MenuAction[] = [
     { id: 'pred', label: `${REL_LABEL.pred}…`, icon: <CornerLeftUp size={16} />, onAction: () => onPick('pred') },
     { id: 'succ', label: `${REL_LABEL.succ}…`, icon: <CornerRightDown size={16} />, onAction: () => onPick('succ') },
     { id: 'related', label: `${REL_LABEL.related}…`, icon: <Link2 size={16} />, onAction: () => onPick('related') },
   ];
-  return <OverflowMenu label={tr('添加关系')} icon={<Network size={17} />} items={items} {...(className ? { className } : {})} />;
+  return <OverflowMenu label={tr('添加关系')} icon={<Network size={17} />} items={isDisabled ? items.map((i) => ({ ...i, disabled: true })) : items} {...(className ? { className } : {})} />;
 }
 
 /** 挑一件任务连上这种关系；搜不到就「新建“xxx”」，新建的任务直接连好（合并了以前的「添加」和「新建下一步」）。 */
@@ -811,7 +814,9 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   const owner = useMemo(() => ({ type: 'task' as const, id: task.id }), [task.id]);
   const frameRef = useRef<HTMLElement>(null);
   const addFiles = useAddFiles(owner);
-  const dropping = useFileDrop(frameRef, addFiles);
+  // 严格模式下完成的任务只能看（Rei 2026-11-08）：正文只读、属性和关系不能改、不能加附件；能重新打开、删除
+  const locked = useLocked(task);
+  const dropping = useFileDrop(frameRef, addFiles, !locked);
   const type = store.get('task_type', task.type_id);
   const typed = !!type && type.id !== PLAIN_TYPE_ID && shownFields(type).length > 0;
   const title = titleOf(store, task);
@@ -869,14 +874,16 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     unarchive: () => archiveHabit(store, ui, task.id, false),
     delete: () => setConfirmDelete(true),
   };
-  const menu: MenuAction[] = detailMenu(task, inDay).map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));
+  const menu: MenuAction[] = detailMenu(task, inDay)
+    .filter((e) => !locked || !(e.id === 'myday' || e.id === 'pin' || e.id === 'unpin'))
+    .map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));
 
   // 属性：单值属性收成一行胶囊（Rei 2026-10-25 方案 A），资料行和任务字段仍是卡片里的行。
   // 附件紧跟在胶囊下面、资料卡片上面（Rei 2026-10-25「显示在属性块下方」）：从「+」加的附件就出现在「+」旁边。
   const props = (
     <div className="detail-props">
-      <PropChips store={store} task={task} today={today} onAttach={addFiles} />
-      <Attachments owner={owner} bare />
+      <PropChips store={store} task={task} today={today} {...(locked ? {} : { onAttach: addFiles })} />
+      <Attachments owner={owner} bare readOnly={locked} />
       <RefsSection store={store} task={task} today={today} />
     </div>
   );
@@ -893,18 +900,18 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
             {badge}
             <CompletionPill store={store} task={task} today={today} primary={primary} secondary={secondary} addCount={addCount} counting={counting} />
             {/* 日期快捷按钮、剪贴板按钮（Rei 2026-10-29「任务和日记 editor 要行为一致」） */}
-            <DateQuickButton store={store} task={task} today={today} />
-            <ClipboardButton onFiles={addFiles} />
+            <DateQuickButton store={store} task={task} today={today} isDisabled={locked} />
+            {!locked && <ClipboardButton onFiles={addFiles} />}
           </>
         }
         headerEnd={
           <>
             <Tip content={inDay ? tr('移出我的一天') : tr('加入我的一天')}>
-              <RacButton className={`icon-btn myday-toggle${inDay ? ' is-on' : ''}`} aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')} aria-pressed={inDay} onPress={() => toggleMyDay(store, ui, task.id)}>
+              <RacButton className={`icon-btn myday-toggle${inDay ? ' is-on' : ''}`} aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')} aria-pressed={inDay} isDisabled={locked} onPress={() => toggleMyDay(store, ui, task.id)}>
                 <Sun size={18} />
               </RacButton>
             </Tip>
-            <RelationMenu onPick={setAddRel} />
+            <RelationMenu onPick={setAddRel} isDisabled={locked} />
             <OverflowMenu items={menu} />
           </>
         }
@@ -951,7 +958,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
           ) : null
         }
       >
-        <div className={`detail is-stacked${layout === 'mobile' ? ' is-mobile' : ''}${dropping ? ' is-dropping' : ''}`}>
+        <div className={`detail is-stacked${layout === 'mobile' ? ' is-mobile' : ''}${dropping ? ' is-dropping' : ''}${locked ? ' is-locked' : ''}`}>
           <div className="detail-main">
             {!lib && typed && type && (
               <div className="detail-hero" style={{ '--chip-color': type.color } as CSSProperties}>
@@ -970,7 +977,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
                 </div>
               </div>
             )}
-            <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} />
+            <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} readOnly={locked} />
             {!lib && typed && type && (
               <Disclosure className="type-disclosure" defaultExpanded={!hasPrimary}>
                 <Heading level={3} className="disclosure-head">

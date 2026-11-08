@@ -13,6 +13,7 @@ export * from './checkin';
 export * from './count';
 export * from './heatmap';
 export * from './myday';
+export * from './strict';
 export * from './backlog';
 export * from './done-list';
 export * from './reminders';
