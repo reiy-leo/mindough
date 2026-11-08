@@ -1643,6 +1643,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "菜单|设置…": "Настройки…",
   "这次的打卡已经达标了，不能再加": "Цель этой отметки уже достигнута, добавить больше нельзя",
   "今天要打的都打完了": "Все отметки на сегодня сделаны",
+  "已计时 {value}，目标 {target}": "Засечено {value}, цель {target}",
+  "已计时 {value}": "Засечено {value}",
+  "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} из {target} {unit}",
+  "已打 {value} 次，目标 {target} 次": "Сделано {value} из {target}",
 };
 
 export const DATA: Record<string, string> = {

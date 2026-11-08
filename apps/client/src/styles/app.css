@@ -4174,3 +4174,8 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .modal-detail .pane-detail {
   flex: 1 1 auto;
 }
+/* 打卡进度只放进度环（Rei 2026-11-09 01:29），数字在悬停提示里 */
+.ci-ring {
+  display: inline-flex;
+  flex: none;
+}

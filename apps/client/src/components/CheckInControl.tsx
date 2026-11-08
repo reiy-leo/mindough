@@ -1,6 +1,7 @@
 import { Check, Pause, Play, Square } from 'lucide-react';
 import { CheckInMetError, formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
-import { CountNumber, CountQuickButtons, useCountAdd } from './CountControls';
+import { CountQuickButtons, useCountAdd } from './CountControls';
+import { HoverTip } from '../ui/HoverTip';
 import { Button, ProgressRing } from '../ui/primitives';
 import { useUi } from '../lib/ui';
 import { announceComplete } from '../lib/actions';
@@ -42,14 +43,15 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
     case 'count':
       return <CountCheckIn store={store} task={task} today={today} compact={compact} ratio={p.ratio} value={p.value} target={p.target ?? 1} met={p.met} />;
     case 'timer': {
-      const target = p.target ? ` / ${formatDuration(p.target).replace(/ 00 分$/, '')}` : '';
+      // 只放进度环，不写时长（Rei 2026-11-09 01:29「打卡进度只显示circle」）；时长在悬停提示和读屏里
+      const tip = p.target
+        ? tr('已计时 {value}，目标 {target}', { value: formatDuration(p.value), target: formatDuration(p.target) })
+        : tr('已计时 {value}', { value: formatDuration(p.value) });
       return (
         <div className="ci-group">
-          <ProgressRing value={p.ratio} size={compact ? 26 : 30} />
-          <span className={`ci-value${p.running ? ' is-running' : ''}`}>
-            {p.value > 0 || p.running ? formatDuration(p.value) : tr('未开始')}
-            {!compact && <span className="ci-target">{target}</span>}
-          </span>
+          <HoverTip className={`ci-ring${p.running ? ' is-running' : ''}`} tip={tip}>
+            <ProgressRing value={p.ratio} size={compact ? 26 : 30} />
+          </HoverTip>
           {p.running ? (
             <>
               <Button variant="secondary" className="ci-btn" onPress={() => record('pause')} aria-label={tr('暂停')}>
@@ -102,21 +104,15 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
   }
 }
 
-/** 计数：进度环、点数字手输、快捷加量（列表行只放第一个快捷按钮）。 */
+/** 计数：只放进度环（Rei 2026-11-09 01:29「打卡进度只显示circle，不显示"0/1"这种数值」，数字在悬停提示和读屏里）和快捷加量。手输改总数在详情里。 */
 function CountCheckIn({ store, task, today, compact, ratio, value, target, met }: { store: Store; task: Task; today: string; compact?: boolean; ratio: number; value: number; target: number; met: boolean }) {
   const add = useCountAdd(store, task, today);
-  const unit = task.unit ?? '';
   return (
     <div className="ci-group">
-      <ProgressRing value={ratio} size={compact ? 26 : 30} />
-      <CountNumber value={value} onSubmit={add} className="ci-value">
-        {formatAmount(value)}
-        <span className="ci-target">
-          /{formatAmount(target)}
-          <span className="ci-unit">{unit}</span>
-        </span>
-      </CountNumber>
-      {/* 达标了 +1 灰掉，改成「已达标」的勾（Rei 2026-11-09 01:05「完成4/4 居然还能继续加」）；点数字还能改小、详情里能撤销 */}
+      <HoverTip className="ci-ring" tip={countTip(value, target, task.unit)}>
+        <ProgressRing value={ratio} size={compact ? 26 : 30} />
+      </HoverTip>
+      {/* 达标了 +1 灰掉，改成「已达标」的勾（Rei 2026-11-09 01:05「完成4/4 居然还能继续加」）；详情里能撤销、改数字 */}
       {met ? (
         <Button variant="tonal" className="ci-btn ci-met" isDisabled aria-label={tr('今天已达标')}>
           <Check size={16} />
@@ -126,4 +122,11 @@ function CountCheckIn({ store, task, today, compact, ratio, value, target, met }
       )}
     </div>
   );
+}
+
+/** 「已打 2 次，目标 4 次」「已打 500 mL，目标 2000 mL」。 */
+export function countTip(value: number, target: number, unit: string | null): string {
+  return unit
+    ? tr('已打 {value} {unit}，目标 {target} {unit}', { value: formatAmount(value), target: formatAmount(target), unit })
+    : tr('已打 {value} 次，目标 {target} 次', { value: formatAmount(value), target: formatAmount(target) });
 }

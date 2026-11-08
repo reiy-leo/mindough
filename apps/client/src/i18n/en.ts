@@ -1369,4 +1369,8 @@ export const EN: Record<string, EnValue> = {
   "灰": "Gray",
   "常用": "Frequently Used",
   "今天要打的都打完了": "All of today’s check-ins are done",
+  "已计时 {value}，目标 {target}": "{value} timed, goal {target}",
+  "已计时 {value}": "{value} timed",
+  "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} of {target} {unit}",
+  "已打 {value} 次，目标 {target} 次": "{value} of {target} done",
 };

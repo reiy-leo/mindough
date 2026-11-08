@@ -1643,6 +1643,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "菜单|设置…": "Réglages…",
   "这次的打卡已经达标了，不能再加": "Objectif déjà atteint pour ce suivi, impossible d’ajouter plus",
   "今天要打的都打完了": "Tous les suivis du jour sont faits",
+  "已计时 {value}，目标 {target}": "{value} chronométré, objectif {target}",
+  "已计时 {value}": "{value} chronométré",
+  "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} sur {target} {unit}",
+  "已打 {value} 次，目标 {target} 次": "{value} sur {target} faits",
 };
 
 export const DATA: Record<string, string> = {

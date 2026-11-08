@@ -1643,6 +1643,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "菜单|设置…": "設定…",
   "这次的打卡已经达标了，不能再加": "この記録はもう目標を達成しています。これ以上追加できません",
   "今天要打的都打完了": "今日の記録はすべて完了しました",
+  "已计时 {value}，目标 {target}": "{value} 計測済み、目標 {target}",
+  "已计时 {value}": "{value} 計測済み",
+  "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} / 目標 {target} {unit}",
+  "已打 {value} 次，目标 {target} 次": "{value} 回 / 目標 {target} 回",
 };
 
 export const DATA: Record<string, string> = {

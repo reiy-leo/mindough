@@ -1645,3 +1645,6 @@ Rei 2026-11-09 01:27「打卡任务，如果今天有节点，也要显示在我
 - **拖动**：`Store.reorderMyDay` 遇到没有行的虚拟打卡就写一条真行（myDayEntryId，sort = 新位置）。
 - **建议**：`suggestions()` 去掉打卡候选（包括移出了当天的）。
 - **测试**：`packages/core/test/myday-checkin.test.ts` 5 项；`myday.test.ts` 建议里去掉 habit，`myday-date-join.test.ts` 打卡改为断言不写行。
+
+### 打卡进度只放进度环 ✅（2026-11-09）
+Rei 2026-11-09 01:29「打卡进度只显示circle，不显示"0/1"这种数值」。`CheckInControl`（打卡页行、TaskRow 里的打卡行共用）：计数去掉 `CountNumber` 数字（原来点一下能手输），计时去掉时长文字；进度环外包 `HoverTip.ci-ring`（悬停 400ms 提示，同时是 role=img 的读屏名）：`countTip()`「已打 {value} 次，目标 {target} 次」/ 有单位「已打 {value} {unit}，目标 {target} {unit}」，计时「已计时 {value}，目标 {target}」/「已计时 {value}」。详情（TaskDetail Progress、底栏、进度弹层）不动，手输总数在那里。4 条新文案 9 种语言。
