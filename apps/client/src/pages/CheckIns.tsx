@@ -120,7 +120,7 @@ export function CheckInsPage() {
     const open = isHeatmapOpen(settings.habitHeatmapOpen, t.id);
     const heatId = `habit-heat-${t.id}`;
     return (
-      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, color, '--ci-color')} {...bindMenu(t.id)}>
+      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, store.categoriesOfTask(t)[0]?.color ?? color, '--ci-color')} {...bindMenu(t.id)}>
         {/* 左上角圆点：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
         <TipButton
           tip={open ? tr('隐藏活动图') : tr('显示活动图')}

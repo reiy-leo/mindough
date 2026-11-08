@@ -165,7 +165,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       ref={rowRef}
       className={`task-row ${STATE_CLASS[state ?? ''] ? `row-${STATE_CLASS[state!]}` : ''}${done ? ' is-done' : ''}${closed ? ' is-closed' : ''}${selected ? ' is-selected' : ''}`}
       data-task-id={task.id}
-      style={isCheckInRow ? vividVar(colorLevel, v.type?.color, '--ci-color') : undefined}
+      style={isCheckInRow ? vividVar(colorLevel, cats[0]?.color ?? v.type?.color, '--ci-color') : undefined}
       onContextMenu={onContextMenu}
       // 捕获阶段：行里的按钮（React Aria usePress）会拦住冒泡的 pointerdown
       onPointerDownCapture={onPointerDown}

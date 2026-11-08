@@ -140,6 +140,10 @@
 :root[data-color-level='plain'] .nav-item.is-active .icon-tile {
   color: var(--nav-active-icon);
 }
+/* 老数据里的 emoji 图标自己带颜色：去色 */
+:root[data-color-level='plain'] .icon-tile .emoji-icon {
+  filter: grayscale(1);
+}
 /* 数据里带颜色的地方（行内 style 写的类型 / 项目色）：一律换中性色。!important 才盖得过行内 style */
 :root[data-color-level='plain'] [style*='--chip-color'] {
   --chip-color: var(--text-2) !important;
@@ -150,7 +154,7 @@
 :root[data-color-level='plain'] [style*='--project-tint'] {
   --project-tint: var(--text-3) !important;
 }
-:root[data-color-level='plain'] :is(.meta-type, .thumb-icon, .ref-option-lib, .row-lead svg, .meta-group) {
+:root[data-color-level='plain'] :is(.meta-type, .thumb-icon, .ref-option-lib, .row-lead svg, .meta-group, .cat-label) {
   color: var(--text-2) !important;
 }
 /* 类型胶囊（筛选条）：灰底 + 细描边，选中用强调色（近黑 / 近白） */
@@ -234,7 +238,7 @@
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
   background-repeat: no-repeat;
 }
-/* 打卡进度环：打卡自己的类型颜色（TaskRow / 打卡页行上挂 --ci-color） */
+/* 打卡进度环：打卡自己的图标颜色（第一个类型的颜色，没有就用资料库色；TaskRow / 打卡页行上挂 --ci-color） */
 :root[data-color-level='vivid'] .ci-ring .ring-fill {
   stroke: var(--ci-color, var(--accent));
 }
