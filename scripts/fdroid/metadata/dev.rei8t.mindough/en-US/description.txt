@@ -1,0 +1,3 @@
+Mindough keeps your to-dos, daily check-ins, countdowns and journal in one place, and syncs them across Android, desktop, iOS and the web.
+
+App: https://app.mindough.rei8t.dev

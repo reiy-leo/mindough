@@ -1,0 +1,3 @@
+念头团把待办、每天的打卡、倒数日和日记放在一起，在 Android、电脑、iOS 和网页之间同步。
+
+网页版：https://app.mindough.rei8t.dev

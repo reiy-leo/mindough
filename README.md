@@ -51,6 +51,8 @@ pnpm tauri android build --apk --debug
 pnpm tauri ios init
 ```
 
+正式的 Android 包用固定钥匙签名，发到自建 F-Droid 源，见 [docs/ANDROID-RELEASE.md](docs/ANDROID-RELEASE.md)。
+
 ## 目录
 
 ```
