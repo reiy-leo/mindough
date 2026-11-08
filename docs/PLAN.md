@@ -1669,3 +1669,14 @@ Rei 2026-11-09 01:31：打卡页、倒数日页的「新建」不再弹窗，直
 - 原来「没有空任务规则」：代码里以前没有「空着离开就删」，这次是新加的，只管从这两个入口建出来的。
 - 测试：client `blank-task.test.ts` 6 项。
 - 修：MdEditor 的 autoFocus 原来在 useEffect 里直接 `editor.commands.focus`，从详情第一次挂上时 view 还没挂、抛「reading 'commands' of null」，详情显示「这里出错了」。改成等 `editor.view.dom.isConnected` 再聚焦（最多重试 10 次、每次 30ms，卸载时清掉）。
+
+
+### 纯文本附件点开就能看 ✅（2026-11-09）
+
+Rei 01:46「附件是.txt文件，点击可以和图片一样预览」，又说「加上.md、.csv吧」。
+
+- 哪些算：core `textPreviewFormat(name, mime)`。先看扩展名（txt、md、csv、tsv、log、json、yaml、xml、ini、srt、sql、常见代码……），扩展名不认识再看 MIME（text/*、application/json 等）。RTF、ipynb、以及认得的图片 / 文档 / 表格不算。`attachmentPressAction` 多一种 `'text'`。
+- 显示：`components/attachments/TextPreview.tsx`，套灯箱的 `.lightbox-overlay` 和顶栏，中间 `.textpv-sheet`（`--surface` 叠在 `--bg` 上，WinUI 半透明也是实心）。md 走 `Markdown` 组件（同一套 DOMPurify 消毒），csv 用 `parseDelimited` 拆表，切换按钮在顶栏。
+- 取内容：`lib/text-preview.ts` `loadAttachmentText`。本机队列 → 本机缓存 → `GET /api/files/<key>`（和原图同一个接口，Web 同源带 cookie，Tauri 带 Bearer，CORS 和图片一样），边读边数，满 1 MB 就取消流，不把整个文件拉下来。Worker 不用改：接口对文本回 `content-disposition: attachment`，fetch 不管它。
+- 编码只认 UTF-8（去 BOM，截断处半个字丢掉）；前 8 KB 有 NUL 当二进制；U+FFFD 超过 1% 提示可能是别的编码。GBK 之类的不转码，待定。
+- 测试：core attachments（textPreviewFormat）、attachment-cache（按下动作）；client text-preview、TextPreview。
