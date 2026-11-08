@@ -12,6 +12,8 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 详情顶栏心情按钮（Rei 2026-11-08）──
+  "设置心情": "Set Mood",
   // ── 列表分区（Rei 2026-11-08）──
   "本周": "This Week",
   "本月": "This Month",

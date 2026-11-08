@@ -6,6 +6,8 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 详情顶栏心情按钮（Rei 2026-11-08，待母语者看）──
+  "设置心情": "気分を設定",
   "本周": "今週",
   "本月": "今月",
   "更远": "それ以降",

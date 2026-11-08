@@ -51,6 +51,8 @@ import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachmen
 import { ChainToggle, TaskChainInline } from './TaskChain';
 import { PropChips } from './PropChips';
 import { DateQuickButton } from './TaskDatePicker';
+import { MoodQuickButton } from './MoodQuickButton';
+import { canHaveMood } from '../../lib/prop-chips';
 import { useLocked } from '../../lib/strict';
 import { ClipboardButton } from '../attachments/ClipboardButton';
 import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '../CountControls';
@@ -901,6 +903,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
             <CompletionPill store={store} task={task} today={today} primary={primary} secondary={secondary} addCount={addCount} counting={counting} />
             {/* 日期快捷按钮、剪贴板按钮（Rei 2026-10-29「任务和日记 editor 要行为一致」） */}
             <DateQuickButton store={store} task={task} today={today} isDisabled={locked} />
+            {/* 心情按钮（Rei 2026-11-08 23:44）：日期右边；只给能有心情的任务（不重复、不是倒数日） */}
+            {canHaveMood(task) && <MoodQuickButton store={store} task={task} isDisabled={locked} />}
             {!locked && <ClipboardButton onFiles={addFiles} />}
           </>
         }
