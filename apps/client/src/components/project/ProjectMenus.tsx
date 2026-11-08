@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Button as RacButton, Separator } from 'react-aria-components';
 import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, GanttChart, Kanban, LayoutList, Workflow, type LucideIcon } from 'lucide-react';
-import type { ProjectView, SortDir, SortField } from '../../lib/project-view';
+import { DEFAULT_PREFS, SORT_FIELDS, type ProjectView, type SortDir, type SortField } from '../../lib/project-view';
 import { Tip } from '../../ui/primitives';
 
 import { tr } from '../../lib/i18n';
@@ -20,7 +20,6 @@ export const VIEW_LABEL: Record<ProjectView, () => string> = {
 };
 
 const SORT_LABEL: Record<SortField, () => string> = {
-  default: () => tr('默认顺序'),
   created: () => tr('创建时间'),
   updated: () => tr('修改时间'),
   start: () => tr('开始时间'),
@@ -80,11 +79,13 @@ export function ViewMenu({ view, onChange }: { view: ProjectView; onChange: (v: 
 }
 
 export function SortMenu({ field, dir, onChange }: { field: SortField; dir: SortDir; onChange: (field: SortField, dir: SortDir) => void }) {
-  const label = field === 'default' ? tr('排序：{name}', { name: SORT_LABEL[field]() }) : tr('排序：{name}，{dir}', { name: SORT_LABEL[field](), dir: dir === 'asc' ? tr('正序') : tr('倒序') });
+  const label = tr('排序：{name}，{dir}', { name: SORT_LABEL[field](), dir: dir === 'asc' ? tr('正序') : tr('倒序') });
+  // 没改过（创建时间倒序）时图标是普通色，改过才是强调色
+  const changed = field !== DEFAULT_PREFS.sort || dir !== DEFAULT_PREFS.dir;
   return (
     <MenuTrigger>
       <Tip content={label}>
-        <RacButton className={`icon-btn${field !== 'default' ? ' is-active' : ''}`} aria-label={label}>
+        <RacButton className={`icon-btn${changed ? ' is-active' : ''}`} aria-label={label}>
           <ArrowUpDown size={18} />
         </RacButton>
       </Tip>
@@ -100,7 +101,7 @@ export function SortMenu({ field, dir, onChange }: { field: SortField; dir: Sort
             }}
           >
             <Header className="menu-header">{tr('排序依据')}</Header>
-            {(['default', 'created', 'updated', 'start', 'due'] as const).map((f) => (
+            {SORT_FIELDS.map((f) => (
               <Item key={f} id={f}>
                 {SORT_LABEL[f]()}
               </Item>
@@ -110,17 +111,17 @@ export function SortMenu({ field, dir, onChange }: { field: SortField; dir: Sort
           <MenuSection
             selectionMode="single"
             disallowEmptySelection
-            selectedKeys={field === 'default' ? [] : [dir]}
+            selectedKeys={[dir]}
             onSelectionChange={(keys) => {
               const k = [...keys][0];
               if (k === 'asc' || k === 'desc') onChange(field, k);
             }}
           >
             <Header className="menu-header">{tr('顺序')}</Header>
-            <Item id="asc" isDisabled={field === 'default'} icon={<ArrowUpNarrowWide size={16} />}>
+            <Item id="asc" icon={<ArrowUpNarrowWide size={16} />}>
               {tr('正序')}
             </Item>
-            <Item id="desc" isDisabled={field === 'default'} icon={<ArrowDownWideNarrow size={16} />}>
+            <Item id="desc" icon={<ArrowDownWideNarrow size={16} />}>
               {tr('倒序')}
             </Item>
           </MenuSection>

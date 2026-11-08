@@ -13,9 +13,12 @@ import { addDays, diffDays, startOfWeek, TASK_STATUSES, type DateKey, type Task,
 export type ProjectView = 'list' | 'board' | 'timeline' | 'chain';
 export const PROJECT_VIEWS: readonly ProjectView[] = ['list', 'board', 'timeline', 'chain'];
 
-/** default = 原来的顺序（任务的 sort 字段，再按创建时间），也是没选过时的默认。 */
-export type SortField = 'default' | 'created' | 'updated' | 'start' | 'due';
-export const SORT_FIELDS: readonly SortField[] = ['default', 'created', 'updated', 'start', 'due'];
+/**
+ * 排序依据。没选过时按创建时间倒序，新加的在最上（Rei 2026-11-08「项目 默认排序 添加时间 倒序 / 删除"默认排序"」）。
+ * 以前还有 'default'（任务的 sort 字段），已删；本机设置里存的 'default' 读出来当创建时间倒序（normalizePrefs）。
+ */
+export type SortField = 'created' | 'updated' | 'start' | 'due';
+export const SORT_FIELDS: readonly SortField[] = ['created', 'updated', 'start', 'due'];
 export type SortDir = 'asc' | 'desc';
 
 export type TimelineScale = 'day' | 'week' | 'month';
@@ -30,18 +33,20 @@ export interface ProjectViewPrefs {
   endedOpen: boolean;
 }
 
-export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false };
+export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false };
 
 /**
  * 本机设置里存的值读出来先过一遍：认不出的回落默认。
  * 以前的「关系图」（graph，Rei 2026-10-26 删掉）和「卡片」（cards）都回落成列表。
+ * 排序没存、存的是删掉的 'default' 或认不出：创建时间倒序，存的 dir 不看（老的 'default' 存的是 asc）。
  */
 export function normalizePrefs(v: unknown): ProjectViewPrefs {
   const o = (v && typeof v === 'object' ? v : {}) as Partial<Record<keyof ProjectViewPrefs, unknown>>;
   return {
     view: PROJECT_VIEWS.includes(o.view as ProjectView) ? (o.view as ProjectView) : DEFAULT_PREFS.view,
-    sort: SORT_FIELDS.includes(o.sort as SortField) ? (o.sort as SortField) : DEFAULT_PREFS.sort,
-    dir: o.dir === 'desc' ? 'desc' : 'asc',
+    ...(SORT_FIELDS.includes(o.sort as SortField)
+      ? { sort: o.sort as SortField, dir: o.dir === 'desc' ? ('desc' as const) : ('asc' as const) }
+      : { sort: DEFAULT_PREFS.sort, dir: DEFAULT_PREFS.dir }),
     scale: TIMELINE_SCALES.includes(o.scale as TimelineScale) ? (o.scale as TimelineScale) : DEFAULT_PREFS.scale,
     endedOpen: o.endedOpen === true,
   };
@@ -63,7 +68,7 @@ export function taskDue(t: DatedTask): DateKey | null {
 
 type SortableTask = Pick<Task, 'id' | 'sort' | 'created_at' | 'updated_at' | 'scheduled_date' | 'target_date' | 'completion_mode'> & { end_date?: DateKey | null };
 
-function keyOf(t: SortableTask, field: Exclude<SortField, 'default'>): string | null {
+function keyOf(t: SortableTask, field: SortField): string | null {
   switch (field) {
     case 'created':
       return t.created_at || null;
@@ -76,18 +81,16 @@ function keyOf(t: SortableTask, field: Exclude<SortField, 'default'>): string | 
   }
 }
 
-/** 原来的顺序：sort 小的在前，一样时先建的在前（和 store.tasks() 一致）。 */
+/** 值一样时的次序：sort 小的在前，一样时先建的在前（和 store.tasks() 一致），结果稳定。 */
 function defaultCompare(a: SortableTask, b: SortableTask): number {
   return a.sort - b.sort || (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0);
 }
 
 /**
  * 按字段排序，不改原数组。没有这个值的排最后（正序倒序都是）；值一样时按原来的顺序，结果稳定。
- * default 只看原来的顺序，dir 不起作用。
  */
 export function sortTasks<T extends SortableTask>(tasks: readonly T[], field: SortField, dir: SortDir): T[] {
   const out = [...tasks];
-  if (field === 'default') return out.sort(defaultCompare);
   const sign = dir === 'desc' ? -1 : 1;
   return out.sort((a, b) => {
     const ka = keyOf(a, field);

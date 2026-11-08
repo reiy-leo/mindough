@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardColumns, normalizePrefs, sortTasks, taskDue, taskSpan, taskStart, timelineLayout } from './project-view';
+import { DEFAULT_PREFS, boardColumns, normalizePrefs, sortTasks, taskDue, taskSpan, taskStart, timelineLayout } from './project-view';
 
 type T = Parameters<typeof sortTasks>[0][number] & { status: '待办' | '进行中' | '完成' | '关闭' };
 let n = 0;
@@ -16,14 +16,18 @@ const t = (o: Partial<T> = {}): T => ({
 });
 
 describe('项目页视图设置 normalizePrefs', () => {
-  it('没存过：列表、默认顺序、周', () => {
-    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false });
+  it('没存过：列表、创建时间倒序、周（Rei 2026-11-08）', () => {
+    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
+  });
+  it('老的「默认顺序」读出来当创建时间倒序，存的 asc 不看', () => {
+    expect(normalizePrefs({ view: 'board', sort: 'default', dir: 'asc' })).toEqual({ view: 'board', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
+    expect(normalizePrefs({ sort: 'created', dir: 'asc' })).toMatchObject({ sort: 'created', dir: 'asc' });
   });
   it('以前的关系图、卡片回落成列表；认不出的字段回落默认', () => {
     expect(normalizePrefs({ view: 'graph' }).view).toBe('list');
     expect(normalizePrefs({ view: 'cards' }).view).toBe('list');
     expect(normalizePrefs({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' })).toEqual({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month', endedOpen: false });
-    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false });
+    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
   });
   it('「已结束」那段默认收起，只认 true（Rei 2026-11-08）', () => {
     expect(normalizePrefs({ view: 'list' }).endedOpen).toBe(false);
@@ -72,9 +76,8 @@ describe('排序 sortTasks', () => {
   const b = t({ id: 'b', sort: 1, created_at: '2026-10-01T00:00:00Z', updated_at: '0000000300-0000-x', scheduled_date: null });
   const c = t({ id: 'c', sort: 2, created_at: '2026-10-02T00:00:00Z', updated_at: '0000000200-0000-x', scheduled_date: '2026-10-05' });
   const ids = (xs: { id: string }[]) => xs.map((x) => x.id);
-  it('默认：sort 字段（原来的顺序），dir 不起作用', () => {
-    expect(ids(sortTasks([a, b, c], 'default', 'asc'))).toEqual(['b', 'c', 'a']);
-    expect(ids(sortTasks([a, b, c], 'default', 'desc'))).toEqual(['b', 'c', 'a']);
+  it('默认：创建时间倒序，新加的在最上', () => {
+    expect(ids(sortTasks([a, b, c], DEFAULT_PREFS.sort, DEFAULT_PREFS.dir))).toEqual(['a', 'c', 'b']);
   });
   it('创建 / 修改时间正序倒序', () => {
     expect(ids(sortTasks([a, b, c], 'created', 'asc'))).toEqual(['b', 'c', 'a']);
