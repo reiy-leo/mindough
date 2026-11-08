@@ -215,8 +215,21 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     ctl.attach(editor);
     handle.current = ctl.handle();
     if (handleRef) handleRef.current = handle.current;
-    if (autoFocus && !readOnly) editor.commands.focus('end', { scrollIntoView: false });
+    // 自动聚焦等编辑器挂到页面上再做（这一刻 view 可能还没挂，直接 commands.focus 会抛「reading 'commands' of null」，2026-11-09）
+    let focusTimer: ReturnType<typeof setTimeout> | undefined;
+    const tryFocus = (left: number) => {
+      focusTimer = undefined;
+      try {
+        if (editor.isDestroyed) return;
+        if (editor.view.dom.isConnected) return void editor.commands.focus('end', { scrollIntoView: false });
+      } catch {
+        /* 还没挂上：下面再等等 */
+      }
+      if (left > 0) focusTimer = setTimeout(() => tryFocus(left - 1), 30);
+    };
+    if (autoFocus && !readOnly) focusTimer = setTimeout(() => tryFocus(10), 0);
     return () => {
+      if (focusTimer) clearTimeout(focusTimer);
       handle.current = null;
       if (handleRef) handleRef.current = null;
     };
