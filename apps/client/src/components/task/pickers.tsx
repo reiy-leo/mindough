@@ -70,15 +70,17 @@ export const MODE_ICON: Record<CompletionMode, typeof Timer> = { once: CircleChe
  * 倒数日只能是倒数日（「倒数日中的完成方式其他三个要灰掉 不能点」）；
  * 打卡（计时 / 计数）不能换成勾选完成或倒数日（「打卡中的勾选完成、倒数日灰掉 不能点」），计时和计数之间能换。
  * 勾选完成的任务不锁。
+ * 打卡（有重复）的勾选完成、计时、计数三种能互换（Rei 2026-11-09 01:30「打卡中"完成方式"可以选"勾选完成"」），倒数日照旧灰掉。
  */
-export function allowedModes(value: CompletionMode): readonly CompletionMode[] {
+export function allowedModes(value: CompletionMode, recurring = false): readonly CompletionMode[] {
   if (value === 'countdown') return ['countdown'];
+  if (recurring) return ['once', 'timer', 'count'];
   if (value === 'timer' || value === 'count') return ['timer', 'count'];
   return COMPLETION_MODES;
 }
 
-export function CompletionChoice({ value, onChange, compact, locked }: { value: CompletionMode; onChange: (m: CompletionMode) => void; compact?: boolean; locked?: boolean }) {
-  const allowed = locked ? allowedModes(value) : COMPLETION_MODES;
+export function CompletionChoice({ value, onChange, compact, locked, recurring }: { value: CompletionMode; onChange: (m: CompletionMode) => void; compact?: boolean; locked?: boolean; recurring?: boolean }) {
+  const allowed = locked ? allowedModes(value, recurring) : COMPLETION_MODES;
   return (
     <RadioGroup aria-label={tr('怎么算完成')} className={`mode-choice${compact ? ' is-compact' : ''}`} value={value} onChange={(v) => onChange(v as CompletionMode)}>
       {COMPLETION_MODES.map((m) => {
@@ -138,7 +140,8 @@ function CountSentence({ value, onChange }: { value: CompletionValue; onChange: 
     <div className="sentence count-sentence">
       <div className="count-line">
         <span>{tr('目标')}</span>
-        <InlineNumber label={tr('目标数量')} value={value.target_value ?? 1} onChange={(v) => onChange({ target_value: Math.max(1, v) })} width={4} />
+        {/* 计数目标最少 2（Rei 2026-11-09 01:30「打卡 计数 最小数值2」）：1 就是勾选完成 */}
+        <InlineNumber label={tr('目标数量')} value={Math.max(2, value.target_value ?? 2)} min={2} onChange={(v) => onChange({ target_value: Math.max(2, v) })} width={4} />
         <InlineText
           label={tr('单位')}
           value={unit}
@@ -244,12 +247,12 @@ export function CompletionSentence({ value, onChange, today }: { value: Completi
   }
 }
 
-/** 切换完成方式时补上合理的默认值（计时 10 分钟、计数 1 次）。 */
+/** 切换完成方式时补上合理的默认值（计时 10 分钟、计数 2 次，2026-11-09 起计数最少 2）。 */
 export function modeDefaults(mode: CompletionMode, cur: CompletionValue): Partial<CompletionValue> {
   if (mode === cur.completion_mode) return {};
   if (mode === 'timer') return { completion_mode: mode, target_value: 10 * 60_000 };
   // 计数：按单位填默认步长（Rei 2026-10-26）；已经有步长的（以前设过）不动
-  if (mode === 'count') return { completion_mode: mode, target_value: 1, ...(countConfigOf(cur).step ? {} : { count_config: { ...countConfigOf(cur), ...newCountConfig(cur.unit) } }) };
+  if (mode === 'count') return { completion_mode: mode, target_value: 2, ...(countConfigOf(cur).step ? {} : { count_config: { ...countConfigOf(cur), ...newCountConfig(cur.unit) } }) };
   return { completion_mode: mode };
 }
 

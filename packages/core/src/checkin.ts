@@ -187,6 +187,16 @@ export function taskStreak(task: StreakTask, events: readonly CheckIn[], now: Da
   return computeStreak(r, metPeriods(task, events, now), toDateKey(now), since);
 }
 
+/**
+ * 打卡在界面上按哪种完成方式显示（Rei 2026-11-09 01:30「打卡 计数 最小数值2，打卡中"完成方式"可以选"勾选完成"」）：
+ * 目标不到 2 的计数打卡（老数据里有目标 1 的）当「勾选完成」显示——进度算法本来就一样（加过一次就达标），不改数据。
+ * 别的原样。
+ */
+export function checkInMode(task: Pick<Task, 'completion_mode' | 'target_value' | 'recurrence'>): CompletionMode {
+  if (task.completion_mode === 'count' && task.recurrence && (task.target_value ?? 1) < 2) return 'once';
+  return task.completion_mode;
+}
+
 /** 打卡类任务（重复或非“点一下”）今天是否要打卡。 */
 export function isCheckInTask(task: Pick<Task, 'completion_mode' | 'recurrence'>): boolean {
   return task.recurrence !== null || task.completion_mode !== 'once';

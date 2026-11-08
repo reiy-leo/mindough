@@ -1648,3 +1648,13 @@ Rei 2026-11-09 01:27「打卡任务，如果今天有节点，也要显示在我
 
 ### 打卡进度只放进度环 ✅（2026-11-09）
 Rei 2026-11-09 01:29「打卡进度只显示circle，不显示"0/1"这种数值」。`CheckInControl`（打卡页行、TaskRow 里的打卡行共用）：计数去掉 `CountNumber` 数字（原来点一下能手输），计时去掉时长文字；进度环外包 `HoverTip.ci-ring`（悬停 400ms 提示，同时是 role=img 的读屏名）：`countTip()`「已打 {value} 次，目标 {target} 次」/ 有单位「已打 {value} {unit}，目标 {target} {unit}」，计时「已计时 {value}，目标 {target}」/「已计时 {value}」。详情（TaskDetail Progress、底栏、进度弹层）不动，手输总数在那里。4 条新文案 9 种语言。
+
+### 打卡能选勾选完成，计数目标最少 2 ✅（2026-11-09）
+Rei 2026-11-09 01:30「打卡 计数 最小数值2，打卡中"完成方式"可以选"勾选完成"」。
+
+- core `checkInMode(task)`：有重复、计数、目标 < 2（含空）的当 `once`，别的原样。进度算法本来一样（加一次就达标），所以只在读的时候换，不迁移数据。
+- `allowedModes(value, recurring)`：打卡（有 recurrence）三种互换，倒数日只能是倒数日；没重复的照旧。`CompletionChoice` 多 `recurring` 参数，详情胶囊和新建面板都传。
+- 计数目标输入框 `min=2`，`modeDefaults('count')` 目标 2。
+- 勾选完成的打卡：TaskRow 行首圆圈、CheckInControl 都走新的 `toggleCheckIn`（没达标 = `checkIn add 1`，达标了 = `undoCheckIn(lastCountAdd)`）；详情主按钮达标后是「撤销今天的打卡」。属性胶囊：打卡的完成方式总显示（`isPropSet('mode')`）。
+- 新文案 1 条（撤销今天的打卡）9 种语言。测试：core checkin-cap +2，client allowed-modes 3、prop-chips 19。
+

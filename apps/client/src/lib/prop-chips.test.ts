@@ -35,7 +35,8 @@ describe('属性胶囊：默认值判定（Rei 2026-10-25 方案 A）', () => {
   it('重复任务：没有日期', () => {
     const task = t({ recurrence: 'FREQ=DAILY', category_id: 'c1' });
     expect(applicableProps(task)).not.toContain('date');
-    expect(setProps(task)).toEqual(['category', 'repeat']);
+    // 打卡的完成方式总是胶囊（勾选完成也是，2026-11-09）
+    expect(setProps(task)).toEqual(['category', 'mode', 'repeat']);
   });
 });
 

@@ -1647,6 +1647,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已计时 {value}": "{value} chronométré",
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} sur {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "{value} sur {target} faits",
+  "撤销今天的打卡": "Annuler le suivi du jour",
 };
 
 export const DATA: Record<string, string> = {

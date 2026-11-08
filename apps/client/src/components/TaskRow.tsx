@@ -2,9 +2,9 @@ import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, t
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
 import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
-import { categoryIcon, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
+import { categoryIcon, checkInMode, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useUi } from '../lib/ui';
-import { toggleDone, toggleMyDay, togglePin } from '../lib/actions';
+import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
 import { useLocked } from '../lib/strict';
@@ -90,7 +90,9 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 严格模式下完成 / 关闭的任务（Rei 2026-11-08）：不能加入 / 移出我的一天、置顶
   const locked = useLocked(task);
   const closed = task.status === '关闭';
-  const done = !closed && (doneOverride ?? task.status === '完成');
+  // 勾选完成的打卡（Rei 2026-11-09 01:30）：行首是勾选圆圈，勾上 = 今天打卡，再点撤销
+  const tick = !!task.recurrence && checkInMode(task) === 'once' && !closed && task.status !== '完成';
+  const done = !closed && (doneOverride ?? (tick ? !!store.progress(task.id, today)?.met : task.status === '完成'));
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
   const pinned = !!task.pinned_at;
   const inDay = pinned || store.isInMyDay(task.id, today);
@@ -103,7 +105,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图，没图就不显示）。第一条资料不算进 +N，其余的才算，悬停看全部
   const more = Math.max(0, cats.length - 1) + Math.max(0, items.length - 1);
   const allRefs = [...cats.map((c) => dataLabel(c.name)), ...items.map((i) => i.name)].join(tr('、'));
-  const isCheckInRow = checkIn && (task.completion_mode !== 'once' || !!rec);
+  const isCheckInRow = checkIn && !tick && (task.completion_mode !== 'once' || !!rec);
   const relatedCount = store.relatedTasks(task.id).length;
   // 三列布局：右列正在显示这件
   const selected = ui.editingId === task.id;
@@ -179,8 +181,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         <Checkbox
           className={`check${closed ? ' is-closed' : ''}`}
           isSelected={done || closed}
-          onChange={() => toggleDone(store, ui, task.id)}
-          aria-label={closed ? tr('已关闭，轻点可重新打开') : done ? tr('标为未完成') : tr('标为完成')}
+          onChange={() => (tick ? toggleCheckIn(store, ui, task.id, today) : toggleDone(store, ui, task.id))}
+          aria-label={tick ? (done ? tr('撤销今天的打卡') : tr('打卡')) : closed ? tr('已关闭，轻点可重新打开') : done ? tr('标为未完成') : tr('标为完成')}
         >
           <span className="check-box" aria-hidden>
             {closed ? <X size={13} strokeWidth={3} /> : <Check size={13} strokeWidth={3} />}

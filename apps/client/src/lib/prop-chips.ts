@@ -50,7 +50,8 @@ export function isPropSet(id: PropId, t: PropTask, counts: PropCounts = {}): boo
     case 'refs':
       return (counts.refs ?? 0) > 0;
     case 'mode':
-      return t.completion_mode !== 'once';
+      // 打卡的完成方式总显示成胶囊（勾选完成也是，Rei 2026-11-09 能和计数、计时互换）
+      return t.completion_mode !== 'once' || !!t.recurrence;
     case 'date':
       return !!t.scheduled_date;
     case 'repeat':

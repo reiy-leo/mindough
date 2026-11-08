@@ -68,3 +68,23 @@ describe('Store.checkIn 达标后', () => {
     expect(() => store.checkIn(t.id, 'start')).toThrow(CheckInMetError);
   });
 });
+
+describe('checkInMode（2026-11-09 01:30 勾选完成）', () => {
+  it('目标不到 2 的计数打卡当勾选完成；别的原样', async () => {
+    const { checkInMode } = await import('../src/checkin');
+    expect(checkInMode({ completion_mode: 'count', target_value: 1, recurrence: 'FREQ=DAILY' })).toBe('once');
+    expect(checkInMode({ completion_mode: 'count', target_value: null, recurrence: 'FREQ=DAILY' })).toBe('once');
+    expect(checkInMode({ completion_mode: 'count', target_value: 2, recurrence: 'FREQ=DAILY' })).toBe('count');
+    expect(checkInMode({ completion_mode: 'count', target_value: 1, recurrence: null })).toBe('count');
+    expect(checkInMode({ completion_mode: 'timer', target_value: 1, recurrence: 'FREQ=DAILY' })).toBe('timer');
+  });
+  it('勾选完成的打卡：打一次就达标，再打被拦，撤销后又能打', async () => {
+    const { store } = await open();
+    const t = store.createTask({ completion_mode: 'once', recurrence: 'FREQ=DAILY' });
+    store.checkIn(t.id, 'add', 1);
+    expect(store.progress(t.id)!.met).toBe(true);
+    expect(() => store.checkIn(t.id, 'add', 1)).toThrow(CheckInMetError);
+    store.undoCheckIn(store.lastCountAdd(t.id)!.id);
+    expect(store.progress(t.id)!.met).toBe(false);
+  });
+});

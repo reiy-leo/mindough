@@ -1,4 +1,4 @@
-import { CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, isFinished, type CompleteResult, type Store, type TaskStatus } from '@mindough/core';
+import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, isFinished, toDateKey, type CompleteResult, type Store, type TaskStatus } from '@mindough/core';
 import type { useUi } from './ui';
 import { titleOf as taskTitleOf } from './view';
 
@@ -41,6 +41,27 @@ export function toggleDone(store: Store, ui: Ui, taskId: string) {
     return;
   }
   announceComplete(store, ui, store.completeTask(taskId), t.status);
+}
+
+/**
+ * 勾选完成的打卡（Rei 2026-11-09 01:30）：圆圈勾上 = 今天打一次卡；已经打了再点 = 撤销今天这一次（可以退回去）。
+ * 目标 1 的计数打卡也走这里（core checkInMode）。
+ */
+export function toggleCheckIn(store: Store, ui: Ui, taskId: string, date: string = toDateKey(store.now())) {
+  const t = store.get('task', taskId);
+  if (!t) return;
+  if (store.progress(taskId, date)?.met) {
+    const last = store.lastCountAdd(taskId, date);
+    if (last) store.undoCheckIn(last.id);
+    return;
+  }
+  try {
+    const r = store.checkIn(taskId, 'add', 1, date);
+    if (r.completed) announceComplete(store, ui, r.completed, t.status);
+  } catch (e) {
+    if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+    throw e;
+  }
 }
 
 /** 关闭：不做了，也算结束（同样解锁后续），但不算成就。 */

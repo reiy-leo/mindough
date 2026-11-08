@@ -1,10 +1,11 @@
 import { Check, Pause, Play, Square } from 'lucide-react';
-import { CheckInMetError, formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
+import { CheckInMetError, checkInMode, formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
 import { CountQuickButtons, useCountAdd } from './CountControls';
 import { HoverTip } from '../ui/HoverTip';
 import { Button, ProgressRing } from '../ui/primitives';
 import { useUi } from '../lib/ui';
-import { announceComplete } from '../lib/actions';
+import { announceComplete, toggleCheckIn } from '../lib/actions';
+import { Checkbox } from 'react-aria-components';
 import { useNow } from '../store/StoreProvider';
 
 import { tr } from '../lib/i18n';
@@ -32,13 +33,16 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
     else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: tr('今天的打卡完成了 🎉') }, 2500);
   };
 
-  switch (task.completion_mode) {
+  // 目标 1 的计数打卡当勾选完成（core checkInMode，Rei 2026-11-09）
+  switch (checkInMode(task)) {
     case 'once':
+      // 勾选圆圈（Rei 2026-11-09 01:30「打卡中"完成方式"可以选"勾选完成"」）：勾上 = 今天打卡，再点撤销
       return (
-        <Button variant={p.met ? 'tonal' : 'secondary'} className="ci-btn" onPress={() => !p.met && record('add', 1)} isDisabled={p.met} aria-label={p.met ? tr('今天已打卡') : tr('打卡')}>
-          <Check size={16} />
-          {!compact && (p.met ? tr('已打卡') : tr('打卡'))}
-        </Button>
+        <Checkbox className="check ci-tick" isSelected={p.met} onChange={() => toggleCheckIn(store, ui, task.id, today)} aria-label={p.met ? tr('撤销今天的打卡') : tr('打卡')}>
+          <span className="check-box" aria-hidden>
+            <Check size={13} strokeWidth={3} />
+          </span>
+        </Checkbox>
       );
     case 'count':
       return <CountCheckIn store={store} task={task} today={today} compact={compact} ratio={p.ratio} value={p.value} target={p.target ?? 1} met={p.met} />;

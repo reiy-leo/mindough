@@ -17,6 +17,7 @@ import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shape
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import {
+  checkInMode,
   describeCompletion,
   describeRecurrence,
   formatTaskTime,
@@ -122,8 +123,8 @@ export function PropChips({
       case 'refs':
         return { icon: <Library size={14} />, text: '', aria: '' };
       case 'mode': {
-        const Icon = MODE_ICON[task.completion_mode];
-        const s = describeCompletion(task, today, dateMode);
+        const Icon = MODE_ICON[checkInMode(task)];
+        const s = describeCompletion({ ...task, completion_mode: checkInMode(task) }, today, dateMode);
         return { icon: <Icon size={14} />, text: s, aria: s };
       }
       case 'date': {
@@ -213,7 +214,8 @@ export function PropChips({
       case 'mode':
         return (
           <div className="pop-section">
-            <CompletionChoice compact locked value={task.completion_mode} onChange={(m) => patch(modeDefaults(m, task))} />
+            {/* 目标 1 的计数打卡当勾选完成显示（core checkInMode，Rei 2026-11-09） */}
+            <CompletionChoice compact locked recurring={!!task.recurrence} value={checkInMode(task)} onChange={(m) => patch(modeDefaults(m, { ...task, completion_mode: checkInMode(task) }))} />
             <CompletionSentence value={task} today={today} onChange={(p) => patch(p)} />
           </div>
         );
@@ -383,7 +385,7 @@ function addIcon(id: PropId, task: Task): ReactNode {
     case 'refs':
       return <Library size={16} />;
     case 'mode': {
-      const Icon = MODE_ICON[task.completion_mode];
+      const Icon = MODE_ICON[checkInMode(task)];
       return <Icon size={16} />;
     }
     case 'date':

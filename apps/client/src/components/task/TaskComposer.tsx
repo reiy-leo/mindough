@@ -452,7 +452,7 @@ function Composer() {
 
         <section className="composer-section">
           <h3 className="composer-label">{tr('怎么算完成')}</h3>
-          <CompletionChoice locked={d.modeLocked} value={d.completion_mode} onChange={(m) => set({ ...modeDefaults(m, d), modeTouched: true })} />
+          <CompletionChoice locked={d.modeLocked} recurring={!!d.recurrence} value={d.completion_mode} onChange={(m) => set({ ...modeDefaults(m, d), modeTouched: true })} />
           <CompletionSentence value={d} today={today} onChange={(p) => set(p)} />
         </section>
 

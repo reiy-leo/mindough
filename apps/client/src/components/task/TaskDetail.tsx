@@ -30,7 +30,7 @@ import {
   type Task,
   type TaskType,
 } from '@mindough/core';
-import { CheckInMetError, plainTitleMarkdown, shownFields } from '@mindough/core';
+import { CheckInMetError, checkInMode, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
 import { RefList, RefPicker } from '../library/RefPicker';
@@ -38,7 +38,7 @@ import { useNow, useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
 import { useDateDisplay } from '../../lib/date-display';
-import { announceComplete, archiveHabit, closeTask, toggleMyDay, togglePin, tryAddDependency, tryLinkTasks } from '../../lib/actions';
+import { announceComplete, archiveHabit, closeTask, toggleCheckIn, toggleMyDay, togglePin, tryAddDependency, tryLinkTasks } from '../../lib/actions';
 import { TaskSearch, taskStateText } from './TaskSearch';
 import { imageUrl, titleOf } from '../../lib/view';
 import { typeIcon } from '../../lib/icons';
@@ -305,11 +305,13 @@ function useActions(store: Store, task: Task, done: () => void) {
   let primary: Act | null = null;
   let secondary: Act | null = null;
   if (!isFinished(task.status) && p) {
-    switch (task.completion_mode) {
+    // 目标 1 的计数打卡当勾选完成（core checkInMode，Rei 2026-11-09）
+    switch (recurring ? checkInMode(task) : task.completion_mode) {
       case 'once':
+        // 勾选完成的打卡：打了以后能撤销今天这一次（Rei 2026-11-09 01:30）
         primary = recurring
           ? p.met
-            ? { label: tr('今天已打卡'), icon: <Check size={16} />, onPress: () => {}, disabled: true }
+            ? { label: tr('撤销今天的打卡'), icon: <RotateCcw size={16} />, onPress: () => toggleCheckIn(store, ui, task.id, today) }
             : { label: tr('打卡'), icon: <Check size={16} />, onPress: () => record('add', 1) }
           : { label: tr('完成'), icon: <Check size={16} />, onPress: complete };
         break;

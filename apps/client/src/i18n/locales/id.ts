@@ -1647,6 +1647,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已计时 {value}": "{value} tercatat",
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} dari {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "{value} dari {target} selesai",
+  "撤销今天的打卡": "Batalkan check-in hari ini",
 };
 
 export const DATA: Record<string, string> = {

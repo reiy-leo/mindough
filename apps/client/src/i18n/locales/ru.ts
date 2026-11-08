@@ -1647,6 +1647,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已计时 {value}": "Засечено {value}",
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} из {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "Сделано {value} из {target}",
+  "撤销今天的打卡": "Отменить сегодняшнюю отметку",
 };
 
 export const DATA: Record<string, string> = {
