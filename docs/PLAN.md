@@ -1374,6 +1374,18 @@ Rei 2026-11-08 三条：「我的一天中，未完成、完成两个section显�
 - **改日期就移出**：放在 `Store.updateTask` 里：`scheduled_date` 或 `end_date` 真变了、新开始日不空、任务在设备今天的我的一天里，而新的日期（段）既不含设备的今天、也不含任务时区的今天（`keepsMyDayAfterDate`），就 `removeFromMyDay`。它会写墓碑（`myDayEntryId`），`syncAutoMyDay` 看到当天有过行就不再加。所有改日期的入口都走 `updateTask`，所以不用一个个改；同步拉下来的行走 `applyRemote`，不经过这里，别的设备只收到那条墓碑，不会再移一次。清空日期留着。从提示里撤销改日期不会把它放回我的一天。
 - **测试**：core `myday-order.test.ts` 13 项（后加的在上、同一毫秒叠上去、拖过后新加的在上、老数据、自动加的位置、autoSort / topSort、两台设备同步后顺序一样、分段与段内拖动、改到以后 / 以前移出且当天不再自动加、改成今天 / 清空 / 段含今天留着、同步不重复移）。演示数据倒着加，显示顺序不变。
 
+### 弹窗搜索框里退格不关窗、不乱跳 ✅（2026-11-08）
+Rei 2026-11-08「弹窗的搜索框，backspace删除时会错误地关闭窗口并乱跳转」。2026-11-02 修过一次（e5277ba，见上面「挑任务的搜索框」），那次只让全局快捷键让路，没找到真正的原因。
+
+- **根因**：WebKit（macOS、iOS 的 App 用的 WKWebView）默认开着「退格 = 返回上一页」：Backspace 落在不能打字的元素上、没人 preventDefault，就 `history.back()`。路由在 hash 里，一返回，详情的 `?task=` 没了或回到上一个页面，详情里开着的弹窗跟着卸掉。搜索框能打字，按键为什么落到别处：react-aria 的 Autocomplete（挑任务、币种选择）把输入框里的每个按键再造一份，派发到列表或高亮的那一项上，这份的 target 是列表。Chromium（Windows、安卓、网页版）没有退格返回，所以只在 Mac / iOS 的 App 里出现；Playwright 的 Linux WebKit 也不返回，浏览器里测不出来，只能测到「按键被转发到了列表」这一步。
+- **改法**：
+  - 源头：`lib/backspace-guard.ts` 的 `keepEditKeysInInput` 挂在 Autocomplete 外层的捕获阶段（`useImeQuery` 的 handlers 带上了，挑任务用；币种选择单独包一层），Backspace / Delete 停在输入框里，不再转发。不能在转发的那份上 preventDefault：Autocomplete 看到被拦，会连原来的按键一起拦，字就删不掉了。
+  - 兜底：`installBackspaceGuard`（`main.tsx` 装上）在 window 冒泡阶段，Backspace / Delete 落在不能打字的元素上、焦点也不在输入框 / 文本框 / 编辑器里、没人处理过、不在组字，就 preventDefault。属性胶囊上按退格清除照旧（它自己先处理了）。
+  - 空框按退格：类型选择（`CategoryPicker`）以前空框按退格会删掉最后一个已选类型，删光了胶囊消失、弹层跟着关；这个去掉了，去掉已选类型用它上面的 ×。
+  - Esc：⌘F 搜索框的 `onKeyDown` 被 react-aria 包过，默认拦住冒泡，Esc 到不了弹窗，一直关不掉；现在别的键都 `continuePropagation`。其他弹窗 Esc 本来就能关。
+  - 字母键：全局 N、方向键、类型页打字跳搜索框都已经用 `typingKey`（焦点在能打字的地方或在组字就让路），这次没改。
+- **测试**：`lib/backspace-guard.test.tsx` 7 项（页面上退格被拦、输入框 / 文本框 / 编辑器 / 组字不拦、转发的那份不拦、挑任务和币种选择删字时退格 Delete 不再转发到列表而方向键照转）；`TaskSearch.test.tsx` 跟着改。浏览器里逐个弹窗（⌘F、三种关系、属性的类型 / 项目 / 资料 / 日期、新建面板的相关任务）打字、退格到空再多按、Delete，看弹窗还在、地址没变、焦点在框里：`work/shots-tool/popup-backspace.mjs`（LightVela，Chromium + WebKit）。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。
