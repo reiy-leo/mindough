@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Sparkles, Tag, X } from 'lucide-react';
-import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsOf, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
+import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
 import { itemTaskBody, newCountConfig, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
@@ -170,10 +170,12 @@ function Composer() {
   const legacyType = !mainType && defaultLib && defaultLib.id !== PLAIN_TYPE_ID && shownFields(defaultLib).length > 0 ? defaultLib : undefined;
   // 任务字段：每个挂着资料的库各自的，外加默认库；同一个 key 只要一个
   // 人物库不显示任务字段（和详情一样）
+  const itemsOfType = (type: TaskType) => (groups.find((g) => g.type.id === type.id)?.entries ?? []).filter((e) => e.kind === 'item').map((e) => store.get('library_item', e.id)).filter((x): x is NonNullable<typeof x> => !!x);
   const fieldLibs = [...groups.map((g) => g.type).filter((t) => !isPersonLibrary(t)), ...(mainType && !groups.some((g) => g.type.id === mainType.id) ? [mainType] : [])];
   const seen = new Set<string>();
   const fieldSets = fieldLibs
-    .map((type) => ({ type, fields: taskFieldsOf(type).filter((f) => (seen.has(f.key) ? false : (seen.add(f.key), true))) }))
+    // 挂的这个库的资料都是电影：不显示「看到哪」，也不从第一行认集数（Rei 2026-11-08，core taskFieldsFor）
+    .map((type) => ({ type, fields: taskFieldsFor(type, itemsOfType(type)).filter((f) => (seen.has(f.key) ? false : (seen.add(f.key), true))) }))
     .filter((x) => x.fields.length > 0);
   const allTaskFields: FieldDef[] = fieldSets.flatMap((x) => x.fields);
   const cats = d.categoryIds.map((id) => store.category(id)).filter((c): c is NonNullable<typeof c> => !!c);

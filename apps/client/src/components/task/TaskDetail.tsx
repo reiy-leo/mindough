@@ -20,7 +20,8 @@ import {
   hasLibrary,
   isPersonLibrary,
   libraryCopy,
-  taskFieldsOf,
+  taskFieldsFor,
+  isMovieItem,
   toDateKey,
   type FieldDef,
   type FieldValue,
@@ -206,7 +207,8 @@ function Body({ store, task, placeholder }: { store: Store; task: Task; placehol
     store.updateTask(task.id, { body_md: body });
     // 看到哪还空着、第一行写了 S02E03 / 第二季第三集：顺手填上，提示里可以撤销
     const type = store.get('task_type', task.type_id);
-    const ep = type?.fields.find((f) => f.kind === 'episode' && f.scope === 'task');
+    // 挂的是电影就不认（电影不显示看到哪，Rei 2026-11-08）
+    const ep = isMovieItem(store.itemOf(task)) ? undefined : type?.fields.find((f) => f.kind === 'episode' && f.scope === 'task');
     const cur = store.get('task', task.id);
     const m = ep && cur && (cur.type_data[ep.key] === undefined || cur.type_data[ep.key] === null || cur.type_data[ep.key] === '') ? findEpisode(firstLine(body)) : null;
     if (ep && cur && m) {
@@ -688,8 +690,10 @@ function RefsSection({ store, task, today }: { store: Store; task: Task; today: 
   // 任务字段：挂着资料的库各自的，外加老任务只选了库没选资料的那个库（type_id）；同一个 key 只出现一次
   const seen = new Set<string>();
   // 人物库不显示任务字段（人物库自带的「事由」等字段只在人物卡里用）
+  // 挂的这个库的资料都是电影：不显示「看到哪」（Rei 2026-11-08，core taskFieldsFor；值不删）
+  const itemsOf = (type: TaskType) => (groups.find((g) => g.type.id === type.id)?.entries ?? []).filter((e) => e.kind === 'item').map((e) => store.get('library_item', e.id)).filter((x): x is NonNullable<typeof x> => !!x);
   const fieldsOf = (type: TaskType) =>
-    (isPersonLibrary(type) ? [] : taskFieldsOf(type)).filter((f) => {
+    (isPersonLibrary(type) ? [] : taskFieldsFor(type, itemsOf(type))).filter((f) => {
       if (seen.has(f.key)) return false;
       seen.add(f.key);
       return true;

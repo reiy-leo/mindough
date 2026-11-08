@@ -89,6 +89,27 @@ export function taskFieldsOf(type: Pick<TaskType, 'fields'> | null | undefined):
   return (type?.fields ?? []).filter((f) => isShownField(f) && isTaskField(f));
 }
 
+/**
+ * 这条资料是电影吗（Rei 2026-11-08「电影不显示看到哪」）：资料的「电影/剧集」选了电影；没选就看来源，TMDB 的 movie/… 是电影、tv/… 是剧集。
+ * 都没有就不算（照常显示「看到哪」）。
+ */
+export function isMovieItem(item: Pick<LibraryItem, 'fields'> | null | undefined): boolean {
+  const kind = item?.fields?.kind;
+  if (kind === '电影') return true; // i18n-ignore 选项值（数据）
+  if (kind === '剧集') return false; // i18n-ignore 选项值（数据）
+  const src = sourceOfFields(item?.fields);
+  return src?.source === 'tmdb' && src.sourceId.startsWith('movie/');
+}
+
+/**
+ * 挂着这些资料时显示的任务字段：挂的资料都是电影，就不显示「看到哪」（kind: episode）。值不删，只是不显示；换成剧集或去掉电影又会出来。
+ * 列表行、详情、新建面板都从这里取，别自己判断。
+ */
+export function taskFieldsFor(type: Pick<TaskType, 'fields'> | null | undefined, items: ReadonlyArray<Pick<LibraryItem, 'fields'>>): FieldDef[] {
+  const movies = items.length > 0 && items.every(isMovieItem);
+  return taskFieldsOf(type).filter((f) => !(movies && f.kind === 'episode'));
+}
+
 /** 全部任务字段（含隐藏、删掉的）：数据保留用。 */
 export function allTaskFieldsOf(type: Pick<TaskType, 'fields'> | null | undefined): FieldDef[] {
   return (type?.fields ?? []).filter(isTaskField);
