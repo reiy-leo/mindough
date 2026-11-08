@@ -124,10 +124,10 @@ describe('粘贴', () => {
     done();
   });
 
-  it('复制出去是 markdown', () => {
+  it('复制出去是纯文字（Rei 2026-11-05，规则见 clipboard.test.ts）', () => {
     const { view, done } = setup('**粗** 和 `码`\n\n- a');
     const text = view.someProp('clipboardTextSerializer', (f) => f(view.state.doc.slice(0, view.state.doc.content.size), view));
-    expect(text).toBe('**粗** 和 `码`\n\n- a\n');
+    expect(text).toBe('粗 和 码\na');
     done();
   });
 });

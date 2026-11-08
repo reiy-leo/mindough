@@ -32,13 +32,13 @@ import { InputRule, inputRules } from '@tiptap/pm/inputrules';
 import { liftListItem, sinkListItem } from '@tiptap/pm/schema-list';
 import { findWrapping } from '@tiptap/pm/transform';
 import { goToNextCell } from '@tiptap/pm/tables';
-import { DOMParser as PMDOMParser, DOMSerializer, Fragment, Slice, type Node as PMNode, type NodeType, type Schema } from '@tiptap/pm/model';
+import { Fragment, Slice, type Node as PMNode, type NodeType, type Schema } from '@tiptap/pm/model';
 import { Plugin, PluginKey, TextSelection, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import { isRemoteImage, remoteImageText } from '../../lib/remote-image';
 import { isBlockedHref, schemeOf } from '../../lib/link-scheme';
 import { ghExtensions } from './gh-syntax';
-import { flattenDetails, unwrapOpenDetails } from './copy-details';
+import { clipboardPlugin } from './clipboard';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
@@ -653,81 +653,6 @@ export function imageFiles(data: DataTransfer | null): File[] {
   return files;
 }
 
-/** 粘贴纯文字：当 markdown 读（和以前一样）；复制出去：写成 markdown。网络图片不加载（在不挂页面的文档里转换）。 */
-function markdownClipboard(opts: BehaviorOptions) {
-  return new Plugin({
-    props: {
-      handlePaste(view, event) {
-        const data = event.clipboardData;
-        if (!data || !view.editable) return false;
-        if (view.state.selection.$from.parent.type.spec.code) return false;
-        const text = data.getData('text/plain');
-        const vscode = data.getData('vscode-editor-data');
-        if (vscode && text) {
-          let lang = '';
-          try {
-            lang = String((JSON.parse(vscode) as { mode?: string }).mode ?? '');
-          } catch {
-            /* 不是 JSON：当普通文字 */
-          }
-          const code = view.state.schema.nodes.codeBlock;
-          if (lang && code) {
-            view.dispatch(view.state.tr.replaceSelectionWith(code.create({ language: lang }, view.state.schema.text(text))).scrollIntoView());
-            return true;
-          }
-        }
-        if (data.getData('text/html') || !text) return false;
-        let doc: PMNode;
-        try {
-          doc = opts.io().parse(text);
-        } catch {
-          return false;
-        }
-        const schema = view.state.schema;
-        const detached = document.implementation.createHTMLDocument('');
-        const wrap = detached.createElement('div');
-        wrap.appendChild(DOMSerializer.fromSchema(schema).serializeFragment(doc.content, { document: detached }));
-        const slice = PMDOMParser.fromSchema(schema).parseSlice(wrap, { preserveWhitespace: true });
-        const single = slice.content.childCount === 1 && slice.content.firstChild?.type.name === 'paragraph' ? slice.content.firstChild : null;
-        try {
-          if (single && slice.openStart >= 1) view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.from(single), 1, 1)).scrollIntoView());
-          else view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      // 选区在折叠块里：复制出去不带外面那层 <details>（copy-details.ts，Rei 2026-11-05）
-      transformCopied(slice) {
-        try {
-          return unwrapOpenDetails(slice);
-        } catch {
-          return slice;
-        }
-      },
-      clipboardTextSerializer(copied) {
-        let slice = copied;
-        try {
-          // 整块选上的折叠块：纯文字里也只要标题和正文，不要标签
-          const flat = flattenDetails(copied.content);
-          if (flat !== copied.content) slice = new Slice(flat, 0, 0);
-        } catch {
-          /* 照原样 */
-        }
-        try {
-          const doc = slice.content.firstChild?.isInline ? null : opts.io();
-          if (!doc) return slice.content.textBetween(0, slice.content.size, '\n\n');
-          const schema = slice.content.firstChild!.type.schema;
-          const top = schema.topNodeType.createAndFill(undefined, slice.content);
-          return top ? doc.serialize(top) : slice.content.textBetween(0, slice.content.size, '\n\n');
-        } catch {
-          return slice.content.textBetween(0, slice.content.size, '\n\n');
-        }
-      },
-    },
-  });
-}
-
 /** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。
  * 中文输入法选词的回车、组字时 WebKit 删掉清单项的毛病在 ime-guard.ts（优先级更高，先过它）。 */
 export function behaviorExtension(opts: BehaviorOptions) {
@@ -778,7 +703,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
           },
         }),
         noImagePlugin(opts),
-        markdownClipboard(opts),
+        clipboardPlugin(opts.io),
         taskToggle(),
         linkPointer(opts),
         inputRules({ rules: syntaxRules() }),

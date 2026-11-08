@@ -22,6 +22,7 @@ import type { EditorView } from '@tiptap/pm/view';
 import { InputRule as PmInputRule } from '@tiptap/pm/inputrules';
 import { escapeTitleLine } from '@mindough/core';
 import type { MarkdownIO } from './markdown';
+import { isOwnCopy, literalParagraphs } from './clipboard';
 
 export const plainTitleKey = new PluginKey<boolean>('md-plain-title');
 
@@ -345,13 +346,17 @@ export function plainTitleExtension(opts: PlainTitleOptions) {
                 tr = state.tr.replaceSelection(new Slice(Fragment.from(headNode), 1, 1));
               } else {
                 let rest: PMNode[] = [];
-                try {
-                  opts
-                    .io()
-                    .parse(restText)
-                    .forEach((n) => void rest.push(n));
-                } catch {
-                  rest = [schema.nodes.paragraph!.create(null, schema.text(restText))];
+                // 念头团自己刚复制出去的纯文字：照字面一行一段（clipboard.ts）
+                if (isOwnCopy(text)) rest = literalParagraphs(schema, restText);
+                else {
+                  try {
+                    opts
+                      .io()
+                      .parse(restText)
+                      .forEach((n) => void rest.push(n));
+                  } catch {
+                    rest = [schema.nodes.paragraph!.create(null, schema.text(restText))];
+                  }
                 }
                 const last = rest[rest.length - 1];
                 tr = state.tr.replaceSelection(new Slice(Fragment.fromArray([headNode, ...rest]), 1, last?.isTextblock ? 1 : 0));
