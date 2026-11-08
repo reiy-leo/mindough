@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, CircleCheck, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { ListBox, ListBoxItem, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
+import { Archive, ArchiveRestore, CalendarCheck2, ChevronDown, ChevronRight, CircleCheck, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -18,7 +18,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY, openCategoryPage } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
-import { Button, ChipPicker, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { Button, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
 import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
@@ -42,6 +42,7 @@ export function CheckInsPage() {
   const idx = useMemo(() => buildRatioIndex(tasks, checkIns, now), [store.version, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const dayRatio = useCallback((d: DateKey) => idx.dayRatio(d), [idx]);
 
+  // 类型筛选（Rei 2026-11-09 01:06「打卡的全部、类型部分换成dropdown，默认显示全部」）：不记，每次进来都是「全部」
   const [cat, setCat] = useState<string>('all');
   const [arrange, setArrange] = useState<'today' | 'category'>('today');
   // 归档了的（Rei 2026-11-02「打卡任务可以归档」）不在主列表里，放在最下面折叠的「已归档」一节
@@ -196,16 +197,35 @@ export function CheckInsPage() {
 
       {allRecurring.length > 0 && (
         <div className="filter-row checkin-filters">
-          <ChipPicker
-            label={tr('按类型筛选')}
-            value={cat}
-            onChange={setCat}
-            options={[
-              { id: 'all', label: tr('全部 {length}', { length: allRecurring.length }) },
-              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} plain />, color: c.color })),
-              ...(hasUncategorized ? [{ id: NO_CATEGORY, label: tr('没有类型') }] : []),
-            ]}
-          />
+          {/* 类型筛选是个下拉（Rei 2026-11-09 01:06），各皮肤的 .select-btn 样式；选了「全部」以外的用强调色 */}
+          <RacSelect
+            aria-label={tr('按类型筛选')}
+            className={`checkin-type-select${cat !== 'all' ? ' is-active' : ''}`}
+            selectedKey={cat}
+            onSelectionChange={(k) => k !== null && setCat(String(k))}
+          >
+            <RacButton className="input select-btn">
+              <SelectValue className="select-value" />
+              <ChevronDown size={16} aria-hidden />
+            </RacButton>
+            <Popover className="popover">
+              <ListBox className="listbox">
+                <ListBoxItem id="all" className="listbox-item" textValue={tr('全部')}>
+                  {tr('全部')}
+                </ListBoxItem>
+                {usedCats.map((c) => (
+                  <ListBoxItem key={c.id} id={c.id} className="listbox-item" textValue={c.name}>
+                    <CategoryLabel c={c} size={14} />
+                  </ListBoxItem>
+                ))}
+                {hasUncategorized && (
+                  <ListBoxItem id={NO_CATEGORY} className="listbox-item" textValue={tr('没有类型')}>
+                    {tr('没有类型')}
+                  </ListBoxItem>
+                )}
+              </ListBox>
+            </Popover>
+          </RacSelect>
           <RacButton className="btn btn-quiet filter-edit" onPress={openCategoryPage}>
             {tr('编辑')}</RacButton>
           <Segmented

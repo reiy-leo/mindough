@@ -2957,9 +2957,25 @@ span.drag-handle.is-pin {
   justify-self: start;
 }
 /* 桌面：「编辑」紧跟在分类胶囊后面，排列方式靠右 */
-[data-layout='desktop'] .checkin-filters .chip-picker {
+/* 类型筛选下拉（Rei 2026-11-09）：按内容宽，太长省略；选了「全部」以外的，字和箭头用强调色（同分区按钮） */
+.checkin-type-select {
   flex: 0 1 auto;
   min-width: 0;
+}
+.checkin-type-select .select-btn {
+  width: auto;
+  min-width: 112px;
+  max-width: 240px;
+}
+.checkin-type-select.is-active .select-btn {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.checkin-type-select .select-value .cat-label,
+.checkin-type-select .select-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 [data-layout='desktop'] .checkin-filters .filter-edit {
   margin-right: auto;

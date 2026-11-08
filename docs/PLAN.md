@@ -1628,3 +1628,10 @@ Rei 2026-11-09 01:05「打卡 计数 完成4/4 居然还能继续加，不应该
 - **界面**：`CheckInControl` 计数达标后不放快捷按钮，换成灰掉的「今天已达标」勾按钮（列表行、我的一天、打卡页同一个组件）；`CountQuickButtons` 加 `isDisabled`，详情底栏和进度弹层传 `progress.met`；`useCountAdd` 达标时加正数直接提示不调 Store；`CheckInControl` / `TaskDetail` 的 record 接住 `CheckInMetError` 提示；`DeepLinks` 计数达标也走「今天已经打过卡了」，提示里的 +N 用实际记下的量。
 - **打卡页**：「按今天」：正在计时 / 今天要打卡（未达标）/ 已打卡（`section.habit-archived.habit-done`，同「已归档」的折叠样式，设置 `checkInsDoneOpen` 本机记住，默认展开）/ 已归档；去掉「其他打卡」。「按类型」不变，照旧列出全部（今天要打的在前），是看今天不用打的打卡的地方；没加新入口。正在计时那段也跟着类型筛选走了（以前不跟）。
 - **测试**：`packages/core/test/checkin-cap.test.ts` 5 项。
+
+### 打卡页类型筛选换成下拉 ✅（2026-11-09）
+Rei 2026-11-09 01:06「打卡的全部、类型部分换成dropdown，默认显示全部。」
+
+- 原来 `ChipPicker` 一排胶囊（「全部 N」+ 各类型 +「没有类型」）换成 React Aria `Select`（`.checkin-type-select`，按钮是各皮肤已有的 `.input.select-btn`，列表 `.listbox`），选项里类型带 `CategoryLabel` 图标。位置不变：`.filter-row.checkin-filters` 最左，后面「编辑」，`Segmented` 排列方式靠右（我定的：排列方式本来就在这一行，没挪到页头）。
+- 默认「全部」，用页面内 state，不写设置：每次进打卡页都是全部（Rei 倾向）。非全部时 `.is-active`：字和箭头强调色、边框掺一点强调色。
+- 「全部」不再带件数（下拉里显示件数意义不大，页头小字已有今天 x/y）。
