@@ -77,6 +77,19 @@ describe('挑任务：搜标题', () => {
     render();
     expect(titles()).toContain('旧事已结束');
   });
+  it('关系弹窗（先做完这些 / 做完后解锁 / 相关任务）也列已完成的：排在没做完的后面、淡色带「已结束」，点了照样选上（Rei 2026-11-08）', () => {
+    render();
+    const t = titles();
+    expect(t[t.length - 1]).toBe('旧事已结束');
+    const opt = [...host.querySelectorAll('[role="option"]')].find((o) => o.textContent?.startsWith('旧事')) as HTMLElement;
+    expect(opt.querySelector('.muted')).not.toBeNull();
+    act(() => {
+      opt.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }));
+      opt.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerType: 'mouse' }));
+      opt.click();
+    });
+    expect(onPick).toHaveBeenCalledWith('d');
+  });
 });
 
 describe('挑任务：中文输入法', () => {

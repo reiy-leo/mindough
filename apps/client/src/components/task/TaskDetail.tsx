@@ -567,7 +567,7 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
       <TaskSearch
         store={store}
         exclude={exclude}
-        hideFinished={kind !== 'related'}
+        // 已完成的也列出来，排在没做完的后面、淡色带「已结束」（Rei 2026-11-08「已完成的任务也在关系弹窗中显示」）
         label={tr('搜索任务，或写下新的一件')}
         onPick={(id) => {
           connect(id);
