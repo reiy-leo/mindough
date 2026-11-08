@@ -7,6 +7,7 @@ import { ONCE_PERIOD, isDueOn, parseRecurrence, periodKeyFor, computeStreak, typ
 import { isFinished, type CheckIn, type CheckInKind, type CompletionMode, type DateKey, type Task } from './types';
 
 import { tr } from './i18n';
+import { isMadeUpPeriod } from './makeup';
 export interface Progress {
   mode: CompletionMode;
   /** 计时：已用毫秒；计量：累计数量；点一下：0/1；倒数日：剩余天数（过期为负）。 */
@@ -242,6 +243,8 @@ export function formatDuration(ms: number): string {
 export interface RatioIndex {
   taskRatio(taskId: string, date: DateKey): number | null;
   dayRatio(date: DateKey): number | null;
+  /** 这个节点是补打卡补完的吗（Rei 2026-11-09 01:52，活动图画空心格；见 makeup.ts isMadeUpPeriod）。 */
+  madeUp(taskId: string, date: DateKey): boolean;
 }
 
 export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly CheckIn[], now: Date): RatioIndex {
@@ -291,5 +294,10 @@ export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly Check
     }
     return due ? sum / due : null;
   };
-  return { taskRatio, dayRatio };
+  const madeUp = (taskId: string, date: DateKey): boolean => {
+    const p = parsed.get(taskId);
+    if (!p?.rule || taskRatio(taskId, date) === null) return false;
+    return isMadeUpPeriod(p.task, byTask.get(taskId)?.get(date) ?? [], date, now);
+  };
+  return { taskRatio, dayRatio, madeUp };
 }

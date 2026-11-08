@@ -1680,3 +1680,15 @@ Rei 01:46「附件是.txt文件，点击可以和图片一样预览」，又说�
 - 取内容：`lib/text-preview.ts` `loadAttachmentText`。本机队列 → 本机缓存 → `GET /api/files/<key>`（和原图同一个接口，Web 同源带 cookie，Tauri 带 Bearer，CORS 和图片一样），边读边数，满 1 MB 就取消流，不把整个文件拉下来。Worker 不用改：接口对文本回 `content-disposition: attachment`，fetch 不管它。
 - 编码只认 UTF-8（去 BOM，截断处半个字丢掉）；前 8 KB 有 NUL 当二进制；U+FFFD 超过 1% 提示可能是别的编码。GBK 之类的不转码，待定。
 - 测试：core attachments（textPreviewFormat）、attachment-cache（按下动作）；client text-preview、TextPreview。
+### 补打卡 ✅（2026-11-09）
+Rei 2026-11-09 01:52（替代 01:12 的日历补打方案）。
+
+- **不加字段、不迁移**：`check_in.period_key` 就是「算哪一次」。一个周期从应打卡日开始、到下一个应打卡日前一天为止，两次之间记的打卡 `Store.checkIn` 按今天算出的周期键本来就是上一次。所以老客户端、Worker、同步协议都不用改，Worker 没部署。
+- **core `makeup.ts`**：`makeupState / makeupNode(task, events, today, now)`：重复、不是每天（`isDailyRule`：DAILY 或 WEEKLY 七天）、不是倒数日、没删没结束没归档、`periodStart(today) < today`、节点不早于创建日、节点没达标 → 返回节点。`makeupStarted`：节点之后到某天之间我的一天有过活行。`isMadeUpPeriod`：现在达标、但只算节点当天（本机日期）的事件不达标 → 补的。
+- **Store**：`makeupNode(taskId)`、`startMakeup(taskId)`（= addToMyDay 当天，写真行）；`isInMyDay` / `reorderMyDay` 认补打卡虚拟行（`isVirtualMakeupToday`）。
+- **我的一天**：`makeupDayItems`（id 前缀 `makeup:`）：开始过、还在同一个可补节点里，后面几天每天出虚拟行；补完那天（这一周期有当天记的事件）done=true 留在「已完成」，之后不出；这一天有过行（含墓碑）不出。`yesterdayUnfinished` 跳过还在补的。`lib/myday-items.ts` 拼进去。
+- **作废**：到下一个应打卡日 `periodStart(today) = today`，makeupState 为 null，按钮、虚拟行都没了；上一次的事件留在原周期，不搬。
+- **统计**：`metPeriods` / 连续次数不变，补完的算达成。`RatioIndex.madeUp(taskId, date)` → 打卡行活动图 `Heatmap madeUp` 画 `.heat-cell.is-madeup` 空心格（12% 底 + 1.5px 内描边），提示「补打完成」。全年总图（dayRatio）不区分（我定的：一格是多件任务的合计）。
+- **界面**：`components/MakeupButton.tsx`（Lucide `History`，TipButton，在我的一天里时 aria-pressed、强调色），放在 TaskRow 打卡控件前、打卡页行、详情进度面板右侧；严格模式（本机设置 strictMode）不渲染。打卡页「按今天」加一节「可以补打」（今天不用打、能补的）。
+- **测试**：`packages/core/test/makeup.test.ts` 8 项。
+

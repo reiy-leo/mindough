@@ -4179,3 +4179,24 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   display: inline-flex;
   flex: none;
 }
+
+/* 补打卡（Rei 2026-11-09 01:52）：活动图里补完的节点画成空心格；按钮在我的一天里是按下的样子 */
+.heat-cell.is-madeup {
+  background: color-mix(in srgb, var(--hc) 12%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--hc);
+}
+.makeup-btn {
+  flex: none;
+}
+.makeup-btn.is-on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.progress-panel .progress-makeup {
+  margin-inline-start: auto;
+}
+.habit-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

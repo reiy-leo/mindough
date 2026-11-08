@@ -1385,4 +1385,11 @@ export const EN: Record<string, EnValue> = {
   "这个文件不是纯文本，没法预览，可以下载后打开": "This file isn’t plain text, so it can’t be previewed. Download it to open.",
   "没读出文件内容，可以下载后打开": "Couldn’t read the file. Download it to open.",
   "预览「{name}」": "Preview “{name}”",
+  "已在我的一天里，打的进度会算到 {when}": "Already in My Day. Progress counts toward {when}",
+  "已放进我的一天，打的进度会算到 {when}": "Added to My Day. Progress counts toward {when}",
+  "补 {when} 的打卡 · 已在我的一天": "Making up {when} · in My Day",
+  "补打卡：补 {when} 的": "Make up for {when}",
+  "{date}：补打完成": "{date}: made up later",
+  "可以补打": "Catch up",
+  "到下一次之前都能补": "You can catch up until the next one",
 };

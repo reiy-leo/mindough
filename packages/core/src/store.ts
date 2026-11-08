@@ -9,8 +9,9 @@ import { normalizeIconColor } from './icon-color';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
-import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
+import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
+import { makeupNode as makeupNodeOf } from './makeup';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
@@ -1694,7 +1695,27 @@ export class Store {
     if (this.list('my_day').some((e) => e.task_id === taskId && e.date === date)) return true;
     // 今天要打的打卡是虚拟行（Rei 2026-11-09，myday.ts checkInDayItems）：没移出过就算在
     const t = this.get('task', taskId);
-    return !!t && isVirtualCheckInToday(t, new Map(this.list('group').map((g) => [g.id, g])), this.tables.my_day.values(), date);
+    if (!t) return false;
+    const gm = new Map(this.list('group').map((g) => [g.id, g]));
+    // 补打卡还在补的也是虚拟行（Rei 2026-11-09 01:52，myday.ts makeupDayItems）
+    return isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now());
+  }
+
+  /** 这件打卡今天能补哪个节点（Rei 2026-11-09 01:52，见 makeup.ts makeupNode）；不能补 null。严格模式不管这里，界面上不给按钮。 */
+  makeupNode(taskId: string, date: string = toDateKey(this.now())): string | null {
+    const t = this.get('task', taskId);
+    return t ? makeupNodeOf(t, this.checkInsOf(taskId), date, this.now()) : null;
+  }
+
+  /**
+   * 点补打卡：放进今天的我的一天（真行，排最上面）。之后在我的一天里打卡，Store.checkIn 按今天算出的周期键就是被补的节点。
+   * 没东西可补时什么都不做，返回 null；否则返回被补的节点。
+   */
+  startMakeup(taskId: string, date: string = toDateKey(this.now())): string | null {
+    const node = this.makeupNode(taskId, date);
+    if (!node) return null;
+    this.addToMyDay(taskId, date);
+    return node;
   }
 
   /** 按给定顺序重排当天清单。 */
@@ -1707,7 +1728,8 @@ export class Store {
       // 今天要打卡的虚拟行（Rei 2026-11-09）拖过就落成真行，记住位置
       else if (!e) {
         const t = this.get('task', tid);
-        if (t && isVirtualCheckInToday(t, new Map(this.list('group').map((g) => [g.id, g])), this.tables.my_day.values(), date))
+        const gm = new Map(this.list('group').map((g) => [g.id, g]));
+        if (t && (isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now())))
           rows.push({ table: 'my_day', row: { id: myDayEntryId(tid, date), updated_at: '', deleted: false, task_id: tid, date, sort: i + 1, added_at: this.now().toISOString() } as BaseRow });
       }
     });

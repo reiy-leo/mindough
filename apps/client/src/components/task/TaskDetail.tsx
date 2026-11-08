@@ -57,6 +57,7 @@ import { canHaveMood } from '../../lib/prop-chips';
 import { useLocked } from '../../lib/strict';
 import { ClipboardButton } from '../attachments/ClipboardButton';
 import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '../CountControls';
+import { MakeupButton } from '../MakeupButton';
 
 import { dataLabel, tr, trc } from '../../lib/i18n';
 /**
@@ -389,6 +390,7 @@ function Progress({ store, task, today, onCountInput }: { store: Store; task: Ta
           </div>
         )}
       </div>
+      {recurring && <MakeupButton store={store} task={task} className="progress-makeup" />}
     </div>
   );
 }

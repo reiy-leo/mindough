@@ -1659,6 +1659,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "这个文件不是纯文本，没法预览，可以下载后打开": "File ini bukan teks biasa sehingga tidak bisa dipratinjau. Unduh untuk membukanya.",
   "没读出文件内容，可以下载后打开": "File tidak dapat dibaca. Unduh untuk membukanya.",
   "预览「{name}」": "Pratinjau “{name}”",
+  "已在我的一天里，打的进度会算到 {when}": "Sudah ada di Hari Saya. Progres dihitung untuk {when}",
+  "已放进我的一天，打的进度会算到 {when}": "Ditambahkan ke Hari Saya. Progres dihitung untuk {when}",
+  "补 {when} 的打卡 · 已在我的一天": "Menyusul {when} · di Hari Saya",
+  "补打卡：补 {when} 的": "Susul {when}",
+  "{date}：补打完成": "{date}: disusulkan",
+  "可以补打": "Bisa disusul",
+  "到下一次之前都能补": "Bisa disusul sampai jadwal berikutnya",
 };
 
 export const DATA: Record<string, string> = {

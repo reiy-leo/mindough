@@ -1659,6 +1659,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "这个文件不是纯文本，没法预览，可以下载后打开": "Este archivo no es texto plano y no se puede previsualizar. Descárgalo para abrirlo.",
   "没读出文件内容，可以下载后打开": "No se pudo leer el archivo. Descárgalo para abrirlo.",
   "预览「{name}」": "Vista previa de «{name}»",
+  "已在我的一天里，打的进度会算到 {when}": "Ya está en Mi día. El progreso cuenta para el {when}",
+  "已放进我的一天，打的进度会算到 {when}": "Añadido a Mi día. El progreso cuenta para el {when}",
+  "补 {when} 的打卡 · 已在我的一天": "Recuperar el {when} · en Mi día",
+  "补打卡：补 {when} 的": "Recuperar el {when}",
+  "{date}：补打完成": "{date}: recuperado después",
+  "可以补打": "Por recuperar",
+  "到下一次之前都能补": "Se puede recuperar hasta la próxima vez",
 };
 
 export const DATA: Record<string, string> = {

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { ListBox, ListBoxItem, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarCheck2, ChevronDown, ChevronRight, CircleCheck, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarCheck2, ChevronDown, ChevronRight, CircleCheck, Flame, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -24,6 +24,7 @@ import { createBlankTask } from '../lib/blank-task';
 import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
 import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
+import { MakeupButton } from '../components/MakeupButton';
 import { PageHeader } from '../components/PageHeader';
 import { titleOf } from '../lib/view';
 
@@ -98,6 +99,8 @@ export function CheckInsPage() {
   const dueOpen = dueNow.filter((t) => !store.progress(t.id, today)?.met);
   const dueMet = dueNow.filter((t) => store.progress(t.id, today)?.met);
   const doneOpen = settings.checkInsDoneOpen !== false;
+  // 可以补打（Rei 2026-11-09 01:52）：今天不用打、上一个节点没达标、还没到下一个节点的（core makeupNode）；严格模式下不给补
+  const makeupList = settings.strictMode ? [] : recurring.filter((t) => !dueToday(t, today) && !!store.makeupNode(t.id, today));
   const metToday = dueNow.filter((t) => store.progress(t.id, today)?.met).length;
   const running = byCat(tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running));
   const streaks = recurring.map((t) => taskStreak(t, store.checkInsOf(t.id), now)?.current ?? 0);
@@ -149,7 +152,10 @@ export function CheckInsPage() {
               {tr('取消归档')}
             </RacButton>
           ) : (
-            <CheckInControl store={store} task={t} compact={layout === 'mobile'} />
+            <>
+              <MakeupButton store={store} task={t} />
+              <CheckInControl store={store} task={t} compact={layout === 'mobile'} />
+            </>
           )}
         </div>
         {open && (
@@ -160,6 +166,7 @@ export function CheckInsPage() {
               id={heatId}
               end={today}
               ratioFor={(d) => idx.taskRatio(t.id, d)}
+              madeUp={(d) => idx.madeUp(t.id, d)}
               color={color}
               label={tr('{title} 的打卡记录', { title: title(t) })}
             />
@@ -271,6 +278,12 @@ export function CheckInsPage() {
           <Empty title={tr('今天没有要打卡的')} />
         )}
       </Section>
+
+      {makeupList.length > 0 && (
+        <Section title={<><History size={15} /> {tr('可以补打')}</>} extra={<span className="muted small">{tr('到下一次之前都能补')}</span>}>
+          <div className="habit-list">{makeupList.filter((t) => !running.includes(t)).map(row)}</div>
+        </Section>
+      )}
 
       {dueMet.length > 0 && (
         <section className={`section habit-archived habit-done${doneOpen ? ' is-open' : ''}`}>

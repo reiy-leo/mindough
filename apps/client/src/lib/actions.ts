@@ -1,4 +1,4 @@
-import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, isFinished, toDateKey, type CompleteResult, type Store, type TaskStatus } from '@mindough/core';
+import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, formatDate, isFinished, toDateKey, type CompleteResult, type Store, type TaskStatus } from '@mindough/core';
 import type { useUi } from './ui';
 import { titleOf as taskTitleOf } from './view';
 
@@ -155,4 +155,20 @@ export function toggleMyDay(store: Store, ui: Ui, taskId: string) {
     store.addToMyDay(taskId);
     ui.toast({ tone: 'success', message: tr('已加入我的一天：「{titleOf}」', { titleOf: titleOf(store, taskId) }) }, 2500);
   }
+}
+
+/**
+ * 点补打卡（Rei 2026-11-09 01:52）：放进今天的我的一天，之后打的进度算到上一个节点（core makeup.ts / Store.startMakeup）。
+ * 已经在我的一天里了就只提示一下。
+ */
+export function startMakeup(store: Store, ui: Ui, taskId: string) {
+  const node = store.makeupNode(taskId);
+  if (!node) return;
+  const when = formatDate(node, { weekday: true });
+  if (store.isInMyDay(taskId)) {
+    ui.toast({ message: tr('已在我的一天里，打的进度会算到 {when}', { when }) }, 3000);
+    return;
+  }
+  store.startMakeup(taskId);
+  ui.toast({ tone: 'success', message: tr('已放进我的一天，打的进度会算到 {when}', { when }) }, 3500);
 }

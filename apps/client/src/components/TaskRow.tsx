@@ -17,6 +17,7 @@ import { TaskDateText } from './TaskDateText';
 import { useLunarUi } from '../lib/lunar';
 import { AvatarStack } from './Avatar';
 import { CheckInControl } from './CheckInControl';
+import { MakeupButton } from './MakeupButton';
 import { ItemArt, layoutShape } from './library/Library';
 
 import { dataLabel, tr } from '../lib/i18n';
@@ -291,6 +292,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         </span>
       </RacButton>
       <AvatarStack store={store} people={v.people.filter((p) => !(v.mediaIsAvatar && v.data.person === p.id))} />
+      {/* 补打卡（Rei 2026-11-09 01:52）：能补的时候在打卡控件前面出一个按钮，在我的一天里是按下的样子 */}
+      {isCheckInRow && showCheckIn && <MakeupButton store={store} task={task} />}
       {isCheckInRow && showCheckIn && <CheckInControl store={store} task={task} compact />}
       {trailing}
       {showMyDay && (

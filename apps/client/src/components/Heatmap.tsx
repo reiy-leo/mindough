@@ -36,6 +36,7 @@ export function Heatmap({
   describe,
   fit,
   id,
+  madeUp,
 }: {
   end: DateKey;
   weeks?: number;
@@ -47,6 +48,8 @@ export function Heatmap({
   /** 撑满容器宽度：周数和格子大小按宽度算（只配 mini 用）。 */
   fit?: boolean;
   id?: string;
+  /** 这天的打卡是补的（Rei 2026-11-09 01:52 补打卡）：画成空心格。 */
+  madeUp?: (d: DateKey) => boolean;
 }) {
   const { settings, layout } = useSettings();
   const box = useRef<HTMLDivElement>(null);
@@ -88,7 +91,9 @@ export function Heatmap({
   const text = (d: DateKey, r: number | null) =>
     describe
       ? describe(d, r)
-      : r === null
+      : r !== null && madeUp?.(d)
+        ? tr("{date}：补打完成", { date: formatDateZh(d) })
+        : r === null
         ? tr("{date}：无需打卡", { date: formatDateZh(d) })
         : tr("{date}：完成 {pct}%", {
             date: formatDateZh(d),
@@ -146,7 +151,7 @@ export function Heatmap({
                   <span
                     key={cell.date}
                     role="gridcell"
-                    className={`heat-cell lv-${cell.level}${cell.future ? " is-future" : ""}${cell.ratio === null ? " is-free" : ""}${cell.date === end ? " is-today" : ""}`}
+                    className={`heat-cell lv-${cell.level}${cell.future ? " is-future" : ""}${cell.ratio === null ? " is-free" : ""}${cell.date === end ? " is-today" : ""}${!cell.future && madeUp?.(cell.date) ? " is-madeup" : ""}`}
                     style={{ gridColumn: c + 1, gridRow: r + 1 }}
                     title={
                       cell.future ? undefined : text(cell.date, cell.ratio)

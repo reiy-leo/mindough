@@ -11,6 +11,7 @@ import { formatHlc } from './hlc';
 import { tr } from './i18n';
 import { taskToday } from './timezone';
 import { taskEndDate } from './date-range';
+import { MAKEUP_ENTRY_PREFIX, makeupNode, makeupStarted, makeupState } from './makeup';
 export function entriesFor(entries: readonly MyDayEntry[], date: DateKey): MyDayEntry[] {
   const seen = new Set<string>();
   // 同一 task_id + date 只保留一条（同步时按此合并）
@@ -160,6 +161,50 @@ export function isVirtualCheckInToday(
 }
 
 /**
+ * 补打卡带进我的一天（Rei 2026-11-09 01:52，见 makeup.ts）：点了补打卡那天写的是真行（Store.startMakeup → addToMyDay），
+ * 之后几天只要还能补（makeupNode 还是同一个节点、没达标、没到下一个节点）、而且开始过（makeupStarted），就每天出一条虚拟行。
+ * 这一天 my_day 表里已经有它的行（活的、墓碑都算，seen）就不出：活的由 myDayItems 出，墓碑 = 用户今天移出了。
+ * 补完那天那条真行落进「已完成」段（isDoneOn 看今天所在周期 = 被补的节点）；第二天不再出现。
+ */
+export function makeupDayItems(
+  tasks: Iterable<Task>,
+  groups: readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[] | ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  entries: Iterable<Pick<MyDayEntry, 'task_id' | 'date' | 'deleted'>>,
+  checkIns: readonly CheckIn[],
+  date: DateKey,
+  now: Date,
+  seen: ReadonlySet<string>,
+): MyDayItem[] {
+  const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
+  const list = [...entries];
+  const out: MyDayItem[] = [];
+  for (const task of tasks) {
+    if (seen.has(task.id) || task.pinned_at || inArchivedGroup(task, gm)) continue;
+    const st = makeupState(task, checkIns, date, now);
+    if (!st || !makeupStarted(task.id, list, st.node, addDays(date, -1))) continue;
+    // 补完了：只在补完那天（有这一天记的事件）留在「已完成」段，之后不再出现
+    if (st.met && !st.events.some((e) => toDateKey(new Date(e.at)) === date)) continue;
+    const entry: MyDayEntry = { id: MAKEUP_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: Infinity, added_at: `${date}T00:00:00.000Z` };
+    out.push({ entry, task, done: st.met });
+  }
+  return out.sort((a, b) => a.task.sort - b.task.sort || (a.task.id < b.task.id ? -1 : 1));
+}
+
+/** 这件打卡今天在我的一天里是补打卡的虚拟行吗（Store.isInMyDay / reorderMyDay 用）。 */
+export function isVirtualMakeupToday(
+  task: Task,
+  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  allEntries: Iterable<Pick<MyDayEntry, 'task_id' | 'date' | 'deleted'>>,
+  checkIns: readonly CheckIn[],
+  date: DateKey,
+  now: Date,
+): boolean {
+  const list = [...allEntries];
+  if (list.some((e) => e.task_id === task.id && e.date === date)) return false;
+  return makeupDayItems([task], groups, list, checkIns, date, now, new Set()).length > 0;
+}
+
+/**
  * 我的一天分两段（Rei 2026-11-08「未完成、完成两个 section 显示」）：未完成在上，已完成在下，各自按 sort。
  * 「已完成」就是 isDoneOn：完成、关闭，和当天周期达标的打卡。
  */
@@ -193,6 +238,8 @@ export function yesterdayUnfinished(
     const t = tasksById.get(e.task_id);
     // 置顶的今天本来就在（Rei 2026-11-08），不用带回
     if (!t || t.deleted || t.archived_at || t.pinned_at) continue;
+    // 补打卡还在补的（Rei 2026-11-09 01:52）今天由 makeupDayItems 带着，不用再列进「昨天没做完」
+    if (t.recurrence && makeupNode(t, checkIns, today, now) && makeupNode(t, checkIns, yesterday, now) === makeupNode(t, checkIns, today, now)) continue;
     // 重复任务看的是昨天那个周期；普通任务看现在的状态
     if (t.recurrence ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
   }
