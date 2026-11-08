@@ -9,7 +9,7 @@ import { normalizeIconColor } from './icon-color';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
-import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
+import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
@@ -1691,7 +1691,10 @@ export class Store {
   }
 
   isInMyDay(taskId: string, date: string = toDateKey(this.now())): boolean {
-    return this.list('my_day').some((e) => e.task_id === taskId && e.date === date);
+    if (this.list('my_day').some((e) => e.task_id === taskId && e.date === date)) return true;
+    // 今天要打的打卡是虚拟行（Rei 2026-11-09，myday.ts checkInDayItems）：没移出过就算在
+    const t = this.get('task', taskId);
+    return !!t && isVirtualCheckInToday(t, new Map(this.list('group').map((g) => [g.id, g])), this.tables.my_day.values(), date);
   }
 
   /** 按给定顺序重排当天清单。 */
@@ -1701,6 +1704,12 @@ export class Store {
     taskIds.forEach((tid, i) => {
       const e = entries.find((x) => x.task_id === tid);
       if (e && e.sort !== i + 1) rows.push({ table: 'my_day', row: { ...e, sort: i + 1 } as BaseRow });
+      // 今天要打卡的虚拟行（Rei 2026-11-09）拖过就落成真行，记住位置
+      else if (!e) {
+        const t = this.get('task', tid);
+        if (t && isVirtualCheckInToday(t, new Map(this.list('group').map((g) => [g.id, g])), this.tables.my_day.values(), date))
+          rows.push({ table: 'my_day', row: { id: myDayEntryId(tid, date), updated_at: '', deleted: false, task_id: tid, date, sort: i + 1, added_at: this.now().toISOString() } as BaseRow });
+      }
     });
     this.write(rows);
   }

@@ -109,7 +109,9 @@ describe('日期设成今天：放进我的一天', () => {
     const habit = store.createTask({ body_md: 'h', completion_mode: 'count', recurrence: 'FREQ=DAILY' });
     store.updateTask(habit.id, { scheduled_date: today(store) });
 
-    for (const t of [pinned, done, closed, archived, inArchived, habit]) expect(store.isInMyDay(t.id)).toBe(false);
+    for (const t of [pinned, done, closed, archived, inArchived]) expect(store.isInMyDay(t.id)).toBe(false);
+    // 打卡不写行；它今天要打，所以本来就在我的一天里（虚拟行，2026-11-09）
+    expect(store.list('my_day').some((e) => e.task_id === habit.id)).toBe(false);
   });
 
   it('倒数日：按开始日算，和普通任务一样；只改目标日不算', async () => {

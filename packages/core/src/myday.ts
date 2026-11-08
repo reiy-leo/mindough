@@ -103,6 +103,62 @@ export function withPinned(items: readonly MyDayItem[], pinned: readonly MyDayIt
   return [...pinned, ...items.filter((i) => !ids.has(i.task.id))];
 }
 
+/** 今天要打卡的虚拟行 id 前缀（Rei 2026-11-09 01:27）：不在 my_day 表里，拖动时才落成真行（Store.reorderMyDay）。 */
+export const CHECKIN_ENTRY_PREFIX = 'checkin:';
+
+/** 我的一天里这一项是「今天要打卡」带进来的虚拟行吗。 */
+export function isCheckInEntry(e: Pick<MyDayEntry, 'id'>): boolean {
+  return e.id.startsWith(CHECKIN_ENTRY_PREFIX);
+}
+
+/**
+ * 这件打卡今天该自动出现在我的一天吗（不看移出过没有）：按重复规则今天要打（dueToday：没结束 / 不再打卡、没归档、建了之后），
+ * 没删、不在归档的项目里、没置顶（置顶的走 pinnedDayItems）。达没达标都算：达标的在「已完成」段。
+ */
+export function isCheckInDayCandidate(
+  task: Task,
+  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  date: DateKey,
+): boolean {
+  return !task.deleted && !task.pinned_at && dueToday(task, date) && !inArchivedGroup(task, groups);
+}
+
+/**
+ * 今天要打卡的打卡任务自动出现在我的一天（Rei 2026-11-09 01:27「打卡任务，如果今天有节点，也要显示在我的一天中」）。
+ * 和置顶一样是虚拟行，不写 my_day：每天按重复规则算，各设备算出来一样，不进同步。
+ * seen：这一天 my_day 表里已经有行（活的、墓碑都算）的任务。活的照常由 myDayItems 出；墓碑 = 用户移出了当天（removeFromMyDay 写的），这一天不再出现。
+ * 排序：按任务自己的 sort（打卡页的顺序），放在当天手动加的后面。
+ */
+export function checkInDayItems(
+  tasks: Iterable<Task>,
+  groups: readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[] | ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  checkIns: readonly CheckIn[],
+  date: DateKey,
+  now: Date,
+  seen: ReadonlySet<string>,
+): MyDayItem[] {
+  const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
+  const out: MyDayItem[] = [];
+  for (const task of tasks) {
+    if (seen.has(task.id) || !isCheckInDayCandidate(task, gm, date)) continue;
+    const entry: MyDayEntry = { id: CHECKIN_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: Infinity, added_at: `${date}T00:00:00.000Z` };
+    out.push({ entry, task, done: isDoneOn(task, checkIns, date, now) });
+  }
+  return out.sort((a, b) => a.task.sort - b.task.sort || (a.task.id < b.task.id ? -1 : 1));
+}
+
+/** 这件打卡今天在我的一天里是虚拟行吗（Store.isInMyDay 用）：候选、且这一天 my_day 表里没有它的行（活的、墓碑都没有）。 */
+export function isVirtualCheckInToday(
+  task: Task,
+  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  allEntries: Iterable<Pick<MyDayEntry, 'task_id' | 'date'>>,
+  date: DateKey,
+): boolean {
+  if (!isCheckInDayCandidate(task, groups, date)) return false;
+  for (const e of allEntries) if (e.task_id === task.id && e.date === date) return false;
+  return true;
+}
+
 /**
  * 我的一天分两段（Rei 2026-11-08「未完成、完成两个 section 显示」）：未完成在上，已完成在下，各自按 sort。
  * 「已完成」就是 isDoneOn：完成、关闭，和当天周期达标的打卡。
@@ -230,7 +286,8 @@ export function suggestions(input: SuggestionInput): Suggestion[] {
   const inToday = new Set(entriesFor(input.entries, input.today).map((e) => e.task_id));
   const groups = groupMap(input.groups);
   // 置顶的每天都在我的一天里（Rei 2026-11-08），不再建议
-  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !s.task.pinned_at && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups));
+  // 今天要打的打卡自己就在我的一天里（Rei 2026-11-09，checkInDayItems），不再建议；移出了当天的也不再建议
+  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !s.task.pinned_at && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups) && !isCheckInDayCandidate(s.task, groups, input.today));
 }
 
 /**

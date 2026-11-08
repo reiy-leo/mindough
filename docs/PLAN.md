@@ -1635,3 +1635,13 @@ Rei 2026-11-09 01:06「打卡的全部、类型部分换成dropdown，默认显�
 - 原来 `ChipPicker` 一排胶囊（「全部 N」+ 各类型 +「没有类型」）换成 React Aria `Select`（`.checkin-type-select`，按钮是各皮肤已有的 `.input.select-btn`，列表 `.listbox`），选项里类型带 `CategoryLabel` 图标。位置不变：`.filter-row.checkin-filters` 最左，后面「编辑」，`Segmented` 排列方式靠右（我定的：排列方式本来就在这一行，没挪到页头）。
 - 默认「全部」，用页面内 state，不写设置：每次进打卡页都是全部（Rei 倾向）。非全部时 `.is-active`：字和箭头强调色、边框掺一点强调色。
 - 「全部」不再带件数（下拉里显示件数意义不大，页头小字已有今天 x/y）。
+
+### 今天要打的打卡自动出现在我的一天 ✅（2026-11-09）
+Rei 2026-11-09 01:27「打卡任务，如果今天有节点，也要显示在我的一天中。」
+
+- **以前**：今天要打、没达标的打卡只是「建议」（reason 今天要打卡）；只有开着「出现在我的一天」的项目里的打卡会被 `syncAutoMyDay` 写成真行。
+- **现在**：core `myday.ts` 新 `checkInDayItems(tasks, groups, checkIns, date, now, seen)`，虚拟行 id 前缀 `checkin:`（`isCheckInEntry`），候选 `isCheckInDayCandidate`：没删、没置顶（置顶走 pinnedDayItems）、`dueToday`（没结束、没归档、建了之后、按规则今天要打）、不在归档项目里。达标的也出（done=true，进「已完成」段）。`seen` = 这一天 my_day 表里有过行（含墓碑）的任务：活行照常由 myDayItems 出，墓碑 = 用户移出了当天。`lib/myday-items.ts` dayItems 拼成 [手动/自动真行, 打卡虚拟行]，再 withPinned。侧栏数字、小组件快照用同一个 dayItems。
+- **移出当天**：沿用 `removeFromMyDay`（给 myDayEntryId 写墓碑，会同步）；`Store.isInMyDay` 对虚拟行返回 true（`isVirtualCheckInToday`），所以行菜单 / 详情太阳显示「移出」。加回来 = addToMyDay 把墓碑翻回成真行。
+- **拖动**：`Store.reorderMyDay` 遇到没有行的虚拟打卡就写一条真行（myDayEntryId，sort = 新位置）。
+- **建议**：`suggestions()` 去掉打卡候选（包括移出了当天的）。
+- **测试**：`packages/core/test/myday-checkin.test.ts` 5 项；`myday.test.ts` 建议里去掉 habit，`myday-date-join.test.ts` 打卡改为断言不写行。
