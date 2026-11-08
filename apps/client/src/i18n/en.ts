@@ -12,6 +12,10 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 详情顶栏日期按钮（Rei 2026-11-08）──
+  "没有日期": "No Date",
+  "{n} 天后": (p) => `In ${n(p.n, 'day', 'days')}`,
+  "{n} 天前": (p) => `${n(p.n, 'day', 'days')} ago`,
   // ── 已完成页（Rei 2026-11-08）──
   "导航|已完成": "Completed",
   "还没有做完的任务": "Nothing completed yet",

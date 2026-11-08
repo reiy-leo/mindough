@@ -1493,3 +1493,14 @@ Rei 2026-11-08 21:53「项目 看板 不显示详情第三列，点击不显示�
 - **根因**：看板卡片是 `GridListItem`，里面放 `TaskRow`，能打开详情的只有 `TaskRow` 的标题按钮 `.row-main`。列宽 208px 起，`.row-main` 只有七八十像素宽，卡片的内边距、拖动把手旁、勾选框周围、标题和太阳之间的空隙（量下来约占卡片一半）点了都没反应，GridList 也没有 `onAction`。点到标题文字是能开的，所以时灵时不灵。不是布局把右列藏了，也不是拖动吃掉了点击，`?task=` 在点到标题时照常写。
 - **修法**：`ProjectBoard` 的 GridList 加 `onAction` → `ui.openEditor(key)`，卡片任何地方点按 / 回车都打开；卡片里的按钮（勾选、太阳、把手、标题）自己处理，不冒上来，不会开两次。拖动的尾巴（`isDragPress`）、手指长按弹出行菜单后松手（有 `[role="menu"]`）不算。选中的卡片加 `is-selected`，整张卡片染色（原来只染 `.task-row` 那块，左边把手那段不染），`cursor: pointer`。
 - **测试**：`components/project/ProjectBoard.test.tsx` 4 项（点留白、点卡片本身都打开，拖动尾巴不开，选中带 `is-selected`）；去掉 `onAction` 时前两项挂。截图脚本 `work/board-tool/probe.mjs`（LightVela，三皮肤宽屏 + 手机，点卡片空隙、拖卡片换列）。
+
+### 详情顶栏日期按钮按日期换图标 ✅（2026-11-08）
+Rei 2026-11-08 22:22「任务详情页 顶部工具栏 左侧日期按钮 没日期，显示calendar。今天是今天，则calendar-check。日期是以后，则calendar-chevrons-right，加上显示距离今天几天"5"，不显示+号、-号。日期是以前，则calendar-chevrons-left，加上显示距离今天几天"1"，不显示+号、-号。」
+
+- **四种状态**：没日期 Lucide `Calendar`；今天 `CalendarCheck`；以后 `CalendarChevronsRight` + 天数；以前 `CalendarChevronsLeft` + 天数。数字是纯数字，不带 +/-。原来的 `CalendarDays` 不用了。lucide-react 1.57 里这四个都有，不用升级。
+- **天数怎么算**：按日历日算，不按小时。「今天」用任务时区的今天（core `taskToday`，空时区 = 设备），和过期、我的一天一致。
+- **日期段**（我定的）：段里含今天就算今天；整段在以后，按开始日算天数（还有几天开始）；整段在以前，按结束日算（结束了几天）。和过期看结束日是一个道理。
+- **颜色不变**：设了日期是强调色，过期（做完、关闭的不算）是危险色。所以「以前」的按钮做完了就不红。
+- **提示和读屏**：悬停提示是含义加日期文字（「5 天后 · 11月13日 周五」），两者一样时只留一个；读屏「日期：5 天后 · 11月13日 周五」，没日期读「没有日期」。新字符串 3 条（没有日期、{n} 天后、{n} 天前），9 种语言，7 种待母语者看。
+- **代码**：core `dateQuickState`（`date-range.ts`）只算状态和天数；客户端 `lib/date-quick.ts` 的 `dateQuickView` / `dateQuickTip` 套上任务时区和文案，`DateQuickButton`（`TaskDatePicker.tsx`）按状态挑图标，有数字时按钮变宽（`.has-count`），不截断。「日期」胶囊不变。
+- **测试**：core `test/date-quick.test.ts` 9 项，client `lib/date-quick.test.ts` 5 项（含任务时区、英文单复数）。

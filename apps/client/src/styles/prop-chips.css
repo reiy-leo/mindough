@@ -159,6 +159,20 @@
 .icon-btn.date-quick.is-danger[data-hovered] {
   background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
+/* 以后 / 以前时图标旁写差几天（Rei 2026-11-08），按钮跟着变宽，不截断 */
+.icon-btn.date-quick.has-count {
+  width: auto;
+  min-width: 32px;
+  grid-auto-flow: column;
+  gap: 3px;
+  padding: 0 8px 0 7px;
+}
+.date-quick-count {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 /* 剪贴板按钮：只在剪贴板里有图片 / 文件时才出现，强调色提示能点 */
 .icon-btn.clip-btn {
   color: var(--accent);

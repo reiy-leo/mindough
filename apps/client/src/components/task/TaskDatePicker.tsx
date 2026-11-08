@@ -2,14 +2,16 @@
  * 任务的日期：胶囊行「日期」和详情顶栏的日期快捷按钮（Rei 2026-10-29「任务和日记 editor 要行为一致」）共用这一份。
  * - dateChipState：设没设、过没过期、读屏念什么（胶囊和按钮都用它）；
  * - TaskDatePicker：日期面板 + 存法（点一天就存并收起；日期段见 DatePanel，方案 A）；
- * - DateQuickButton：顶栏左边只有图标的按钮，设了日期高亮，过期变红，点开就是上面那个面板。
+ * - DateQuickButton：顶栏左边的按钮（Rei 2026-11-08）：没日期 calendar、今天 calendar-check、以后 / 以前 calendar-chevrons-right / left 加相差天数；
+ *   设了日期高亮，过期变红，点开就是上面那个面板。图标和天数见 lib/date-quick.ts。
  */
 import { useRef, useState, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Popover } from 'react-aria-components';
-import { CalendarDays } from 'lucide-react';
+import { Calendar, CalendarCheck, CalendarChevronsLeft, CalendarChevronsRight } from 'lucide-react';
 import { formatTaskDate, formatTaskDateRange, isDateRange, isFinished, isTaskOverdue, taskToday, timeZoneBadge, type DateDisplay, type Store, type Task } from '@mindough/core';
 import { Tip } from '../../ui/primitives';
 import { useDateDisplay } from '../../lib/date-display';
+import { dateQuickTip, dateQuickView } from '../../lib/date-quick';
 import { tr } from '../../lib/i18n';
 import { DatePanel } from './DatePanel';
 
@@ -58,24 +60,36 @@ export function TaskDatePicker({ store, task, today, onDone }: { store: Store; t
   );
 }
 
-/** 详情顶栏左边的日期快捷按钮：只有图标，没字。 */
+const QUICK_ICON = { none: Calendar, today: CalendarCheck, future: CalendarChevronsRight, past: CalendarChevronsLeft } as const;
+
+/** 详情顶栏左边的日期快捷按钮：图标按没日期 / 今天 / 以后 / 以前换，以后 / 以前旁边写差几天。 */
 export function DateQuickButton({ store, task, today }: { store: Store; task: Task; today: string }) {
   const mode = useDateDisplay();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
   const st = dateChipState(store, task, today, mode);
+  const view = dateQuickView(store, task, today);
+  const Icon = QUICK_ICON[view.kind];
+  const tip = dateQuickTip(view, st.text);
+  const aria = st.set ? tr('{label}：{value}', { label: tr('日期'), value: tip }) : view.when;
   return (
     <>
-      <Tip content={st.set ? st.text : tr('设日期')}>
+      <Tip content={tip}>
         <RacButton
           ref={ref}
-          className={`icon-btn date-quick${st.set ? ' is-set' : ''}${st.danger ? ' is-danger' : ''}`}
-          aria-label={st.aria}
+          className={`icon-btn date-quick${st.set ? ' is-set' : ''}${st.danger ? ' is-danger' : ''}${view.count != null ? ' has-count' : ''}`}
+          data-when={view.kind}
+          aria-label={aria}
           aria-haspopup="dialog"
           aria-expanded={open}
           onPress={() => setOpen(true)}
         >
-          <CalendarDays size={18} aria-hidden />
+          <Icon size={18} aria-hidden />
+          {view.count != null && (
+            <span className="date-quick-count" aria-hidden>
+              {view.count}
+            </span>
+          )}
         </RacButton>
       </Tip>
       {open && (

@@ -6,6 +6,10 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 详情顶栏日期按钮（Rei 2026-11-08，待母语者看）──
+  "没有日期": "日付なし",
+  "{n} 天后": "{n}日後",
+  "{n} 天前": "{n}日前",
   // ── 已完成页（Rei 2026-11-08，待母语者看）──
   "导航|已完成": "完了済み",
   "还没有做完的任务": "完了したタスクはまだありません",

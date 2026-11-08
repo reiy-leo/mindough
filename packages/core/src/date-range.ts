@@ -145,3 +145,25 @@ export function agendaBuckets<T extends Pick<Task, 'scheduled_date' | 'end_date'
   }
   return { byDate, hiddenPast };
 }
+
+/** 详情顶栏日期按钮的四种状态（Rei 2026-11-08）。 */
+export type DateQuickKind = 'none' | 'today' | 'future' | 'past';
+
+export interface DateQuickState {
+  kind: DateQuickKind;
+  /** 和今天差几天，不带正负号；没日期、今天是 0。 */
+  days: number;
+}
+
+/**
+ * 日期按钮显示什么（Rei 2026-11-08「没日期显示 calendar；今天 calendar-check；以后 calendar-chevrons-right 加天数；以前 calendar-chevrons-left 加天数」）。
+ * today 传任务时区的今天（taskToday），和过期判断一致。日期段：段里含今天算今天；整段在以后，按开始日算天数；整段在以前，按结束日算。
+ */
+export function dateQuickState(t: Pick<Task, 'scheduled_date' | 'end_date'>, today: DateKey): DateQuickState {
+  if (!t.scheduled_date) return { kind: 'none', days: 0 };
+  const start = t.scheduled_date;
+  const end = taskEndDate(t) ?? start;
+  if (start > today) return { kind: 'future', days: diffDays(today, start) };
+  if (end < today) return { kind: 'past', days: diffDays(end, today) };
+  return { kind: 'today', days: 0 };
+}
