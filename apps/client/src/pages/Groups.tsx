@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarRange, ChevronRight, Plus, Shapes } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarRange, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
 import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
-import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Section, Tip, useContextMenuAt } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Tip, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { ProjectTitle, unarchiveProject, useProjectActions } from '../components/project/ProjectActions';
 import { useUi } from '../lib/ui';
@@ -263,14 +263,24 @@ function GroupDetail({
             ))}
             {!open.length && <Empty title={tr('项目里的任务都做完了')} />}
           </div>
+          {/* 已结束那段默认收起，点段标题展开（Rei 2026-11-08）；开关样式同我的一天「已完成」，每个项目各记一份（prefs.endedOpen） */}
           {ended.length > 0 && (
-            <Section title={tr('已结束 {length}', { length: ended.length })}>
-              <div className="task-list plain">
-                {ended.map((t) => (
-                  <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
-                ))}
-              </div>
-            </Section>
+            <section className={`section project-ended${prefs.endedOpen ? ' is-open' : ''}`}>
+              <RacButton className="habit-archived-toggle" aria-expanded={prefs.endedOpen} aria-controls={`project-ended-${g.id}`} onPress={() => setPrefs({ endedOpen: !prefs.endedOpen })}>
+                <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
+                <CircleCheck size={15} aria-hidden />
+                <span className="section-title">
+                  {tr('已结束')} <span className="count">{ended.length}</span>
+                </span>
+              </RacButton>
+              {prefs.endedOpen && (
+                <div id={`project-ended-${g.id}`} className="task-list plain">
+                  {ended.map((t) => (
+                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+                  ))}
+                </div>
+              )}
+            </section>
           )}
         </>
       )}

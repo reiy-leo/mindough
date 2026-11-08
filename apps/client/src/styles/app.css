@@ -3997,6 +3997,13 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .myday-done .task-list {
   margin-top: var(--space-2);
 }
+/* 项目页列表视图的「已结束」（Rei 2026-11-08）：默认收起，开关同上 */
+.project-ended.is-open .habit-archived-chevron {
+  transform: rotate(90deg);
+}
+.project-ended .task-list {
+  margin-top: var(--space-2);
+}
 
 /* 侧栏和任务列表不显示滚动条，照样能滚（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）。
    Firefox / 新 Chromium 认 scrollbar-width，WebKit（macOS / iOS App）、WebView2、安卓 WebView 认 ::-webkit-scrollbar；两样都写。

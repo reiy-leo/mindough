@@ -26,9 +26,11 @@ export interface ProjectViewPrefs {
   sort: SortField;
   dir: SortDir;
   scale: TimelineScale;
+  /** 列表视图下面「已结束」那段展开着吗（Rei 2026-11-08「项目的已结束section默认折叠，点击可展开」）：默认收起，每个项目各记一份。 */
+  endedOpen: boolean;
 }
 
-export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'default', dir: 'asc', scale: 'week' };
+export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false };
 
 /**
  * 本机设置里存的值读出来先过一遍：认不出的回落默认。
@@ -41,6 +43,7 @@ export function normalizePrefs(v: unknown): ProjectViewPrefs {
     sort: SORT_FIELDS.includes(o.sort as SortField) ? (o.sort as SortField) : DEFAULT_PREFS.sort,
     dir: o.dir === 'desc' ? 'desc' : 'asc',
     scale: TIMELINE_SCALES.includes(o.scale as TimelineScale) ? (o.scale as TimelineScale) : DEFAULT_PREFS.scale,
+    endedOpen: o.endedOpen === true,
   };
 }
 

@@ -17,13 +17,18 @@ const t = (o: Partial<T> = {}): T => ({
 
 describe('项目页视图设置 normalizePrefs', () => {
   it('没存过：列表、默认顺序、周', () => {
-    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week' });
+    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false });
   });
   it('以前的关系图、卡片回落成列表；认不出的字段回落默认', () => {
     expect(normalizePrefs({ view: 'graph' }).view).toBe('list');
     expect(normalizePrefs({ view: 'cards' }).view).toBe('list');
-    expect(normalizePrefs({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' })).toEqual({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' });
-    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week' });
+    expect(normalizePrefs({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' })).toEqual({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month', endedOpen: false });
+    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'default', dir: 'asc', scale: 'week', endedOpen: false });
+  });
+  it('「已结束」那段默认收起，只认 true（Rei 2026-11-08）', () => {
+    expect(normalizePrefs({ view: 'list' }).endedOpen).toBe(false);
+    expect(normalizePrefs({ endedOpen: true }).endedOpen).toBe(true);
+    expect(normalizePrefs({ endedOpen: 'yes' }).endedOpen).toBe(false);
   });
 });
 
