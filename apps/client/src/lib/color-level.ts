@@ -7,12 +7,11 @@
  */
 import { useLayoutEffect, type CSSProperties } from 'react';
 import { groupColor, normalizeIconColor, type Store } from '@mindough/core';
-import { normalizeColorLevel, useSettings, type ColorLevel } from './settings';
+import { useColorLevelSetting, type ColorLevel } from './settings';
 import { readableTint, type ChipTheme } from './chip-colors';
 
 export function useColorLevel(): ColorLevel {
-  const { settings } = useSettings();
-  return normalizeColorLevel(settings.colorLevel);
+  return useColorLevelSetting();
 }
 
 /** 多彩档才给字上色：返回能读的字色（≥ 4.5:1），别的档返回 undefined（照原样）。 */

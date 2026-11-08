@@ -200,6 +200,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+/** 只读色彩档位；没有 SettingsProvider（单测里单独渲染的组件）时当标准。 */
+export function useColorLevelSetting(): ColorLevel {
+  return normalizeColorLevel(useContext(Ctx)?.settings.colorLevel);
+}
+
 export function useSettings(): SettingsCtx {
   const v = useContext(Ctx);
   if (!v) throw new Error(tr('SettingsProvider 缺失'));

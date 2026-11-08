@@ -1677,7 +1677,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "素净": "Sobre",
   "标准": "Standard",
   "多彩": "Vif",
-  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Sobre n’utilise que le noir, le blanc et le gris ; Vif étend les couleurs des projets et des types. Sur cet appareil uniquement",
+  "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Sobre n’utilise que le noir, le blanc et le gris ; Vif étend les couleurs des projets et des types. Sur cet appareil uniquement",
 };
 
 export const DATA: Record<string, string> = {
