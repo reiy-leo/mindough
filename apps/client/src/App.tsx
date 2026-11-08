@@ -17,7 +17,7 @@ import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
 import { LibraryItemPage, LibraryPage } from './pages/Library';
 import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough/core';
-import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries } from './lib/nav';
+import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries, showNewTaskFab } from './lib/nav';
 import { typeIcon } from './lib/icons';
 import { librarySidebarAction } from './lib/library-sidebar';
 import { GroupIcon } from './components/project/GroupIcon';
@@ -479,9 +479,9 @@ export function App() {
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
-  // 项目页顶上有添加框（Rei 2026-10-26「新建任务也统一换成输入框」），不再放新建按钮；
-  // 项目列表只留右上角「新建项目」（Rei 2026-11-01「项目列表中的右下的float新建任务去掉」）
-  const hideFab = route.page === 'journal' || route.page === 'group' || route.page === 'groups';
+  // 任务列表页都不放右下角新建按钮（Rei 2026-11-08 23:00「任务列表右下角的"+"新建任务按钮都去掉」）：顶上有添加框，N 照常开新建面板。
+  // 以前已去掉的：项目页（2026-10-26 换成添加框）、项目列表（2026-11-01）、日记。打卡、倒数日、资料库、人物、类型、设置还留着（先不删，Rei 定）。
+  const hideFab = !showNewTaskFab(route.page);
 
   let shell: ReactNode;
   if (layout === 'desktop') {

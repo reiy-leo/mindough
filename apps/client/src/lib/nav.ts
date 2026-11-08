@@ -71,3 +71,11 @@ export function activeGroupEntry(route: Route, pinnedIds: readonly string[]): st
 
 /** 项目图标（emoji，或 "lucide:名字"）→ 图标名，交给 typeIcon 画。空的给 📁。逻辑在 core（group.ts）。 */
 export { groupIconName } from '@mindough/core';
+
+/** 不放右下角新建按钮的任务列表页（Rei 2026-11-08 23:00「任务列表右下角的"+"新建任务按钮都去掉」）：顶上都有添加框。 */
+export const TASK_LIST_PAGES: readonly Route['page'][] = ['myday', 'agenda', 'backlog', 'doable', 'done', 'groups', 'group'];
+
+/** 这一页放不放右下角新建任务按钮：任务列表页和日记不放；打卡、倒数日、资料库、人物、类型、设置还放（先不删）。N 快捷键不受影响。 */
+export function showNewTaskFab(page: Route['page']): boolean {
+  return page !== 'journal' && !TASK_LIST_PAGES.includes(page);
+}

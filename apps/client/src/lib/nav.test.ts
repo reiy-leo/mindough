@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BUILTIN_TYPE_IDS as T } from '@mindough/core';
-import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries, routeLibraryId } from './nav';
+import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries, routeLibraryId, showNewTaskFab } from './nav';
 import { href, parseHash } from './router';
 
 describe('侧边栏「管理」一节（Rei 2026-10-26）', () => {
@@ -80,5 +80,14 @@ describe('侧边栏「计划」一节里的项目（Rei 2026-10-28）', () => {
     expect(groupIconName('lucide:home')).toBe('home');
     expect(groupIconName('')).toBe('📁');
     expect(groupIconName(null)).toBe('📁');
+  });
+});
+
+describe('右下角新建按钮（Rei 2026-11-08「任务列表右下角的"+"新建任务按钮都去掉」）', () => {
+  it('任务列表页和日记不放', () => {
+    for (const p of ['myday', 'agenda', 'backlog', 'doable', 'done', 'groups', 'group', 'journal'] as const) expect(showNewTaskFab(p)).toBe(false);
+  });
+  it('打卡、倒数日、资料库、人物、类型、设置还放', () => {
+    for (const p of ['checkin', 'countdown', 'library', 'libitem', 'people', 'person', 'types', 'settings'] as const) expect(showNewTaskFab(p)).toBe(true);
   });
 });

@@ -39,7 +39,7 @@ export function BacklogPage() {
   return (
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，加进待安排；件数挪到列表上方的小字。
-          原来页头的「新建任务」按钮去掉了：右下角新建按钮和 N 一样打开完整的新建面板 */}
+          原来页头的「新建任务」按钮去掉了，右下角的新建按钮也去掉了（Rei 2026-11-08）：N 照常打开完整的新建面板 */}
       <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id}
         meta={
           <div className="list-meta">
