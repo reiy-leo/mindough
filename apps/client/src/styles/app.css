@@ -4200,3 +4200,20 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   align-items: center;
   gap: 6px;
 }
+
+/* 打卡、倒数日页头（Rei 2026-11-09 01:59）：新建只放图标，打卡页右边是「显示哪些打卡」下拉 */
+.checkin-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn.btn-icon-only {
+  padding: 0;
+  width: 34px;
+  min-width: 34px;
+  justify-content: center;
+}
+.checkin-back {
+  align-self: flex-start;
+  margin-bottom: 4px;
+}

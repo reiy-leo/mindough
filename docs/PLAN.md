@@ -1692,3 +1692,10 @@ Rei 2026-11-09 01:52（替代 01:12 的日历补打方案）。
 - **界面**：`components/MakeupButton.tsx`（Lucide `History`，TipButton，在我的一天里时 aria-pressed、强调色），放在 TaskRow 打卡控件前、打卡页行、详情进度面板右侧；严格模式（本机设置 strictMode）不渲染。打卡页「按今天」加一节「可以补打」（今天不用打、能补的）。
 - **测试**：`packages/core/test/makeup.test.ts` 8 项。
 
+### 打卡 / 倒数日页头：新建只放图标，打卡页加「显示哪些打卡」下拉 ✅（2026-11-09）
+Rei 2026-11-09 01:59。
+
+- 新建：`Button variant="primary" className="btn-icon-only"` + `Tip` + `aria-label`，Lucide `Plus`。
+- 打卡页：页面 state `view: 'today' | 'all' | 'archived'`（不记）；React Aria `MenuTrigger` + `Menu selectionMode="single"`（没 disallowEmptySelection，再点选中项 = 取消 = 回 today），图标 Lucide `ListFilter`，非 today 时 `.icon-btn.is-active`。all：`recurring` 平铺（今天要打的先，再按 sort）；archived：`archived`。非 today 时标题换名、列表上方「回到今天」按钮、隐藏全年热力图和「按今天 / 按类型」切换；类型筛选的选项按当前视图的那批任务算。原来底部折叠的「已归档」一节删了（`archivedOpen` 一起删）。
+- 倒数日页：没有归档功能（Countdowns 不看 archived_at），不加下拉。
+

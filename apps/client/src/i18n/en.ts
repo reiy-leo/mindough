@@ -1392,4 +1392,11 @@ export const EN: Record<string, EnValue> = {
   "{date}：补打完成": "{date}: made up later",
   "可以补打": "Catch up",
   "到下一次之前都能补": "You can catch up until the next one",
+  "所有打卡": "All Check-ins",
+  "已归档的打卡": "Archived Check-ins",
+  "显示哪些打卡": "Show check-ins",
+  "回到今天": "Back to Today",
+  "这个类型下没有归档的打卡": "No archived check-ins in this category",
+  "没有归档的打卡": "No archived check-ins",
+  "还没有打卡": "No check-ins yet",
 };

@@ -1666,6 +1666,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{date}：补打完成": "{date}\u00a0: rattrapé plus tard",
   "可以补打": "À rattraper",
   "到下一次之前都能补": "Rattrapable jusqu'à la prochaine fois",
+  "所有打卡": "Toutes les habitudes",
+  "已归档的打卡": "Habitudes archivées",
+  "显示哪些打卡": "Habitudes à afficher",
+  "回到今天": "Retour à aujourd’hui",
+  "这个类型下没有归档的打卡": "Aucune habitude archivée dans ce type",
+  "没有归档的打卡": "Aucune habitude archivée",
+  "还没有打卡": "Aucune habitude pour l’instant",
 };
 
 export const DATA: Record<string, string> = {

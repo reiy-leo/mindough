@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { ListBox, ListBoxItem, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarCheck2, ChevronDown, ChevronRight, CircleCheck, Flame, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { ListBox, ListBoxItem, Menu, MenuItem, MenuTrigger, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
+import { Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Flame, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -17,7 +17,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY, openCategoryPage } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
-import { Button, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { Button, Empty, MenuAt, Section, Segmented, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
 import { createBlankTask } from '../lib/blank-task';
@@ -50,7 +50,9 @@ export function CheckInsPage() {
   const liveRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
   const allRecurring = liveRecurring.filter((t) => !t.archived_at);
   const allArchived = liveRecurring.filter((t) => !!t.archived_at).sort((a, b) => (b.archived_at! < a.archived_at! ? -1 : 1));
-  const [archivedOpen, setArchivedOpen] = useState(false);
+  // 页头下拉（Rei 2026-11-09 01:59「右侧显示一个dropdown图标按钮，1. 显示所有的活着的打卡任务，2. 显示已经归档的打卡任务」）：
+  // today = 默认（正在计时 / 今天要打卡 / 可以补打 / 已打卡）；all = 全部没归档的；archived = 只看归档的。不记，每次进来都是 today
+  const [view, setView] = useState<'today' | 'all' | 'archived'>('today');
   // 行的右键 / 长按菜单：整页一个，记下是哪一行
   const menu = useContextMenuAt();
   const menuTask = useRef<string | null>(null);
@@ -88,8 +90,10 @@ export function CheckInsPage() {
   // 一件任务能挂几个类型（Rei 2026-10-28）：筛选看挂没挂这个类型；按类型分组时放在第一个类型下面（不重复出现）
   const hasCat = (t: Task, id: string) => store.categoryIdsOfTask(t).includes(id);
   // 筛选标签：只列出有重复任务挂着的类型（按类型顺序，不显示的也算，挂着就列），有没类型的再加一个“没有类型”
-  const usedCats = store.categories(true).filter((c) => allRecurring.some((t) => hasCat(t, c.id)));
-  const hasUncategorized = allRecurring.some((t) => !catOf(t));
+  // 「已归档的打卡」视图里按归档的那些列
+  const catBase = view === 'archived' ? allArchived : allRecurring;
+  const usedCats = store.categories(true).filter((c) => catBase.some((t) => hasCat(t, c.id)));
+  const hasUncategorized = catBase.some((t) => !catOf(t));
   const byCat = (list: Task[]) => (cat === 'all' ? list : list.filter((t) => (cat === NO_CATEGORY ? !catOf(t) : hasCat(t, cat))));
   const recurring = byCat(allRecurring);
   const archived = byCat(allArchived);
@@ -179,20 +183,75 @@ export function CheckInsPage() {
   return (
     <div className="page">
       <PageHeader
-        title={trc('导航', '打卡')}
-        subtitle={tr('今天 {metToday}/{length} 已完成 · 最长连续 {best} 天', { metToday, length: dueNow.length, best })}
-        icon={<CalendarCheck2 size={22} />}
+        title={view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}
+        subtitle={
+          view === 'all'
+            ? tr('{length} 项', { length: recurring.length })
+            : view === 'archived'
+              ? tr('{length} 项', { length: archived.length })
+              : tr('今天 {metToday}/{length} 已完成 · 最长连续 {best} 天', { metToday, length: dueNow.length, best })
+        }
+        icon={view === 'archived' ? <Archive size={22} /> : <CalendarCheck2 size={22} />}
         actions={
-          <Button
-            variant="primary"
-            // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
-            onPress={() => createBlankTask(store, ui.openEditor, 'checkin', cat !== 'all' && cat !== NO_CATEGORY ? cat : null)}
-          >
-            <Plus size={16} />
-            {tr('新建打卡')}</Button>
+          <div className="checkin-head-actions">
+            {/* 只放图标（Rei 2026-11-09 01:59「新建按钮只显示图标」），文字在悬停提示和读屏名里 */}
+            <Tip content={tr('新建打卡')}>
+              <Button
+                variant="primary"
+                className="btn-icon-only"
+                aria-label={tr('新建打卡')}
+                // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
+                onPress={() => createBlankTask(store, ui.openEditor, 'checkin', cat !== 'all' && cat !== NO_CATEGORY ? cat : null)}
+              >
+                <Plus size={18} aria-hidden />
+              </Button>
+            </Tip>
+            <MenuTrigger>
+              <Tip content={tr('显示哪些打卡')}>
+                <RacButton className={`icon-btn${view !== 'today' ? ' is-active' : ''}`} aria-label={tr('显示哪些打卡')}>
+                  <ListFilter size={18} aria-hidden />
+                </RacButton>
+              </Tip>
+              <Popover className="popover menu-popover" placement="bottom end" offset={4}>
+                {/* 单选；再点一次选中的那项 = 取消选择，回到默认的今天 */}
+                <Menu
+                  className="menu"
+                  aria-label={tr('显示哪些打卡')}
+                  selectionMode="single"
+                  selectedKeys={view === 'today' ? [] : [view]}
+                  onSelectionChange={(keys) => {
+                    const k = [...keys][0];
+                    setView(k === 'all' || k === 'archived' ? k : 'today');
+                  }}
+                >
+                  {([['all', tr('所有打卡'), <CalendarCheck2 key="i" size={16} aria-hidden />], ['archived', tr('已归档的打卡'), <Archive key="i" size={16} aria-hidden />]] as const).map(([id, label, icon]) => (
+                    <MenuItem key={id} id={id} className="menu-item menu-check" textValue={label}>
+                      {({ isSelected }) => (
+                        <>
+                          {icon}
+                          <span className="menu-check-text">{label}</span>
+                          <span className="menu-check-mark" aria-hidden>
+                            {isSelected && <Check size={15} />}
+                          </span>
+                        </>
+                      )}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </Popover>
+            </MenuTrigger>
+          </div>
         }
       />
 
+      {view !== 'today' && (
+        <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
+          <ArrowLeft size={16} aria-hidden />
+          {tr('回到今天')}
+        </RacButton>
+      )}
+
+      {view === 'today' && (
       <section className="card heatmap-card">
         <div className="heatmap-card-head">
           <span className="section-title">{tr('过去一年')}</span>
@@ -200,8 +259,9 @@ export function CheckInsPage() {
         </div>
         <Heatmap end={today} ratioFor={dayRatio} label={tr('过去一年的打卡热力图')} />
       </section>
+      )}
 
-      {allRecurring.length > 0 && (
+      {(view === 'archived' ? allArchived.length > 0 : allRecurring.length > 0) && (
         <div className="filter-row checkin-filters">
           {/* 类型筛选是个下拉（Rei 2026-11-09 01:06），各皮肤的 .select-btn 样式；选了「全部」以外的用强调色 */}
           <RacSelect
@@ -234,6 +294,7 @@ export function CheckInsPage() {
           </RacSelect>
           <RacButton className="btn btn-quiet filter-edit" onPress={openCategoryPage}>
             {tr('编辑')}</RacButton>
+          {view === 'today' && (
           <Segmented
             label={tr('排列方式')}
             value={arrange}
@@ -243,10 +304,20 @@ export function CheckInsPage() {
               { id: 'category', label: tr('按类型') },
             ]}
           />
+          )}
         </div>
       )}
 
-      {arrange === 'category' ? (
+      {view === 'all' ? (
+        // 所有没归档的打卡平铺：今天要打的在前，其余按打卡页的顺序；类型筛选照样管
+        recurring.length ? (
+          <div className="habit-list">{[...recurring].sort((a, b) => Number(dueToday(b, today)) - Number(dueToday(a, today)) || a.sort - b.sort).map(row)}</div>
+        ) : (
+          <Empty title={allRecurring.length ? tr('这个类型下还没有重复任务') : tr('还没有打卡')} />
+        )
+      ) : view === 'archived' ? (
+        archived.length ? <div className="habit-list">{archived.map(row)}</div> : <Empty title={allArchived.length ? tr('这个类型下没有归档的打卡') : tr('没有归档的打卡')} />
+      ) : arrange === 'category' ? (
         <>
           {[...usedCats.map((c) => ({ key: c.id, c })), { key: NO_CATEGORY, c: undefined }].map(({ key, c }) => {
             const list = recurring.filter((t) => (c ? catOf(t)?.id === c.id : !catOf(t)));
@@ -303,21 +374,6 @@ export function CheckInsPage() {
         </>
       )}
 
-      {archived.length > 0 && (
-        <section className={`section habit-archived${archivedOpen ? ' is-open' : ''}`}>
-          <RacButton className="habit-archived-toggle" aria-expanded={archivedOpen} aria-controls="habit-archived-list" onPress={() => setArchivedOpen((o) => !o)}>
-            <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
-            <Archive size={15} aria-hidden />
-            <span className="section-title">{tr('已归档')}</span>
-            <span className="muted small">{tr('{length} 项', { length: archived.length })}</span>
-          </RacButton>
-          {archivedOpen && (
-            <div id="habit-archived-list" className="habit-list">
-              {archived.map(row)}
-            </div>
-          )}
-        </section>
-      )}
       <MenuAt at={menu.at} label={tr('打卡操作')} items={menu.at ? menuItems() : []} onClose={menu.close} />
     </div>
   );

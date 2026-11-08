@@ -5,7 +5,7 @@ import { formatDateZh, formatTaskDate, toDateKey, type Task } from '@mindough/co
 import { useDateDisplay } from '../lib/date-display';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
-import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, Section, Segmented, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, Section, Segmented, Tip, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { CardColorPicker } from '../components/CardColorPicker';
 import { cardColorVars } from '../lib/card-colors';
 import { useSettings } from '../lib/settings';
@@ -121,10 +121,12 @@ export function CountdownsPage() {
         title={tr('倒数日')}
         icon={<Hourglass size={22} />}
         actions={
-          <Button variant="primary" onPress={newCountdown}>
-            <Plus size={16} />
-            {tr('新建倒数日')}
-          </Button>
+          // 只放图标（Rei 2026-11-09 01:59），文字在悬停提示和读屏名里
+          <Tip content={tr('新建倒数日')}>
+            <Button variant="primary" className="btn-icon-only" aria-label={tr('新建倒数日')} onPress={newCountdown}>
+              <Plus size={18} aria-hidden />
+            </Button>
+          </Tip>
         }
       />
       {countdowns.length > 0 && usedCats.length > 0 && (

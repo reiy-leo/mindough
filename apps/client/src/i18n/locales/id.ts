@@ -1666,6 +1666,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{date}：补打完成": "{date}: disusulkan",
   "可以补打": "Bisa disusul",
   "到下一次之前都能补": "Bisa disusul sampai jadwal berikutnya",
+  "所有打卡": "Semua Kebiasaan",
+  "已归档的打卡": "Kebiasaan Diarsipkan",
+  "显示哪些打卡": "Kebiasaan yang ditampilkan",
+  "回到今天": "Kembali ke Hari Ini",
+  "这个类型下没有归档的打卡": "Tidak ada kebiasaan diarsipkan di jenis ini",
+  "没有归档的打卡": "Tidak ada kebiasaan diarsipkan",
+  "还没有打卡": "Belum ada kebiasaan",
 };
 
 export const DATA: Record<string, string> = {
