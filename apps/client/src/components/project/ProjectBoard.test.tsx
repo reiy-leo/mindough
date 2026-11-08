@@ -17,6 +17,7 @@ vi.mock('../../lib/view', () => ({ titleOf: (_s: unknown, t: Task) => t.body_md 
 vi.mock('../../lib/drag-guard', () => ({ isDragPress: () => drag.pressing, useReorderGuard: () => ({ ref: { current: null }, handlers: {} }) }));
 // 卡片里的行换成最小的样子：标题按钮 + 一段留白
 vi.mock('../TaskRow', () => ({
+  RowLead: ({ pinned, dragLabel }: { pinned: boolean; dragLabel?: string }) => <span className={`drag-handle${pinned ? ' is-pin' : ''}`} aria-label={dragLabel} />,
   TaskRow: ({ task }: { task: Task }) => (
     <div className="task-row" data-task-id={task.id}>
       <button type="button" className="row-main">{task.body_md}</button>

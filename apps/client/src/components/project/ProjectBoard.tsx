@@ -9,15 +9,14 @@
  * 打开的详情不在右列：桌面布局下看板视图不放右列，看板占满，详情是浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」，
  * App 里 lib/detail-pane detailInModal 决定，浮层在 components/task/DetailModal.tsx）。这里照旧只调 ui.openEditor。
  */
-import { GridList, GridListItem, useDragAndDrop, Button as RacButton, type DropItem } from 'react-aria-components';
-import { GripVertical } from 'lucide-react';
+import { GridList, GridListItem, useDragAndDrop, type DropItem } from 'react-aria-components';
 import { TASK_STATUS_LABEL, type Store, type Task, type TaskStatus } from '@mindough/core';
 import { useUi } from '../../lib/ui';
 import { changeStatus } from '../../lib/actions';
 import { boardColumns } from '../../lib/project-view';
 import { isDragPress, useReorderGuard } from '../../lib/drag-guard';
 import { titleOf } from '../../lib/view';
-import { TaskRow } from '../TaskRow';
+import { RowLead, TaskRow } from '../TaskRow';
 
 import { tr } from '../../lib/i18n';
 
@@ -72,10 +71,9 @@ function Column({ store, status, tasks }: { store: Store; status: TaskStatus; ta
       >
         {(t) => (
           <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`board-card${ui.editingId === t.id ? ' is-selected' : ''}`}>
-            <RacButton slot="drag" className="drag-handle" aria-label={tr('拖到别的状态')}>
-              <GripVertical size={14} />
-            </RacButton>
-            <TaskRow store={store} task={t} showGroup={false} showDate />
+            {/* 置顶的把手那格换成红色图钉，还是能拖到别的状态（Rei 2026-11-09） */}
+            <RowLead pinned={!!t.pinned_at} dragLabel={tr('拖到别的状态')} />
+            <TaskRow store={store} task={t} showGroup={false} showDate pinInLead />
           </GridListItem>
         )}
       </GridList>

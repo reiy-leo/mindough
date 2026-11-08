@@ -1,5 +1,5 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
-import { ChevronRight, CircleCheck, EyeOff, GripVertical, Lightbulb, RotateCcw, Sun } from 'lucide-react';
+import { ChevronRight, CircleCheck, EyeOff, Lightbulb, RotateCcw, Sun } from 'lucide-react';
 import { formatDateZh, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -8,7 +8,7 @@ import { useReorderGuard } from '../lib/drag-guard';
 import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { titleOf } from '../lib/view';
-import { TaskRow } from '../components/TaskRow';
+import { RowLead, TaskRow } from '../components/TaskRow';
 import { LunarLine } from '../components/LunarLine';
 import { useSettings } from '../lib/settings';
 import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
@@ -237,17 +237,12 @@ function DayList({ id, section, label, list, all, today }: { id?: string; sectio
     <GridList id={id} ref={reorderGuard.ref} aria-label={label} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list.map((i) => ({ ...i, id: i.task.id }))}>
       {(item) => (
         <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
-          {/* 置顶的总在最上面，不给拖动把手（Rei 2026-11-08）；占位留着，行和别的对齐 */}
-          {isPinnedEntry(item.entry) ? (
-            <span className="drag-handle is-placeholder" aria-hidden />
-          ) : (
-            <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
-              <GripVertical size={14} />
-            </RacButton>
-          )}
+          {/* 置顶的总在最上面，不能拖（Rei 2026-11-08）；把手那格放红色图钉（Rei 2026-11-09） */}
+          <RowLead pinned={isPinnedEntry(item.entry)} dragLabel={isPinnedEntry(item.entry) ? undefined : tr('拖动排序')} />
           <TaskRow
             store={store}
             task={item.task}
+            pinInLead
             showMyDay={false}
             doneOverride={item.done}
             // 行尾不放 ×（Rei 2026-10-25「删除my day中的条目右侧的x按钮」）：移出我的一天用行的右键 / 长按菜单或详情里的太阳

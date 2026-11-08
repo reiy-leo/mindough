@@ -1,6 +1,6 @@
 import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
-import { Ban, Check, CirclePlay, Globe, Link2, Lock, LockOpen, PanelRight, Pin, PinOff, Repeat, Sun, SunDim, X } from 'lucide-react';
+import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
 import { categoryIcon, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useUi } from '../lib/ui';
@@ -34,6 +34,8 @@ export interface TaskRowProps {
   showCheckIn?: boolean;
   /** 列表（Agenda）里日期段的小字：「10月26日 – 30日」「第 3/5 天」（Rei 2026-10-26 日期段）。 */
   spanNote?: string;
+  /** 置顶的图钉由外面的 RowLead 放在把手那格（我的一天、待安排、看板），行里不再放。 */
+  pinInLead?: boolean;
 }
 
 /**
@@ -52,7 +54,33 @@ export function TaskThumb({ media, layout, isAvatar, color, icon, name, hasItem 
   );
 }
 
-export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, spanNote }: TaskRowProps) {
+/**
+ * 拖动把手那一格（Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色」）。
+ * 置顶的放红色图钉：给了 dragLabel（待安排、看板）图钉本身还是拖动按钮，照样能拖；没给（我的一天，置顶的固定在最上）只是图标，不能拖。
+ * 没置顶的照旧是把手；不能拖又没置顶的留同宽占位，行和别的对齐。
+ */
+export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: string }) {
+  if (pinned && dragLabel)
+    return (
+      <RacButton slot="drag" className="drag-handle is-pin" aria-label={`${tr('已置顶')} · ${dragLabel}`}>
+        <Pin size={14} aria-hidden />
+      </RacButton>
+    );
+  if (pinned)
+    return (
+      <HoverTip className="drag-handle is-pin" tip={tr('已置顶')}>
+        <Pin size={14} aria-hidden />
+      </HoverTip>
+    );
+  if (!dragLabel) return <span className="drag-handle is-placeholder" aria-hidden />;
+  return (
+    <RacButton slot="drag" className="drag-handle" aria-label={dragLabel}>
+      <GripVertical size={14} />
+    </RacButton>
+  );
+}
+
+export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, spanNote, pinInLead = false }: TaskRowProps) {
   const ui = useUi();
   const v = viewOf(store, task);
   const today = toDateKey(store.now());
@@ -136,6 +164,13 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       onPointerUpCapture={cancelPress}
       onPointerCancelCapture={cancelPress}
     >
+      {/* 置顶的红色图钉放在勾选圆圈前面（Rei 2026-11-09 01:03）。有拖动把手的列表（我的一天、待安排、看板）由 RowLead 放在把手那格，
+          这里不放；别的列表没有把手，放在行左边的留白里，不挤动圆圈 */}
+      {pinned && !pinInLead && (
+        <HoverTip className="row-pin row-pin-gutter" tip={tr('已置顶')}>
+          <Pin size={12} aria-hidden />
+        </HoverTip>
+      )}
       {isCheckInRow ? (
         <span className="row-lead" aria-hidden>
           {rec ? <Repeat size={17} /> : <TypeIcon size={18} style={{ color: v.type?.color }} />}
@@ -166,12 +201,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       >
         {/* 第一行是任务标题 = 正文第一行，挂了资料也一样（Rei 2026-11-03）；资料只在行首显示缩略图 */}
         <span className="row-title">
-          {/* 置顶的小图钉（Rei 2026-11-08） */}
-          {pinned && (
-            <HoverTip className="row-pin" tip={tr('已置顶')}>
-              <Pin size={12} aria-label={tr('已置顶')} />
-            </HoverTip>
-          )}
           {v.title}
         </span>
         <span className="row-meta">
@@ -243,7 +272,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           )}
           {state === '可开始' && store.edges().some((e) => e.succ_id === task.id) && (
             <HoverTip className="meta-state state-ready" tip={tr('可开始')}>
-              <LockOpen size={12} aria-hidden />
+              {/* 插头、绿色（Rei 2026-11-09 01:03「可开始的icon用plug，颜色用绿色」） */}
+              <Plug size={12} aria-hidden />
             </HoverTip>
           )}
           {task.status === '进行中' && (

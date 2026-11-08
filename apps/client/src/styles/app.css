@@ -853,12 +853,31 @@ button {
   white-space: nowrap;
   font-weight: 500;
 }
-/* 置顶的小图钉（Rei 2026-11-08）：跟在标题前面，强调色 */
+/* 置顶的图钉（Rei 2026-11-09 01:03）：放在勾选圆圈前面、拖动把手那格，红色（各皮肤的 --danger，亮暗都有）。
+   有把手的列表（我的一天、待安排、看板）图钉占把手那格（.drag-handle.is-pin）；
+   别的列表没把手，图钉放在行左边 12px 留白里（.row-pin-gutter），圆圈不挪 */
 .row-pin {
   display: inline-flex;
-  vertical-align: -1px;
-  margin-inline-end: 4px;
-  color: var(--accent);
+  color: var(--danger);
+}
+.task-row {
+  position: relative;
+}
+.row-pin-gutter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--space-3);
+  align-items: center;
+  justify-content: center;
+}
+.drag-handle.is-pin {
+  color: var(--danger);
+  opacity: 1;
+}
+span.drag-handle.is-pin {
+  cursor: default;
 }
 .drag-handle.is-placeholder {
   pointer-events: none;
@@ -933,7 +952,8 @@ button {
   color: var(--state-blocked);
 }
 .state-ready.meta-state {
-  color: var(--accent);
+  /* 可开始：绿色插头（Rei 2026-11-09 01:03） */
+  color: var(--success);
 }
 .state-doing {
   color: var(--accent);

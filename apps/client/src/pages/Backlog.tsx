@@ -3,12 +3,12 @@
  * 新建的任务（不是从我的一天新建的）默认都在这里。
  */
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
-import { CalendarPlus, GripVertical, Inbox, Plus } from 'lucide-react';
+import { CalendarPlus, Inbox, Plus } from 'lucide-react';
 import { toDateKey } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, PopoverPanel } from '../ui/primitives';
-import { TaskRow } from '../components/TaskRow';
+import { RowLead, TaskRow } from '../components/TaskRow';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { DatePanel } from '../components/task/DatePanel';
 import { titleOf } from '../lib/view';
@@ -52,12 +52,12 @@ export function BacklogPage() {
         <GridList ref={reorderGuard.ref} aria-label={tr('待安排的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list}>
           {(t) => (
             <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`list-item${ui.editingId === t.id ? ' is-selected' : ''}`}>
-              <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
-                <GripVertical size={14} />
-              </RacButton>
+              {/* 置顶的把手那格换成红色图钉，还是能拖（Rei 2026-11-09） */}
+              <RowLead pinned={!!t.pinned_at} dragLabel={tr('拖动排序')} />
               <TaskRow
                 store={store}
                 task={t}
+                pinInLead
                 trailing={
                   <PopoverPanel
                     label={tr('安排日期')}

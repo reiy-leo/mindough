@@ -1611,3 +1611,11 @@ Rei 2026-11-09 00:25「项目 看板 不显示详情第三列，点击不显示�
 - **三皮肤**（我定的，都复用各皮肤已有的 `.modal` 外框）：Apple 用居中的 sheet（圆角 12、0.5px 细边，淡入上浮），不用贴顶下滑的 macOS 窗口 sheet，因为网页和三平台要一致；WinUI 用 ContentDialog 式居中对话框（圆角 8、暗底、底栏浅灰）；Material 宽屏用大的基本对话框（28px 圆角、surface-2 底，详情底色也换成 surface-2），不用全屏对话框（那是手机的形式，手机这里本来就是整页）。
 - **没做**：浮层里没有 ↑ ↓ 换任务（右列有）；关浮层时内容先清空再淡出（选中已取消）。
 - **测试**：`components/task/DetailModal.test.tsx` 5 项（没选中不弹、选中弹且是 modal 模式、Esc 关、输入框里 Esc 不关、× 关）；`lib/detail-pane.test.ts` 加 3 项 `detailInModal`；`components/project/ProjectBoard.test.tsx` 加 2 项（聚焦卡片回车打开、有行菜单时松手不开），共 6 项。
+
+### 置顶图钉挪到圆圈前面、红色；可开始换绿色插头 ✅（2026-11-09）
+Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色。可开始的icon用plug，颜色用绿色。」
+
+- **图钉**：不再放在标题前。有拖动把手的列表（我的一天、待安排、项目看板卡片）用 `TaskRow.tsx` 的 `RowLead`：置顶的那格换成红色图钉（14px），`TaskRow pinInLead` 不再自己放。我的一天的置顶本来就固定在最上、不能拖，那格只是图标（悬停「已置顶」）；待安排和看板里图钉本身还是 `slot="drag"` 的拖动按钮（读屏「已置顶 · 拖动排序 / 拖到别的状态」），看板要能拖到别的状态，所以不拦。没有把手的列表（项目列表视图、时间轴、已完成、积压、类型 / 人物 / 资料里的任务列表、任务链）图钉放在 `.task-row` 左边 12px 留白里（`.row-pin-gutter`，绝对定位），圆圈和没置顶的行对齐，不挪。
+- **颜色**：图钉用 `--danger`（Apple #ff3b30 / 暗 #ff453a，WinUI #c42b1c / 暗 #ff99a4，Material #b3261e / 暗 #f2b8b5）；插头用 `--success`。
+- **可开始**：第二行状态图标 `LockOpen` → Lucide `Plug`，绿色，提示和读屏仍是「可开始」，没改文案。
+- **测试**：`components/RowLead.test.tsx` 4 项；`ProjectBoard.test.tsx` 的 TaskRow 替身补上 RowLead。
