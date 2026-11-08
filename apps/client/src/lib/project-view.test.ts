@@ -17,17 +17,17 @@ const t = (o: Partial<T> = {}): T => ({
 
 describe('项目页视图设置 normalizePrefs', () => {
   it('没存过：列表、创建时间倒序、周（Rei 2026-11-08）', () => {
-    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
+    expect(normalizePrefs(undefined)).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', section: 'none', collapsed: [], endedOpen: false });
   });
   it('老的「默认顺序」读出来当创建时间倒序，存的 asc 不看', () => {
-    expect(normalizePrefs({ view: 'board', sort: 'default', dir: 'asc' })).toEqual({ view: 'board', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
+    expect(normalizePrefs({ view: 'board', sort: 'default', dir: 'asc' })).toEqual({ view: 'board', sort: 'created', dir: 'desc', scale: 'week', section: 'none', collapsed: [], endedOpen: false });
     expect(normalizePrefs({ sort: 'created', dir: 'asc' })).toMatchObject({ sort: 'created', dir: 'asc' });
   });
   it('以前的关系图、卡片回落成列表；认不出的字段回落默认', () => {
     expect(normalizePrefs({ view: 'graph' }).view).toBe('list');
     expect(normalizePrefs({ view: 'cards' }).view).toBe('list');
-    expect(normalizePrefs({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' })).toEqual({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month', endedOpen: false });
-    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false });
+    expect(normalizePrefs({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month' })).toEqual({ view: 'chain', sort: 'due', dir: 'desc', scale: 'month', section: 'none', collapsed: [], endedOpen: false });
+    expect(normalizePrefs({ sort: 'x', dir: 'up', scale: 'year' })).toEqual({ view: 'list', sort: 'created', dir: 'desc', scale: 'week', section: 'none', collapsed: [], endedOpen: false });
   });
   it('「已结束」那段默认收起，只认 true（Rei 2026-11-08）', () => {
     expect(normalizePrefs({ view: 'list' }).endedOpen).toBe(false);

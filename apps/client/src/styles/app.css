@@ -1159,6 +1159,34 @@ button {
   color: var(--text-2);
   font-size: 13px;
 }
+/* 左边小字、右边排序 / 分区按钮（Rei 2026-11-08）：按钮靠右，小字太长时自己折行，不挤按钮 */
+.list-meta-text {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.list-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex: none;
+  /* 按钮比小字高，往回收一点，免得撑高这一行 */
+  margin-block: -6px;
+}
+.list-tools .icon-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+}
+[data-skin='material'] .list-tools .icon-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+}
 
 /* ───────── Agenda ───────── */
 .load-past {
@@ -4086,3 +4114,15 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .add-bar:has(.add-bar-input.is-wrap) > :is(button, .icon-btn) {
   margin-top: 1px;
 }
+
+/* 列表分区（Rei 2026-11-08，components/SectionedList）：段标题借「已完成」那段的样子，展开时箭头转下 */
+.list-section.is-open .habit-archived-chevron {
+  transform: rotate(90deg);
+}
+.list-section {
+  margin-top: var(--space-2);
+}
+.list-section-toggle .mood-icon {
+  flex: none;
+}
+.list-section .task-list { margin-top: var(--space-2); }

@@ -8,17 +8,22 @@
  * - 创建时间：created_at；修改时间：updated_at（HLC，前 13 位是毫秒时间，可按字符串比较）。
  * 没有这个日期的任务不论正序倒序都排最后。
  */
-import { addDays, diffDays, startOfWeek, TASK_STATUSES, type DateKey, type Task, type TaskStatus } from '@mindough/core';
+import { addDays, diffDays, isMoodId, startOfWeek, TASK_STATUSES, type DateKey, type Task, type TaskStatus } from '@mindough/core';
+import { moodRank, normalizeSectionBy, type SectionBy } from './sections';
+
+/** 项目页能选的分区：不分区、按心情、按目标日期。 */
+export const PROJECT_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'due'];
 
 export type ProjectView = 'list' | 'board' | 'timeline' | 'chain';
 export const PROJECT_VIEWS: readonly ProjectView[] = ['list', 'board', 'timeline', 'chain'];
 
 /**
  * 排序依据。没选过时按创建时间倒序，新加的在最上（Rei 2026-11-08「项目 默认排序 添加时间 倒序 / 删除"默认排序"」）。
+ * 心情（Rei 2026-11-08）：正序 = 从好到坏（core MOOD_IDS 的顺序），没记心情的正序倒序都在最后。
  * 以前还有 'default'（任务的 sort 字段），已删；本机设置里存的 'default' 读出来当创建时间倒序（normalizePrefs）。
  */
-export type SortField = 'created' | 'updated' | 'start' | 'due';
-export const SORT_FIELDS: readonly SortField[] = ['created', 'updated', 'start', 'due'];
+export type SortField = 'created' | 'updated' | 'start' | 'due' | 'mood';
+export const SORT_FIELDS: readonly SortField[] = ['created', 'updated', 'start', 'due', 'mood'];
 export type SortDir = 'asc' | 'desc';
 
 export type TimelineScale = 'day' | 'week' | 'month';
@@ -29,11 +34,15 @@ export interface ProjectViewPrefs {
   sort: SortField;
   dir: SortDir;
   scale: TimelineScale;
+  /** 分区（Rei 2026-11-08）：不分区 / 按心情 / 按目标日期（项目页里任务都是这个项目的，没有「按项目」）。只管列表视图。 */
+  section: SectionBy;
+  /** 折起来的分区（`<分区方式>:<key>`），默认都展开。 */
+  collapsed: string[];
   /** 列表视图下面「已结束」那段展开着吗（Rei 2026-11-08「项目的已结束section默认折叠，点击可展开」）：默认收起，每个项目各记一份。 */
   endedOpen: boolean;
 }
 
-export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'created', dir: 'desc', scale: 'week', endedOpen: false };
+export const DEFAULT_PREFS: ProjectViewPrefs = { view: 'list', sort: 'created', dir: 'desc', scale: 'week', section: 'none', collapsed: [], endedOpen: false };
 
 /**
  * 本机设置里存的值读出来先过一遍：认不出的回落默认。
@@ -48,6 +57,8 @@ export function normalizePrefs(v: unknown): ProjectViewPrefs {
       ? { sort: o.sort as SortField, dir: o.dir === 'desc' ? ('desc' as const) : ('asc' as const) }
       : { sort: DEFAULT_PREFS.sort, dir: DEFAULT_PREFS.dir }),
     scale: TIMELINE_SCALES.includes(o.scale as TimelineScale) ? (o.scale as TimelineScale) : DEFAULT_PREFS.scale,
+    section: normalizeSectionBy(o.section, PROJECT_SECTIONS),
+    collapsed: Array.isArray(o.collapsed) ? o.collapsed.filter((x): x is string => typeof x === 'string') : [],
     endedOpen: o.endedOpen === true,
   };
 }
@@ -66,7 +77,7 @@ export function taskDue(t: DatedTask): DateKey | null {
   return t.scheduled_date || null;
 }
 
-type SortableTask = Pick<Task, 'id' | 'sort' | 'created_at' | 'updated_at' | 'scheduled_date' | 'target_date' | 'completion_mode'> & { end_date?: DateKey | null };
+type SortableTask = Pick<Task, 'id' | 'sort' | 'created_at' | 'updated_at' | 'scheduled_date' | 'target_date' | 'completion_mode'> & { end_date?: DateKey | null; mood?: string | null };
 
 function keyOf(t: SortableTask, field: SortField): string | null {
   switch (field) {
@@ -78,6 +89,8 @@ function keyOf(t: SortableTask, field: SortField): string | null {
       return taskStart(t);
     case 'due':
       return taskDue(t);
+    case 'mood':
+      return isMoodId(t.mood) ? String(moodRank(t.mood)).padStart(2, '0') : null;
   }
 }
 

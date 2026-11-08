@@ -15,6 +15,10 @@ import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
 import { visibleDayEntries } from '../lib/project-archive';
 import { dayItems } from '../lib/myday-items';
+import { MYDAY_SECTIONS, useListView } from '../lib/list-views';
+import { sectionTasks, sortByMood, type SectionBy } from '../lib/sections';
+import { SectionedList } from '../components/SectionedList';
+import { DaySortMenu, SectionMenu } from '../components/project/ProjectMenus';
 
 import { tr } from '../lib/i18n';
 
@@ -54,6 +58,21 @@ export function MyDayPage() {
   // 分两段（Rei 2026-11-08）：未完成在上、已完成在下；各段自己拖动排序，勾上就挪到已完成段
   const { open, done } = myDaySections(items);
   const doneOpen = settings.myDayDoneOpen !== false;
+  // 分区和排序（Rei 2026-11-08）：只管「未完成」段；置顶的总在最上面、不进分区；都是默认（不分区、手动）时照旧能拖
+  const [view, setView] = useListView('myday');
+  const custom = view.section !== 'none' || view.sort === 'mood';
+  const pinnedOpen = open.filter((i) => isPinnedEntry(i.entry));
+  const restOpen = open.filter((i) => !isPinnedEntry(i.entry));
+  const sortedRest = view.sort === 'mood' ? sortByMood(restOpen.map((i) => ({ ...i, mood: i.task.mood }))) : restOpen;
+  const byTask = new Map(sortedRest.map((i) => [i.task.id, i]));
+  const daySections = custom ? sectionTasks(sortedRest.map((i) => i.task), view.section as SectionBy, { groups: store.activeGroups() }) : null;
+  const plainRows = (list: MyDayItem[]) => (
+    <div className="task-list plain">
+      {list.map((i) => (
+        <TaskRow key={i.task.id} store={store} task={i.task} showMyDay={false} doneOverride={i.done} />
+      ))}
+    </div>
+  );
 
   return (
     <div className="page">
@@ -66,8 +85,15 @@ export function MyDayPage() {
         meta={
           <div className="list-meta">
             <h1 className="sr-only">{tr('我的一天')}</h1>
-            {`${formatDateZh(today)} · ${items.length ? (closedCount ? tr('{doneCount}/{counted} 已完成 · {closed} 个已关闭', { doneCount, counted, closed: closedCount }) : tr('{doneCount}/{counted} 已完成', { doneCount, counted })) : tr('还没有安排')}`}
-            <LunarLine date={today} className="page-subtitle-lunar" />
+            <span className="list-meta-text">
+              {`${formatDateZh(today)} · ${items.length ? (closedCount ? tr('{doneCount}/{counted} 已完成 · {closed} 个已关闭', { doneCount, counted, closed: closedCount }) : tr('{doneCount}/{counted} 已完成', { doneCount, counted })) : tr('还没有安排')}`}
+              <LunarLine date={today} className="page-subtitle-lunar" />
+            </span>
+            {/* 右边：排序、分区（Rei 2026-11-08） */}
+            <span className="list-tools">
+              <DaySortMenu value={view.sort} onChange={(sort) => setView({ sort })} />
+              <SectionMenu value={view.section as SectionBy} options={MYDAY_SECTIONS} onChange={(section) => setView({ section })} />
+            </span>
           </div>
         }
       />
@@ -77,14 +103,31 @@ export function MyDayPage() {
           {open.length > 0 && (
             <section className="section myday-open">
               {/* 只有一段时不放段标题，和以前一样就是一张清单 */}
-              {done.length > 0 && (
+              {done.length > 0 && !daySections && (
                 <div className="section-head">
                   <h2 className="section-title">
                     {tr('未完成')} <span className="count">{open.length}</span>
                   </h2>
                 </div>
               )}
-              <DayList section="open" label={tr('今天的任务')} list={open} all={items} today={today} />
+              {custom ? (
+                <>
+                  {pinnedOpen.length > 0 && plainRows(pinnedOpen)}
+                  {daySections ? (
+                    <SectionedList
+                      sections={daySections}
+                      collapsed={view.collapsed}
+                      onCollapsedChange={(collapsed) => setView({ collapsed })}
+                      idPrefix="myday"
+                      renderList={(list) => plainRows(list.map((t) => byTask.get(t.id)!).filter(Boolean))}
+                    />
+                  ) : (
+                    plainRows(sortedRest)
+                  )}
+                </>
+              ) : (
+                <DayList section="open" label={tr('今天的任务')} list={open} all={items} today={today} />
+              )}
             </section>
           )}
           {done.length > 0 && (

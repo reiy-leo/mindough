@@ -6,6 +6,18 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  "本周": "Esta semana",
+  "本月": "Este mês",
+  "更远": "Mais tarde",
+  "没有心情": "Sem humor",
+  "没有项目": "Sem projeto",
+  "分区": "Seções",
+  "不分区": "Sem seções",
+  "按心情": "Por humor",
+  "按项目": "Por projeto",
+  "按目标日期": "Por data limite",
+  "分区：{name}": "Seções: {name}",
+  "排序：{name}": "Ordem: {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Modo estrito",
   "打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Tarefas concluídas não podem ser alteradas, só reabertas ou excluídas. Vale só neste dispositivo.",

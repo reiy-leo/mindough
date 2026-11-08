@@ -45,9 +45,14 @@ export interface Settings {
    * 和同一页的「显示建议」「日期显示」一样只记在本机，不同步。打开后告诉 Store（store.strictDone），界面经 lib/strict 的 useLocked()。
    */
   strictMode: boolean;
+  /**
+   * 别的列表页的分区 / 排序（Rei 2026-11-08「我的一天、项目中 右上角功能区添加一个分区」「所有列表支持不分区」）：
+   * 页名（myday / doable / done）→ { section, sort, collapsed }。只记在本机，不同步（同 projectViews）。读写经 lib/list-views。
+   */
+  listViews: Record<string, unknown>;
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, strictMode: false };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true, strictMode: false, listViews: {} };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

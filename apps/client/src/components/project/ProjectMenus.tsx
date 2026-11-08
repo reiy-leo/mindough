@@ -4,7 +4,8 @@
  */
 import type { ReactNode } from 'react';
 import { Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Button as RacButton, Separator } from 'react-aria-components';
-import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, GanttChart, Kanban, LayoutList, Workflow, type LucideIcon } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, GanttChart, Kanban, LayoutList, Rows3, Workflow, type LucideIcon } from 'lucide-react';
+import type { SectionBy } from '../../lib/sections';
 import { DEFAULT_PREFS, SORT_FIELDS, type ProjectView, type SortDir, type SortField } from '../../lib/project-view';
 import { Tip } from '../../ui/primitives';
 
@@ -24,7 +25,84 @@ const SORT_LABEL: Record<SortField, () => string> = {
   updated: () => tr('修改时间'),
   start: () => tr('开始时间'),
   due: () => tr('到期时间'),
+  mood: () => tr('心情'),
 };
+
+/** 分区方式的名字（Rei 2026-11-08）。 */
+export const SECTION_LABEL: Record<SectionBy | 'date', () => string> = {
+  none: () => tr('不分区'),
+  mood: () => tr('按心情'),
+  project: () => tr('按项目'),
+  due: () => tr('按目标日期'),
+  date: () => tr('按日期'),
+};
+
+/**
+ * 分区菜单（Rei 2026-11-08）：右上角一个图标按钮，单选打勾。选了「不分区」以外的，图标是强调色。
+ * options：这一页能选的（我的一天：不分区 / 按心情 / 按项目；项目：不分区 / 按心情 / 按目标日期；积压、已完成：按日期 / 不分区）。
+ */
+export function SectionMenu<K extends string>({ value, options, onChange, plain }: { value: K; options: readonly K[]; onChange: (v: K) => void; /** 哪个算「没改过」（图标不亮），默认 none */ plain?: K }) {
+  const label = tr('分区：{name}', { name: SECTION_LABEL[value as SectionBy]?.() ?? value });
+  return (
+    <MenuTrigger>
+      <Tip content={label}>
+        <RacButton className={`icon-btn${value !== (plain ?? 'none') ? ' is-active' : ''}`} aria-label={label}>
+          <Rows3 size={18} />
+        </RacButton>
+      </Tip>
+      <Popover className="popover menu-popover" placement="bottom end" offset={4}>
+        <Menu
+          className="menu"
+          aria-label={tr('分区')}
+          selectionMode="single"
+          disallowEmptySelection
+          selectedKeys={[value]}
+          onSelectionChange={(keys) => {
+            const k = [...keys][0];
+            if (k !== undefined) onChange(String(k) as K);
+          }}
+        >
+          {options.map((o) => (
+            <Item key={o} id={o}>
+              {SECTION_LABEL[o as SectionBy]?.() ?? o}
+            </Item>
+          ))}
+        </Menu>
+      </Popover>
+    </MenuTrigger>
+  );
+}
+
+/** 我的一天的排序（Rei 2026-11-08）：手动（拖动排的顺序，默认）/ 心情（好到坏，没记的在后）。 */
+export function DaySortMenu({ value, onChange }: { value: 'manual' | 'mood'; onChange: (v: 'manual' | 'mood') => void }) {
+  const name = value === 'mood' ? tr('心情') : tr('手动');
+  const label = tr('排序：{name}', { name });
+  return (
+    <MenuTrigger>
+      <Tip content={label}>
+        <RacButton className={`icon-btn${value !== 'manual' ? ' is-active' : ''}`} aria-label={label}>
+          <ArrowUpDown size={18} />
+        </RacButton>
+      </Tip>
+      <Popover className="popover menu-popover" placement="bottom end" offset={4}>
+        <Menu
+          className="menu"
+          aria-label={tr('排序')}
+          selectionMode="single"
+          disallowEmptySelection
+          selectedKeys={[value]}
+          onSelectionChange={(keys) => {
+            const k = [...keys][0];
+            if (k === 'manual' || k === 'mood') onChange(k);
+          }}
+        >
+          <Item id="manual">{tr('手动')}</Item>
+          <Item id="mood">{tr('心情')}</Item>
+        </Menu>
+      </Popover>
+    </MenuTrigger>
+  );
+}
 
 function Item({ id, icon, children, isDisabled }: { id: string; icon?: ReactNode; children: ReactNode; isDisabled?: boolean }) {
   return (

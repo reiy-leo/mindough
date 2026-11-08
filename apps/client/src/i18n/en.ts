@@ -12,6 +12,19 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 列表分区（Rei 2026-11-08）──
+  "本周": "This Week",
+  "本月": "This Month",
+  "更远": "Later",
+  "没有心情": "No Mood",
+  "没有项目": "No Project",
+  "分区": "Sections",
+  "不分区": "No Sections",
+  "按心情": "By Mood",
+  "按项目": "By Project",
+  "按目标日期": "By Due Date",
+  "分区：{name}": "Sections: {name}",
+  "排序：{name}": "Sort: {name}",
   // ── 严格模式（Rei 2026-11-08）──
   "严格模式": "Strict Mode",
   "打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Completed tasks can’t be changed, only reopened or deleted. Applies to this device only.",

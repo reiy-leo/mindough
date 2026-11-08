@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Archive, ArchiveRestore, CalendarRange, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
-import { formatDateZh, isFinished, toDateKey, type Group, type Task } from '@mindough/core';
+import { formatDateZh, isFinished, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Tip, useContextMenuAt } from '../ui/primitives';
@@ -16,9 +16,11 @@ import { QuickAddBar, useStuck } from '../components/QuickAddBar';
 import { ProjectBoard } from '../components/project/ProjectBoard';
 import { ProjectTimeline } from '../components/project/ProjectTimeline';
 import { ProjectChains } from '../components/project/ProjectChains';
-import { SortMenu, ViewMenu } from '../components/project/ProjectMenus';
+import { SectionMenu, SortMenu, ViewMenu } from '../components/project/ProjectMenus';
+import { SectionedList } from '../components/SectionedList';
+import { sectionTasks } from '../lib/sections';
 import { useSettings } from '../lib/settings';
-import { normalizePrefs, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
+import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
 function range(g: Group) {
@@ -187,6 +189,8 @@ function GroupDetail({
   const c = store.category(g.category_id);
   const open = tasks.filter((t) => !isFinished(t.status));
   const ended = tasks.filter((t) => isFinished(t.status));
+  // 分区只分没结束的；「已结束」那段照旧单独在下面（Rei 2026-11-08）
+  const sections = prefs.view === 'list' ? sectionTasks(open, prefs.section, { now: store.now(), today: toDateKey(store.now()), weekStart: weekStartsOn() }) : null;
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
   return (
@@ -230,6 +234,8 @@ function GroupDetail({
           <>
             <ViewMenu view={prefs.view} onChange={(view) => setPrefs({ view })} />
             <SortMenu field={prefs.sort} dir={prefs.dir} onChange={(sort, dir) => setPrefs({ sort, dir })} />
+            {/* 分区（Rei 2026-11-08）：只管列表视图；看板按状态分列、时间轴按日期画、任务链按链排，都不用 */}
+            {prefs.view === 'list' && <SectionMenu value={prefs.section} options={PROJECT_SECTIONS} onChange={(section) => setPrefs({ section })} />}
             <OverflowMenu label={tr('项目操作')} items={actions.items} />
           </>
         }
@@ -257,12 +263,28 @@ function GroupDetail({
         <ProjectChains store={store} groupId={g.id} tasks={tasks} />
       ) : (
         <>
-          <div className="task-list plain">
-            {open.map((t) => (
-              <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
-            ))}
-            {!open.length && <Empty title={tr('项目里的任务都做完了')} />}
-          </div>
+          {sections ? (
+            <SectionedList
+              sections={sections}
+              collapsed={prefs.collapsed}
+              onCollapsedChange={(collapsed) => setPrefs({ collapsed })}
+              idPrefix={`project-${g.id}`}
+              renderList={(list) => (
+                <div className="task-list plain">
+                  {list.map((t) => (
+                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+                  ))}
+                </div>
+              )}
+            />
+          ) : (
+            <div className="task-list plain">
+              {open.map((t) => (
+                <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+              ))}
+            </div>
+          )}
+          {!open.length && <Empty title={tr('项目里的任务都做完了')} />}
           {/* 已结束那段默认收起，点段标题展开（Rei 2026-11-08）；开关样式同我的一天「已完成」，每个项目各记一份（prefs.endedOpen） */}
           {ended.length > 0 && (
             <section className={`section project-ended${prefs.endedOpen ? ' is-open' : ''}`}>
