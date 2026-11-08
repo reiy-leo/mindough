@@ -55,7 +55,7 @@ export type RowMenuId = 'open' | 'myday' | 'pin' | 'unpin';
 export type HabitMenuId = 'open' | 'myday' | 'pin' | 'unpin' | 'archive' | 'unarchive';
 
 /** 一组菜单项，第一项前画分隔线。 */
-const asGroup = <T extends { separator?: boolean }>(xs: T[]): T[] => xs.map((x, i) => (i === 0 ? { ...x, separator: true } : x));
+const asGroup = <T extends string>(xs: { id: T; label: string }[]): { id: T; label: string; separator?: boolean }[] => xs.map((x, i) => (i === 0 ? { ...x, separator: true } : x));
 
 /**
  * 打卡页一行的右键 / 长按菜单（Rei 2026-11-02「打卡任务可以归档」）：查看详情 ｜ 加入 / 移出我的一天 ｜ 归档；

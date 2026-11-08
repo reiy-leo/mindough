@@ -22,7 +22,7 @@ describe('任务详情「…」菜单（关闭挪进菜单，Rei 2026-10-17）',
     expect(m[2]!.label).toBe('不再打卡');
   });
   it('已关闭 / 已完成的任务：换成「重新打开」（打卡叫「恢复打卡」）', () => {
-    expect(ids(detailMenu({ status: '关闭', recurrence: null, completion_mode: 'once' }, false))).toBe('myday |reopen |delete');
+    expect(ids(detailMenu({ status: '关闭', recurrence: null, completion_mode: 'once' }, false))).toBe('myday pin |reopen |delete');
     expect(detailMenu({ status: '完成', recurrence: null, completion_mode: 'once' }, false)[2]!.label).toBe('重新打开');
     expect(detailMenu({ status: '关闭', recurrence: 'FREQ=DAILY', completion_mode: 'once' }, false)[2]!.label).toBe('恢复打卡');
   });
@@ -45,7 +45,7 @@ describe('打卡归档（Rei 2026-11-02）', () => {
     expect(m[0]!.label).toBe('取消归档');
   });
   it('结束了的打卡（不再打卡）没有归档项', () => {
-    expect(ids(detailMenu({ status: '关闭', recurrence: 'FREQ=DAILY', completion_mode: 'once' }, false))).toBe('myday |reopen |delete');
+    expect(ids(detailMenu({ status: '关闭', recurrence: 'FREQ=DAILY', completion_mode: 'once' }, false))).toBe('myday pin |reopen |delete');
   });
   it('普通任务没有归档', () => {
     expect(ids(detailMenu({ status: '待办', recurrence: null, completion_mode: 'once' }, false))).not.toContain('archive');
