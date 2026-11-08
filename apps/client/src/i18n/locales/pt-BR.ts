@@ -11,6 +11,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有做完的任务": "Nenhuma tarefa concluída ainda",
   "做完或关闭的任务会按时间排在这里。": "As tarefas concluídas ou fechadas aparecem aqui, das mais recentes para as mais antigas.",
   "更早": "Antes",
+  // ── 任务置顶（Rei 2026-11-08，待母语者看）──
+  "置顶": "Fixar",
+  "取消置顶": "Desafixar",
+  "已置顶": "Fixada",
+  "已置顶「{title}」，每天都在我的一天最上面": "“{title}” fixada. Fica no topo de Meu dia todos os dias",
+  "已取消置顶「{title}」": "“{title}” desafixada",
+  "置顶的任务每天都在我的一天里，要移出先取消置顶": "Tarefas fixadas ficam em Meu dia todos os dias. Desafixe para remover",
   // ── 我的一天分两段（Rei 2026-11-08，待母语者看）──
   "今天做完的任务": "Tarefas feitas hoje",
   // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──

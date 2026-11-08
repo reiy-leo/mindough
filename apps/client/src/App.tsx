@@ -3,7 +3,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
 import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
-import { visibleDayEntries } from './lib/project-archive';
+import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
 import { useSettings } from './lib/settings';
@@ -447,7 +447,8 @@ export function App() {
   const nav = sections.flatMap((s) => s.items);
   const [collapsed, toggleSection] = useCollapsed();
   // 归档项目里藏起来的不算（lib/project-archive）
-  const todayCount = visibleDayEntries(store, store.list('my_day')).filter((e) => e.date === toDateKey(store.now()) && store.get('task', e.task_id)).length;
+  // 置顶的任务也算（Rei 2026-11-08，lib/myday-items）
+  const todayCount = dayItems(store).length;
 
   // 快捷键：⌘F / Ctrl+F 搜索（lib/global-keys.ts，编辑器里也开；⌘K 只留给编辑器加链接）；⌘, / Ctrl+, 设置；N 快速新建（不在输入框时）
   useEffect(() => {

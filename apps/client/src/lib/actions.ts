@@ -105,7 +105,28 @@ export function tryLinkTasks(store: Store, ui: Ui, x: string, y: string): boolea
   }
 }
 
+/**
+ * 置顶 / 取消置顶（Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显示，直到用户手动关闭」），提示里能撤销。
+ */
+export function togglePin(store: Store, ui: Ui, taskId: string) {
+  const t = store.get('task', taskId);
+  if (!t) return;
+  const title = titleOf(store, taskId);
+  if (t.pinned_at) {
+    store.unpinTask(taskId);
+    ui.toast({ message: tr('已取消置顶「{title}」', { title }), actions: [{ label: tr('撤销'), onPress: () => store.pinTask(taskId) }] }, 4000);
+  } else {
+    store.pinTask(taskId);
+    ui.toast({ tone: 'success', message: tr('已置顶「{title}」，每天都在我的一天最上面', { title }), actions: [{ label: tr('撤销'), onPress: () => store.unpinTask(taskId) }] }, 4000);
+  }
+}
+
 export function toggleMyDay(store: Store, ui: Ui, taskId: string) {
+  // 置顶的每天都在我的一天里（Rei 2026-11-08）：移出没用，提示先取消置顶
+  if (store.get('task', taskId)?.pinned_at) {
+    ui.toast({ message: tr('置顶的任务每天都在我的一天里，要移出先取消置顶'), actions: [{ label: tr('取消置顶'), onPress: () => togglePin(store, ui, taskId) }] }, 5000);
+    return;
+  }
   if (store.isInMyDay(taskId)) {
     store.removeFromMyDay(taskId);
     ui.toast({ message: tr('已移出我的一天') }, 2500);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type TouchEvent, type ReactNode, type RefObject } from 'react';
 import { Autocomplete, Button as RacButton, Disclosure, DisclosurePanel, Heading, Input, ListBox, ListBoxItem, SearchField, useFilter } from 'react-aria-components';
-import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
 import {
   PLAIN_TYPE_ID,
   countdownPhrase,
@@ -38,7 +38,7 @@ import { useNow, useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
 import { useDateDisplay } from '../../lib/date-display';
-import { announceComplete, archiveHabit, closeTask, toggleMyDay, tryAddDependency, tryLinkTasks } from '../../lib/actions';
+import { announceComplete, archiveHabit, closeTask, toggleMyDay, togglePin, tryAddDependency, tryLinkTasks } from '../../lib/actions';
 import { TaskSearch, taskStateText } from './TaskSearch';
 import { imageUrl, titleOf } from '../../lib/view';
 import { typeIcon } from '../../lib/icons';
@@ -818,7 +818,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   // 没有库的旧式类型（只有字段、没有主字段）：还在正文上面显示一块它的信息
   const lib = hasLibrary(type) ? type : null;
   const patch = (p: Partial<Task>) => store.updateTask(task.id, p);
-  const inDay = store.isInMyDay(task.id, today);
+  // 置顶的每天都在我的一天里（Rei 2026-11-08）
+  const inDay = !!task.pinned_at || store.isInMyDay(task.id, today);
   const finished = isFinished(task.status);
   const recurring = !!task.recurrence;
   const derived = store.derived().get(task.id);
@@ -850,9 +851,11 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   else if (task.status === '进行中') badge = <span className="status-badge is-active">{tr('进行中')}</span>;
 
   // 「关闭」在这里，不在底部（Rei 2026-10-17）；顺序和分隔见 lib/task-menu.ts
-  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };
+  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };
   const MENU_DO: Record<DetailMenuId, () => void> = {
     myday: () => toggleMyDay(store, ui, task.id),
+    pin: () => togglePin(store, ui, task.id),
+    unpin: () => togglePin(store, ui, task.id),
     done: complete,
     close: () => {
       closeTask(store, ui, task.id);

@@ -17,6 +17,13 @@ export const EN: Record<string, EnValue> = {
   "还没有做完的任务": "Nothing completed yet",
   "做完或关闭的任务会按时间排在这里。": "Tasks you complete or close show up here, newest first.",
   "更早": "Earlier",
+  // ── 任务置顶（Rei 2026-11-08）──
+  "置顶": "Pin",
+  "取消置顶": "Unpin",
+  "已置顶": "Pinned",
+  "已置顶「{title}」，每天都在我的一天最上面": "Pinned “{title}”. It stays at the top of My Day every day",
+  "已取消置顶「{title}」": "Unpinned “{title}”",
+  "置顶的任务每天都在我的一天里，要移出先取消置顶": "Pinned tasks are in My Day every day. Unpin it to remove it",
   // ── 我的一天分两段（Rei 2026-11-08）──
   "今天做完的任务": "Tasks done today",
   // ── 日记的心情河流（Rei 2026-11-05）──

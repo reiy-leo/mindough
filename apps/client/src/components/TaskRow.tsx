@@ -1,10 +1,10 @@
 import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
-import { Ban, Check, CirclePlay, Globe, Link2, Lock, LockOpen, PanelRight, Repeat, Sun, SunDim, X } from 'lucide-react';
+import { Ban, Check, CirclePlay, Globe, Link2, Lock, LockOpen, PanelRight, Pin, PinOff, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
 import { categoryIcon, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useUi } from '../lib/ui';
-import { toggleDone, toggleMyDay } from '../lib/actions';
+import { toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
 import { isDragPress } from '../lib/drag-guard';
@@ -58,7 +58,9 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const checkIn = isCheckInTask(task);
   const closed = task.status === '关闭';
   const done = !closed && (doneOverride ?? task.status === '完成');
-  const inDay = store.isInMyDay(task.id, today);
+  // 置顶的每天都在我的一天里（Rei 2026-11-08）
+  const pinned = !!task.pinned_at;
+  const inDay = pinned || store.isInMyDay(task.id, today);
   const state = v.derived?.state;
   const rec = parseRecurrence(task.recurrence);
   const TypeIcon = typeIcon(v.type?.icon);
@@ -172,7 +174,15 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         }}
       >
         {/* 第一行是任务标题 = 正文第一行，挂了资料也一样（Rei 2026-11-03）；资料只在行首显示缩略图 */}
-        <span className="row-title">{v.title}</span>
+        <span className="row-title">
+          {/* 置顶的小图钉（Rei 2026-11-08） */}
+          {pinned && (
+            <HoverTip className="row-pin" tip={tr('已置顶')}>
+              <Pin size={12} aria-label={tr('已置顶')} />
+            </HoverTip>
+          )}
+          {v.title}
+        </span>
         <span className="row-meta">
           {/* 类型（Rei 2026-10-28 能挂多个）：克制地写「游戏 +2」——第一个类型，其余类型和资料合成 +N，悬停看全部 */}
           {cats.length > 0 && (
@@ -282,12 +292,13 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
                 setMenuAt(null);
                 if (k === 'open') ui.openEditor(task.id);
                 else if (k === 'myday') toggleMyDay(store, ui, task.id);
+                else if (k === 'pin' || k === 'unpin') togglePin(store, ui, task.id);
               }}
             >
-              {rowMenu(inDay).flatMap((i, n) => [
+              {rowMenu(inDay, pinned).flatMap((i, n) => [
                 ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
                 <MenuItem key={i.id} id={i.id} className="menu-item" textValue={i.label}>
-                  {i.id === 'open' ? <PanelRight size={16} /> : inDay ? <Sun size={16} /> : <SunDim size={16} />}
+                  {i.id === 'open' ? <PanelRight size={16} /> : i.id === 'pin' ? <Pin size={16} /> : i.id === 'unpin' ? <PinOff size={16} /> : inDay ? <Sun size={16} /> : <SunDim size={16} />}
                   <span>{i.label}</span>
                 </MenuItem>,
               ])}

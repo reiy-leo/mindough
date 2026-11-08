@@ -11,6 +11,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有做完的任务": "Noch nichts erledigt",
   "做完或关闭的任务会按时间排在这里。": "Erledigte und geschlossene Aufgaben erscheinen hier, die neuesten zuerst.",
   "更早": "Früher",
+  // ── 任务置顶（Rei 2026-11-08，待母语者看）──
+  "置顶": "Anheften",
+  "取消置顶": "Lösen",
+  "已置顶": "Angeheftet",
+  "已置顶「{title}」，每天都在我的一天最上面": "„{title}“ angeheftet. Steht jeden Tag ganz oben in „Mein Tag“",
+  "已取消置顶「{title}」": "„{title}“ gelöst",
+  "置顶的任务每天都在我的一天里，要移出先取消置顶": "Angeheftete Aufgaben stehen jeden Tag in „Mein Tag“. Zum Entfernen erst lösen",
   // ── 我的一天分两段（Rei 2026-11-08，待母语者看）──
   "今天做完的任务": "Heute erledigte Aufgaben",
   // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──

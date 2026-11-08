@@ -81,7 +81,8 @@ export function CommandPalette() {
     const t = store.get('task', id);
     if (!t) return null;
     const v = viewOf(store, t);
-    const inDay = store.isInMyDay(id);
+    // 置顶的每天都在我的一天里（Rei 2026-11-08）
+    const inDay = !!store.get('task', id)?.pinned_at || store.isInMyDay(id);
     return (
       <li key={id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
         <RacButton className="palette-main" onPress={() => { close(); ui.openEditor(id); }}>

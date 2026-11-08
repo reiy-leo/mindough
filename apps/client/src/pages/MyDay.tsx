@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
 import { ChevronRight, CircleCheck, EyeOff, GripVertical, Lightbulb, RotateCcw, Sun } from 'lucide-react';
-import { formatDateZh, myDayItems, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem } from '@mindough/core';
+import { formatDateZh, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
@@ -14,6 +14,7 @@ import { useSettings } from '../lib/settings';
 import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
 import { visibleDayEntries } from '../lib/project-archive';
+import { dayItems } from '../lib/myday-items';
 
 import { tr } from '../lib/i18n';
 
@@ -30,7 +31,8 @@ export function MyDayPage() {
   // 归档了的项目里的任务不显示（lib/project-archive，Rei 2026-11-05）
   const entries = visibleDayEntries(store, store.list('my_day'));
   const checkIns = store.list('check_in');
-  const items = myDayItems(entries, byId, checkIns, today, now);
+  // 置顶的任务每天都在，排最上面（Rei 2026-11-08，lib/myday-items）
+  const items = dayItems(store, now);
   const yesterday = yesterdayUnfinished(entries, byId, checkIns, today, now);
   const yIds = new Set(yesterday.map((t) => t.id));
   // 建议关着（设置 → 任务「显示建议」）就不算，连「刚解锁」也不算
@@ -179,6 +181,8 @@ function DayList({ id, section, label, list, all, today }: { id?: string; sectio
     onReorder: (e) => {
       const order = list.map((i) => i.task.id);
       const moving = [...e.keys].map(String);
+      // 置顶的总在最上面（Rei 2026-11-08）：拖它不动；拖到置顶的上面也一样排在置顶的下面（core reorderSection 去掉置顶的）
+      if (list.some((i) => isPinnedEntry(i.entry) && moving.includes(i.task.id))) return;
       const rest = order.filter((x) => !moving.includes(x));
       const targetIdx = rest.indexOf(String(e.target.key));
       const insertAt = e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1;
@@ -190,9 +194,14 @@ function DayList({ id, section, label, list, all, today }: { id?: string; sectio
     <GridList id={id} ref={reorderGuard.ref} aria-label={label} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list.map((i) => ({ ...i, id: i.task.id }))}>
       {(item) => (
         <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
-          <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
-            <GripVertical size={14} />
-          </RacButton>
+          {/* 置顶的总在最上面，不给拖动把手（Rei 2026-11-08）；占位留着，行和别的对齐 */}
+          {isPinnedEntry(item.entry) ? (
+            <span className="drag-handle is-placeholder" aria-hidden />
+          ) : (
+            <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
+              <GripVertical size={14} />
+            </RacButton>
+          )}
           <TaskRow
             store={store}
             task={item.task}

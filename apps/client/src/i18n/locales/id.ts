@@ -11,6 +11,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有做完的任务": "Belum ada tugas yang selesai",
   "做完或关闭的任务会按时间排在这里。": "Tugas yang selesai atau ditutup muncul di sini, dari yang terbaru.",
   "更早": "Sebelumnya",
+  // ── 任务置顶（Rei 2026-11-08，待母语者看）──
+  "置顶": "Sematkan",
+  "取消置顶": "Lepas sematan",
+  "已置顶": "Disematkan",
+  "已置顶「{title}」，每天都在我的一天最上面": "“{title}” disematkan. Selalu di paling atas Hari Saya setiap hari",
+  "已取消置顶「{title}」": "Sematan “{title}” dilepas",
+  "置顶的任务每天都在我的一天里，要移出先取消置顶": "Tugas yang disematkan ada di Hari Saya setiap hari. Lepas sematan untuk menghapusnya",
   // ── 我的一天分两段（Rei 2026-11-08，待母语者看）──
   "今天做完的任务": "Tugas selesai hari ini",
   // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──

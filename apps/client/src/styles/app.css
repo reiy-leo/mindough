@@ -885,6 +885,16 @@ button {
   white-space: nowrap;
   font-weight: 500;
 }
+/* 置顶的小图钉（Rei 2026-11-08）：跟在标题前面，强调色 */
+.row-pin {
+  display: inline-flex;
+  vertical-align: -1px;
+  margin-inline-end: 4px;
+  color: var(--accent);
+}
+.drag-handle.is-placeholder {
+  pointer-events: none;
+}
 .is-done .row-title {
   color: var(--text-3);
   text-decoration: line-through;

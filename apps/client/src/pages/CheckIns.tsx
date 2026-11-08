@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, Flame, PanelRight, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Archive, ArchiveRestore, CalendarCheck2, ChevronRight, Flame, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -20,7 +20,7 @@ import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { Button, ChipPicker, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { habitMenu } from '../lib/task-menu';
-import { archiveHabit, toggleMyDay } from '../lib/actions';
+import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
 import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
 import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
@@ -68,14 +68,15 @@ export function CheckInsPage() {
     const id = menuTask.current;
     const t = id ? store.get('task', id) : undefined;
     if (!t) return [];
-    const inDay = dayIds.has(t.id);
-    const icon = { open: <PanelRight size={16} />, myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} /> };
-    return habitMenu(!!t.archived_at, inDay).map((e) => ({
+    const inDay = dayIds.has(t.id) || !!t.pinned_at;
+    const icon = { open: <PanelRight size={16} />, myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} /> };
+    return habitMenu(!!t.archived_at, inDay, !!t.pinned_at).map((e) => ({
       ...e,
       icon: icon[e.id],
       onAction: () => {
         if (e.id === 'open') ui.openEditor(t.id);
         else if (e.id === 'myday') toggleMyDay(store, ui, t.id);
+        else if (e.id === 'pin' || e.id === 'unpin') togglePin(store, ui, t.id);
         else archiveHabit(store, ui, t.id, e.id === 'archive');
       },
     }));
