@@ -44,6 +44,12 @@
   font-size: 12px;
   color: var(--text-3);
 }
+/* 副标题要 overflow:hidden 才能省略号，.link-btn 默认 margin-left:-8px 让文字和上一行左对齐，
+   在这里会把 hover 底色左边 8px 裁掉（Rei 2026-11-09「设置类型 hover 时左边被截断」）。
+   页头里胶囊跟在标题后面，不需要和谁左对齐，去掉负 margin，底色完整显示圆角。 */
+.page-header.is-compact .page-subtitle .link-btn {
+  margin-left: 0;
+}
 .page-header.is-compact .page-actions {
   flex: none;
   flex-wrap: nowrap;
