@@ -4092,3 +4092,19 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   flex: none;
 }
 .list-section .task-list { margin-top: var(--space-2); }
+
+/* 手机上项目页的底色：项目图标颜色的淡色（Rei 2026-11-08 23:40「移动端的项目 任务列表背景颜色为图标背景颜色，但要淡一点」）。
+   pages/Groups.tsx useProjectTint 只在手机布局、项目设了颜色时给 .main 挂 --project-tint。亮色 10%、暗色 14% 混进皮肤原来的 --bg；
+   页面里把 --bg 换成混好的颜色，固定页头（.project-head-sticky 用 var(--bg)）跟着一样；WinUI 的 Mica 渐变这时不画。 */
+.app-mobile .main[data-project-tint] {
+  --tint-base: var(--bg);
+  --tint-mix: 10%;
+  background: color-mix(in srgb, var(--project-tint) var(--tint-mix), var(--tint-base));
+}
+[data-theme='dark'] .app-mobile .main[data-project-tint] {
+  --tint-mix: 14%;
+}
+.app-mobile .main[data-project-tint] .project-page {
+  --bg: color-mix(in srgb, var(--project-tint) var(--tint-mix), var(--tint-base));
+  --bg-image: none;
+}
