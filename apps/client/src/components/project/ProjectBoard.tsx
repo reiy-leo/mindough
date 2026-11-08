@@ -6,6 +6,8 @@
  * 点卡片任何地方都打开详情（Rei 2026-11-08「项目 看板 不显示详情第三列，点击不显示详情」）：
  * 以前只有卡片里的标题按钮（TaskRow 的 .row-main，列窄时只占卡片一小半）会开，点到卡片的留白、勾选框和太阳旁边的空隙没反应。
  * 现在 GridList 的 onAction 接住卡片本身的点按 / 回车；勾选、太阳、拖动把手这些按钮自己处理，不会冒上来；拖动的尾巴（lib/drag-guard）、长按弹出行菜单后松手不算。
+ * 打开的详情不在右列：桌面布局下看板视图不放右列，看板占满，详情是浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」，
+ * App 里 lib/detail-pane detailInModal 决定，浮层在 components/task/DetailModal.tsx）。这里照旧只调 ui.openEditor。
  */
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton, type DropItem } from 'react-aria-components';
 import { GripVertical } from 'lucide-react';

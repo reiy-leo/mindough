@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampDetailWidth, DETAIL_W_DEFAULT, DETAIL_W_MAX, DETAIL_W_MIN, loadDetailWidth, nextTaskId } from './detail-pane';
+import { clampDetailWidth, detailInModal, DETAIL_W_DEFAULT, DETAIL_W_MAX, DETAIL_W_MIN, loadDetailWidth, nextTaskId } from './detail-pane';
 import { hashWithTask, parseHash, taskInHash } from './router';
 
 describe('三列布局：选中的任务写在 hash 上', () => {
@@ -57,5 +57,23 @@ describe('↑ ↓ 换选中的任务', () => {
     expect(nextTaskId(ids, 'c', 1)).toBeNull();
     expect(nextTaskId(ids, 'a', -1)).toBeNull();
     expect(nextTaskId([], null, 1)).toBeNull();
+  });
+});
+
+describe('看板视图的详情用浮层，不占右列（Rei 2026-11-09）', () => {
+  it('项目页看板视图：用浮层', () => {
+    expect(detailInModal({ page: 'group', id: 'g1' }, { g1: { view: 'board' } })).toBe(true);
+  });
+  it('项目页列表 / 时间轴 / 任务链、没选过视图：照旧用右列', () => {
+    for (const view of ['list', 'timeline', 'chain'])
+      expect(detailInModal({ page: 'group', id: 'g1' }, { g1: { view } })).toBe(false);
+    expect(detailInModal({ page: 'group', id: 'g1' }, {})).toBe(false);
+    // 认不出的视图（老的 graph）回落成列表
+    expect(detailInModal({ page: 'group', id: 'g1' }, { g1: { view: 'graph' } })).toBe(false);
+  });
+  it('只看当前这个项目的视图；别的页面不管', () => {
+    expect(detailInModal({ page: 'group', id: 'g2' }, { g1: { view: 'board' } })).toBe(false);
+    expect(detailInModal({ page: 'groups' }, { g1: { view: 'board' } })).toBe(false);
+    expect(detailInModal({ page: 'myday' }, { g1: { view: 'board' } })).toBe(false);
   });
 });

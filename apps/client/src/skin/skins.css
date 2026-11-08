@@ -1599,3 +1599,18 @@ html[data-layout='mobile'][data-skin='material'] .date-panel.has-lunar .calendar
   height: 45px;
   border-radius: 8px;
 }
+
+/* 看板视图的任务详情浮层（Rei 2026-11-09）：外框沿用各皮肤的 .modal，这里只补和右列不同的地方 */
+/* Apple：居中的 sheet，圆角 12、底栏细线不分色 */
+[data-skin='apple'] .modal-detail {
+  border-radius: 12px;
+  border: 0.5px solid var(--border-strong);
+}
+/* WinUI：ContentDialog——圆角 8、底栏一条浅灰（.pane-foot 的规则已经给了） */
+[data-skin='winui'] .modal-detail {
+  border-radius: 8px;
+}
+/* Material：宽屏用大的基本对话框（28px 圆角、surface-2 底，.modal 已给）；正文区和顶栏跟底色一致 */
+[data-skin='material'] .modal-detail {
+  --pane-bg: var(--surface-2);
+}

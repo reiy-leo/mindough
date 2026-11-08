@@ -1,5 +1,5 @@
 import { installStrictGuard, useStrictSync } from './lib/strict';
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
 import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
@@ -31,7 +31,8 @@ import { CategoriesPage } from './pages/Categories';
 import { DonePage } from './pages/Done';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
-import { WIDE_MIN } from './lib/detail-pane';
+import { detailInModal, WIDE_MIN } from './lib/detail-pane';
+import { DetailModal } from './components/task/DetailModal';
 import { DeepLinks } from './components/DeepLinks';
 import { TaskComposer } from './components/task/TaskComposer';
 import { CommandPalette } from './components/CommandPalette';
@@ -422,7 +423,7 @@ export function App() {
   useStrictSync(store);
   useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
   const { setDidaImportOpen } = ui;
-  const { layout, platform } = useSettings();
+  const { layout, platform, settings } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面
   const settingsInWindow = isTauri() && (platform === 'macos' || platform === 'windows' || platform === 'linux');
   const openSettings = useCallback(
@@ -469,13 +470,21 @@ export function App() {
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
+  // 项目页看板视图：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」，lib/detail-pane detailInModal）。
+  // 切进看板那一下把开着的详情收起来；切回列表右列照旧（空状态或之后点开的任务）。
+  const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews);
+  const wasBoardModal = useRef(boardModal);
+  useEffect(() => {
+    if (boardModal && !wasBoardModal.current) ui.openEditor(null);
+    wasBoardModal.current = boardModal;
+  }, [boardModal, ui]);
   // 右下角浮动的新建按钮整个去掉了（Rei 2026-11-08 23:00 任务列表页、23:35「上面那些页的「+」都去掉」打卡、倒数日、资料库、人物、类型、设置、手机「更多」）。
   // 各页用自己的入口：任务列表顶上的添加框、打卡 / 倒数日页头按钮、资料库「添加」、资料详情「用它新建任务」、人物「新建相关任务」、类型搜索框里新建；N 照常开新建面板。
 
   let shell: ReactNode;
   if (layout === 'desktop') {
     shell = (
-      <div className={`app app-desktop${narrow ? ' is-narrow' : ''}${selected ? ' has-detail' : ''}${LIST_PAGES.includes(route.page) ? '' : ' no-list'}`}>
+      <div className={`app app-desktop${narrow ? ' is-narrow' : ''}${selected && !boardModal ? ' has-detail' : ''}${LIST_PAGES.includes(route.page) ? '' : ' no-list'}${boardModal ? ' detail-modal' : ''}`}>
         <aside className="sidebar">
           {/* macOS 无标题栏时给红绿灯让位、可拖动窗口（双击放大）；其他平台不显示 */}
           <div className="titlebar-space" data-tauri-drag-region aria-hidden />
@@ -514,7 +523,7 @@ export function App() {
             </div>
           </main>
         </div>
-        <DetailPane />
+        {boardModal ? <DetailModal /> : <DetailPane />}
       </div>
     );
   } else {

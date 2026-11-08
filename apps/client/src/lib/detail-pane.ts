@@ -1,6 +1,7 @@
 /**
  * 三列布局右列的纯逻辑（Rei 2026-10-23）：宽度的上下限、↑ ↓ 换选中的任务。好测，组件在 components/task/DetailPane.tsx。
  */
+import { normalizePrefs } from './project-view';
 
 /** 宽屏：侧边栏 + 列表 + 详情三列常驻；比这窄是中等宽度（侧边栏收成图标栏，没选中时不占右列）。 */
 export const WIDE_MIN = 1100;
@@ -37,4 +38,13 @@ export function nextTaskId(ids: readonly string[], current: string | null, dir: 
   const i = current ? ids.indexOf(current) : -1;
   if (i < 0) return (dir === 1 ? ids[0] : ids[ids.length - 1]) ?? null;
   return ids[i + dir] ?? null;
+}
+
+/**
+ * 桌面布局下这一页的任务详情用浮层，不占右列（Rei 2026-11-09 00:25「项目 看板 不显示详情第三列，点击不显示详情」、
+ * 00:28「切换到看板视图后，不要显示侧边的详情column」）：项目页切到看板视图时，看板占满，右列不出现，点卡片弹出详情浮层
+ * （components/task/DetailModal.tsx）。列表、时间轴、任务链视图和别的页面照旧用右列；手机布局本来就是整页详情，不走这里。
+ */
+export function detailInModal(route: { page: string; id?: string }, projectViews: Record<string, unknown>): boolean {
+  return route.page === 'group' && !!route.id && normalizePrefs(projectViews[route.id]).view === 'board';
 }

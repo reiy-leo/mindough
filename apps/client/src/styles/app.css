@@ -4126,3 +4126,15 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   --text-2: color-mix(in srgb, var(--tint-text-2) 70%, var(--text));
   --text-3: color-mix(in srgb, var(--tint-text-3) 70%, var(--text));
 }
+
+/* ═════════════ 看板视图的任务详情浮层（Rei 2026-11-09「切换到看板视图后，不要显示侧边的详情column」） ═════════════
+ * 桌面布局下项目页切到看板时右列不出现（App 换成 components/task/DetailModal），点卡片弹这个。
+ * 高度固定，正文长短变化时浮层不跳；里面的 .pane-detail 和右列同一份，正文区自己滚。各皮肤的外框见 skin/skins.css。
+ */
+.modal-detail {
+  width: min(720px, 100%);
+  height: min(86vh, 900px);
+}
+.modal-detail .pane-detail {
+  flex: 1 1 auto;
+}

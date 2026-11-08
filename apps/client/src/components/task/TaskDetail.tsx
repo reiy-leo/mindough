@@ -62,9 +62,11 @@ import { dataLabel, tr, trc } from '../../lib/i18n';
  * 任务详情怎么摆（Rei 2026-10-23「任务链不要再弹窗了，任务详情如果不弹窗最好了，最好做成三列布局」）：
  * - pane：桌面 / 平板的右列（侧边栏 | 列表 | 详情），外框在 components/task/DetailPane.tsx；
  * - page：手机上整页推入（返回按钮、右滑、系统返回键回列表）。
+ * - modal：桌面布局下项目页看板视图里的浮层（Rei 2026-11-09「切换到看板视图后，不要显示侧边的详情column」），外框在 components/task/DetailModal.tsx。
+ *   里面和右列一样（关闭按钮、完成后留着显示「重新打开」），只是顶栏不当窗口拖动区。
  * 以前桌面置顶小窗里还有弹窗模式，2026-11-04 小窗删了，弹窗模式也一起删了。
  */
-export type DetailMode = 'pane' | 'page';
+export type DetailMode = 'pane' | 'page' | 'modal';
 
 export function TaskDetail({ mode }: { mode: DetailMode }) {
   const ui = useUi();
@@ -156,7 +158,7 @@ function DetailFrame({
   return (
     <section ref={pageRef as RefObject<HTMLElement>} className={`pane-detail${page ? ' page-detail' : ''}${finished ? ' is-finished' : ''}`} aria-label={title} {...swipeProps}>
       {overlay}
-      <div className="dialog-head pane-head" {...(page ? {} : { 'data-tauri-drag-region': true })}>
+      <div className="dialog-head pane-head" {...(mode === 'pane' ? { 'data-tauri-drag-region': true } : {})}>
         {page && (
           <RacButton className="pane-back" aria-label={tr('返回')} onPress={onClose}>
             <BackIcon size={skin === 'apple' ? 24 : 20} aria-hidden />
@@ -809,8 +811,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   const [addRel, setAddRel] = useState<RelKind | null>(null);
   // 关掉详情：手机整页走「返回」（退回进来前那条浏览记录），右列直接取消选中
   const close = mode === 'page' ? ui.closeDetail : () => ui.openEditor(null);
-  // 完成 / 关闭这件：手机整页像以前一样收起；右列留着，显示「已完成」和「重新打开」
-  const afterFinish = mode === 'pane' ? () => {} : close;
+  // 完成 / 关闭这件：手机整页像以前一样收起；右列、看板浮层留着，显示「已完成」和「重新打开」
+  const afterFinish = mode === 'page' ? close : () => {};
   const { primary, secondary, today, complete, addCount, counting } = useActions(store, task, afterFinish);
   // 附件：拖文件到详情整列（顶栏、正文、底栏都算）就加（Rei 2026-10-17；2026-10-25「拖拽文件到详情页面可以直接添加附件」）。
   const owner = useMemo(() => ({ type: 'task' as const, id: task.id }), [task.id]);

@@ -2,6 +2,7 @@
 /**
  * 看板点卡片任何地方都打开详情（Rei 2026-11-08「项目 看板 不显示详情第三列，点击不显示详情」）。
  * 以前只有卡片里的标题按钮会开，点到卡片留白没反应；拖动的尾巴不算点开。
+ * 2026-11-09 起看板视图不放右列，打开的详情是浮层（DetailModal，测试在 components/task/DetailModal.test.tsx）；这里只管点卡片会不会 openEditor。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
@@ -72,6 +73,28 @@ describe('看板卡片点开详情', () => {
     drag.pressing = true;
     press(card('a').querySelector('.gap')!);
     expect(ui.openEditor).not.toHaveBeenCalled();
+  });
+
+  it('聚焦卡片按回车：也打开（浮层详情同样能用键盘打开）', () => {
+    const el = card('b');
+    act(() => el.focus());
+    act(() => {
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true, cancelable: true }));
+    });
+    expect(ui.openEditor).toHaveBeenCalledWith('b');
+  });
+
+  it('打开了详情、长按弹出的行菜单还在：松手那下不再开', () => {
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    document.body.appendChild(menu);
+    try {
+      press(card('a').querySelector('.gap')!);
+      expect(ui.openEditor).not.toHaveBeenCalled();
+    } finally {
+      menu.remove();
+    }
   });
 
   it('选中的卡片带 is-selected', () => {
