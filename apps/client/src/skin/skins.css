@@ -54,12 +54,6 @@
 [data-skin='apple'][data-layout='mobile'] .topbar .icon-btn {
   color: var(--accent);
 }
-/* Apple：强调色正圆加号按钮 */
-[data-skin='apple'] .fab {
-  --fab-size: 52px;
-  --fab-radius: 50%;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
-}
 [data-skin='apple'] .modal-sheet {
   border-radius: 14px 14px 0 0;
 }
@@ -114,12 +108,6 @@
 [data-skin='winui'] .sidebar {
   border-right: 0;
   padding-top: var(--space-2);
-}
-/* WinUI：强调色圆角方形按钮（控件圆角大一号）+ 浮层阴影 */
-[data-skin='winui'] .fab {
-  --fab-size: 48px;
-  --fab-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 /* NavigationView：选中项左侧的强调色竖条 */
 [data-skin='winui'] .nav-item {
@@ -294,17 +282,6 @@
   border: 0;
   background: var(--surface-3);
   padding: 0 16px;
-}
-/* Material 3 FAB：56dp、16dp 圆角、primary container 色、level 3 阴影 */
-[data-skin='material'] .fab {
-  --fab-size: 56px;
-  --fab-radius: 16px;
-  background: var(--accent-soft);
-  color: var(--accent-soft-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
-}
-[data-skin='material'] .fab[data-hovered] {
-  background: color-mix(in srgb, var(--accent-soft) 92%, var(--accent-soft-text));
 }
 [data-skin='material'] .btn {
   font-weight: 500;

@@ -313,38 +313,6 @@ button {
   align-items: center;
   justify-content: center;
 }
-/* 新建任务浮动按钮：桌面在内容区右下角，手机在标签栏上方、避开安全区；形状按皮肤（skin/skins.css） */
-.fab {
-  position: fixed;
-  right: calc(var(--space-6) + env(safe-area-inset-right));
-  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
-  z-index: 11;
-  width: var(--fab-size, 56px);
-  height: var(--fab-size, 56px);
-  border-radius: var(--fab-radius, 16px);
-  border: 0;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  box-shadow: var(--shadow-pop);
-  cursor: pointer;
-  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease), background 0.12s var(--ease);
-}
-.fab[data-hovered] {
-  background: var(--accent-hover);
-}
-.fab[data-pressed] {
-  transform: scale(0.96);
-}
-.app-desktop .fab {
-  /* 浮在中间一列的右下角，不压住右列 */
-  position: absolute;
-}
-.app-mobile .fab {
-  right: calc(var(--space-4) + env(safe-area-inset-right));
-  bottom: calc(var(--tabbar-h) + var(--space-4) + env(safe-area-inset-bottom));
-}
 .hide-mobile {
 }
 [data-layout='mobile'] .hide-mobile {
@@ -3920,7 +3888,7 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 /* 类型页只让列表自己滚（Rei 2026-11-03「类型页：只有类型列表滚动，而不是整个页面」）：
    页头和搜索框不动；宽屏右边的详情单独滚。页面撑满 .main（或 macOS 无标题栏时的 .main-scroll），
    每层 flex 都给 min-height: 0，不然子元素会把父级撑高，又变成整页滚。
-   手机上列表卡片停在标签栏上沿，列表底部留出加号的位置，最后一行不被压住。 */
+   手机上列表卡片停在标签栏上沿。 */
 .types-page.is-fill {
   display: flex;
   flex-direction: column;
@@ -3958,8 +3926,7 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* 右下角浮着新建按钮，详情底部留出它的位置 */
-  padding-bottom: 96px;
+  padding-bottom: var(--space-6);
 }
 @media (max-width: 900px) {
   /* 窄窗口一列：没选中时只放列表；选中了列表和详情上下各占一半、各自滚 */
@@ -3969,15 +3936,9 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   .app-desktop .types-page.has-selection > .types-layout {
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .app-desktop .types-page .cat-list-scroll {
-    padding-bottom: 80px;
-  }
 }
 .app-mobile .types-page.is-fill {
   padding-bottom: calc(var(--tabbar-h) + var(--space-2) + env(safe-area-inset-bottom));
-}
-.app-mobile .types-page .cat-list-scroll {
-  padding-bottom: 88px;
 }
 
 /* 项目归档（Rei 2026-11-05）：项目列表最下面折叠的「已归档（N）」，开关样式借打卡页的 habit-archived-*；归档项目页顶上的提示 */

@@ -16,7 +16,7 @@ import { typeIcon } from '../lib/icons';
 import { tr } from '../lib/i18n';
 import { trx } from '../lib/trx';
 
-/** 倒数日页的新建：默认就是倒数日（App 的新建按钮和 N 也用它）。 */
+/** 倒数日页的新建：默认就是倒数日（N 也用它）。 */
 export const COUNTDOWN_DEFAULTS = { completion_mode: 'countdown' as const };
 
 /**

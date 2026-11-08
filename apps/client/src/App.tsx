@@ -2,7 +2,7 @@ import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Plus, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
 import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
@@ -17,7 +17,7 @@ import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
 import { LibraryItemPage, LibraryPage } from './pages/Library';
 import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough/core';
-import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries, showNewTaskFab } from './lib/nav';
+import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries } from './lib/nav';
 import { typeIcon } from './lib/icons';
 import { librarySidebarAction } from './lib/library-sidebar';
 import { GroupIcon } from './components/project/GroupIcon';
@@ -41,7 +41,7 @@ import { MovedBanner } from './components/MovedBanner';
 import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
 import { useAutoMyDay } from './lib/myday-auto';
-import { MenuAt, Tip, useContextMenuAt } from './ui/primitives';
+import { MenuAt, useContextMenuAt } from './ui/primitives';
 import { useAppMenu } from './lib/app-menu';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
@@ -340,15 +340,6 @@ function Page({ route }: { route: Route }) {
   }
 }
 
-/** 新建任务：右下角浮动按钮（Rei 2026-10-17「新建任务移动到右下角浮动」），三种皮肤各自的形状写在 skin/skins.css；快捷键 N 不变。 */
-function NewTaskFab({ onPress }: { onPress: () => void }) {
-  return (
-    <RacButton className="fab" aria-label={tr('新建任务')} onPress={onPress}>
-      <Plus size={24} strokeWidth={2.25} aria-hidden />
-    </RacButton>
-  );
-}
-
 function MorePage() {
   const store = useStore();
   const sections = [
@@ -411,7 +402,7 @@ export function Toasts() {
   );
 }
 
-/** 新建按钮和 N 的默认值：项目页带上项目，倒数日页默认建倒数日。 */
+/** N 快速新建的默认值：项目页带上项目，倒数日页默认建倒数日。 */
 function newTaskDefaults(route: Route) {
   if (route.page === 'group') return { group_id: route.id };
   if (route.page === 'countdown') return COUNTDOWN_DEFAULTS;
@@ -473,15 +464,13 @@ export function App() {
     return () => window.removeEventListener('keydown', on);
   }, [ui, route, settingsInWindow, openSettings]);
 
-  const newTask = () => ui.openQuickCreate(newTaskDefaults(route), { myDay: route.page === 'myday' });
   const backlogCount = store.backlog(toDateKey(store.now())).length;
   const current = [...nav, SETTINGS].find(isActive);
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
-  // 任务列表页都不放右下角新建按钮（Rei 2026-11-08 23:00「任务列表右下角的"+"新建任务按钮都去掉」）：顶上有添加框，N 照常开新建面板。
-  // 以前已去掉的：项目页（2026-10-26 换成添加框）、项目列表（2026-11-01）、日记。打卡、倒数日、资料库、人物、类型、设置还留着（先不删，Rei 定）。
-  const hideFab = !showNewTaskFab(route.page);
+  // 右下角浮动的新建按钮整个去掉了（Rei 2026-11-08 23:00 任务列表页、23:35「上面那些页的「+」都去掉」打卡、倒数日、资料库、人物、类型、设置、手机「更多」）。
+  // 各页用自己的入口：任务列表顶上的添加框、打卡 / 倒数日页头按钮、资料库「添加」、资料详情「用它新建任务」、人物「新建相关任务」、类型搜索框里新建；N 照常开新建面板。
 
   let shell: ReactNode;
   if (layout === 'desktop') {
@@ -514,7 +503,7 @@ export function App() {
             {settingsInWindow ? <NavLink item={SETTINGS} active={false} onOpen={() => openSettings()} /> : <NavLink item={SETTINGS} active={isActive(SETTINGS)} />}
           </div>
         </aside>
-        {/* 中间一列：当前视图的列表；新建按钮浮在这一列右下角（不压住右列的详情） */}
+        {/* 中间一列：当前视图的列表 */}
         <div className="main-col">
           <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
             <div className="titlebar-space" data-tauri-drag-region aria-hidden />
@@ -524,12 +513,6 @@ export function App() {
               {!(settingsInWindow && route.page === 'settings') && <ErrorBoundary resetKey={route}><Page route={route} /></ErrorBoundary>}
             </div>
           </main>
-          {/* 日记页不放新建按钮（改版 B 按原型默认，待 Rei 确认）：写作区像一页纸，按钮会压在正文上；N 和 ⌘F 搜索照常能新建任务 */}
-          {!hideFab && (
-            <Tip content={<>{tr('新建任务')} <kbd className="kbd">N</kbd></>}>
-              <NewTaskFab onPress={newTask} />
-            </Tip>
-          )}
         </div>
         <DetailPane />
       </div>
@@ -550,7 +533,6 @@ export function App() {
           <LoginErrorBanner />
           {!(settingsInWindow && route.page === 'settings') && <ErrorBoundary resetKey={route}><Page route={route} /></ErrorBoundary>}
         </main>
-        {!hideFab && <NewTaskFab onPress={newTask} />}
         <nav className="tabbar" aria-label={tr('主导航')}>
           {tabs.map((n) => {
             const Icon = n.icon;
