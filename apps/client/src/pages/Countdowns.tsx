@@ -15,9 +15,8 @@ import { titleOf } from '../lib/view';
 import { typeIcon } from '../lib/icons';
 import { tr } from '../lib/i18n';
 import { trx } from '../lib/trx';
+import { createBlankTask } from '../lib/blank-task';
 
-/** 倒数日页的新建：默认就是倒数日（N 也用它）。 */
-export const COUNTDOWN_DEFAULTS = { completion_mode: 'countdown' as const };
 
 /**
  * 倒数日（Rei 2026-10-26「把倒数日从“打卡”中拆出来单独一个侧边栏入口」）：
@@ -106,7 +105,8 @@ export function CountdownsPage() {
   const usedCats = store.categories(true).filter((c) => countdowns.some(({ t }) => hasCat(t, c.id)));
   const hasUncategorized = countdowns.some(({ t }) => !catOf(t));
   const shown = cat === 'all' ? countdowns : countdowns.filter(({ t }) => (cat === NO_CATEGORY ? !catOf(t) : hasCat(t, cat)));
-  const newCountdown = () => ui.openQuickCreate({ ...COUNTDOWN_DEFAULTS, ...(cat !== 'all' && cat !== NO_CATEGORY ? { category_id: cat } : {}) });
+  // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空倒数日，在详情里打开、日期在详情里选（lib/blank-task）
+  const newCountdown = () => createBlankTask(store, ui.openEditor, 'countdown', cat !== 'all' && cat !== NO_CATEGORY ? cat : null);
   const grid = (list: typeof countdowns, withCat: boolean) => (
     <div className="countdown-grid">
       {list.map(({ t, n }) => (

@@ -1658,3 +1658,14 @@ Rei 2026-11-09 01:30「打卡 计数 最小数值2，打卡中"完成方式"可�
 - 勾选完成的打卡：TaskRow 行首圆圈、CheckInControl 都走新的 `toggleCheckIn`（没达标 = `checkIn add 1`，达标了 = `undoCheckIn(lastCountAdd)`）；详情主按钮达标后是「撤销今天的打卡」。属性胶囊：打卡的完成方式总显示（`isPropSet('mode')`）。
 - 新文案 1 条（撤销今天的打卡）9 种语言。测试：core checkin-cap +2，client allowed-modes 3、prop-chips 19。
 
+### 打卡 / 倒数日页「新建」直接进详情，不弹面板 ✅（2026-11-09）
+Rei 2026-11-09 01:31：打卡页、倒数日页的「新建」不再弹窗，直接新建一条对应类型的空任务，选中并在右侧详情打开、光标进正文第一行；手机进整页详情；正文空着离开就删掉。
+
+- 新 `lib/blank-task.ts`：`blankInput(kind, categoryId)`（打卡 = FREQ=DAILY、count、目标 2、步长 `newCountConfig(null)`；倒数日 = countdown、target_date null）；`createBlankTask(store, openEditor, kind, cat)` 建任务（`joinMyDay: false`）、记进 sessionStorage `mindough:blank-drafts`、记光标请求、`openEditor`；`sweepBlankTasks(store, editingId)` 把不是当前选中、正文 trim 后为空的草稿 `deleteTask`，写了字的移出草稿表不再管。
+- App 里 `useEffect(sweep, [editingId])`：详情卸载时 Body 先存没存的正文（passive cleanup 先于新 effect），所以打了字不会被删。刷新后草稿表还在。
+- 光标：TaskDetail Body 给 MdEditor `autoFocus={wantsBodyFocus(id)}`（2 秒内有效，严格模式重复挂载也认），空文档 focus('end') 就是第一行。
+- 入口：CheckIns 页头按钮、Countdowns 页头按钮、App 里在 checkin / countdown 页按 N。删 `COUNTDOWN_DEFAULTS`。新建面板 TaskComposer 还有添加框、N、资料库、人物页、深链、「接在后面」在用，不删。
+- 字段：弹窗里的完成方式、目标、单位、重复、目标日期、提醒、类型、项目、相关任务在详情本来都有（属性胶囊 + 相关任务）；卡片颜色本来只在详情有。没补新字段，没新文案。
+- 原来「没有空任务规则」：代码里以前没有「空着离开就删」，这次是新加的，只管从这两个入口建出来的。
+- 测试：client `blank-task.test.ts` 6 项。
+

@@ -24,7 +24,8 @@ import { GroupIcon } from './components/project/GroupIcon';
 import { useProjectActions } from './components/project/ProjectActions';
 import { DoablePage } from './pages/Doable';
 import { CheckInsPage } from './pages/CheckIns';
-import { COUNTDOWN_DEFAULTS, CountdownsPage } from './pages/Countdowns';
+import { CountdownsPage } from './pages/Countdowns';
+import { createBlankTask, sweepBlankTasks } from './lib/blank-task';
 import { SettingsPage } from './pages/Settings';
 import { JournalPage } from './pages/Journal';
 import { CategoriesPage } from './pages/Categories';
@@ -403,10 +404,9 @@ export function Toasts() {
   );
 }
 
-/** N 快速新建的默认值：项目页带上项目，倒数日页默认建倒数日。 */
+/** N 快速新建的默认值：项目页带上项目。打卡页、倒数日页的 N 和页头「新建」一样，直接建空任务进详情（lib/blank-task）。 */
 function newTaskDefaults(route: Route) {
   if (route.page === 'group') return { group_id: route.id };
-  if (route.page === 'countdown') return COUNTDOWN_DEFAULTS;
   return {};
 }
 
@@ -419,6 +419,8 @@ export function App() {
   const store = useStore();
   useLunarSubScheduler(store);
   useAutoMyDay(store);
+  // 打卡 / 倒数日「新建」出来的空任务：正文空着离开就删（lib/blank-task，Rei 2026-11-09 01:31）
+  useEffect(() => void sweepBlankTasks(store, ui.editingId), [store, ui.editingId]);
   // 严格模式（Rei 2026-11-08）：开关告诉 Store；漏网的写入被拦时给提示
   useStrictSync(store);
   useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
@@ -458,12 +460,13 @@ export function App() {
         ui.setPaletteOpen(true);
       } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !typingKey(e) && !ui.paletteOpen && !ui.quickCreate) {
         e.preventDefault();
-        ui.openQuickCreate(newTaskDefaults(route), { myDay: route.page === 'myday' });
+        if (route.page === 'checkin' || route.page === 'countdown') createBlankTask(store, ui.openEditor, route.page);
+        else ui.openQuickCreate(newTaskDefaults(route), { myDay: route.page === 'myday' });
       }
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
-  }, [ui, route, settingsInWindow, openSettings]);
+  }, [ui, store, route, settingsInWindow, openSettings]);
 
   const backlogCount = store.backlog(toDateKey(store.now())).length;
   const current = [...nav, SETTINGS].find(isActive);

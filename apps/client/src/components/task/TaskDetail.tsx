@@ -46,6 +46,7 @@ import { AutoTextarea, Button, ConfirmDialog, OverflowMenu, PopoverPanel, Progre
 import { Markdown } from '../Markdown';
 import { FieldInput, MODE_ICON, TypeFields } from './pickers';
 import { LazyMdEditor } from '../editor/LazyMdEditor';
+import { wantsBodyFocus } from '../../lib/blank-task';
 import { detailMenu, type DetailMenuId } from '../../lib/task-menu';
 import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachments/Attachments';
 import { ChainToggle, TaskChainInline } from './TaskChain';
@@ -244,6 +245,8 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
       <LazyMdEditor
         // 任务的第一行是标题，只能是纯文字（Rei 2026-11-03，挂了资料的任务也一样）
         plainTitle
+        // 打卡 / 倒数日页「新建」的空任务：光标直接进正文第一行（lib/blank-task）
+        autoFocus={!readOnly && wantsBodyFocus(task.id)}
         className="detail-md"
         label={tr('内容')}
         placeholder={placeholder}

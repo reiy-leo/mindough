@@ -6,7 +6,6 @@ import {
   describeRecurrence,
   dueToday,
   entriesFor,
-  formatRecurrence,
   isFinished,
   parseRecurrence,
   taskStreak,
@@ -21,6 +20,7 @@ import { useSettings } from '../lib/settings';
 import { Button, Empty, MenuAt, Section, Segmented, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
+import { createBlankTask } from '../lib/blank-task';
 import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
 import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
@@ -178,9 +178,8 @@ export function CheckInsPage() {
         actions={
           <Button
             variant="primary"
-            onPress={() =>
-              ui.openQuickCreate({ recurrence: formatRecurrence({ kind: 'daily' }), completion_mode: 'count', category_id: cat !== 'all' && cat !== NO_CATEGORY ? cat : null })
-            }
+            // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
+            onPress={() => createBlankTask(store, ui.openEditor, 'checkin', cat !== 'all' && cat !== NO_CATEGORY ? cat : null)}
           >
             <Plus size={16} />
             {tr('新建打卡')}</Button>
