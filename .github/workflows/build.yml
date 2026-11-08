@@ -195,12 +195,16 @@ jobs:
           grep -qi "SHA-256 digest: $ANDROID_CERT_SHA256" "$RUNNER_TEMP/certs.txt" || { echo "签名证书指纹不对"; exit 1; }
 
       # 构建后再核一遍：res 里的图标没被改回去，APK 里有自适应图标
+      # release 包的资源路径被 AGP 缩短成 res/Xy.png，unzip 看不到 mipmap-*，所以用 aapt2 查资源表（alpha.18 第一次跑因此失败）
       - name: 核对图标
         run: |
           scripts/native-icons.sh android verify
           scripts/android-webview.sh verify
           apk=$(find out -name '*.apk' | head -1)
-          unzip -l "$apk" | grep -E 'mipmap-(anydpi|xxxhdpi)' || { echo "APK 里没找到 mipmap 图标"; exit 1; }
+          "$ANDROID_SDK_ROOT/build-tools/34.0.0/aapt2" dump resources "$apk" > "$RUNNER_TEMP/res.txt"
+          awk '/ mipmap\/ic_launcher( |$)/{f=1;print;next} /^ *resource 0x/{f=0} f' "$RUNNER_TEMP/res.txt" | tee "$RUNNER_TEMP/icon.txt"
+          grep -q 'anydpi' "$RUNNER_TEMP/icon.txt" || { echo "APK 里没找到自适应图标 mipmap/ic_launcher（anydpi）"; exit 1; }
+          grep -q 'xxxhdpi' "$RUNNER_TEMP/icon.txt" || { echo "APK 里没找到 xxxhdpi 的 mipmap/ic_launcher"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
