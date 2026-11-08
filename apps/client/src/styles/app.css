@@ -3990,20 +3990,45 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 
 /* 侧栏和任务列表不显示滚动条，照样能滚（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）。
    Firefox / 新 Chromium 认 scrollbar-width，WebKit（macOS / iOS App）、WebView2、安卓 WebView 认 ::-webkit-scrollbar；两样都写。
-   任务列表的页面由 App 在 .main 上标 data-hide-scrollbar（我的一天、待安排、积压、时间轴、项目页），macOS 无标题栏时滚的是 .main-scroll，项目页滚的是 .project-scroll。 */
+   任务列表的页面由 App 在 .main 上标 data-hide-scrollbar（我的一天、待安排、积压、时间轴、项目页），macOS 无标题栏时滚的是 .main-scroll。 */
 .sidebar,
 .sidebar .nav,
 .main[data-hide-scrollbar],
-.main[data-hide-scrollbar] .main-scroll,
-.main[data-hide-scrollbar] .project-scroll {
+.main[data-hide-scrollbar] .main-scroll {
   scrollbar-width: none;
 }
 .sidebar::-webkit-scrollbar,
 .sidebar .nav::-webkit-scrollbar,
 .main[data-hide-scrollbar]::-webkit-scrollbar,
-.main[data-hide-scrollbar] .main-scroll::-webkit-scrollbar,
-.main[data-hide-scrollbar] .project-scroll::-webkit-scrollbar {
+.main[data-hide-scrollbar] .main-scroll::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
+}
+
+/* 项目页滚动时，页头（标题、图标、视图、排序、···）、归档提示和添加框都不动，只有下面的任务滚（Rei 2026-11-08「项目中滚动时，保持输入框以上的部分不动」）。
+   整块一起 sticky（宽屏、手机同一套），做法同 .add-bar-sticky：不透明页面底色、左右多铺一点，滚动后底下一条细线；里面的添加框不再自己 sticky。 */
+.project-head-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-2) var(--space-2) 0;
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+.project-head-sticky.is-stuck {
+  border-bottom-color: var(--border);
+}
+.project-head-sticky .add-bar-sticky {
+  position: static;
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  background: none;
+  border-bottom: 0;
 }

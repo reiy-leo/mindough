@@ -12,7 +12,7 @@ import { ProjectSheet } from '../components/project/ProjectSheet';
 import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
 import { TaskRow } from '../components/TaskRow';
 import { PageHeader } from '../components/PageHeader';
-import { QuickAddBar } from '../components/QuickAddBar';
+import { QuickAddBar, useStuck } from '../components/QuickAddBar';
 import { ProjectBoard } from '../components/project/ProjectBoard';
 import { ProjectTimeline } from '../components/project/ProjectTimeline';
 import { ProjectChains } from '../components/project/ProjectChains';
@@ -183,6 +183,7 @@ function GroupDetail({
   const store = useStore();
   const ui = useUi();
   const actions = useProjectActions(store, g);
+  const head = useStuck();
   const c = store.category(g.category_id);
   const open = tasks.filter((t) => !isFinished(t.status));
   const ended = tasks.filter((t) => isFinished(t.status));
@@ -190,6 +191,9 @@ function GroupDetail({
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
   return (
     <div className={`page project-page is-${prefs.view}`}>
+      {/* 页头、归档提示、添加框一起固定在顶上，只有下面的任务滚（Rei 2026-11-08） */}
+      <div ref={head.sentinel} className="add-bar-sentinel" aria-hidden />
+      <div className={`project-head-sticky${head.stuck ? ' is-stuck' : ''}`}>
       <PageHeader
         compact
         title={g.name}
@@ -244,6 +248,7 @@ function GroupDetail({
         </div>
       )}
       <QuickAddBar label={tr('添加任务到这个项目')} placeholder={tr('这个项目里要做什么？按回车添加')} create={create} />
+      </div>
       {prefs.view === 'board' ? (
         <ProjectBoard store={store} tasks={tasks} />
       ) : prefs.view === 'timeline' ? (

@@ -14,7 +14,7 @@ describe('滚动条不显示', () => {
       expect(css).toContain(`${sel},`);
       expect(css).toContain(`${sel}::-webkit-scrollbar`);
     }
-    expect(css).toMatch(/\.project-scroll \{\s*scrollbar-width: none;/);
+    expect(css).toMatch(/\.main\[data-hide-scrollbar\] \.main-scroll \{\s*scrollbar-width: none;/);
     expect(css).toMatch(/::-webkit-scrollbar \{\s*display: none;/);
   });
   it('只给任务列表：我的一天、待安排、积压、时间轴、项目页；日记、设置不在里面', () => {
