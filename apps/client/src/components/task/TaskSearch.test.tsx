@@ -125,7 +125,7 @@ describe('挑任务：退格', () => {
     expect(document.activeElement).toBe(input());
     expect(onPick).not.toHaveBeenCalled();
     expect(onCreate).not.toHaveBeenCalled();
-    expect(seen.length).toBeGreaterThan(0);
+    // 2026-11-08 起退格、Delete 停在搜索框里（lib/backspace-guard.ts keepEditKeysInInput），根本到不了全局监听；到了的也都让路
     expect(seen.every(Boolean)).toBe(true);
     expect(titles().length).toBe(4);
   });

@@ -7,6 +7,7 @@ import { Autocomplete, Button as RacButton, Input, ListBox, ListBoxItem, Popover
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { CURRENCIES, currencyName, currencySearchText, currencyOf, formatMoney, moneyOf, parseMoney, recentCurrency, type FieldDef, type FieldValue, type Store } from '@mindough/core';
 import { Field } from '../../ui/primitives';
+import { keepEditKeysInInput } from '../../lib/backspace-guard';
 
 import { dataLabel, tr } from '../../lib/i18n';
 
@@ -21,6 +22,8 @@ export function CurrencySelect({ value, onChange, label = tr('币种') }: { valu
         <ChevronDown size={16} aria-hidden />
       </RacButton>
       <Popover className="popover currency-popover" placement="bottom end">
+        {/* 退格、Delete 只删字，不让 Autocomplete 转发到列表（lib/backspace-guard.ts） */}
+        <div className="currency-pop" onKeyDownCapture={keepEditKeysInInput}>
         <Autocomplete filter={(text, input) => text.includes(input.trim().toLowerCase())}>
           <SearchField aria-label={tr('搜币种')} className="currency-search" autoFocus>
             <Search size={14} aria-hidden className="currency-search-icon" />
@@ -37,6 +40,7 @@ export function CurrencySelect({ value, onChange, label = tr('币种') }: { valu
             )}
           </ListBox>
         </Autocomplete>
+        </div>
       </Popover>
     </Select>
   );

@@ -6,6 +6,7 @@
  *   react-aria 的 Autocomplete 会把输入框里的每个按键再派发一份到列表上，那份的 target 不是输入框，只看 target 判断不出来。
  */
 import { useCallback, useEffect, useRef, useState, type CompositionEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { keepEditKeysInInput } from './backspace-guard';
 
 type KeyLike = Pick<KeyboardEvent, 'key' | 'isComposing' | 'keyCode'>;
 
@@ -73,6 +74,8 @@ export function useImeQuery(initial = '') {
     },
     onKeyDownCapture: (e: ReactKeyboardEvent<HTMLElement>) => {
       if (imeEnter(e.nativeEvent, lastEnd.current)) e.stopPropagation();
+      // 退格、Delete 只给输入框删字，不让 Autocomplete 转发到列表（WebKit 会当成退格返回上一页，见 lib/backspace-guard.ts）
+      else keepEditKeysInInput(e);
     },
   };
   /** 给自己写 onKeyDown 的输入框用：这次回车是不是输入法的。 */

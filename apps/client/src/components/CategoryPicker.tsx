@@ -168,10 +168,8 @@ export function CategoryList({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       choose(rows[active]);
-    } else if (e.key === 'Backspace' && ime.text === '' && selected.length && multiple) {
-      e.preventDefault();
-      onChange(value.slice(0, -1));
     }
+    // 空框按退格不再删掉最后一个已选类型（Rei 2026-11-08「backspace删除时会错误地关闭窗口」）：删到最后一个时胶囊没了、弹层跟着关。去掉已选的用它上面的 ×。
   };
   const optId = (i: number) => `${listId}-${i}`;
   let index = -1;

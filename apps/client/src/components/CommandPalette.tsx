@@ -124,7 +124,7 @@ export function CommandPalette() {
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 setActive((a) => Math.max(0, a - 1));
-              }
+              } else e.continuePropagation(); // 别的键照常往外传：react-aria 包过的 onKeyDown 默认拦住冒泡，Esc 到不了弹窗、关不掉（2026-11-08）
             }}
             onSubmit={() => {
               if (q.trim() && active === 0) createFromQuery();

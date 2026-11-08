@@ -15,6 +15,7 @@ import { installContextMenuBlock } from './lib/contextmenu';
 import { installLongPressGuard } from './lib/long-press';
 import { installSelectAllGuard } from './lib/no-select';
 import { installRootScrollGuard } from './lib/root-scroll';
+import { installBackspaceGuard } from './lib/backspace-guard';
 import { applyLocalePref, initialLocalePref, loadLocale, resolveLocale } from './lib/i18n';
 import { LocaleRoot } from './lib/locale';
 import { preloadMdEditor } from './components/editor/LazyMdEditor';
@@ -56,6 +57,8 @@ installLongPressGuard();
 installSelectAllGuard();
 // 整页不滚：外层万一被滚动了就复位（桌面布局才管，手机软键盘要滚整页）
 installRootScrollGuard();
+// 退格不返回上一页：WebKit 默认在不能打字的地方按退格就 history.back()（Rei 2026-11-08，lib/backspace-guard.ts）
+installBackspaceGuard();
 
 // 编辑器在空闲时先加载好：新建面板一打开就能写
 const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));
