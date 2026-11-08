@@ -410,6 +410,9 @@ function newTaskDefaults(route: Route) {
   return {};
 }
 
+/** 不显示滚动条（还能滚）的页面：任务列表（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）；侧栏总是不显示。编辑器、日记、设置等照旧。 */
+const HIDE_SCROLLBAR_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'group'];
+
 export function App() {
   const route = useRoute();
   const ui = useUi();
@@ -501,7 +504,7 @@ export function App() {
         </aside>
         {/* 中间一列：当前视图的列表；新建按钮浮在这一列右下角（不压住右列的详情） */}
         <div className="main-col">
-          <main className="main">
+          <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
             <div className="titlebar-space" data-tauri-drag-region aria-hidden />
             <div className="main-scroll">
               <MovedBanner />
@@ -530,7 +533,7 @@ export function App() {
             <Search size={20} />
           </RacButton>
         </div>
-        <main className="main">
+        <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
           <MovedBanner />
           <LoginErrorBanner />
           {!(settingsInWindow && route.page === 'settings') && <ErrorBoundary resetKey={route}><Page route={route} /></ErrorBoundary>}
