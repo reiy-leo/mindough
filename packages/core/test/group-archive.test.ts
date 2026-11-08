@@ -2,6 +2,7 @@
  * 项目归档（Rei 2026-11-05「项目可以归档」）：group.archived_at（v17）、Store.archiveGroup / unarchiveGroup，
  * 归档项目的任务不自动进我的一天、不进建议 / 待安排、不在 activeTasks 里；全局搜索（⌘F）还能搜到；老客户端的行不出错。
  */
+// 日期是今天的任务都按「早就定好、今天到了」建（joinMyDay: false），不走「日期设成今天就放进我的一天」（myday-date-join.test.ts）
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
@@ -79,7 +80,7 @@ describe('归档 / 取消归档', () => {
   it('任务本身不动：状态、项目、日期都照旧', async () => {
     const { store } = await open();
     const g = group(store);
-    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) });
+    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     const before = store.get('task', t.id)!;
     store.archiveGroup(g.id);
     expect(store.get('task', t.id)).toEqual(before);
@@ -91,7 +92,7 @@ describe('归档项目的任务', () => {
   it('不自动进我的一天（my_day_auto 开着也跳过），取消归档后照常加进来', async () => {
     const { store } = await open();
     const g = group(store);
-    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) });
+    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     store.archiveGroup(g.id);
     expect(store.syncAutoMyDay()).toBe(0);
     expect(inDay(store)).not.toContain(t.id);
@@ -103,7 +104,7 @@ describe('归档项目的任务', () => {
   it('不进建议（关着「出现在我的一天」的项目也一样），取消后回到建议', async () => {
     const { store } = await open();
     const g = group(store, '搬家', false);
-    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) });
+    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     expect(sugg(store)).toEqual([t.id]);
     store.archiveGroup(g.id);
     expect(sugg(store)).toEqual([]);

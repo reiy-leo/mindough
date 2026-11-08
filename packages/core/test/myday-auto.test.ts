@@ -1,6 +1,7 @@
 /**
  * 项目里的任务自动进我的一天（Rei 2026-11-02「直接出现在我的一天，而不是出现在的建议里」「项目编辑窗口中可以设置switch on/off」）。
  */
+// 日期是今天的任务都按「早就定好、今天到了」建（joinMyDay: false），不走「日期设成今天就放进我的一天」（myday-date-join.test.ts）
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
@@ -43,12 +44,12 @@ describe('项目里的任务直接进我的一天', () => {
     const { store } = await open();
     const g = group(store);
     const d = today(store);
-    const due = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: d });
+    const due = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: d }, { joinMyDay: false });
     const late = store.createTask({ body_md: '退押金', group_id: g.id, scheduled_date: '2026-10-30' });
-    const range = store.createTask({ body_md: '搬箱子', group_id: g.id, scheduled_date: '2026-11-01', end_date: '2026-11-05' });
+    const range = store.createTask({ body_md: '搬箱子', group_id: g.id, scheduled_date: '2026-11-01', end_date: '2026-11-05' }, { joinMyDay: false });
     const cd = store.createTask({ body_md: '交房', group_id: g.id, completion_mode: 'countdown', target_date: d });
     const later = store.createTask({ body_md: '下周的事', group_id: g.id, scheduled_date: '2026-11-09' });
-    const loose = store.createTask({ body_md: '不在项目里', scheduled_date: d });
+    const loose = store.createTask({ body_md: '不在项目里', scheduled_date: d }, { joinMyDay: false });
     expect(store.syncAutoMyDay()).toBe(3);
     expect(new Set(inDay(store))).toEqual(new Set([due.id, range.id, cd.id]));
     // 只有当前的才自动进（Rei 2026-11-08）：过期的、没到的都不加
@@ -65,7 +66,7 @@ describe('项目里的任务直接进我的一天', () => {
   it('自动加的行：id 由任务 + 日期算、时间戳是最早的固定值', async () => {
     const { store } = await open();
     const g = group(store);
-    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) });
+    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     store.syncAutoMyDay();
     const row = store.raw('my_day', myDayEntryId(t.id, today(store)))!;
     expect(row.deleted).toBe(false);
@@ -92,7 +93,7 @@ describe('项目里的任务直接进我的一天', () => {
   it('手动加过、又移出的（老的随机 id 行）当天也不再加', async () => {
     const { store } = await open();
     const g = group(store);
-    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) });
+    const t = store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     store.insert('my_day', { task_id: t.id, date: today(store), sort: 1, added_at: store.now().toISOString() });
     store.removeFromMyDay(t.id);
     expect(store.syncAutoMyDay()).toBe(0);
@@ -103,8 +104,8 @@ describe('项目里的任务直接进我的一天', () => {
     const { store } = await open();
     const off = group(store, false);
     const on = group(store);
-    const a = store.createTask({ body_md: '关着的项目', group_id: off.id, scheduled_date: today(store) });
-    const b = store.createTask({ body_md: '做完了', group_id: on.id, scheduled_date: today(store) });
+    const a = store.createTask({ body_md: '关着的项目', group_id: off.id, scheduled_date: today(store) }, { joinMyDay: false });
+    const b = store.createTask({ body_md: '做完了', group_id: on.id, scheduled_date: today(store) }, { joinMyDay: false });
     store.updateTask(b.id, { status: '完成' });
     expect(store.syncAutoMyDay()).toBe(0);
     expect(sugg(store)).toEqual([a.id]);
@@ -117,7 +118,7 @@ describe('项目里的任务直接进我的一天', () => {
   it('老数据没有 my_day_auto 字段：当成开', async () => {
     const { store } = await open();
     const g = store.insert('group', { name: '旧', icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null } as never);
-    store.createTask({ body_md: 'x', group_id: g.id, scheduled_date: today(store) });
+    store.createTask({ body_md: 'x', group_id: g.id, scheduled_date: today(store) }, { joinMyDay: false });
     expect(store.syncAutoMyDay()).toBe(1);
     // 老客户端推来的行：applyRemote 补成 true
     const old = { ...store.get('group', g.id)!, updated_at: '9999999999999-0000-old' } as Record<string, unknown>;
@@ -143,7 +144,7 @@ describe('多端：同一件不重复，移出不复活', () => {
   it('两台设备各自自动加，同步后只有一行', async () => {
     const [A, B] = await devices();
     const g = group(A.store);
-    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) });
+    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) }, { joinMyDay: false });
     await A.sync();
     await B.sync();
     A.store.syncAutoMyDay();
@@ -160,7 +161,7 @@ describe('多端：同一件不重复，移出不复活', () => {
   it('A 上移出，B 离线时又自动加了一遍：同步后两边都没有', async () => {
     const [A, B] = await devices();
     const g = group(A.store);
-    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) });
+    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) }, { joinMyDay: false });
     A.store.syncAutoMyDay();
     await A.sync();
     await B.sync();
@@ -179,7 +180,7 @@ describe('多端：同一件不重复，移出不复活', () => {
   it('B 从来没同步过这一天，自己自动加了；A 上移出（只有手动行）也盖得住', async () => {
     const [A, B] = await devices();
     const g = group(A.store);
-    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) });
+    const t = A.store.createTask({ body_md: '打包', group_id: g.id, scheduled_date: today(A.store) }, { joinMyDay: false });
     await A.sync();
     await B.sync();
     // A：用户先手动加（老的随机 id），再移出；B 离线时自动加
@@ -207,7 +208,8 @@ describe('只有当前的才自动进（Rei 2026-11-08）', () => {
     expect(store.syncAutoMyDay()).toBe(1);
     expect(inDay(store)).toEqual([habit.id]);
     store.updateTask(late.id, { scheduled_date: today(store) });
-    expect(store.syncAutoMyDay()).toBe(1);
+    // 改日期那一下就放进来了（myday-date-join.test.ts），自动加不用再加
+    expect(store.syncAutoMyDay()).toBe(0);
     expect(inDay(store)).toContain(late.id);
     expect(inDay(store)).not.toContain(rangeOver.id);
     expect(inDay(store)).not.toContain(future.id);

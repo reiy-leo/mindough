@@ -1240,7 +1240,11 @@ export class Store {
 
   // ───────────── 任务 ─────────────
 
-  createTask(input: NewTaskInput = {}): Task {
+  /**
+   * 新建任务。日期是今天（或日期段含今天）的会自动放进今天的我的一天（Rei 2026-11-08，见 joinMyDayOnToday）；
+   * opts.joinMyDay = false 不放（演示数据自己排我的一天）。
+   */
+  createTask(input: NewTaskInput = {}, opts: { joinMyDay?: boolean } = {}): Task {
     const now = this.now();
     const type = this.get('task_type', input.type_id ?? null);
     const group = this.get('group', input.group_id ?? null);
@@ -1279,7 +1283,9 @@ export class Store {
     const attached = this.attachLibrary(created);
     // 挂了资料、正文没写标题（空着或只有正文模板）：资料名当第一行（Rei 2026-11-03）
     this.migrateTitleLines([attached.id]);
-    return this.tables.task.get(attached.id)!;
+    const task = this.tables.task.get(attached.id)!;
+    if (opts.joinMyDay !== false) this.joinMyDayOnToday(task, null);
+    return task;
   }
 
   updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'updated_at'>>): Task {
@@ -1300,7 +1306,27 @@ export class Store {
       const deviceToday = toDateKey(this.now());
       if (this.isInMyDay(id, deviceToday) && !keepsMyDayAfterDate(task.scheduled_date, task.end_date ?? null, [deviceToday, taskToday(task, this.now(), deviceToday)])) this.removeFromMyDay(id, deviceToday);
     }
+    // 反过来：日期改成今天（或日期段变成含今天），放进今天的我的一天（Rei 2026-11-08「如果日期设置的今天，自动添加到我的一天」）
+    if (dateChanged) this.joinMyDayOnToday(task, before ?? null);
     return task;
+  }
+
+  /**
+   * 日期设成今天就放进今天的我的一天，排「未完成」最上面（addToMyDay → topSort），和手动加入一样。
+   * 只在本机写入（createTask / updateTask）时调；applyRemote 不经过这里，别的设备只收到这一行。
+   * - 新的日期（段）要含设备的今天或任务时区的今天；改之前已经含今天的不算（只改了结束日、换了时区），不再加。
+   * - 不处理：没日期、重复（打卡）、完成 / 关闭、置顶（本来就在）、打卡归档、归档项目里的、已经在今天的。
+   * - 当天手动移出过（有墓碑）的照样加回来：这次是用户自己改的日期。addToMyDay 用同一个行 id，把墓碑翻回来。
+   */
+  private joinMyDayOnToday(task: Task, before: Task | null): void {
+    if (task.deleted || !task.scheduled_date || task.recurrence) return;
+    if (isFinished(task.status) || task.pinned_at || task.archived_at || this.inArchivedGroup(task)) return;
+    const now = this.now();
+    const deviceToday = toDateKey(now);
+    const covers = (t: Task) => !!t.scheduled_date && keepsMyDayAfterDate(t.scheduled_date, t.end_date ?? null, [deviceToday, taskToday(t, now, deviceToday)]);
+    if (!covers(task) || (before && covers(before))) return;
+    if (this.isInMyDay(task.id, deviceToday)) return;
+    this.addToMyDay(task.id, deviceToday);
   }
 
   /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。 */

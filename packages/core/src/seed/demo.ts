@@ -109,7 +109,7 @@ export function seedDemo(store: Store): void {
     });
 
     const task = (body: string, extra: Partial<Task> = {}) =>
-      store.createTask({ body_md: body, created_at: iso(-40), ...extra });
+      store.createTask({ body_md: body, created_at: iso(-40), ...extra }, { joinMyDay: false });
     const done = (body: string, daysAgo: number, extra: Partial<Task> = {}) =>
       task(body, { status: '完成', done_at: iso(-daysAgo, 20), ...extra });
     // 关闭：不做了也算结束（解锁后续），但不算成就
