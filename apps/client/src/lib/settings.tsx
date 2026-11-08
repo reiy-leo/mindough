@@ -38,9 +38,11 @@ export interface Settings {
    * 关掉后建议那段不显示，也不算建议。读经 lib/myday-suggest 的 suggestionsOn()，写在设置 → 任务，或建议那段标题右边的「…」→「隐藏建议」。
    */
   myDaySuggestions: boolean;
+  /** 我的一天「已完成」那段展开着吗（Rei 2026-11-08 分两段）：默认展开，只记在本机。 */
+  myDayDoneOpen: boolean;
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDoneOpen: true };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

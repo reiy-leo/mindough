@@ -52,6 +52,21 @@ export function myDayItems(
   return [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
 }
 
+/**
+ * 我的一天分两段（Rei 2026-11-08「未完成、完成两个 section 显示」）：未完成在上，已完成在下，各自按 sort。
+ * 「已完成」就是 isDoneOn：完成、关闭，和当天周期达标的打卡。
+ */
+export function myDaySections(items: readonly MyDayItem[]): { open: MyDayItem[]; done: MyDayItem[] } {
+  return { open: items.filter((i) => !i.done), done: items.filter((i) => i.done) };
+}
+
+/** 一段里拖完的新顺序拼回整天的顺序（另一段原样），给 reorderMyDay。 */
+export function reorderSection(items: readonly MyDayItem[], section: 'open' | 'done', newIds: readonly string[]): string[] {
+  const { open, done } = myDaySections(items);
+  const ids = (xs: MyDayItem[]) => xs.map((i) => i.task.id);
+  return section === 'open' ? [...newIds, ...ids(done)] : [...ids(open), ...newIds];
+}
+
 /** 昨天加入但没做完、今天也还没加入的任务。 */
 export function yesterdayUnfinished(
   entries: readonly MyDayEntry[],
@@ -171,6 +186,40 @@ export function suggestions(input: SuggestionInput): Suggestion[] {
 export function autoMyDayTasks(input: Omit<SuggestionInput, 'entries' | 'groups'> & { groups: readonly Group[]; seen: ReadonlySet<string> }): Suggestion[] {
   const groups = groupMap(input.groups);
   return dueTodayCandidates(input).filter((s) => !input.seen.has(s.task.id) && inAutoGroup(s.task, groups));
+}
+
+/**
+ * 新加进我的一天的行排最上面（Rei 2026-11-08「添加到我的一天的任务放在最上面」）：sort 用「负的加入毫秒数」，越晚加越小、越靠上；
+ * 也一定比当天已有的行都小（拖过的行是 1..N，同一毫秒连着加的往上叠）。sort 只是数字，老客户端照样按从小到大排，看到的也是新的在上。
+ */
+export function topSort(entries: Iterable<MyDayEntry>, date: DateKey, atMs: number): number {
+  let min = Infinity;
+  for (const e of entries) if (!e.deleted && e.date === date && e.sort < min) min = e.sort;
+  return Math.min(-Math.floor(atMs), min - 1);
+}
+
+/**
+ * 自动加的行（autoMyDayTasks）的 sort：按「它变成今天该做」的时刻排，各设备从同样的数据算出来一样。
+ * 时刻取任务和它前置里最晚的 updated_at（改日期、前置刚做完），不早于那天 00:00（UTC 字面，和 added_at 一样）。
+ * 当天一打开就加进来的排在当天手动加的下面；白天因为改了日期、刚解锁加进来的排在那一刻之前加的上面。
+ */
+export function autoSort(date: DateKey, updatedAts: readonly string[]): number {
+  let ms = Date.parse(`${date}T00:00:00.000Z`);
+  for (const u of updatedAts) {
+    const m = Number(u.slice(0, 13));
+    if (/^\d{13}-/.test(u) && m > ms) ms = m;
+  }
+  return -ms;
+}
+
+/**
+ * 改日期后还留在今天的我的一天吗（Rei 2026-11-08「用户设置的日期不是今天时 取消我的一天」）：
+ * 清空日期留着；新的日期（段）含今天留着；其他（以后、以前）移出。todays 给设备的今天和任务时区的今天，含其中一个就算今天。
+ */
+export function keepsMyDayAfterDate(start: DateKey | null, end: DateKey | null, todays: readonly DateKey[]): boolean {
+  if (!start) return true;
+  const last = end && end > start ? end : start;
+  return todays.some((d) => start <= d && d <= last);
 }
 
 /** FNV-1a 32 位。 */

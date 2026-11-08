@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
-import { EyeOff, GripVertical, Lightbulb, RotateCcw, Sun } from 'lucide-react';
-import { formatDateZh, myDayItems, recentlyUnlocked, suggestions, toDateKey, yesterdayUnfinished } from '@mindough/core';
+import { ChevronRight, CircleCheck, EyeOff, GripVertical, Lightbulb, RotateCcw, Sun } from 'lucide-react';
+import { formatDateZh, myDayItems, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
@@ -49,21 +49,9 @@ export function MyDayPage() {
   const counted = items.length - closedCount;
   const doneCount = items.filter((i) => i.done && i.task.status !== '关闭').length;
 
-  // 拖完不留高亮、不选中被拖的行（lib/drag-guard）
-  const reorderGuard = useReorderGuard();
-  const { dragAndDropHooks } = useDragAndDrop({
-    ...reorderGuard.handlers,
-    getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
-    onReorder: (e) => {
-      const order = items.map((i) => i.task.id);
-      const moving = [...e.keys].map(String);
-      const rest = order.filter((id) => !moving.includes(id));
-      const targetIdx = rest.indexOf(String(e.target.key));
-      const insertAt = e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1;
-      rest.splice(insertAt, 0, ...moving);
-      store.reorderMyDay(today, rest);
-    },
-  });
+  // 分两段（Rei 2026-11-08）：未完成在上、已完成在下；各段自己拖动排序，勾上就挪到已完成段
+  const { open, done } = myDaySections(items);
+  const doneOpen = settings.myDayDoneOpen !== false;
 
   return (
     <div className="page">
@@ -83,22 +71,33 @@ export function MyDayPage() {
       />
 
       {items.length ? (
-        <GridList ref={reorderGuard.ref} aria-label={tr('今天的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={items.map((i) => ({ ...i, id: i.task.id }))}>
-          {(item) => (
-            <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
-              <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
-                <GripVertical size={14} />
-              </RacButton>
-              <TaskRow
-                store={store}
-                task={item.task}
-                showMyDay={false}
-                doneOverride={item.done}
-                // 行尾不放 ×（Rei 2026-10-25「删除my day中的条目右侧的x按钮」）：移出我的一天用行的右键 / 长按菜单或详情里的太阳
-              />
-            </GridListItem>
+        <>
+          {open.length > 0 && (
+            <section className="section myday-open">
+              {/* 只有一段时不放段标题，和以前一样就是一张清单 */}
+              {done.length > 0 && (
+                <div className="section-head">
+                  <h2 className="section-title">
+                    {tr('未完成')} <span className="count">{open.length}</span>
+                  </h2>
+                </div>
+              )}
+              <DayList section="open" label={tr('今天的任务')} list={open} all={items} today={today} />
+            </section>
           )}
-        </GridList>
+          {done.length > 0 && (
+            <section className={`section myday-done${doneOpen ? ' is-open' : ''}`}>
+              <RacButton className="habit-archived-toggle" aria-expanded={doneOpen} aria-controls="myday-done-list" onPress={() => set('myDayDoneOpen', !doneOpen)}>
+                <ChevronRight size={15} className="habit-archived-chevron" aria-hidden />
+                <CircleCheck size={15} aria-hidden />
+                <span className="section-title">
+                  {tr('已完成')} <span className="count">{done.length}</span>
+                </span>
+              </RacButton>
+              {doneOpen && <DayList id="myday-done-list" section="done" label={tr('今天做完的任务')} list={done} all={items} today={today} />}
+            </section>
+          )}
+        </>
       ) : (
         <Empty icon={<Sun size={28} />} title={tr('今天还是空的')} hint={tr('在上面直接写，或按 ⌘F / Ctrl+F 从全部任务里挑几件加进来')} />
       )}
@@ -165,5 +164,44 @@ export function MyDayPage() {
 
       <JournalCard />
     </div>
+  );
+}
+
+/** 我的一天的一段：能拖动排序（只在段内），拖完拼回整天的顺序（core reorderSection）。 */
+function DayList({ id, section, label, list, all, today }: { id?: string; section: 'open' | 'done'; label: string; list: MyDayItem[]; all: MyDayItem[]; today: string }) {
+  const store = useStore();
+  const ui = useUi();
+  // 拖完不留高亮、不选中被拖的行（lib/drag-guard）
+  const reorderGuard = useReorderGuard();
+  const { dragAndDropHooks } = useDragAndDrop({
+    ...reorderGuard.handlers,
+    getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
+    onReorder: (e) => {
+      const order = list.map((i) => i.task.id);
+      const moving = [...e.keys].map(String);
+      const rest = order.filter((x) => !moving.includes(x));
+      const targetIdx = rest.indexOf(String(e.target.key));
+      const insertAt = e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1;
+      rest.splice(insertAt, 0, ...moving);
+      store.reorderMyDay(today, reorderSection(all, section, rest));
+    },
+  });
+  return (
+    <GridList id={id} ref={reorderGuard.ref} aria-label={label} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list.map((i) => ({ ...i, id: i.task.id }))}>
+      {(item) => (
+        <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
+          <RacButton slot="drag" className="drag-handle" aria-label={tr('拖动排序')}>
+            <GripVertical size={14} />
+          </RacButton>
+          <TaskRow
+            store={store}
+            task={item.task}
+            showMyDay={false}
+            doneOverride={item.done}
+            // 行尾不放 ×（Rei 2026-10-25「删除my day中的条目右侧的x按钮」）：移出我的一天用行的右键 / 长按菜单或详情里的太阳
+          />
+        </GridListItem>
+      )}
+    </GridList>
   );
 }

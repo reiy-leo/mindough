@@ -6,6 +6,8 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 我的一天分两段（Rei 2026-11-08，待母语者看）──
+  "今天做完的任务": "Tâches faites aujourd’hui",
   // ── 日记的心情河流（Rei 2026-11-05，待母语者看）──
   "心情河流（{range}）：还没有日记": "Rivière des humeurs ({range}) : pas encore d’entrées",
   "心情河流（{range}）：{n} 条日记": "Rivière des humeurs ({range}) : {n, plural, one {# entrée} other {# entrées}}",

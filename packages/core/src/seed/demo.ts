@@ -308,7 +308,8 @@ export function seedDemo(store: Store): void {
     // 我的一天
     const yesterday = d(-1);
     for (const t of [c2, m2, read]) store.addToMyDay(t.id, yesterday);
-    for (const t of [m3, p2, water, c1, c3]) store.addToMyDay(t.id, today);
+    // 新加的排最上面（2026-11-08），倒着加，显示还是这个顺序
+    for (const t of [m3, p2, water, c1, c3].reverse()) store.addToMyDay(t.id, today);
     void call;
   });
 }

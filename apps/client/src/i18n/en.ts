@@ -12,6 +12,8 @@ const n = (v: unknown, one: string, other: string) => `${v} ${pl(v, one, other)}
 const c = (p: Params, k: string) => p.count ?? p[k];
 
 export const EN: Record<string, EnValue> = {
+  // ── 我的一天分两段（Rei 2026-11-08）──
+  "今天做完的任务": "Tasks done today",
   // ── 日记的心情河流（Rei 2026-11-05）──
   "心情河流（{range}）：还没有日记": (p) => `Mood river (${p.range}): no entries yet`,
   "心情河流（{range}）：{n} 条日记": (p) => `Mood river (${p.range}): ${n(p.n, 'entry', 'entries')}`,

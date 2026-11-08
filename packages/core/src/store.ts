@@ -8,7 +8,8 @@ import { normalizeIconColor } from './icon-color';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
-import { AUTO_MY_DAY_HLC, autoMyDayTasks, groupAutoMyDay, myDayEntryId, recentlyUnlocked } from './myday';
+import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
+import { taskToday } from './timezone';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
@@ -1286,7 +1287,17 @@ export class Store {
       const end = 'end_date' in patch ? (patch.end_date ?? null) : (cur?.end_date ?? null);
       patch = { ...patch, ...normalizeRangeFields(start, end) };
     }
-    return this.update('task', id, patch);
+    // 用户把日期改成不是今天：从今天的我的一天移出（Rei 2026-11-08）。墓碑让自动加当天不再加回来。
+    // 只在这里（本机写入）判断；同步拉下来的走 applyRemote，不经过这里，别的设备不会再移一次。
+    const before = this.tables.task.get(id);
+    const was = before ? `${before.scheduled_date ?? ''}|${before.end_date ?? ''}` : null;
+    const task = this.update('task', id, patch);
+    const dateChanged = was !== null && 'scheduled_date' in patch && was !== `${task.scheduled_date ?? ''}|${task.end_date ?? ''}`;
+    if (dateChanged && task.scheduled_date) {
+      const deviceToday = toDateKey(this.now());
+      if (this.isInMyDay(id, deviceToday) && !keepsMyDayAfterDate(task.scheduled_date, task.end_date ?? null, [deviceToday, taskToday(task, this.now(), deviceToday)])) this.removeFromMyDay(id, deviceToday);
+    }
+    return task;
   }
 
   /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。 */
@@ -1553,15 +1564,13 @@ export class Store {
 
   // ───────────── 我的一天 ─────────────
 
-  /** 加进那天的我的一天（排最后）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。 */
+  /** 加进那天的我的一天（排最上面）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。 */
   addToMyDay(taskId: string, date: string = toDateKey(this.now())): TableMap['my_day'] {
     const existing = this.list('my_day').find((e) => e.task_id === taskId && e.date === date);
     if (existing) return existing;
-    const maxSort = this.list('my_day')
-      .filter((e) => e.date === date)
-      .reduce((m, e) => Math.max(m, e.sort), 0);
+    // 新加的排最上面（Rei 2026-11-08，见 myday.ts topSort）
     const id = myDayEntryId(taskId, date);
-    const row: TableMap['my_day'] = { id, updated_at: '', deleted: false, task_id: taskId, date, sort: maxSort + 1, added_at: this.now().toISOString() };
+    const row: TableMap['my_day'] = { id, updated_at: '', deleted: false, task_id: taskId, date, sort: topSort(this.tables.my_day.values(), date, this.now().getTime()), added_at: this.now().toISOString() };
     this.write([{ table: 'my_day', row }]);
     return this.tables.my_day.get(id)!;
   }
@@ -1584,7 +1593,7 @@ export class Store {
   /**
    * 项目里今天该做的任务，自动放进今天的我的一天（Rei 2026-11-02「直接出现在我的一天，而不是出现在的建议里」）。
    * 只加项目开着「出现在我的一天」（group.my_day_auto，默认开）的；这一天已经有过行的（在里面的、移出过的）不再加。
-   * 加的行：id = myDayEntryId，updated_at = AUTO_MY_DAY_HLC（最早），sort 0、added_at 那天 00:00，各设备写出来一模一样，
+   * 加的行：id = myDayEntryId，updated_at = AUTO_MY_DAY_HLC（最早），sort 见 autoSort（2026-11-08 前是 0）、added_at 那天 00:00，各设备从同样的数据写出来一样，
    * 进 outbox 推上去，别的设备同一行不会重复；用户移出的墓碑总比它新。不看「显示建议」开关。
    * 重复调用没有副作用（没东西要加就不写）。返回加了几件。
    */
@@ -1598,10 +1607,13 @@ export class Store {
     const picks = autoMyDayTasks({ tasks, checkIns: this.list('check_in'), derived, recentlyUnlocked: unlocked, today, now, groups: this.list('group'), seen });
     if (!picks.length) return 0;
     const stamped: Change[] = [];
+    const edges = this.edges();
     for (const { task } of picks) {
       const id = myDayEntryId(task.id, today);
       if (this.tables.my_day.has(id)) continue;
-      const row: TableMap['my_day'] = { id, updated_at: AUTO_MY_DAY_HLC, deleted: false, task_id: task.id, date: today, sort: 0, added_at: `${today}T00:00:00.000Z` };
+      // 排在上面：按它变成今天该做的时刻（任务和前置最晚的 updated_at），见 myday.ts autoSort
+      const stamps = [task.updated_at, ...edges.filter((e) => e.succ_id === task.id).map((e) => this.tables.task.get(e.pred_id)?.updated_at ?? '')];
+      const row: TableMap['my_day'] = { id, updated_at: AUTO_MY_DAY_HLC, deleted: false, task_id: task.id, date: today, sort: autoSort(today, stamps), added_at: `${today}T00:00:00.000Z` };
       this.tables.my_day.set(id, row);
       stamped.push({ table: 'my_day', row } as Change);
     }

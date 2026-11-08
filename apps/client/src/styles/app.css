@@ -3973,3 +3973,17 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   grid-column: 2;
   justify-self: start;
 }
+
+/* 我的一天分两段（Rei 2026-11-08）：未完成 / 已完成；已完成那段能收起，开关样式借打卡页的 habit-archived-* */
+.myday-open {
+  margin-top: 0;
+}
+.myday-open .section-head {
+  margin-top: var(--space-2);
+}
+.myday-done.is-open .habit-archived-chevron {
+  transform: rotate(90deg);
+}
+.myday-done .task-list {
+  margin-top: var(--space-2);
+}
