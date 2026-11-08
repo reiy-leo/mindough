@@ -52,6 +52,21 @@
   background: var(--surface);
   cursor: pointer;
 }
+/* 鼠标样式（Rei 2026-11-08「TODO hover 时鼠标样式是编辑」）：WebKit（macOS App、Safari）给伪元素命中的是 li 本身，只在 ::before 上写 pointer 不生效，悬停勾还是文字光标。
+ * 所以 li 自己是手指（勾和左边 26px 的点击热区，见 taskToggle），里面的段落、子列表改回文字光标；只读时勾点不动，都是箭头。 */
+.md-editor-content li[data-item-type='task'] {
+  cursor: pointer;
+}
+.md-editor-content li[data-item-type='task'] > * {
+  cursor: text;
+}
+.md-editor-content[contenteditable='false'] li[data-item-type='task'],
+.md-editor-content[contenteditable='false'] li[data-item-type='task']::before {
+  cursor: default;
+}
+.md-editor-content[contenteditable='false'] li[data-item-type='task'] > * {
+  cursor: auto;
+}
 [data-skin='apple'] .md-editor-content li[data-item-type='task']::before {
   border-radius: 50%;
 }
