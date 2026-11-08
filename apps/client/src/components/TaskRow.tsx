@@ -59,7 +59,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const lunarUi = useLunarUi();
   const tzBadge = timeZoneBadge(task, task.scheduled_date);
   const checkIn = isCheckInTask(task);
-  // 严格模式下完成的任务（Rei 2026-11-08）：不能加入 / 移出我的一天、置顶
+  // 严格模式下完成 / 关闭的任务（Rei 2026-11-08）：不能加入 / 移出我的一天、置顶
   const locked = useLocked(task);
   const closed = task.status === '关闭';
   const done = !closed && (doneOverride ?? task.status === '完成');

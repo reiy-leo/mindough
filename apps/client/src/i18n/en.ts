@@ -27,7 +27,7 @@ export const EN: Record<string, EnValue> = {
   "排序：{name}": "Sort: {name}",
   // ── 严格模式（Rei 2026-11-08）──
   "严格模式": "Strict Mode",
-  "打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Completed tasks can’t be changed, only reopened or deleted. Applies to this device only.",
+  "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Completed or closed tasks can’t be changed, only reopened or deleted. Applies to this device only.",
   // ── 详情顶栏日期按钮（Rei 2026-11-08）──
   "没有日期": "No Date",
   "{n} 天后": (p) => `In ${n(p.n, 'day', 'days')}`,

@@ -476,7 +476,7 @@ function StrictSection() {
         <div className="setting">
           <div className="setting-text">
             <div className="setting-name">{tr('严格模式')}</div>
-            <div className="setting-hint">{tr('打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。')}</div>
+            <div className="setting-hint">{tr('打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。')}</div>
           </div>
           <Switch label={tr('严格模式')} isSelected={settings.strictMode} onChange={(v) => set('strictMode', v)} />
         </div>

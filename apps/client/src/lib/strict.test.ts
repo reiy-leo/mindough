@@ -15,7 +15,7 @@ describe('严格模式的全局提示', () => {
     const off = installStrictGuard((m) => got.push(m));
     const ev = new ErrorEvent('error', { error: new StrictModeError(), cancelable: true });
     window.dispatchEvent(ev);
-    expect(got).toEqual(['严格模式下已完成的任务不能修改']);
+    expect(got).toEqual(['严格模式下已完成或已关闭的任务不能修改']);
     expect(ev.defaultPrevented).toBe(true);
     const other = new ErrorEvent('error', { error: new Error('别的'), cancelable: true });
     window.dispatchEvent(other);
@@ -30,6 +30,18 @@ describe('严格模式的全局提示', () => {
     const store = await Store.open(new MemoryAdapter(), { deviceId: 'd' });
     const t = store.createTask({ body_md: 'a' }, { joinMyDay: false });
     store.completeTask(t.id);
+    store.strictDone = true;
+    expect(store.isLocked(t.id)).toBe(true);
+    expect(() => store.updateTask(t.id, { body_md: 'b' })).toThrow(StrictModeError);
+    store.reopenTask(t.id);
+    store.updateTask(t.id, { body_md: 'b' });
+    expect(store.get('task', t.id)!.body_md).toBe('b');
+  });
+
+  it('关闭的任务也锁（Rei 23:38「完成和关闭的任务都锁」），重新打开后能改', async () => {
+    const store = await Store.open(new MemoryAdapter(), { deviceId: 'd' });
+    const t = store.createTask({ body_md: 'a' }, { joinMyDay: false });
+    store.closeTask(t.id);
     store.strictDone = true;
     expect(store.isLocked(t.id)).toBe(true);
     expect(() => store.updateTask(t.id, { body_md: 'b' })).toThrow(StrictModeError);

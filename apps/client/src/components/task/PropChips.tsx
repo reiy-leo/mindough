@@ -97,7 +97,7 @@ export function PropChips({
 }) {
   const ui = useUi();
   const { theme } = useSettings();
-  // 严格模式下完成的任务（Rei 2026-11-08）：胶囊只显示、点不开，没有 × 和「+」
+  // 严格模式下完成 / 关闭的任务（Rei 2026-11-08）：胶囊只显示、点不开，没有 × 和「+」
   const locked = useLocked(task);
   const lunarUi = useLunarUi();
   const dateMode = useDateDisplay();

@@ -196,7 +196,7 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
   useEffect(
     () => () => {
       const cur = store.get('task', task.id);
-      // 严格模式下刚标完成的：存不进去（StrictModeError），丢掉这点没存的，别让卸载报错
+      // 严格模式下刚标完成 / 关闭的：存不进去（StrictModeError），丢掉这点没存的，别让卸载报错
       if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
     },
     [store, task.id],
@@ -814,7 +814,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   const owner = useMemo(() => ({ type: 'task' as const, id: task.id }), [task.id]);
   const frameRef = useRef<HTMLElement>(null);
   const addFiles = useAddFiles(owner);
-  // 严格模式下完成的任务只能看（Rei 2026-11-08）：正文只读、属性和关系不能改、不能加附件；能重新打开、删除
+  // 严格模式下完成 / 关闭的任务只能看（Rei 2026-11-08）：正文只读、属性和关系不能改、不能加附件；能重新打开、删除
   const locked = useLocked(task);
   const dropping = useFileDrop(frameRef, addFiles, !locked);
   const type = store.get('task_type', task.type_id);

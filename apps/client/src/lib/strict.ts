@@ -1,8 +1,8 @@
 /**
- * 严格模式（Rei 2026-11-08）：开着时，状态是「完成」的任务只能看、重新打开、删除，别的都不能改。
+ * 严格模式（Rei 2026-11-08）：开着时，状态是「完成」或「关闭」的任务（23:38「完成和关闭的任务都锁」）只能看、重新打开、删除，别的都不能改。
  * - 规则和 Store 层的拦截在 core strict.ts（store.strictDone / store.isLocked / StrictModeError）。
  * - 这里：把本机设置同步给 Store（useStrictSync，挂在 App 和设置窗口），界面判断只读用 useLocked(task)，
- *   被拦下的写入（漏网的入口）全局接住，提示「严格模式下已完成的任务不能修改」（installStrictGuard）。
+ *   被拦下的写入（漏网的入口）全局接住，提示「严格模式下已完成或已关闭的任务不能修改」（installStrictGuard）。
  */
 import { isStrictLocked, StrictModeError, tr, type Store, type Task } from '@mindough/core';
 import { useSettings } from './settings';
@@ -20,7 +20,7 @@ export function useLocked(task: Pick<Task, 'status' | 'deleted'> | null | undefi
   return isStrictLocked(settings.strictMode, task);
 }
 
-export const STRICT_MESSAGE = () => tr('严格模式下已完成的任务不能修改');
+export const STRICT_MESSAGE = () => tr('严格模式下已完成或已关闭的任务不能修改');
 
 export function isStrictError(e: unknown): boolean {
   return e instanceof StrictModeError || (e instanceof Error && e.name === 'StrictModeError');

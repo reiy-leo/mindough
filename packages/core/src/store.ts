@@ -306,12 +306,12 @@ export class Store {
   // ───────────── 写入底层 ─────────────
 
   /**
-   * 严格模式（Rei 2026-11-08）：开着时完成的任务不能改，写入碰到就抛 StrictModeError（见 strict.ts）。
+   * 严格模式（Rei 2026-11-08）：开着时完成和关闭的任务不能改，写入碰到就抛 StrictModeError（见 strict.ts）。
    * 开关存在客户端本机设置里，客户端打开和改开关时设这里；默认关。
    */
   strictDone = false;
 
-  /** 这件任务现在锁住了吗（严格模式开着、状态是完成）。界面用它决定只读。 */
+  /** 这件任务现在锁住了吗（严格模式开着、状态是完成或关闭）。界面用它决定只读。 */
   isLocked(taskOrId: string | Task | null | undefined): boolean {
     const t = typeof taskOrId === 'string' ? this.tables.task.get(taskOrId) : taskOrId;
     return isStrictLocked(this.strictDone, t);
@@ -320,7 +320,7 @@ export class Store {
   /** 写一批行：补 updated_at，改内存，通知，再异步落盘。 */
   write(changes: Array<{ table: TableName; row: BaseRow }>): void {
     if (!changes.length) return;
-    // 严格模式（Rei 2026-11-08）：完成的任务不能改，整批不写（见 strict.ts）
+    // 严格模式（Rei 2026-11-08）：完成和关闭的任务不能改，整批不写（见 strict.ts）
     if (this.strictDone && violatesStrict(changes, (id) => isStrictLocked(true, this.tables.task.get(id)))) throw new StrictModeError();
     // 日记的条目发了就不能改（Rei 2026-10-28）：只许打墓碑、撤销删除
     for (const c of changes) if (c.table === 'journal_post') this.assertPostUnchanged(c.row as JournalPost);

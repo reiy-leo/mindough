@@ -20,8 +20,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "排序：{name}": "Orden: {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Modo estricto",
-  "打开后，完成的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Las tareas completadas no se pueden cambiar; solo reabrir o eliminar. Solo en este dispositivo.",
-  "严格模式下已完成的任务不能修改": "En modo estricto, las tareas completadas no se pueden cambiar",
+  "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Las tareas completadas o cerradas no se pueden cambiar; solo reabrir o eliminar. Solo en este dispositivo.",
+  "严格模式下已完成或已关闭的任务不能修改": "En modo estricto, las tareas completadas o cerradas no se pueden cambiar",
   // ── 详情顶栏日期按钮（Rei 2026-11-08，待母语者看）──
   "没有日期": "Sin fecha",
   "{n} 天后": "En {n, plural, one {# día} other {# días}}",
