@@ -271,5 +271,6 @@ jobs:
           FDROID_KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
           FDROID_KEY_PASSWORD: ${{ secrets.FDROID_KEY_PASSWORD }}
           FDROID_UPLOAD_TOKEN: ${{ secrets.FDROID_UPLOAD_TOKEN }}
-          FDROID_PREFIX: ${{ startsWith(github.ref, 'refs/tags/') && '' || '_test/' }}
+          # 不能写成 startsWith(...) && '' || '_test/'：'' 在表达式里算假，推标签也会落到 '_test/'（alpha.18 第一次发源就发进了 _test/）
+          FDROID_PREFIX: ${{ !startsWith(github.ref, 'refs/tags/') && '_test/' || '' }}
         run: scripts/fdroid/publish.sh apk/*.apk
