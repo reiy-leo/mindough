@@ -171,6 +171,12 @@ export interface Task extends BaseRow {
    * 空 = 默认样子。存名字不存色值，亮暗主题各用各的色值。SQLite 迁移 v15。
    */
   card_color?: string | null;
+  /**
+   * 置顶时间（Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显示，直到用户手动关闭」）：空 = 没置顶。
+   * 置顶的任务每天都在我的一天「未完成」段最上面（见 myday.ts pinnedDayItems），不看我的一天的行，改日期、移出当天都不影响；
+   * 做完那天在「已完成」段，之后不显示但还是置顶，重新打开又回来。老客户端不认这一列，拉到的行没有它就当没置顶。SQLite 迁移 v18。
+   */
+  pinned_at?: Timestamp | null;
   sort: number;
   created_at: Timestamp;
 }

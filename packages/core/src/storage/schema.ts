@@ -40,6 +40,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     done_at: 'text?',
     archived_at: 'text?',
     card_color: 'text?',
+    pinned_at: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -342,6 +343,14 @@ ALTER TABLE "group" ADD COLUMN "color" TEXT;
     name: '项目归档（group.archived_at）',
     sql: `
 ALTER TABLE "group" ADD COLUMN "archived_at" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-08：任务可以置顶，置顶的每天都在我的一天里（task.pinned_at，置顶时间）。可空，老行是空（没置顶）。
+    version: 18,
+    name: '任务置顶（task.pinned_at）',
+    sql: `
+ALTER TABLE "task" ADD COLUMN "pinned_at" TEXT;
 `,
   },
 ];

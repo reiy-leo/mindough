@@ -292,6 +292,8 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
       // 打卡归档、倒数日卡片颜色（Rei 2026-11-02，v15）：没有就不写
       archived: t.archived_at ?? undefined,
       card_color: t.card_color ?? undefined,
+      // 置顶（Rei 2026-11-08，v18）：置顶了才写置顶时间
+      pinned: t.pinned_at ?? undefined,
       sort: t.sort,
       people: listOf(peopleOf.get(t.id), (id) => store.get('person', id)?.name ?? ''),
       after: listOf(

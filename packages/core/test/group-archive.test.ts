@@ -171,8 +171,9 @@ describe('存储和同步（v17）', () => {
     await d.run(
       `INSERT INTO "group" ("id","updated_at","deleted","name","icon","my_day_auto") VALUES ('g-old','0000000000001-0000-dev0',0,'老项目','📁',1)`,
     );
-    expect(SCHEMA_VERSION).toBe(17);
-    expect(await migrate(d)).toBe(17);
+    // 之后还有迁移（v18 任务置顶）：升到最新
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(17);
+    expect(await migrate(d)).toBe(SCHEMA_VERSION);
     const cols = (await d.all<{ name: string }>(`PRAGMA table_info("group")`)).map((c) => c.name);
     expect(cols).toContain('archived_at');
     const { store } = await open(new SqlAdapter(d));

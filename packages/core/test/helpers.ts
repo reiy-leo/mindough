@@ -42,6 +42,7 @@ export function mkTask(id: string, patch: Partial<Task> = {}): Task {
     done_at: null,
     archived_at: null,
     card_color: null,
+    pinned_at: null,
     sort: 0,
     created_at: new Date(2026, 0, 1, 8).toISOString(),
     ...patch,

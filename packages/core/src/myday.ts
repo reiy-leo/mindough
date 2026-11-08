@@ -1,7 +1,7 @@
 /**
  * 我的一天：按本机日期的清单。零点后自动换一天；没做完的不顺延，放进“昨天没做完”。
  */
-import { addDays } from './dates';
+import { addDays, toDateKey } from './dates';
 import { dueToday, progressOn } from './checkin';
 import type { DerivedStatus } from './dag';
 import { inArchivedGroup, isGroupArchived } from './group';
@@ -52,6 +52,57 @@ export function myDayItems(
   return [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
 }
 
+/** 置顶的虚拟行 id 前缀：这些行不在 my_day 表里，别拿去写（移出、排序都不对它们做）。 */
+export const PINNED_ENTRY_PREFIX = 'pinned:';
+
+/** 我的一天里这一项是置顶带进来的虚拟行吗。 */
+export function isPinnedEntry(e: Pick<MyDayEntry, 'id'>): boolean {
+  return e.id.startsWith(PINNED_ENTRY_PREFIX);
+}
+
+/** 任务置顶了吗（Rei 2026-11-08）。 */
+export function isPinned(task: { pinned_at?: string | null } | null | undefined): boolean {
+  return !!task?.pinned_at;
+}
+
+/**
+ * 置顶的任务那天在我的一天里的样子（Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显示，直到用户手动关闭」）。
+ * 不读 my_day 表：每天都在，改日期移出、移出当天、项目的「出现在我的一天」开关都管不着。
+ * - 没做完：在。打卡看那天的周期达没达标（isDoneOn）。
+ * - 做完了：只在做完那天（done_at 的本机日期）出现，落进「已完成」段；之后不显示，但还是置顶，重新打开就回来。
+ * - 删了的、打卡归档了的、在归档项目里的不显示。
+ * 多件置顶的，最近置顶的在上。行是虚拟的（id 带 PINNED_ENTRY_PREFIX，updated_at 空）。
+ */
+export function pinnedDayItems(
+  tasks: Iterable<Task>,
+  groups: readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[] | ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  checkIns: readonly CheckIn[],
+  date: DateKey,
+  now: Date,
+): MyDayItem[] {
+  const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
+  const out: MyDayItem[] = [];
+  for (const task of tasks) {
+    if (!task.pinned_at || task.deleted || task.archived_at || inArchivedGroup(task, gm)) continue;
+    const done = isDoneOn(task, checkIns, date, now);
+    // 只做一次的做完了：只留做完那天
+    if (done && !task.recurrence && (!task.done_at || toDateKey(new Date(task.done_at)) !== date)) continue;
+    const entry: MyDayEntry = { id: PINNED_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: -Infinity, added_at: task.pinned_at };
+    out.push({ entry, task, done });
+  }
+  return out.sort((a, b) => (a.task.pinned_at! > b.task.pinned_at! ? -1 : a.task.pinned_at! < b.task.pinned_at! ? 1 : a.task.id < b.task.id ? -1 : 1));
+}
+
+/**
+ * 把置顶的放到当天清单最前面（同一件任务也有 my_day 行的，只留置顶那一项）。
+ * 再分段（myDaySections）时，置顶的在「未完成」段最上面，比新加进来的还靠上。
+ */
+export function withPinned(items: readonly MyDayItem[], pinned: readonly MyDayItem[]): MyDayItem[] {
+  if (!pinned.length) return [...items];
+  const ids = new Set(pinned.map((i) => i.task.id));
+  return [...pinned, ...items.filter((i) => !ids.has(i.task.id))];
+}
+
 /**
  * 我的一天分两段（Rei 2026-11-08「未完成、完成两个 section 显示」）：未完成在上，已完成在下，各自按 sort。
  * 「已完成」就是 isDoneOn：完成、关闭，和当天周期达标的打卡。
@@ -62,9 +113,12 @@ export function myDaySections(items: readonly MyDayItem[]): { open: MyDayItem[];
 
 /** 一段里拖完的新顺序拼回整天的顺序（另一段原样），给 reorderMyDay。 */
 export function reorderSection(items: readonly MyDayItem[], section: 'open' | 'done', newIds: readonly string[]): string[] {
+  // 置顶的是虚拟行，不参与排序（Rei 2026-11-08：总在最上面）
+  const pinned = new Set(items.filter((i) => isPinnedEntry(i.entry)).map((i) => i.task.id));
   const { open, done } = myDaySections(items);
   const ids = (xs: MyDayItem[]) => xs.map((i) => i.task.id);
-  return section === 'open' ? [...newIds, ...ids(done)] : [...ids(open), ...newIds];
+  const out = section === 'open' ? [...newIds, ...ids(done)] : [...ids(open), ...newIds];
+  return out.filter((id) => !pinned.has(id));
 }
 
 /** 昨天加入但没做完、今天也还没加入的任务。 */
@@ -81,7 +135,8 @@ export function yesterdayUnfinished(
   for (const e of entriesFor(entries, yesterday)) {
     if (todayIds.has(e.task_id)) continue;
     const t = tasksById.get(e.task_id);
-    if (!t || t.deleted || t.archived_at) continue;
+    // 置顶的今天本来就在（Rei 2026-11-08），不用带回
+    if (!t || t.deleted || t.archived_at || t.pinned_at) continue;
     // 重复任务看的是昨天那个周期；普通任务看现在的状态
     if (t.recurrence ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
   }
@@ -174,7 +229,8 @@ const groupMap = (groups: readonly Group[] | undefined) => new Map((groups ?? []
 export function suggestions(input: SuggestionInput): Suggestion[] {
   const inToday = new Set(entriesFor(input.entries, input.today).map((e) => e.task_id));
   const groups = groupMap(input.groups);
-  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups));
+  // 置顶的每天都在我的一天里（Rei 2026-11-08），不再建议
+  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !s.task.pinned_at && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups));
 }
 
 /**

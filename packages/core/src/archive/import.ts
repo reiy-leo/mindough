@@ -607,6 +607,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       done_at: iso(fm.done) ?? null,
       archived_at: iso(fm.archived) ?? null,
       card_color: isCardColor(fm.card_color) ? fm.card_color : null,
+      pinned_at: iso(fm.pinned) ?? null,
       sort: num(fm.sort) ?? ++sort,
       created_at: iso(fm.created) ?? now.toISOString(),
     });

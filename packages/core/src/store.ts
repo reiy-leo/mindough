@@ -406,6 +406,8 @@ export class Store {
         if (t.refs_mirror === undefined) t.refs_mirror = null;
         if (t.archived_at === undefined) t.archived_at = null;
         if (t.card_color === undefined) t.card_color = null;
+        // 老客户端写来的任务没有置顶时间（v18）：当成没置顶
+        if (t.pinned_at === undefined) t.pinned_at = null;
         if (!isPlainObject(t.count_config)) t.count_config = {};
       }
       if (c.table === 'attachment') {
@@ -1268,6 +1270,7 @@ export class Store {
       done_at: input.done_at ?? null,
       archived_at: input.archived_at ?? null,
       card_color: input.card_color ?? null,
+      pinned_at: input.pinned_at ?? null,
       sort: input.sort ?? maxSort + 1,
       created_at: input.created_at ?? now.toISOString(),
       ...(input.id ? { id: input.id } : {}),
@@ -1484,6 +1487,23 @@ export class Store {
     return this.updateTask(id, { archived_at: null });
   }
 
+  /**
+   * 置顶（Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显示，直到用户手动关闭」）：记下置顶时间。
+   * 置顶的任务每天都在我的一天「未完成」段最上面，不靠我的一天的行（见 myday.ts pinnedDayItems），所以不写 my_day。已经置顶的不再写。
+   */
+  pinTask(id: string): Task | undefined {
+    const t = this.get('task', id);
+    if (!t || t.pinned_at) return t;
+    return this.updateTask(id, { pinned_at: this.now().toISOString() });
+  }
+
+  /** 取消置顶：回到普通任务，今天的我的一天里有它的行就照常显示，没有就不显示了。没置顶的不写。 */
+  unpinTask(id: string): Task | undefined {
+    const t = this.get('task', id);
+    if (!t || !t.pinned_at) return t;
+    return this.updateTask(id, { pinned_at: null });
+  }
+
   /** 倒数日卡片的背景色（Rei 2026-11-02）：预设色的名字，null = 默认。名字不认识的当默认存成 null。 */
   setCardColor(id: string, color: string | null): Task | undefined {
     const t = this.get('task', id);
@@ -1646,7 +1666,8 @@ export class Store {
   /** 待安排：没结束、只做一次、没日期、今天的我的一天里没有的任务（见 backlog.ts）。 */
   backlog(today: string = toDateKey(this.now())): Task[] {
     // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
-    return backlogTasks(this.activeTasks(), this.list('my_day'), today);
+    // 置顶的任务每天都在我的一天里，不进待安排（Rei 2026-11-08）
+    return backlogTasks(this.activeTasks().filter((t) => !t.pinned_at), this.list('my_day'), today);
   }
 
   /** 待安排里拖动排序：这几件按新顺序重新占用它们原来的那些 sort 值（不影响别的任务的相对顺序）。 */
