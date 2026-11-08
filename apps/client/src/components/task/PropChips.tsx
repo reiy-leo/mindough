@@ -13,7 +13,9 @@
 import { useLocked } from '../../lib/strict';
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
-import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
+import { MoodIcon } from '../journal/MoodIcon';
+import { MoodGrid } from '../journal/MoodGrid';
 import {
   describeCompletion,
   describeRecurrence,
@@ -24,6 +26,7 @@ import {
   categoryIcon,
   cardColorOf,
   CARD_COLOR_VALUES,
+  moodLabel,
 } from '@mindough/core';
 import { CardColorPicker } from '../CardColorPicker';
 import { cardColorLabel } from '../../lib/card-colors';
@@ -59,6 +62,8 @@ export function propLabel(id: PropId): string {
       return tr('提醒');
     case 'group':
       return trc('属性', '项目');
+    case 'mood':
+      return tr('心情');
     case 'color':
       return tr('卡片颜色');
   }
@@ -147,6 +152,10 @@ export function PropChips({
         const s = group?.name ?? '';
         return { icon: group ? <GroupIcon group={group} size={16} /> : <Shapes size={14} />, text: s, aria: s };
       }
+      case 'mood': {
+        const s = moodLabel(task.mood);
+        return { icon: <MoodIcon mood={task.mood ?? ''} size={16} />, text: s, aria: s };
+      }
       case 'color': {
         const c = cardColorOf(task);
         const s = cardColorLabel(c);
@@ -228,6 +237,18 @@ export function PropChips({
               close();
             }}
           />
+        );
+      case 'mood':
+        return (
+          <div className="pop-section">
+            <MoodGrid
+              value={task.mood}
+              onPick={(m) => {
+                patch({ mood: m });
+                close();
+              }}
+            />
+          </div>
         );
       case 'color':
         return (
@@ -375,6 +396,8 @@ function addIcon(id: PropId, task: Task): ReactNode {
       return <Bell size={16} />;
     case 'group':
       return <Shapes size={16} />;
+    case 'mood':
+      return <Smile size={16} />;
     case 'color':
       return <Paintbrush size={16} />;
   }

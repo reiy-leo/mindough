@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROP_ORDER, addMenuItems, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask } from './prop-chips';
+import { PROP_ORDER, addMenuItems, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask , canHaveMood} from './prop-chips';
 
 const base: PropTask = {
   completion_mode: 'once',
@@ -41,10 +41,10 @@ describe('属性胶囊：默认值判定（Rei 2026-10-25 方案 A）', () => {
 
 describe('「+」菜单：列出没设的属性', () => {
   it('什么都没设：没日期时不能提醒，所以不列提醒', () => {
-    expect(unsetProps(t())).toEqual(['category', 'refs', 'mode', 'date', 'repeat', 'group']);
+    expect(unsetProps(t())).toEqual(['category', 'refs', 'mode', 'date', 'repeat', 'group', 'mood']);
   });
   it('有日期就能加提醒', () => {
-    expect(unsetProps(t({ scheduled_date: '2026-10-16' }))).toEqual(['category', 'refs', 'mode', 'repeat', 'remind', 'group']);
+    expect(unsetProps(t({ scheduled_date: '2026-10-16' }))).toEqual(['category', 'refs', 'mode', 'repeat', 'remind', 'group', 'mood']);
   });
   it('挂了资料：菜单里不再有「资料」（详情里资料下面有自己的「添加资料」）', () => {
     expect(unsetProps(t(), { refs: 1 })).not.toContain('refs');
@@ -98,5 +98,22 @@ describe('倒数日的卡片颜色（Rei 2026-11-02）', () => {
     expect(isPropSet('color', t({ ...cd, card_color: 'teal' }))).toBe(true);
     expect(isPropSet('color', t({ ...cd, card_color: 'nope' }))).toBe(false);
     expect(clearPatch('color')).toEqual({ card_color: null });
+  });
+});
+
+describe('心情（Rei 2026-11-08）', () => {
+  it('普通任务能加心情，打卡、倒数日不能', () => {
+    expect(applicableProps(t())).toContain('mood');
+    expect(applicableProps(t({ recurrence: 'FREQ=DAILY' }))).not.toContain('mood');
+    expect(applicableProps(t({ completion_mode: 'countdown' }))).not.toContain('mood');
+    expect(canHaveMood({ recurrence: null, completion_mode: 'count' })).toBe(true);
+  });
+  it('设了就显示成胶囊，清掉回空', () => {
+    expect(setProps(t({ mood: 'happy' }))).toContain('mood');
+    expect(unsetProps(t({ mood: 'happy' }))).not.toContain('mood');
+    expect(clearPatch('mood')).toEqual({ mood: null });
+  });
+  it('打卡上以前记过的心情照样显示，能清', () => {
+    expect(setProps(t({ recurrence: 'FREQ=DAILY', mood: 'sad' }))).toContain('mood');
   });
 });

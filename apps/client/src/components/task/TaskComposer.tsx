@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Sparkles, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Smile, Sparkles, Tag, X } from 'lucide-react';
+import { MoodIcon } from '../journal/MoodIcon';
+import { MoodGrid } from '../journal/MoodGrid';
+import { canHaveMood } from '../../lib/prop-chips';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
-import { itemTaskBody, newCountConfig, shownFields } from '@mindough/core';
+import { itemTaskBody, moodLabel, newCountConfig, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
@@ -79,6 +82,8 @@ interface Draft extends CompletionValue {
   related: string[];
   /** 看到哪：不要从正文第一行自动识别（点了 ×）。 */
   epIgnored: boolean;
+  /** 心情（Rei 2026-11-08）：日记心情同一套 id，只给普通任务。 */
+  mood: string | null;
 }
 
 function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]): Draft {
@@ -115,6 +120,7 @@ function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]):
     refs,
     related: [],
     epIgnored: false,
+    mood: d.mood ?? null,
   };
 }
 
@@ -256,6 +262,7 @@ function Composer() {
       category_id: d.categoryIds[0] ?? null,
       remind_time: remindable ? d.remindTime : null,
       time_zone: d.timeZone,
+      mood: canHaveMood({ recurrence: d.recurrence, completion_mode: d.completion_mode }) ? d.mood : null,
     };
     const t = req.after ? store.createSuccessor(req.after, input) : store.createTask(input);
     if (d.categoryIds.length > 1) store.setTaskCategories(t.id, d.categoryIds);
@@ -400,6 +407,21 @@ function Composer() {
               />
             )}
           </PopoverPanel>
+          {canHaveMood({ recurrence: d.recurrence, completion_mode: d.completion_mode }) && (
+            <PopoverPanel label={tr('心情')} trigger={<PropChip icon={d.mood ? <MoodIcon mood={d.mood} size={16} /> : <Smile size={14} />} label={tr('心情')} {...(d.mood ? { value: moodLabel(d.mood) } : {})} />}>
+              {(close) => (
+                <div className="pop-section">
+                  <MoodGrid
+                    value={d.mood}
+                    onPick={(m) => {
+                      set({ mood: m });
+                      close();
+                    }}
+                  />
+                </div>
+              )}
+            </PopoverPanel>
+          )}
           <PopoverPanel
             label={tr('相关任务')}
             trigger={

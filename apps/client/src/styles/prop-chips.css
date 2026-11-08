@@ -196,3 +196,12 @@
 .detail.is-locked .ref-remove {
   display: none;
 }
+
+/* 任务行第二行的心情小图标（Rei 2026-11-08） */
+.row-meta .meta-mood {
+  display: inline-flex;
+  align-items: center;
+}
+.pchip-mood .pchip-icon .mood-icon {
+  display: block;
+}

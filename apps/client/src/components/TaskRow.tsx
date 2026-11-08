@@ -8,6 +8,8 @@ import { toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
 import { useLocked } from '../lib/strict';
+import { MoodIcon } from './journal/MoodIcon';
+import { isMoodId, moodLabel } from '@mindough/core';
 import { isDragPress } from '../lib/drag-guard';
 import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from '../lib/long-press';
 import { typeIcon } from '../lib/icons';
@@ -233,6 +235,12 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
               <Repeat size={11} />
               {describeRecurrence(rec, { lunar: lunarUi, today })}
             </span>
+          )}
+          {/* 心情（Rei 2026-11-08）：小图标，悬停看名字 */}
+          {isMoodId(task.mood) && (
+            <HoverTip className="meta-mood" tip={tr('心情：{label}', { label: moodLabel(task.mood) })}>
+              <MoodIcon mood={task.mood} size={14} />
+            </HoverTip>
           )}
           {relatedCount > 0 && (
             <HoverTip className="meta-related" tip={tr('{relatedCount} 件相关任务', { relatedCount })}>

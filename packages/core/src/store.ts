@@ -423,6 +423,8 @@ export class Store {
         if (t.card_color === undefined) t.card_color = null;
         // 老客户端写来的任务没有置顶时间（v18）：当成没置顶
         if (t.pinned_at === undefined) t.pinned_at = null;
+        // 心情（v19）同理：老客户端的行当没记
+        if (t.mood === undefined) t.mood = null;
         if (!isPlainObject(t.count_config)) t.count_config = {};
       }
       if (c.table === 'attachment') {
@@ -1290,6 +1292,7 @@ export class Store {
       archived_at: input.archived_at ?? null,
       card_color: input.card_color ?? null,
       pinned_at: input.pinned_at ?? null,
+      mood: input.mood ?? null,
       sort: input.sort ?? maxSort + 1,
       created_at: input.created_at ?? now.toISOString(),
       ...(input.id ? { id: input.id } : {}),

@@ -294,6 +294,8 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
       card_color: t.card_color ?? undefined,
       // 置顶（Rei 2026-11-08，v18）：置顶了才写置顶时间
       pinned: t.pinned_at ?? undefined,
+      // 心情（Rei 2026-11-08，v19）：记了才写，值是心情 id（happy、tired…）
+      mood: t.mood ?? undefined,
       sort: t.sort,
       people: listOf(peopleOf.get(t.id), (id) => store.get('person', id)?.name ?? ''),
       after: listOf(

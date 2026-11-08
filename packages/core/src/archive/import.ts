@@ -15,6 +15,7 @@ import { taskCategoryId, taskItemId } from '../task-refs';
 import { tr } from '../i18n';
 import { normalizeTimeZone } from '../timezone';
 import { normalizeRange } from '../date-range';
+import { isMoodId } from '../journal';
 import { isCardColor } from '../card-color';
 import { normalizeIconColor } from '../icon-color';
 import { cleanQuick } from '../count';
@@ -608,6 +609,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       archived_at: iso(fm.archived) ?? null,
       card_color: isCardColor(fm.card_color) ? fm.card_color : null,
       pinned_at: iso(fm.pinned) ?? null,
+      mood: isMoodId(fm.mood) ? fm.mood : null,
       sort: num(fm.sort) ?? ++sort,
       created_at: iso(fm.created) ?? now.toISOString(),
     });

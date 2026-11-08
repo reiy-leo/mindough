@@ -177,6 +177,11 @@ export interface Task extends BaseRow {
    * 做完那天在「已完成」段，之后不显示但还是置顶，重新打开又回来。老客户端不认这一列，拉到的行没有它就当没置顶。SQLite 迁移 v18。
    */
   pinned_at?: Timestamp | null;
+  /**
+   * 心情（Rei 2026-11-08「日记的心情属性在普通任务属性中也可以添加」）：日记心情同一套 id（journal.ts MOOD_IDS），空 = 没记。
+   * 只给普通任务（不重复、不是倒数日）；不进日记的心情河流。老客户端不认这一列，拉到的行没有它就当没记。SQLite 迁移 v19。
+   */
+  mood?: string | null;
   sort: number;
   created_at: Timestamp;
 }

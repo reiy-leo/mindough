@@ -12,7 +12,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { ImagePlus, List, Send, Smile, X } from 'lucide-react';
-import { MOOD_IDS, canSendPost, moodLabel, type MoodId } from '@mindough/core';
+import { canSendPost, moodLabel, type MoodId } from '@mindough/core';
 import { PopoverPanel, Tip } from '../../ui/primitives';
 import { useUi } from '../../lib/ui';
 import { tooBigMessage } from '../../lib/attachments';
@@ -22,6 +22,7 @@ import type { MdEditorHandle } from '../editor/editor';
 import { ClipboardButton } from '../attachments/ClipboardButton';
 import { DropOverlay, useFileDrop } from '../attachments/Attachments';
 import { MoodIcon } from './MoodIcon';
+import { MoodGrid } from './MoodGrid';
 import { tr } from '../../lib/i18n';
 
 export interface ComposerHandle {
@@ -123,25 +124,15 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
           }
         >
           {(close) => (
-            <div className="jmood-grid" role="group" aria-label={tr('心情')}>
-              {MOOD_IDS.map((id) => (
-                <RacButton
-                  key={id}
-                  className={`jmood-opt${mood === id ? ' is-selected' : ''}`}
-                  aria-pressed={mood === id}
-                  onPress={() => {
-                    const next = mood === id ? null : id;
-                    setMood(next);
-                    if (next) setPlayed((n) => n + 1);
-                    close();
-                    requestAnimationFrame(focus);
-                  }}
-                >
-                  <MoodIcon mood={id} size={30} />
-                  <span>{moodLabel(id)}</span>
-                </RacButton>
-              ))}
-            </div>
+            <MoodGrid
+              value={mood}
+              onPick={(next) => {
+                setMood(next);
+                if (next) setPlayed((n) => n + 1);
+                close();
+                requestAnimationFrame(focus);
+              }}
+            />
           )}
         </PopoverPanel>
         {mood && (

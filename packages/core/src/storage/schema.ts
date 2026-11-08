@@ -41,6 +41,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     archived_at: 'text?',
     card_color: 'text?',
     pinned_at: 'text?',
+    mood: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -351,6 +352,14 @@ ALTER TABLE "group" ADD COLUMN "archived_at" TEXT;
     name: '任务置顶（task.pinned_at）',
     sql: `
 ALTER TABLE "task" ADD COLUMN "pinned_at" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-08：普通任务也能记心情（task.mood，日记心情同一套 id）。可空，老行是空（没记）。
+    version: 19,
+    name: '任务心情（task.mood）',
+    sql: `
+ALTER TABLE "task" ADD COLUMN "mood" TEXT;
 `,
   },
 ];
