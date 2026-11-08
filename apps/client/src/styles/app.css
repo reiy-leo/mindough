@@ -4035,6 +4035,20 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .project-head-sticky.is-stuck {
   border-bottom-color: var(--border);
 }
+/* 页面的上边距挪进固定块里：不然一开始滚，页头先跟着往上走一个上边距（宽屏 20px、手机 8px）才停住。
+   上边距照各布局原来的值：宽屏 --space-5，手机和 macOS 无标题栏 --space-2（见 .app-mobile .page、skins.css）。 */
+.page.project-page,
+.app-mobile .page.project-page,
+.platform-macos-overlay .app-desktop .page.project-page {
+  padding-top: 0;
+}
+.project-head-sticky {
+  padding-top: calc(var(--space-5) + var(--space-2));
+}
+.app-mobile .project-head-sticky,
+.platform-macos-overlay .app-desktop .project-head-sticky {
+  padding-top: calc(var(--space-2) + var(--space-2));
+}
 .project-head-sticky .add-bar-sticky {
   position: static;
   margin: 0;
