@@ -1393,6 +1393,13 @@ Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」。
 - 范围：侧栏（`.sidebar`，macOS 无标题栏时滚的是 `.sidebar .nav`）；任务列表的页面由 `App.tsx` 的 `HIDE_SCROLLBAR_PAGES`（我的一天、待安排、积压、时间轴、项目页）在 `.main` 上标 `data-hide-scrollbar`，样式管 `.main`、macOS 无标题栏时的 `.main-scroll` 和项目页的 `.project-scroll`。日记、设置、资料库、类型、打卡、倒数日、编辑器、弹窗都不动。要加页面就加进那个数组。
 - 测试：`lib/hide-scrollbar.test.ts`；截图脚本量 `offsetWidth - clientWidth` 为 0（三皮肤）。
 
+### 项目页滚动时页头和添加框不动 ✅（2026-11-08）
+Rei 2026-11-08「项目中滚动时，保持输入框以上的部分不动」。
+
+- 做法：`GroupDetail` 把页头、归档提示、添加框包进一个 `.project-head-sticky`（`position: sticky; top: 0`，不透明页面底色，左右多铺一点盖住行的悬停底色），整块固定在中间列顶上；用 `QuickAddBar` 的 `useStuck` 哨兵，滚动后加 `is-stuck` 画底线。里面的添加框不再自己 sticky。没有另开滚动层：宽屏的 `.main`（macOS 无标题栏时的 `.main-scroll`）、手机的 `.main` 照旧是滚动的那一层，四种视图都一样。
+- 看板、时间轴横向滚是它们自己的，不受影响。
+- 截图核对：三皮肤 × 宽屏 / 手机，滚到底后页头和添加框还在原位置（`work/shots-tool/myday-sections.mjs` 里的项目页一段）。
+
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
 - 关键路径与日期推算（沿前后关系推最早开始，超出组结束时间标红）。
