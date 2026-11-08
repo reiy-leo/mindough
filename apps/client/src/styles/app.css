@@ -1182,6 +1182,11 @@ button {
   height: 28px;
   min-width: 28px;
 }
+/* 选了非默认的分区 / 排序时图标用强调色（同项目页页头） */
+.list-tools .icon-btn.is-active,
+.page-actions .icon-btn.is-active {
+  color: var(--accent);
+}
 [data-skin='material'] .list-tools .icon-btn {
   width: 32px;
   height: 32px;
