@@ -1648,7 +1648,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已打 {value} {unit}，目标 {target} {unit}": "{value} {unit} sur {target} {unit}",
   "已打 {value} 次，目标 {target} 次": "{value} sur {target} faits",
   "撤销今天的打卡": "Annuler le suivi du jour",
-  "文本「{name}」": "Texte « {name} »",
+  "文本「{name}」": "Texte « {name} »",
   "文本": "Texte",
   "排版": "Mis en forme",
   "表格": "Tableau",
@@ -1658,7 +1658,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "（空文件）": "(Fichier vide)",
   "这个文件不是纯文本，没法预览，可以下载后打开": "Ce fichier n’est pas du texte brut et ne peut pas être prévisualisé. Téléchargez-le pour l’ouvrir.",
   "没读出文件内容，可以下载后打开": "Impossible de lire le fichier. Téléchargez-le pour l’ouvrir.",
-  "预览「{name}」": "Aperçu de « {name} »",
+  "预览「{name}」": "Aperçu de « {name} »",
 };
 
 export const DATA: Record<string, string> = {
