@@ -12,7 +12,7 @@ import { cardColorVars } from './card-colors';
 import { vividText, vividVar } from './color-level';
 
 const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
-const BASE = { light: [255, 255, 255], dark: [36, 36, 38] } as const;
+const BASES = { light: [[255, 255, 255], [236, 230, 240]], dark: [[36, 36, 38], [58, 58, 60]] } as const;
 const hexOf = (rgb: readonly number[]) => `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 
 describe('色彩设置值', () => {
@@ -32,11 +32,12 @@ describe('多彩档字色', () => {
     for (const c of colors)
       for (const theme of ['light', 'dark'] as const) {
         const ink = readableTint(c, theme)!;
-        expect(contrastRatio(parseHex(ink)!, parseHex(hexOf(BASE[theme]))!), `${c} ${theme}`).toBeGreaterThanOrEqual(4.5);
+        for (const b of BASES[theme]) expect(contrastRatio(parseHex(ink)!, parseHex(hexOf(b))!), `${c} ${theme} on ${hexOf(b)}`).toBeGreaterThanOrEqual(4.5);
       }
   });
   it('本来就够深的颜色不改', () => {
     expect(readableTint('#1d4ed8', 'light')).toBe('#1d4ed8');
+    expect(readableTint('#f5f5f7', 'dark')).toBe('#f5f5f7');
   });
   it('只在多彩档上色、挂变量', () => {
     expect(vividText('standard', '#ffcc00', 'light')).toBeUndefined();
@@ -85,7 +86,7 @@ describe('color-level.css', () => {
   });
   it('素净：过期 / 删除的灰对底色 ≥ 4.5:1', () => {
     expect(contrastRatio(parseHex('#6e6e73')!, parseHex('#ffffff')!)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(parseHex('#a1a1a6')!, parseHex('#2c2c2e')!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(parseHex('#aeaeb2')!, parseHex('#3a3a3c')!)).toBeGreaterThanOrEqual(4.5);
   });
   it('素净：图标块没色块底、行内颜色被盖掉', () => {
     expect(css).toMatch(/:root\[data-color-level='plain'\] \.icon-tile \{[^}]*background: transparent/);

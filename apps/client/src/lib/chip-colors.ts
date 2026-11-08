@@ -85,16 +85,17 @@ export function chipColors(color: string | null | undefined, theme: ChipTheme): 
 
 /**
  * 把一个颜色当字色用（多彩档：任务行里的项目名、类型名、分区标题，Rei 2026-11-09）：
- * 和主题底色（BASE）对比不到 4.5:1 就往黑（亮色）或白（暗色）一点点靠，直到够为止。认不出来返回 null。
+ * 和主题底色对比不到 4.5:1 就往黑（亮色）或白（暗色）一点点靠，直到够为止。认不出来返回 null。
  */
 export function readableTint(color: string | null | undefined, theme: ChipTheme): string | null {
   const c = parseHex(color);
   if (!c) return null;
-  const base = BASE[theme];
+  // 三种皮肤的卡片底不一样：亮色最暗的是 Material 的 #ece6f0、暗色最亮的是 Apple 的 #3a3a3c，两头都要够
+  const bases: Rgb[] = theme === 'light' ? [BASE.light, [236, 230, 240]] : [BASE.dark, [58, 58, 60]];
   const toward: Rgb = theme === 'light' ? BLACK : INK_LIGHT;
   for (let t = 0; t <= 1; t += 0.05) {
     const ink = mix(toward, c, t);
-    if (contrastRatio(ink, base) >= AA_TEXT) return toHex(ink);
+    if (bases.every((b) => contrastRatio(ink, b) >= AA_TEXT)) return toHex(ink);
   }
   return toHex(toward);
 }

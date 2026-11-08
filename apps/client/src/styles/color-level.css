@@ -21,7 +21,7 @@
   --accent-soft: rgba(0, 0, 0, 0.07);
   --accent-soft-text: #1d1d1f;
   --nav-active-icon: var(--text);
-  /* 过期、删除：灰掉一点，白底上 5:1 */
+  /* 过期、删除：灰掉一点，白底上 5:1（暗色那套 #aeaeb2 对 #3a3a3c 也有 5:1） */
   --danger: #6e6e73;
   --success: #3a3a3c;
   --warning: #48484a;
@@ -56,11 +56,11 @@
   --accent-soft: rgba(255, 255, 255, 0.12);
   --accent-soft-text: #f5f5f7;
   --nav-active-icon: var(--text);
-  --danger: #a1a1a6;
+  --danger: #aeaeb2;
   --success: #d1d1d6;
   --warning: #c7c7cc;
   --state-done: #8e8e93;
-  --state-blocked: #a1a1a6;
+  --state-blocked: #b8b8bd;
   --state-closed: #636366;
   --heat-color: #d1d1d6;
   --plain-switch-on: #98989d;
@@ -197,6 +197,10 @@
 }
 /* 删除按钮（实心）：暗色下底是浅灰，白字不够，换深字 */
 :root[data-color-level='plain'][data-theme='dark'] :is(.btn-danger-solid, .att-tile-status.is-error) {
+  color: #1c1c1e;
+}
+/* 热力图 1 号的数字：暗色下格子是浅灰，白字看不清，换深字 */
+:root[data-color-level='plain'][data-theme='dark'] :is(.heat-cell.lv-3, .heat-cell.lv-2) .heat-month {
   color: #1c1c1e;
 }
 /* 过期：灰掉一点 + 加粗 + 前面一个圆圈感叹号（Lucide circle-alert），和普通小字分得开 */
