@@ -28,6 +28,8 @@ export function DetailModal() {
     if (e.key !== 'Escape' || e.nativeEvent.isComposing || !isTyping(e.target)) return;
     e.stopPropagation();
     (e.target as HTMLElement).blur?.();
+    // 焦点交回浮层本身，不然落到 body 上，下一次 Esc 浮层收不到
+    e.currentTarget.closest<HTMLElement>('[role="dialog"]')?.focus();
   };
   return (
     <ModalOverlay isOpen={!!task} onOpenChange={(open) => !open && ui.openEditor(null)} isDismissable className="overlay overlay-detail">

@@ -82,6 +82,10 @@ describe('看板详情浮层', () => {
     key(input, 'Escape');
     expect(ui.openEditor).not.toHaveBeenCalled();
     expect(document.activeElement).not.toBe(input);
+    // 焦点在浮层上，再按一次 Esc 就关
+    expect(document.activeElement).toBe(dialog());
+    key(dialog()!, 'Escape');
+    expect(ui.openEditor).toHaveBeenCalledWith(null);
   });
 
   it('关闭按钮：取消选中', () => {
