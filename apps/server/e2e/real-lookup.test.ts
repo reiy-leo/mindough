@@ -14,7 +14,7 @@ const env = { TMDB_API_KEY: process.env.TMDB_API_KEY };
 
 describe.skipIf(!on)('真实来源', () => {
   it('Open Library：三体', async () => {
-    const { status, body } = await lookupSearch(env, 'book', '三体', 'zh');
+    const { status, body } = await lookupSearch(env, 'book', '三体', 'zh', 'openlibrary');
     expect(status).toBe(200);
     const hit = body.results.find((r) => r.name.includes('三体'))!;
     expect(hit).toBeTruthy();
@@ -26,7 +26,7 @@ describe.skipIf(!on)('真实来源', () => {
   }, 30000);
 
   it('Open Library 按 ISBN：三体（重庆出版社 2008）', async () => {
-    const item = await lookupItem(env, 'isbn', '978-7-5366-9293-0', 'zh');
+    const item = await lookupItem(env, 'isbn', '978-7-5366-9293-0', 'en'); // 英文界面先问 Open Library
     console.log('isbn', JSON.stringify(item));
     expect(item.sourceId).toMatch(/^OL\d+M$/);
     expect(item.fields.isbn).toBe('9787536692930');
@@ -34,6 +34,21 @@ describe.skipIf(!on)('真实来源', () => {
     expect(item.fields.publisher).toBeTruthy();
     expect(item.image).toBeUndefined();
   }, 30000);
+
+  it('豆瓣读书：三体、活着、置身事内、The Great Gatsby；详情带 ISBN；中文界面按 ISBN 先问豆瓣读书', async () => {
+    for (const q of ['三体', '活着', '置身事内', 'The Great Gatsby']) {
+      const { body } = await lookupSearch(env, 'book', q, 'zh');
+      console.log('doubanbook', q, JSON.stringify(body.sources), body.results.slice(0, 3).map((r) => `${r.source}:${r.sourceId} ${r.name} · ${r.subtitle ?? ''} · ${r.year ?? ''}`).join(' | '));
+      const first = body.results.find((r) => r.source === 'doubanbook');
+      if (!first) continue;
+      const item = await lookupItem(env, 'doubanbook', first.sourceId, 'zh');
+      console.log('doubanbook item', JSON.stringify(item));
+      expect(item.name).toBeTruthy();
+    }
+    const byIsbn = await lookupItem(env, 'isbn', '9787208171336', 'zh');
+    console.log('doubanbook isbn', JSON.stringify(byIsbn));
+    expect(byIsbn.fields.isbn).toBe('9787208171336');
+  }, 60000);
 
   it('Steam：艾尔登法环（中文）/ Elden Ring（英文）', async () => {
     const zh = await lookupSearch(env, 'game', 'elden ring', 'zh');

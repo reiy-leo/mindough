@@ -1,11 +1,12 @@
 /**
- * 在线补全资料（M4）：按名字或编号从 TMDB / 豆瓣 / Open Library / Steam / IGDB 找到资料，填进资料库。
+ * 在线补全资料（M4）：按名字或编号从 TMDB / 豆瓣 / 豆瓣读书 / Open Library / Steam / IGDB 找到资料，填进资料库。
  * 查询在 Worker 上（apps/server/src/lookup/，GET /api/lookup/search、/api/lookup/item），这里只放纯逻辑：
  * - 哪些类型能在线找（影视 / 书籍 / 游戏这三种内置类型；按类型 id，用户改过名也认）；
  * - Worker 返回的结果形状（与 apps/server/src/lookup/types.ts 一致，两处一起改）；
  * - 资料的来源：存在 library_item.fields 的保留键 `_source`（「tmdb:movie/550」），不加列，界面上显示「资料来自 TMDB」；
  * - 自动补全的逐项计划：哪些字段会填、哪些已经有值（默认只填空缺，勾选才覆盖）；
- * - 哪些来源带封面：书的封面不对接任何平台，只能手动上传 / 粘贴（Rei 2026-10-17），Open Library 只补书名、作者、年份、页数。
+ * - 哪些来源带封面：Open Library 不带（Rei 2026-10-17 定书封面纯手填），只补书名、作者、年份、页数；
+ *   豆瓣读书带封面，同影视海报一样拉进 R2（Rei 2026-11-09 改）。
  * 界面叫法见 docs/COPY.md「资料库 · 在线找」。
  */
 import { BUILTIN_TYPE_IDS } from './seed/builtin-types';
@@ -17,12 +18,12 @@ import { tr } from './i18n';
 import type { FieldDef, FieldValue, LibraryItem, LinkValue, TaskType } from './types';
 
 export type LookupKind = 'movie' | 'book' | 'game';
-export type LookupSource = 'tmdb' | 'douban' | 'openlibrary' | 'steam' | 'igdb';
+export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb';
 
 /** Worker 返回的一条结果。fields 的 key 是内置类型的字段 key（year、kind、imdb、author…）。 */
 export interface LookupResult {
   source: LookupSource;
-  /** 来源里的编号：tmdb 是「movie/550」「tv/1399」，豆瓣是数字，Open Library 是作品「OL45804W」或某一版「OL25840916M」（按 ISBN 取到的），Steam 是 appid，IGDB 是 slug（hollow-knight）。 */
+  /** 来源里的编号：tmdb 是「movie/550」「tv/1399」，豆瓣、豆瓣读书是数字（两边编号不通用），Open Library 是作品「OL45804W」或某一版「OL25840916M」（按 ISBN 取到的），Steam 是 appid，IGDB 是 slug（hollow-knight）。 */
   sourceId: string;
   name: string;
   year?: number;
@@ -64,13 +65,14 @@ export interface LookupSourceDef {
 export const LOOKUP_SOURCES: Record<LookupSource, LookupSourceDef> = {
   tmdb: { label: 'TMDB', home: 'https://www.themoviedb.org', kinds: ['movie'], covers: true, url: (id) => `https://www.themoviedb.org/${id}` },
   douban: { get label() { return tr('豆瓣'); }, home: 'https://movie.douban.com', kinds: ['movie'], covers: true, url: (id) => `https://movie.douban.com/subject/${id}/` },
+  doubanbook: { get label() { return tr('豆瓣读书'); }, home: 'https://book.douban.com', kinds: ['book'], covers: true, url: (id) => `https://book.douban.com/subject/${id}/` },
   openlibrary: { label: 'Open Library', home: 'https://openlibrary.org', kinds: ['book'], covers: false, url: (id) => `https://openlibrary.org/${/M$/.test(id) ? 'books' : 'works'}/${id}` },
   steam: { label: 'Steam', home: 'https://store.steampowered.com', kinds: ['game'], covers: true, url: (id) => `https://store.steampowered.com/app/${id}/` },
   igdb: { label: 'IGDB', home: 'https://www.igdb.com', kinds: ['game'], covers: true, url: (id) => `https://www.igdb.com/games/${id}` },
 };
 
 /**
- * 这条结果能用的封面（原图 / 列表小图）。书的封面纯手填（Rei 2026-10-17）：Open Library 的结果一律没有图，
+ * 这条结果能用的封面（原图 / 列表小图）。Open Library 的书不带封面（Rei 2026-10-17）：它的结果一律没有图，
  * 就算 Worker（旧版本、缓存）还带着 image / thumb 也不用。
  */
 export function lookupCover(r: Pick<LookupResult, 'source' | 'image' | 'thumb'>): { image?: string; thumb?: string } {
@@ -154,12 +156,13 @@ export type LookupMedia = 'movie' | 'tv';
  * 按什么去找：影视先认已填的 IMDb、再豆瓣编号，书认 ISBN（精确，取那一版），都没有就按名字搜
  * （去掉季标记、知道是电影还是剧集就只搜那一种；书按名字得到的是作品，只有作品级的字段）。
  */
-export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'isbn'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
+export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'doubanbook' | 'isbn'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
 
 /**
  * 输入框里的字 → 拿去在线找的样子（真实数据试跑：带「第三季」的剧名在 TMDB 一部都搜不到，Rei 2026-10-16）：
  * - 粘贴的是 IMDb / 豆瓣编号或链接：按编号直接取；
  * - 书（kind = 'book'）：输入或粘贴的是 ISBN-10 / 13（可带连字符、空格）或 openlibrary.org/isbn/ 链接：按 ISBN 取那一版（Rei 2026-10-17）；
+ *   粘贴的是豆瓣读书链接（book.douban.com/subject/<id>/）：按编号取那一本（Rei 2026-11-09）；
  * - 去掉季 / 集标记（第二季、Season 2、S03、S02E03…，复用 episode.ts），带季标记的就是剧集。
  */
 export function lookupSearchText(text: string, kind?: LookupKind | null): LookupQuery | null {
@@ -169,6 +172,8 @@ export function lookupSearchText(text: string, kind?: LookupKind | null): Lookup
     const isbn = isbnOf(raw);
     if (isbn) return { by: 'id', source: 'isbn', id: isbn };
     if (/^\S*openlibrary\.org\/isbn\//i.test(raw)) return null; // 链接里的 ISBN 不对：不拿网址当书名搜
+    const book = /^https?:\/\/(?:book\.douban\.com|m\.douban\.com\/book)\/subject\/(\d{4,12})/i.exec(raw);
+    if (book) return { by: 'id', source: 'doubanbook', id: book[1]! };
   }
   if (/^(tt\d{7,10}|https?:\/\/\S*imdb\.com\/\S*)$/i.test(raw)) {
     const imdb = siteIdOf('imdb', raw);

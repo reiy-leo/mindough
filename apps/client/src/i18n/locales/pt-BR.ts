@@ -474,6 +474,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "tt0816692，或粘贴链接": "tt0816692, ou cole um link",
   "IMDb 编号是 tt 加数字，比如 tt0816692": "Um ID do IMDb é “tt” seguido de números, como tt0816692",
   "豆瓣": "Douban",
+  "豆瓣读书": "Douban Livros",
   "1889243，或粘贴链接": "1889243, ou cole um link",
   "豆瓣编号是一串数字，在链接 subject/ 后面": "Um ID do Douban é o número depois de subject/ no link",
   "9787536692930，或粘贴链接": "9787536692930, ou cole um link",

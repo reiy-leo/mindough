@@ -4,6 +4,8 @@ import { sign } from '../src/session';
 import { allowedImageHost } from '../src/lookup';
 import { isV4Token } from '../src/lookup/tmdb';
 import { parseDoubanRexxar, parseDoubanSubject } from '../src/lookup/douban';
+import { parseDoubanBookRexxar, parseDoubanBookSubject } from '../src/lookup/doubanbook';
+import { readFileSync } from 'node:fs';
 import { steamPlatforms } from '../src/lookup/steam';
 import { igdbResult } from '../src/lookup/igdb';
 import type { AssetBucket, R2Object } from '../src/assets';
@@ -262,7 +264,7 @@ describe('Open Library 与 Steam', () => {
       'https://openlibrary.org/search.json': () =>
         Response.json({ docs: [{ key: '/works/OL17267881W', title: '三体', author_name: ['刘慈欣', 'Vincent Schmitt'], first_publish_year: 2008, cover_i: 9157544, number_of_pages_median: 417 }, { key: '/books/OL1M', title: '不是作品' }] }),
     });
-    const res = await call('/api/lookup/search?kind=book&q=%E4%B8%89%E4%BD%93', baseEnv());
+    const res = await call('/api/lookup/search?kind=book&q=%E4%B8%89%E4%BD%93&source=openlibrary', baseEnv());
     const body = (await res.json()) as { results: Array<Record<string, unknown>> };
     expect(calls[0]!.url.searchParams.get('q')).toBe('title:三体');
     expect(body.results).toEqual([
@@ -277,7 +279,7 @@ describe('Open Library 与 Steam', () => {
       },
     ]);
     expect(calls[0]!.url.searchParams.get('fields')).not.toContain('cover_i');
-    await call('/api/lookup/search?kind=book&q=three%20body', baseEnv());
+    await call('/api/lookup/search?kind=book&q=three%20body&source=openlibrary', baseEnv());
     expect(calls[1]!.url.searchParams.get('q')).toBe('three body');
   });
 
@@ -288,7 +290,7 @@ describe('Open Library 与 Steam', () => {
       'https://openlibrary.org/works/OL17267881W.json': () => Response.json({ authors: [{ author: { key: '/authors/OL7044246A' } }, { author: { key: '/authors/OL1A' } }] }),
       'https://openlibrary.org/authors/OL7044246A.json': () => Response.json({ name: '刘慈欣' }),
     });
-    const res = await call('/api/lookup/item?source=isbn&id=978-7-5366-9293-0', baseEnv());
+    const res = await call('/api/lookup/item?source=isbn&id=978-7-5366-9293-0&lang=en', baseEnv());
     expect(res.status).toBe(200);
     expect(calls[0]!.url.pathname).toBe('/isbn/9787536692930.json');
     expect(await res.json()).toEqual({
@@ -369,6 +371,116 @@ describe('Open Library 与 Steam', () => {
   it('Steam 看不到这款：404', async () => {
     mockFetch({ 'https://store.steampowered.com/api/appdetails': () => Response.json({ '9': { success: false } }) });
     expect((await call('/api/lookup/item?source=steam&id=9', baseEnv())).status).toBe(404);
+  });
+});
+
+const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
+// 2026-11-09 从 book.douban.com 真实页面裁下来的（只留标题、封面、#info）
+const SANTI_HTML = fixture('douban-book-2567698.html');
+const GATSBY_HTML = fixture('douban-book-10738023.html');
+
+describe('豆瓣读书（Rei 2026-11-09）', () => {
+  const SUGGEST = [
+    { title: '三体', url: 'https://book.douban.com/subject/2567698/', pic: 'https://img3.doubanio.com/view/subject/s/public/s2768378.jpg', author_name: '刘慈欣', year: '2008', type: 'b', id: '2567698' },
+    { title: '三体Ⅱ', url: 'https://book.douban.com/subject/3066477/', pic: 'https://img3.doubanio.com/view/subject/s/public/s3078482.jpg', author_name: '刘慈欣', year: '2008', type: 'b', id: '3066477' },
+  ];
+
+  it('中文界面：豆瓣读书在前、带封面；Open Library 同名同作者的那本不再列', async () => {
+    const calls = mockFetch({
+      'https://book.douban.com/j/subject_suggest': () => Response.json(SUGGEST),
+      'https://openlibrary.org/search.json': () =>
+        Response.json({ docs: [{ key: '/works/OL17267881W', title: '三体', author_name: ['刘慈欣'], first_publish_year: 2006 }, { key: '/works/OL2W', title: 'The Three-Body Problem', author_name: ['Cixin Liu'], first_publish_year: 2014 }] }),
+    });
+    const res = await call('/api/lookup/search?kind=book&q=%E4%B8%89%E4%BD%93', baseEnv());
+    const body = (await res.json()) as { results: Array<Record<string, unknown>>; sources: Array<{ source: string; status: string }> };
+    expect(body.sources).toEqual([{ source: 'doubanbook', status: 'ok' }, { source: 'openlibrary', status: 'ok' }]);
+    expect(body.results.map((r) => `${r.source}:${r.sourceId}`)).toEqual(['doubanbook:2567698', 'doubanbook:3066477', 'openlibrary:OL2W']);
+    expect(body.results[0]).toEqual({
+      source: 'doubanbook',
+      sourceId: '2567698',
+      name: '三体',
+      year: 2008,
+      thumb: 'https://img3.doubanio.com/view/subject/m/public/s2768378.jpg',
+      image: 'https://img3.doubanio.com/view/subject/l/public/s2768378.jpg',
+      subtitle: '刘慈欣',
+      fields: { author: '刘慈欣', year: 2008 },
+      url: 'https://book.douban.com/subject/2567698/',
+    });
+    expect(new Headers(calls.find((c) => c.url.hostname === 'book.douban.com')!.init?.headers).get('referer')).toBe('https://book.douban.com/');
+  });
+
+  it('英文界面：名字里没有汉字就不问豆瓣读书；有汉字照样问、照样列', async () => {
+    const calls = mockFetch({
+      'https://book.douban.com/j/subject_suggest': () => Response.json(SUGGEST.slice(0, 1)),
+      'https://openlibrary.org/search.json': () => Response.json({ docs: [] }),
+    });
+    await call('/api/lookup/search?kind=book&q=Dune&lang=en', baseEnv());
+    expect(calls.some((c) => c.url.hostname === 'book.douban.com')).toBe(false);
+    const body = (await (await call('/api/lookup/search?kind=book&q=%E4%B8%89%E4%BD%93&lang=en', baseEnv())).json()) as { results: Array<{ source: string }> };
+    expect(body.results.map((r) => r.source)).toEqual(['doubanbook']);
+  });
+
+  it('被跳去验证页：豆瓣读书算 blocked，Open Library 照常', async () => {
+    mockFetch({
+      'https://book.douban.com/j/subject_suggest': () => new Response(null, { status: 302, headers: { location: 'https://sec.douban.com/b?r=x' } }),
+      'https://openlibrary.org/search.json': () => Response.json({ docs: [{ key: '/works/OL1W', title: '活着', author_name: ['余华'] }] }),
+    });
+    const res = await call('/api/lookup/search?kind=book&q=%E6%B4%BB%E7%9D%80', baseEnv());
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { results: Array<{ source: string }>; sources: Array<{ source: string; status: string; code?: number }> };
+    expect(body.sources[0]).toMatchObject({ source: 'doubanbook', status: 'blocked', code: 502 });
+    expect(body.results.map((r) => r.source)).toEqual(['openlibrary']);
+  });
+
+  it('详情页：作者、译者、出版社、出版年、页数、ISBN、原作名、封面', () => {
+    expect(parseDoubanBookSubject('2567698', SANTI_HTML)).toEqual({
+      source: 'doubanbook',
+      sourceId: '2567698',
+      name: '三体',
+      year: 2008,
+      image: 'https://img3.doubanio.com/view/subject/l/public/s2768378.jpg',
+      thumb: 'https://img3.doubanio.com/view/subject/m/public/s2768378.jpg',
+      subtitle: '刘慈欣 · 重庆出版社',
+      fields: { author: '刘慈欣', publisher: '重庆出版社', year: 2008, isbn: '9787536692930', total_pages: 302 },
+      url: 'https://book.douban.com/subject/2567698/',
+    });
+    expect(parseDoubanBookSubject('10738023', GATSBY_HTML)).toMatchObject({
+      name: '了不起的盖茨比',
+      subtitle: 'The Great Gatsby · [美] 斯科特·菲茨杰拉德，邓若虚 译 · 南海出版公司',
+      fields: { author: '[美] 斯科特·菲茨杰拉德', publisher: '南海出版公司', year: 2012, isbn: '9787544258661', total_pages: 197 },
+    });
+    expect(() => parseDoubanBookSubject('1', '<html><title>禁止访问</title></html>')).toThrow(/502/);
+  });
+
+  it('按编号取：页面被拦就用手机版 JSON（没有 ISBN）；404 照实说', async () => {
+    mockFetch({
+      'https://book.douban.com/subject/2567698': () => new Response(SANTI_HTML),
+      'https://book.douban.com/subject/4913064': () => new Response(null, { status: 302, headers: { location: 'https://sec.douban.com/b' } }),
+      'https://m.douban.com/rexxar/api/v2/book/4913064': () =>
+        Response.json({ title: '活着', author: ['余华'], translator: [], press: ['作家出版社'], pubdate: ['2012-8-1'], pages: ['191'], pic: { large: 'https://img9.doubanio.com/view/subject/l/public/s29869926.jpg' } }),
+      'https://book.douban.com/subject/9999999': () => new Response('', { status: 404 }),
+    });
+    const santi = (await (await call('/api/lookup/item?source=doubanbook&id=2567698', baseEnv())).json()) as { fields: Record<string, unknown> };
+    expect(santi.fields.isbn).toBe('9787536692930');
+    const huozhe = (await (await call('/api/lookup/item?source=doubanbook&id=4913064', baseEnv())).json()) as Record<string, unknown>;
+    expect(huozhe).toMatchObject({ name: '活着', fields: { author: '余华', publisher: '作家出版社', year: 2012, total_pages: 191 }, image: 'https://img9.doubanio.com/view/subject/l/public/s29869926.jpg' });
+    expect((await call('/api/lookup/item?source=doubanbook&id=9999999', baseEnv())).status).toBe(404);
+    expect((await call('/api/lookup/item?source=doubanbook&id=abc', baseEnv())).status).toBe(400);
+    expect(parseDoubanBookRexxar('1', { title: 'A', book_subtitle: 'B', author: ['X'], translator: ['Y'] }).subtitle).toBe('B · X，Y 译');
+  });
+
+  it('按 ISBN：中文界面先豆瓣读书（跟 301 到 subject 页）；豆瓣读书取不到再问 Open Library', async () => {
+    const calls = mockFetch({
+      'https://book.douban.com/isbn/9787536692930': () => new Response(null, { status: 301, headers: { location: 'https://book.douban.com/subject/2567698/' } }),
+      'https://book.douban.com/subject/2567698': () => new Response(SANTI_HTML),
+      'https://book.douban.com/isbn/9780451526533': () => new Response('', { status: 404 }),
+      'https://openlibrary.org/isbn/': () => Response.json({ key: '/books/OL1M', title: 'Tom Sawyer', authors: [], publishers: ['Signet'], publish_date: '1997' }),
+    });
+    const zh = (await (await call('/api/lookup/item?source=isbn&id=978-7-5366-9293-0', baseEnv())).json()) as Record<string, unknown>;
+    expect(zh).toMatchObject({ source: 'doubanbook', sourceId: '2567698', fields: { isbn: '9787536692930' } });
+    expect(calls.some((c) => c.url.hostname === 'openlibrary.org')).toBe(false);
+    const fallback = (await (await call('/api/lookup/item?source=isbn&id=9780451526533', baseEnv())).json()) as Record<string, unknown>;
+    expect(fallback).toMatchObject({ source: 'openlibrary', sourceId: 'OL1M' });
   });
 });
 

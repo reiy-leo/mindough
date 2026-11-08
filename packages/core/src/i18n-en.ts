@@ -240,6 +240,7 @@ export const CORE_EN: Record<string, V> = {
   'tt0816692，或粘贴链接': 'tt0816692, or paste a link',
   'IMDb 编号是 tt 加数字，比如 tt0816692': 'An IMDb ID is “tt” plus digits, like tt0816692',
   豆瓣: 'Douban',
+  豆瓣读书: 'Douban Books',
   '1889243，或粘贴链接': '1889243, or paste a link',
   '豆瓣编号是一串数字，在链接 subject/ 后面': 'A Douban ID is the number after subject/ in the link',
   '9787536692930，或粘贴链接': '9787536692930, or paste a link',

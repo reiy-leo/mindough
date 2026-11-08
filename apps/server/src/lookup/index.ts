@@ -6,9 +6,12 @@
  *        media：只要电影或只要剧集（客户端从「电影/剧集」字段、季标记判断；季标记客户端已去掉）。
  *        TMDB 按这个名字没搜到：再用 alt 给的名字、豆瓣同名条目的原名（如英文名）补搜，原名带豆瓣的年份收窄
  *        （试跑：「海绵宝宝大电影·寻找方裤」在 TMDB 叫「海绵宝宝：深海大冒险」）。永远只给候选，不替人选。
+ *        书同时问豆瓣读书和 Open Library（Rei 2026-11-09）：中文界面都列，豆瓣读书在前；英文界面名字里有汉字才问豆瓣读书。
+ *        Open Library 的结果和豆瓣读书的同一本（同 ISBN，或同名同作者）不再列。
  *        所有来源都失败时返回第一个失败的状态码（如 TMDB 没配置 → 503 服务不可用）。
- * - GET  /api/lookup/item?source=tmdb|douban|openlibrary|steam|igdb|imdb|isbn&id=…&lang=zh|en → LookupResult
- *        source=imdb：按 IMDb 编号经 TMDB find 直接取；source=isbn：按 ISBN-10 / 13 经 Open Library 取那一版（容许连字符、空格）。
+ * - GET  /api/lookup/item?source=tmdb|douban|doubanbook|openlibrary|steam|igdb|imdb|isbn&id=…&lang=zh|en → LookupResult
+ *        source=imdb：按 IMDb 编号经 TMDB find 直接取；source=isbn：按 ISBN-10 / 13 取那一版（容许连字符、空格），
+ *        中文界面先问豆瓣读书、取不到再问 Open Library，英文界面反过来。
  * - POST /api/lookup/image { url } → 把选中结果的封面拉进 R2（mindough-assets），返回同 POST /api/assets 的 { url, r2_key, sha256, mime, size }。
  *   { url, raw: true } → 只代拉原图字节回去（不存）：客户端先按版式统一宽高，再自己 POST /api/assets。
  *        只拉这几个来源的图床（防止拿 Worker 去请求任意地址）。
@@ -16,7 +19,8 @@
  */
 import { requestUser, storeAsset, MAX_ASSET_BYTES, type AssetEnv } from '../assets';
 import { doubanItem, searchDouban, DOUBAN_IMAGE_HEADERS } from './douban';
-import { openLibraryByIsbn, openLibraryItem, searchOpenLibrary } from './openlibrary';
+import { doubanBookByIsbn, doubanBookItem, searchDoubanBook } from './doubanbook';
+import { openLibraryByIsbn, openLibraryItem, searchOpenLibrary, validIsbn } from './openlibrary';
 import { searchSteam, steamItem } from './steam';
 import { igdbItem, searchIgdb, type IgdbHit } from './igdb';
 import { searchTmdb, tmdbByImdb, tmdbItem, type Media } from './tmdb';
@@ -30,7 +34,7 @@ export const ITEM_TTL = 7 * 24 * 3600;
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
-const KIND_SOURCES: Record<LookupKind, LookupSource[]> = { movie: ['tmdb', 'douban'], book: ['openlibrary'], game: ['steam', 'igdb'] };
+const KIND_SOURCES: Record<LookupKind, LookupSource[]> = { movie: ['tmdb', 'douban'], book: ['doubanbook', 'openlibrary'], game: ['steam', 'igdb'] };
 
 /** Cache API：Worker 里是 caches.default；单测（node）里没有就直接查。 */
 interface CacheLike {
@@ -66,6 +70,8 @@ function searchOne(env: LookupEnv, source: LookupSource, q: string, lang: Lang, 
         return searchTmdb(env, q, lang, opts);
       case 'douban':
         return searchDouban(q);
+      case 'doubanbook':
+        return searchDoubanBook(q);
       case 'openlibrary':
         return searchOpenLibrary(q, lang);
       case 'steam':
@@ -91,7 +97,7 @@ export async function lookupSearch(env: LookupEnv, kind: LookupKind, q: string, 
   let sources = KIND_SOURCES[kind];
   if (only) sources = sources.filter((s) => s === only);
   // 豆瓣的结果全是中文：英文界面不列出；但中文名在 TMDB 搜不到时要靠它给原名，所以名字里有汉字就照样问
-  else if (lang === 'en' && !CJK.test(q)) sources = sources.filter((s) => s !== 'douban');
+  else if (lang === 'en' && !CJK.test(q)) sources = sources.filter((s) => s !== 'douban' && s !== 'doubanbook');
   const media = kind === 'movie' ? query.media : undefined;
   const settled = await Promise.allSettled(sources.map((s) => searchOne(env, s, q, lang, s === 'tmdb' ? { ...(media ? { media } : {}) } : {})));
   const lists = new Map<LookupSource, LookupResult[]>();
@@ -133,6 +139,16 @@ export async function lookupSearch(env: LookupEnv, kind: LookupKind, q: string, 
         // 豆瓣与 TMDB 同名同年的算一条，留先来的（TMDB）
         const k = `${norm(x.name)}|${x.year ?? ''}`;
         if (source === 'douban' && seen.has(k)) continue;
+        // 书：豆瓣读书在前；Open Library 里同 ISBN、或同名同作者的算同一本，不再列（年份不比：一个是这一版、一个是首版）
+        if (kind === 'book') {
+          const isbn = typeof x.fields.isbn === 'string' ? `isbn:${x.fields.isbn}` : '';
+          const byAuthor = `book:${norm(x.name)}|${norm(String(x.fields.author ?? ''))}`;
+          if (source === 'openlibrary' && ((isbn && seen.has(isbn)) || seen.has(byAuthor))) continue;
+          if (isbn) seen.add(isbn);
+          seen.add(byAuthor);
+          results.push(x);
+          continue;
+        }
         // IGDB 和 Steam 是同一款（IGDB 带的 Steam 链接对得上，或同名同年）：留 Steam 那条
         if (source === 'igdb') {
           const { steamId, ...rest } = x as IgdbHit;
@@ -156,6 +172,22 @@ export async function lookupSearch(env: LookupEnv, kind: LookupKind, q: string, 
   return { status, body: { results, sources: statuses } };
 }
 
+/** 按 ISBN：中文界面先豆瓣读书（中文书多、带封面），英文界面先 Open Library；前一个取不到再问另一个，都不行报前一个的错。 */
+async function byIsbn(raw: string, lang: Lang): Promise<LookupResult> {
+  const isbn = raw.replace(/[\s-]/g, '').toUpperCase();
+  if (!validIsbn(isbn)) throw new LookupError(400, '400 请求有误：ISBN 要是 10 位或 13 位（如 9787536692930），校验位要对');
+  const order = lang === 'zh' ? [() => doubanBookByIsbn(isbn), () => openLibraryByIsbn(isbn)] : [() => openLibraryByIsbn(isbn), () => doubanBookByIsbn(isbn)];
+  try {
+    return await order[0]!();
+  } catch (first) {
+    try {
+      return await order[1]!();
+    } catch {
+      throw first;
+    }
+  }
+}
+
 export function lookupItem(env: LookupEnv, source: string, id: string, lang: Lang): Promise<LookupResult> {
   const key = `item/${source}/${lang}/${encodeURIComponent(id)}`;
   switch (source) {
@@ -165,20 +197,22 @@ export function lookupItem(env: LookupEnv, source: string, id: string, lang: Lan
       return cached(key, ITEM_TTL, () => tmdbByImdb(env, id.toLowerCase(), lang));
     case 'douban':
       return cached(key, ITEM_TTL, () => doubanItem(id));
+    case 'doubanbook':
+      return cached(key, ITEM_TTL, () => doubanBookItem(id));
     case 'openlibrary':
       return cached(key, ITEM_TTL, () => openLibraryItem(id));
     case 'isbn':
-      return cached(`item/isbn/${encodeURIComponent(id.replace(/[\s-]/g, '').toUpperCase())}`, ITEM_TTL, () => openLibraryByIsbn(id));
+      return cached(`item/isbn/${lang}/${encodeURIComponent(id.replace(/[\s-]/g, '').toUpperCase())}`, ITEM_TTL, () => byIsbn(id, lang));
     case 'steam':
       return cached(key, ITEM_TTL, () => steamItem(id, lang));
     case 'igdb':
       return cached(key, ITEM_TTL, () => igdbItem(env, id.toLowerCase(), lang));
     default:
-      return Promise.reject(new LookupError(400, '400 请求有误：source 只能是 tmdb、douban、openlibrary、steam、igdb、imdb、isbn'));
+      return Promise.reject(new LookupError(400, '400 请求有误：source 只能是 tmdb、douban、doubanbook、openlibrary、steam、igdb、imdb、isbn'));
   }
 }
 
-/** 能拉进 R2 的图床（来源的官方图片域名）。没有 Open Library：书的封面纯手填（Rei 2026-10-17）。 */
+/** 能拉进 R2 的图床（来源的官方图片域名）。没有 Open Library：它的书不带封面；豆瓣读书的封面也在 img*.doubanio.com（Rei 2026-11-09 同意取）。 */
 export function allowedImageHost(url: string): boolean {
   let u: URL;
   try {

@@ -47,7 +47,7 @@ export function onlineSubtitle(r: LookupResult): string {
 
 /**
  * 在线结果的小图：只在列表里显示（选中后封面由 Worker 拉进 R2）。豆瓣的图不带 Referer 才给看。
- * 不带封面的来源（书：封面纯手填，Rei 2026-10-17）一律用占位图。
+ * 不带封面的来源（Open Library 的书，Rei 2026-10-17）一律用占位图。
  */
 function OnlineArt({ r, shape, className = 'lib-option-art' }: { r: LookupResult; shape: ArtShape; className?: string }) {
   const [failed, setFailed] = useState(false);
@@ -242,7 +242,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
         } catch (e) {
           if (c.signal.aborted) return;
           // 按编号取不到（TMDB 没配置、豆瓣要验证）：退回按名字找
-          const label = q.source === 'imdb' ? 'TMDB' : q.source === 'isbn' ? 'Open Library' : tr('豆瓣');
+          const label = q.source === 'imdb' ? 'TMDB' : q.source === 'isbn' ? tr('豆瓣读书') + ' / Open Library' : sourceLabel(q.source);
           await byName(draft.name.trim(), tr('按编号没取到：{why}', { why: errorText(e, label) }));
         }
       } else await byName(draft.name);

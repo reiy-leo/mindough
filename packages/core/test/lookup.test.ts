@@ -202,6 +202,26 @@ describe('在线补全：逐项计划', () => {
     expect(lookupCover(dune)).toEqual({ image: dune.image });
   });
 
+  it('豆瓣读书（Rei 2026-11-09）：带封面，列出图片那行；链接认得出；粘贴豆瓣读书链接按编号取', () => {
+    const santi: LookupResult = {
+      source: 'doubanbook',
+      sourceId: '2567698',
+      name: '三体',
+      year: 2008,
+      image: 'https://img3.doubanio.com/view/subject/l/public/s2768378.jpg',
+      thumb: 'https://img3.doubanio.com/view/subject/m/public/s2768378.jpg',
+      fields: { author: '刘慈欣', publisher: '重庆出版社', year: 2008, isbn: '9787536692930', total_pages: 302 },
+      url: 'https://book.douban.com/subject/2567698/',
+    };
+    expect(lookupCover(santi)).toEqual({ image: santi.image, thumb: santi.thumb });
+    const rows = planAutofill(book, { name: '', image: null, fields: {} }, santi);
+    expect(rows.some((r) => r.def.media && !r.def.primary)).toBe(true);
+    expect(rows.map((r) => r.next)).toEqual(expect.arrayContaining(['三体', '刘慈欣', '重庆出版社', 2008, 302]));
+    expect(parseSourceRef('doubanbook:2567698')).toMatchObject({ url: 'https://book.douban.com/subject/2567698/' });
+    expect(lookupSearchText('https://book.douban.com/subject/2567698/', 'book')).toEqual({ by: 'id', source: 'doubanbook', id: '2567698' });
+    expect(lookupSearchText('https://m.douban.com/book/subject/2567698/', 'book')).toEqual({ by: 'id', source: 'doubanbook', id: '2567698' });
+  });
+
   it('任务字段（看到哪）不填', () => {
     const rows = planAutofill(movie, { name: '', image: null, fields: {} }, { ...dune, fields: { ...dune.fields, episode: { season: 1, episode: 2 } } });
     expect(rows.some((r) => r.key === 'episode')).toBe(false);

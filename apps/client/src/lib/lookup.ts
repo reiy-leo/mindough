@@ -2,7 +2,7 @@
  * 在线找资料（M4）：调 Worker 的 /api/lookup/*（要登录）。离线或没登录时整块不出现，界面永不等网络：
  * - 选中一条在线结果：先用搜索结果马上建好资料，再在后台补详情（IMDb 编号等）和封面（Worker 拉进 R2，存 asset 引用，不热链）；
  * - 自动补全：先取结果，逐项给人看，确认后才填（图片也是这时才拉）；
- * - 书的封面不对接任何平台，纯手填（Rei 2026-10-17）：Open Library 的结果不填图、不拉图（core 的 lookupCover）。
+ * - 书的封面：Open Library 的结果不填图、不拉图（Rei 2026-10-17，core 的 lookupCover）；豆瓣读书的带封面，同影视海报拉进 R2（Rei 2026-11-09）。
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -72,7 +72,7 @@ export function searchOnline(kind: LookupKind, q: string, signal?: AbortSignal, 
   return getJson(`/api/lookup/search?kind=${kind}&q=${encodeURIComponent(q)}&lang=${lang()}${extra}`, signal, fetcher);
 }
 
-/** source 可以是 imdb（按 IMDb 编号经 TMDB 取）、isbn（按 ISBN 经 Open Library 取那一版）。 */
+/** source 可以是 imdb（按 IMDb 编号经 TMDB 取）、isbn（按 ISBN 取那一版：中文界面先豆瓣读书，再 Open Library）。 */
 export function fetchLookupItem(source: LookupSource | 'imdb' | 'isbn', id: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<LookupResult> {
   return getJson(`/api/lookup/item?source=${source}&id=${encodeURIComponent(id)}&lang=${lang()}`, signal, fetcher);
 }
@@ -187,8 +187,8 @@ export function useOnlineSearch(kind: LookupKind | null, text: string, delay = 3
     setState((s) => ({ ...s, status: 'loading' }));
     const run = (): Promise<LookupSearchResponse> => {
       if (q.by === 'name') return searchOnline(kind, q.q, ctrl.signal, undefined, q.media ? { media: q.media } : {});
-      if (q.source === 'isbn' ? kind !== 'book' : kind !== 'movie') return searchOnline(kind, text.trim(), ctrl.signal);
-      const source: LookupSource = q.source === 'imdb' ? 'tmdb' : q.source === 'isbn' ? 'openlibrary' : 'douban';
+      if (q.source === 'isbn' || q.source === 'doubanbook' ? kind !== 'book' : kind !== 'movie') return searchOnline(kind, text.trim(), ctrl.signal);
+      const source: LookupSource = q.source === 'imdb' ? 'tmdb' : q.source === 'isbn' ? 'openlibrary' : q.source;
       return fetchLookupItem(q.source, q.id, ctrl.signal).then(
         (r) => ({ results: [r], sources: [{ source, status: 'ok' as const }] }),
         (e: unknown) => {

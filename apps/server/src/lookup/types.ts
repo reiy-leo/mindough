@@ -5,7 +5,7 @@
  */
 export type FieldValue = string | number | boolean | string[] | Array<{ url: string; label?: string }> | null;
 export type LookupKind = 'movie' | 'book' | 'game';
-export type LookupSource = 'tmdb' | 'douban' | 'openlibrary' | 'steam' | 'igdb';
+export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb';
 export type Lang = 'zh' | 'en';
 
 export interface LookupResult {
