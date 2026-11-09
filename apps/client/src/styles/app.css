@@ -1338,16 +1338,6 @@ span.drag-handle.is-pin {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.group-range {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-2);
-}
-.group-range.is-late {
-  color: var(--danger);
-}
 .group-stats {
   display: flex;
   justify-content: space-between;

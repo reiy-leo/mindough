@@ -48,7 +48,7 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
         isOpen={open === 'dissolve'}
         onOpenChange={close}
         title={tr('解散「{name}」？', { name: group.name })}
-        message={count ? tr('项目没了，里面的 {n} 件任务都留着：没日期的回到待安排，有日期的还在那一天。', { n: count }) : tr('项目里没有任务，解散后项目就没了。')}
+        message={count ? tr('项目没了，里面的 {n} 件任务都留着：没日期的回到等待安排，有日期的还在那一天。', { n: count }) : tr('项目里没有任务，解散后项目就没了。')}
         confirmLabel={tr('解散')}
         onConfirm={() => {
           const r = store.dissolveGroup(group.id);

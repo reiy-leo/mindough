@@ -40,16 +40,16 @@ export function BacklogPage() {
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，加进待安排；件数挪到列表上方的小字。
           原来页头的「新建任务」按钮去掉了，右下角的新建按钮也去掉了（Rei 2026-11-08）：N 照常打开完整的新建面板 */}
-      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到待安排')} label={tr('添加任务到待安排')} create={(body) => store.createTask({ body_md: body }).id}
+      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到等待安排')} label={tr('添加任务到等待安排')} create={(body) => store.createTask({ body_md: body }).id}
         meta={
           <div className="list-meta">
-            <h1 className="sr-only">{tr('待安排')}</h1>
+            <h1 className="sr-only">{tr('等待安排')}</h1>
             {list.length ? tr('{length} 件还没定哪天做', { length: list.length }) : tr('都安排好了')}
           </div>
         }
       />
       {list.length ? (
-        <GridList ref={reorderGuard.ref} aria-label={tr('待安排的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list}>
+        <GridList ref={reorderGuard.ref} aria-label={tr('等待安排的任务')} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list}>
           {(t) => (
             <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`list-item${ui.editingId === t.id ? ' is-selected' : ''}`}>
               {/* 置顶的把手那格换成红色图钉，还是能拖（Rei 2026-11-09） */}
@@ -93,7 +93,7 @@ export function BacklogPage() {
           <div className="empty-icon">
             <Inbox size={28} />
           </div>
-          <div className="empty-title">{tr('没有待安排的事')}</div>
+          <div className="empty-title">{tr('没有等待安排的事')}</div>
           <div className="empty-hint">{tr('想到什么先记下来，有空再决定哪天做。')}</div>
           <Button variant="secondary" onPress={() => ui.openQuickCreate()}>
             <Plus size={15} />

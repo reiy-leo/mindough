@@ -278,7 +278,7 @@ function Composer() {
     ui.toast(
       {
         tone: 'success',
-        message: recurring ? tr('已添加到打卡：「{name}」', { name }) : toMyDay ? tr('已添加到我的一天：「{name}」', { name }) : !d.date && t.completion_mode !== 'countdown' ? tr('已添加到待安排：「{name}」', { name }) : tr('已添加：「{name}」', { name }),
+        message: recurring ? tr('已添加到打卡：「{name}」', { name }) : toMyDay ? tr('已添加到我的一天：「{name}」', { name }) : !d.date && t.completion_mode !== 'countdown' ? tr('已添加到等待安排：「{name}」', { name }) : tr('已添加：「{name}」', { name }),
         actions: [{ label: tr('查看'), onPress: () => ui.openEditor(t.id) }],
       },
       4000,

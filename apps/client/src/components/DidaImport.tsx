@@ -359,7 +359,7 @@ function Preview({
           const label = l.name || tr('（没写清单）');
           const options = [
             ...(l.existingGroupId ? [] : [{ id: 'new', label: tr('新建项目「{name}」', { name: l.name || tr('滴答清单') }) }]),
-            { id: 'none', label: tr('不放进项目（进待安排）') },
+            { id: 'none', label: tr('不放进项目（进等待安排）') },
             ...groups.map((g) => ({ id: `group:${g.id}`, label: tr('并入「{name}」', { name: g.name }) })),
           ];
           return (

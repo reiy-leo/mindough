@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Group, Task } from '@mindough/core';
-import { dueBucket, moodRank, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
+import { dueBucket, moodRank, overdueBucket, overdueBucketOfDays, sectionOverdue, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
 import { normalizeListView } from './list-views';
 import { normalizePrefs, sortTasks } from './project-view';
 
@@ -83,5 +83,41 @@ describe('列表视图设置', () => {
     ];
     expect(sortTasks(list as never, 'mood', 'asc').map((x: { id: string }) => x.id)).toEqual(['c', 'b', 'a']);
     expect(sortTasks(list as never, 'mood', 'desc').map((x: { id: string }) => x.id)).toEqual(['b', 'c', 'a']);
+  });
+});
+
+describe('过期积压按日期分区（Rei 2026-11-10：昨天 / 过去 7 天 / 过去一个月 / 过去一年 / 更远）', () => {
+  // 只看日期，时区跟设备：传 deviceToday，任务不带时区
+  const at = (d: string) => new Date(`${d}T12:00:00`);
+  const b = (end: string, d: string) => overdueBucket(t({ scheduled_date: end }), at(d), d);
+  it('按过期天数分段，边界不重叠', () => {
+    expect([1, 2, 7, 8, 30, 31, 365, 366, 1000].map(overdueBucketOfDays)).toEqual(['yesterday', 'week', 'week', 'month', 'month', 'year', 'year', 'older', 'older']);
+  });
+  it('跨月：3 月 1 日的昨天是 2 月 28 日，7 天前是 2 月 22 日', () => {
+    expect(b('2026-02-28', '2026-03-01')).toBe('yesterday');
+    expect(b('2026-02-27', '2026-03-01')).toBe('week');
+    expect(b('2026-02-22', '2026-03-01')).toBe('week');
+    expect(b('2026-02-21', '2026-03-01')).toBe('month');
+    expect(b('2026-01-30', '2026-03-01')).toBe('month'); // 30 天前
+    expect(b('2026-01-29', '2026-03-01')).toBe('year'); // 31 天前
+  });
+  it('跨年：1 月 1 日的昨天是去年 12 月 31 日；365 天前算过去一年，366 天前算更远（含闰年）', () => {
+    expect(b('2026-12-31', '2027-01-01')).toBe('yesterday');
+    expect(b('2026-12-25', '2027-01-01')).toBe('week');
+    expect(b('2026-12-24', '2027-01-01')).toBe('month');
+    expect(b('2026-01-01', '2027-01-01')).toBe('year'); // 365 天
+    expect(b('2025-12-31', '2027-01-01')).toBe('older'); // 366 天
+    expect(b('2024-02-28', '2025-02-28')).toBe('older'); // 中间有 2024-02-29：366 天
+    expect(b('2024-02-29', '2025-02-28')).toBe('year'); // 365 天
+  });
+  it('多天任务看结束日', () => {
+    expect(overdueBucket(t({ scheduled_date: '2026-10-01', end_date: '2026-11-10' }), at('2026-11-11'), '2026-11-11')).toBe('yesterday');
+  });
+  it('分段顺序固定、段内顺序不变、空段不出现', () => {
+    const list = [t({ scheduled_date: '2026-11-10' }), t({ scheduled_date: '2026-11-08' }), t({ scheduled_date: '2026-11-05' }), t({ scheduled_date: '2024-01-01' })];
+    const s = sectionOverdue(list, at('2026-11-11'), '2026-11-11');
+    expect(s.map((x) => x.key)).toEqual(['yesterday', 'week', 'older']);
+    expect(s[1]?.tasks).toEqual([list[1], list[2]]);
+    expect(s.map((x) => x.label)).toEqual(['昨天', '过去 7 天', '更远']);
   });
 });

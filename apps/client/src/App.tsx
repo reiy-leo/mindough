@@ -93,8 +93,8 @@ const NAV_SECTIONS: NavSection[] = [
     get title() { return tr('今天'); },
     items: [
       { page: 'myday', get label() { return tr('我的一天'); }, icon: Sun, match: ['myday'] },
-      { page: 'backlog', get label() { return tr('待安排'); }, icon: Inbox, match: ['backlog'] },
-      { page: 'doable', get label() { return tr('积压'); }, icon: CalendarClock, match: ['doable'] },
+      { page: 'backlog', get label() { return tr('等待安排'); }, icon: Inbox, match: ['backlog'] },
+      { page: 'doable', get label() { return tr('过期积压'); }, icon: CalendarClock, match: ['doable'] },
     ],
   },
   {

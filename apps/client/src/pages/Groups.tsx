@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, CalendarRange, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
-import { formatDateZh, isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
+import { Archive, ArchiveRestore, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
+import { isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Tip, useContextMenuAt } from '../ui/primitives';
@@ -25,10 +25,6 @@ import { useColorLevel } from '../lib/color-level';
 import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
-function range(g: Group) {
-  if (!g.start_at && !g.end_at) return tr('不限时间');
-  return `${g.start_at ? formatDateZh(g.start_at, false) : '…'} – ${g.end_at ? formatDateZh(g.end_at, false) : '…'}`;
-}
 
 /**
  * 项目列表里的一张卡片：点了打开项目；右键 / 长按出菜单「在侧边栏显示 / 取消在侧边栏显示」（Rei 2026-10-28）。
@@ -38,12 +34,8 @@ function GroupCard({ group: g }: { group: Group }) {
   const store = useStore();
   const menu = useContextMenuAt();
   const tasks = store.tasks().filter((t) => t.group_id === g.id);
-  // 关闭的不算成就：既不算完成，也不计入总数
-  const counted = tasks.filter((t) => t.status !== '关闭');
-  const done = counted.filter((t) => t.status === '完成').length;
   const blocked = tasks.filter((t) => store.derived().get(t.id)?.state === '被阻塞').length;
   const c = store.category(g.category_id);
-  const late = g.end_at && g.end_at < toDateKey(store.now()) && done < counted.length;
   const actions = useProjectActions(store, g);
   return (
     <div className="group-card-wrap" {...menu.props}>
@@ -59,9 +51,7 @@ function GroupCard({ group: g }: { group: Group }) {
           <span className="group-name">{g.name}</span>
           {c && <CategoryLabel c={c} size={12} />}
         </div>
-        <div className={`group-range${late ? ' is-late' : ''}`}>
-          <CalendarRange size={13} /> {range(g)}
-        </div>
+        {/* 不显示项目时间段（Rei 2026-11-10「项目列表中 不显示项目时间段」） */}
         {/* 卡片不显示进度（Rei 2026-11-04「项目列表中item紧凑一点，进度不显示」） */}
         {blocked > 0 && (
           <div className="group-stats">
@@ -275,7 +265,7 @@ function GroupDetail({
           <Archive size={18} aria-hidden />
           <span className="grow">
             <strong>{tr('这个项目已归档')}</strong>
-            <span className="muted"> {tr('里面的任务不会进我的一天，也不在待安排、积压、时间轴里。')}</span>
+            <span className="muted"> {tr('里面的任务不会进我的一天，也不在等待安排、过期积压、时间轴里。')}</span>
           </span>
           <Button variant="tonal" className="small" onPress={() => unarchiveProject(store, ui, g)}>
             <ArchiveRestore size={15} aria-hidden />

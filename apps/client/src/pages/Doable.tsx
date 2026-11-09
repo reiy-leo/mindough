@@ -5,17 +5,21 @@ import { TaskRow } from '../components/TaskRow';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { SectionMenu } from '../components/project/ProjectMenus';
 import { DATE_SECTIONS, useListView, type DateSection } from '../lib/list-views';
+import { sectionOverdue } from '../lib/sections';
 
 import { tr } from '../lib/i18n';
 
 /**
- * 积压（侧栏「今天 → 积压」，路由仍是 doable；原来的「可做」，Rei 2026-11-04「在侧边栏的“可做”更换成“积压”，
+ * 过期积压（侧栏「今天 → 过期积压」，原名「积压」，路由仍是 doable；原来的「可做」，Rei 2026-11-04「在侧边栏的“可做”更换成“积压”，
  * 显示所有没完成的任务，过期的倒序显示」「积压的是有日期的」「待安排的是没日期的」）：
  * 所有定了日期、还没做完的任务（待办 / 进行中），不算打卡、倒数日、重复任务。
  * - 「已过期」：日期（日期段看结束日）早于今天的，最近过期的在最上面，越早越往下。
  * - 「接下来」：今天和以后的，按日期从近到远。
  * 没日期的在「待安排」里，这里不放。
- * 右上角分区（Rei 2026-11-08「所有列表支持不分区」）：按日期（默认，上面两段）/ 不分区（一张清单，顺序不变：过期的在前）。
+ * 右上角分区（Rei 2026-11-08「所有列表支持不分区」）：按日期（默认）/ 不分区（一张清单，顺序不变：过期的在前）。
+ * 按日期（Rei 2026-11-10「按照这个来：昨天，过去7天，过去一个月，过去一年，更远」）：过期的分成这 5 段（lib/sections sectionOverdue，
+ * 按过期天数 1 / 2–7 / 8–30 / 31–365 / 更早），段内照旧最近过期在上；今天和以后的仍在最后一段「接下来」，不丢。
+ * 页名 Rei 2026-11-10 改成「过期积压」（原「积压」），路由不变。
  */
 export function DoablePage() {
   const store = useStore();
@@ -39,12 +43,12 @@ export function DoablePage() {
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，新建的进待安排（没日期） */}
       <QuickAddBar
-        placeholder={tr('现在想做什么？按回车添加到待安排')}
-        label={tr('添加任务到待安排')}
+        placeholder={tr('现在想做什么？按回车添加到等待安排')}
+        label={tr('添加任务到等待安排')}
         create={(body) => store.createTask({ body_md: body }).id}
         meta={
           <div className="list-meta">
-            <h1 className="sr-only">{tr('积压')}</h1>
+            <h1 className="sr-only">{tr('过期积压')}</h1>
             <span className="list-meta-text">
               {overdue.length ? tr('{n} 件定了日期还没做完，{m} 件已过期', { n: open.length, m: overdue.length }) : tr('{n} 件定了日期还没做完', { n: open.length })}
             </span>
@@ -59,7 +63,11 @@ export function DoablePage() {
         open.length > 0 && rows([...overdue, ...upcoming])
       ) : (
         <>
-          {overdue.length > 0 && <Section title={tr('已过期')}>{rows(overdue)}</Section>}
+          {sectionOverdue(overdue, now, today).map((s) => (
+            <Section key={s.key} title={s.label}>
+              {rows(s.tasks)}
+            </Section>
+          ))}
           {upcoming.length > 0 && <Section title={tr('接下来')}>{rows(upcoming)}</Section>}
         </>
       )}

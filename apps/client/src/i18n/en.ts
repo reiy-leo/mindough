@@ -296,7 +296,7 @@ export const EN: Record<string, EnValue> = {
   清单放进哪个项目: 'Lists to Projects',
   '（没写清单）': '(No list)',
   '新建项目「{name}」': (p) => `New Project “${p.name}”`,
-  '不放进项目（进待安排）': 'No Project (Inbox)',
+  '不放进项目（进等待安排）': 'No Project (Inbox)',
   '并入「{name}」': (p) => `Into “${p.name}”`,
   '文件夹「{name}」': (p) => `Folder “${p.name}”`,
   '「{name}」放进': (p) => `Project for “${p.name}”`,
@@ -347,7 +347,7 @@ export const EN: Record<string, EnValue> = {
   进入全屏幕: 'Enter Full Screen',
   // ── 导航 ──
   我的一天: 'My Day',
-  待安排: 'Inbox',
+  等待安排: 'Inbox',
   '导航|打卡': 'Check-ins',
   打卡: 'Check In',
   可做: 'Available',
@@ -567,7 +567,7 @@ export const EN: Record<string, EnValue> = {
   新建打卡: 'New Check-in',
   '已添加到打卡：「{name}」': 'Added “{name}” to Check-ins',
   '已添加到我的一天：「{name}」': 'Added “{name}” to My Day',
-  '已添加到待安排：「{name}」': 'Added “{name}” to Inbox',
+  '已添加到等待安排：「{name}」': 'Added “{name}” to Inbox',
   '已添加：「{name}」': 'Added “{name}”',
   查看: 'View',
   写法提示: 'Formatting tips',
@@ -742,14 +742,14 @@ export const EN: Record<string, EnValue> = {
   '添加到{formatDateZh}': 'Add to {formatDateZh}',
   '写下一件事，按回车添加': 'Write something, then press Return',
 
-  // ── 待安排 ──
+  // ── 等待安排（原「待安排」，2026-11-10 改名）──
   '{length} 件还没定哪天做': (p) => `${n(p.length, 'task', 'tasks')} without a date`,
   都安排好了: 'All scheduled',
-  待安排的任务: 'Inbox tasks',
+  等待安排的任务: 'Inbox tasks',
   拖动排序: 'Drag to reorder',
   安排日期: 'Schedule',
   '已安排到时间轴：「{titleOf}」': 'Scheduled “{titleOf}”',
-  没有待安排的事: 'Inbox Zero',
+  没有等待安排的事: 'Inbox Zero',
   '想到什么先记下来，有空再决定哪天做。': 'Jot things down now and decide when to do them later.',
   记一件事: 'Add to Inbox',
 
@@ -775,8 +775,8 @@ export const EN: Record<string, EnValue> = {
   今天没有要打卡的: 'Nothing to check in today',
   其他打卡: 'Other Check-ins',
 
-  // ── 积压（原「可做」，Rei 2026-11-04）──
-  积压: 'Backlog',
+  // ── 过期积压（原「可做」→「积压」2026-11-04 →「过期积压」2026-11-10）──
+  过期积压: 'Overdue',
   已过期: 'Overdue',
   接下来: 'Coming Up',
   定了日期的都做完了: 'Everything with a date is done',
@@ -855,7 +855,7 @@ export const EN: Record<string, EnValue> = {
   "解散项目…": "Dissolve Project…",
   "删除项目…": "Delete Project…",
   "解散「{name}」？": "Dissolve “{name}”?",
-  "项目没了，里面的 {n} 件任务都留着：没日期的回到待安排，有日期的还在那一天。": (p) => `The project goes away, but its ${n(p.n, 'task stays', 'tasks stay')}: undated ones go back to Inbox, dated ones stay on their day.`,
+  "项目没了，里面的 {n} 件任务都留着：没日期的回到等待安排，有日期的还在那一天。": (p) => `The project goes away, but its ${n(p.n, 'task stays', 'tasks stay')}: undated ones go back to Inbox, dated ones stay on their day.`,
   "项目里没有任务，解散后项目就没了。": "This project has no tasks. Dissolving it just removes the project.",
   "解散": "Dissolve",
   "已解散「{name}」": "Dissolved “{name}”",
@@ -886,9 +886,9 @@ export const EN: Record<string, EnValue> = {
 
   // ── 我的一天 ──
   添加任务到今天: 'Add a task to today',
-  '想到什么先记下，按回车添加到待安排': 'Jot it down, press Return to add to Inbox',
-  '添加任务到待安排': 'Add a task to Inbox',
-  '现在想做什么？按回车添加到待安排': 'What can you do now? Press Return to add to Inbox',
+  '想到什么先记下，按回车添加到等待安排': 'Jot it down, press Return to add to Inbox',
+  '添加任务到等待安排': 'Add a task to Inbox',
+  '现在想做什么？按回车添加到等待安排': 'What can you do now? Press Return to add to Inbox',
   '今天要做什么？按回车添加': 'What’s on today? Press Return to add',
   今天的任务: 'Today’s tasks',
   今天还是空的: 'Nothing Here Yet',
@@ -1351,7 +1351,7 @@ export const EN: Record<string, EnValue> = {
   "已归档「{name}」，在项目列表最下面「已归档」里": "Archived “{name}”. Find it under Archived at the bottom of Projects.",
   "已归档（{n}）": "Archived ({n})",
   "这个项目已归档": "This project is archived",
-  "里面的任务不会进我的一天，也不在待安排、积压、时间轴里。": "Its tasks won’t be added to My Day and don’t show in Inbox, Backlog or Timeline.",
+  "里面的任务不会进我的一天，也不在等待安排、过期积压、时间轴里。": "Its tasks won’t be added to My Day and don’t show in Inbox, Overdue or Timeline.",
   "卡片颜色": "Card Color",
   "颜色…": "Color…",
   "倒数日操作": "Countdown actions",
@@ -1404,4 +1404,8 @@ export const EN: Record<string, EnValue> = {
   "标准": "Standard",
   "多彩": "Vivid",
   "素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上": "Plain uses only black, white and gray; Vivid spreads project and type colors further. This device only",
+  "昨天": "Yesterday",
+  "过去 7 天": "Past 7 Days",
+  "过去一个月": "Past Month",
+  "过期积压|更远": "Earlier",
 };
