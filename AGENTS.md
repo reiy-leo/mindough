@@ -39,6 +39,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   done-list.ts          已完成页（Rei 2026-11-08）：完成 / 关闭的任务按结束时间排、按本机日期分段、段标题
   project-libraries.ts  项目关联资料库（Rei 2026-11-10）：group_library 一库一行、task.lib_via 记因哪个库进的项目；placeTask / manualVia 纯规则，写入在 Store.setGroupLibraries / settleProjectLibraries，同步拉完由 SyncEngine 调 settleAfterSync
   preview.ts search.ts  无标题任务的预览、全局搜索（⌘F / Ctrl+F）
+  task-mention.ts       正文里 @ 提到任务（Rei 2026-11-10）：存成链接 `[标题](mindough://task/<id>)`、能 @ 谁（任务里普通任务，日记里多倒数日）、候选过滤排序、光标前的 @；编辑器节点在 client `components/editor/mention.ts`，胶囊在 `lib/task-mention.ts`
   library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色
   typedef.ts            类型编辑器（界面叫资料库编辑器）的纯逻辑：字段增改排序隐藏、删字段留墓碑（key 不变、值保留）、类型顺序（同步偏好 type_order）；归档存 hidden 列（Store.archiveType）；只有空的自定义资料库能删（typeDeleteBlock / Store.deleteType 打墓碑，Rei 2026-11-10），有内容的、内置的只能归档
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用
