@@ -74,6 +74,11 @@ export interface Settings {
    * 只记在本机，不同步（同严格模式）。挂在 <html data-color-level>，样式在 styles/color-level.css，读经 lib/color-level 的 useColorLevel()。
    */
   colorLevel: ColorLevel;
+  /**
+   * 侧栏里放进来的项目怎么显示（Rei 2026-11-11）：列表 list（图标 + 名字一行一个，默认）/ 图标 icons（只放项目图标，按行排、放不下折行）。
+   * 只记在本机，不同步。入口是侧栏「项目」那行和手机「更多」页「项目」那行右边的 ···（components/PinnedStyleMenu）。读写经 lib/pinned-style。
+   */
+  pinnedGroupStyle: 'list' | 'icons';
 }
 
 export type ColorLevel = 'plain' | 'standard' | 'vivid';
@@ -83,7 +88,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

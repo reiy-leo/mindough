@@ -117,6 +117,12 @@ export const MESSAGES: Record<string, MessageValue> = {
   "建议操作": "Acciones de sugerencias",
   "隐藏建议": "Ocultar sugerencias",
   "显示建议": "Mostrar sugerencias",
+  // ── 侧栏项目显示为列表 / 图标（Rei 2026-11-11，待母语者看）──
+  "项目显示方式": "Vista de proyectos",
+  "显示为": "Mostrar como",
+  "项目显示方式|列表": "Lista",
+  "项目显示方式|图标": "Iconos",
+  "放进侧边栏的项目": "Proyectos en la barra lateral",
   "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Muestra en Mi día las tareas que vencen hoy, los registros pendientes de hoy y las tareas recién desbloqueadas. Solo en este dispositivo.",
   // ── 日期面板方案 A（Rei 2026-11-01，待母语者看）──
   "已选的日期": "Fechas elegidas",

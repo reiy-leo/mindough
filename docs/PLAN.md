@@ -1645,8 +1645,18 @@ Rei 2026-11-09 00:25「项目 看板 不显示详情第三列，点击不显示�
 - **三皮肤**（我定的，都复用各皮肤已有的 `.modal` 外框）：Apple 用居中的 sheet（圆角 12、0.5px 细边，淡入上浮），不用贴顶下滑的 macOS 窗口 sheet，因为网页和三平台要一致；WinUI 用 ContentDialog 式居中对话框（圆角 8、暗底、底栏浅灰）；Material 宽屏用大的基本对话框（28px 圆角、surface-2 底，详情底色也换成 surface-2），不用全屏对话框（那是手机的形式，手机这里本来就是整页）。
 - **没做**：浮层里没有 ↑ ↓ 换任务（右列有）；关浮层时内容先清空再淡出（选中已取消）。
 - **时间轴页也用浮层**（Rei 2026-11-10「点击任务不显示详情侧边栏」）：`detailInModal` 遇到路由 `agenda` 直接返回真，其余规则不变。
-- **项目列表页也用浮层**（Rei 2026-11-11 02:12「项目列表页 不显示任务详情侧边栏」，02:13 说明指侧栏「项目」总览页，不是单个项目页的列表视图）：这页（路由 `groups`）只列项目卡片，没有任务行，但以前在 `LIST_PAGES` 里，宽屏右列常驻一个空状态。现在从 `LIST_PAGES` 去掉，`detailInModal` 遇到 `groups` 也返回真：右列不出，从搜索、新建打开任务时弹 `DetailModal`；切进这页时开着的详情收起（同看板）。点卡片还是进项目页，项目页列表视图照旧右列。
+- **项目列表页也用浮层**（Rei 2026-11-11 02:12「项目列表页 不显示任务详情侧边栏」，02:13 说明指侧栏「项目」总览页，不是单个项目页的列表视图）：这页（路由 `groups`）只列项目卡片，没有任务行，但以前在 `LIST_PAGES` 里，宽屏右列常驻一个空状态。现在从 `LIST_PAGES` 去掉，`detailInModal` 遇到 `groups` 也返回真：右列不出，从搜索等处打开任务时弹 `DetailModal`；切进这页时开着的详情收起（同看板）。点卡片还是进项目页，项目页列表视图照旧右列。
 - **测试**：`components/task/DetailModal.test.tsx` 5 项（没选中不弹、选中弹且是 modal 模式、Esc 关、输入框里 Esc 不关、× 关）；`lib/detail-pane.test.ts` 加 3 项 `detailInModal`；`components/project/ProjectBoard.test.tsx` 加 2 项（聚焦卡片回车打开、有行菜单时松手不开），共 6 项。
+
+### 侧栏项目显示为列表 / 图标 ✅（2026-11-11）
+Rei 2026-11-11 02:15「右上角加一个按钮组…列表…图标」，02:18 改定入口：手机「更多」页和电脑侧栏「项目」那行右边各放一个「···」，菜单「显示为：列表 / 图标」，项目列表页右上角不放；资料库先不共用。
+
+- **存法**：本机设置 `pinnedGroupStyle: 'list' | 'icons'`（`lib/settings.tsx`，默认 list，不同步）；读写经 `lib/pinned-style.ts`（`normalizePinnedStyle`、`pinnedGroupGrid(settings, narrow)`、`usePinnedGroupStyle`）。
+- **入口**：`components/PinnedStyleMenu.tsx` 自成一个组件（MenuTrigger + 单选 MenuSection，小标题「显示为」），App 里只是放的位置：侧栏 `SidebarItems` 把「项目」那行包成 `.nav-item-split`，··· 绝对定位在行右边，有鼠标时悬停 / 聚焦 / 菜单开着才显示，`(hover: none)` 常显；「更多」页 `MoreItems` 把那行包成 `.more-item.more-item-split`。以后改成小节右键菜单或别处，只挪这个组件。只在有放进来的项目、且不是中等宽度图标栏时出。
+- **图标网格**：选了图标时，连着的置顶项目包进 `.nav-pinned-grid`（「更多」页 `.more-item.more-pinned-grid`），`display: flex; flex-wrap: wrap`，`data-reorder-layout="grid"`、`role="group"`（读屏「放进侧边栏的项目」）。侧栏每格是 `PinnedGroupLink compact`（36×36，只有 GroupIcon 22，`aria-label` / `title` 是项目名）；「更多」页是 `MoreTile`（44×44，GroupIcon 32，长按拿起不挪松开出项目菜单）。`MenuAt` 加了可选 `heading`，只放图标时菜单顶上写项目名。中等宽度（图标栏）不排网格。
+- **拖动排序**：`lib/nav-reorder.ts` 认父元素 `data-reorder-layout="grid"`：按 offsetLeft / offsetTop 记每格，落点是离被拖那格中心最近的一格（`gridTargetIndex`），别的格子挪到新顺序里自己那一格（`gridShift`，折行处跨行挪），占位格横竖都跟；手指拿起后横挪也开始拖；键盘多认 ⌥← / ⌥→（`reorderKey(e, grid)`）。列表的算法没动。
+- **测试**：`lib/pinned-style.test.ts` 2 项、`lib/nav-reorder.test.ts` 加 3 项（网格落点、跨行挪、⌥← / ⌥→）。截图脚本 `work/d1111-pinstyle/ps.mjs`（LightVela Chromium，三皮肤宽屏 1366 + 960 + 手机 390）。
+- **没做**：资料库那一串的图标显示；手机「更多」页列表模式里置顶项目的图标样子没改。
 
 ### 置顶图钉挪到圆圈前面、红色；可开始换绿色插头 ✅（2026-11-09）
 Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色。可开始的icon用plug，颜色用绿色。」

@@ -21,6 +21,8 @@ import {
   Popover,
   Select as RacSelect,
   Separator,
+  Header,
+  MenuSection,
   SelectValue,
   Text,
   TextArea,
@@ -272,7 +274,18 @@ export function OverflowMenu({
 /**
  * 在某个点弹出的菜单（右键、长按用）：和 ··· 菜单同一套样子。at 为 null 时不显示。
  */
-export function MenuAt({ at, label, items, onClose }: { at: { x: number; y: number } | null; label: string; items: MenuAction[]; onClose: () => void }) {
+function menuAtItems(items: MenuAction[]) {
+  return items.flatMap((i, n) => [
+    ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
+    <MenuItem key={i.id} id={i.id} className={`menu-item${i.danger ? ' is-danger' : ''}`} textValue={i.label}>
+      {i.icon}
+      <span>{i.label}</span>
+    </MenuItem>,
+  ]);
+}
+
+/** heading：菜单顶上一行不能点的标题（只放图标的侧栏项目长按时写项目名，Rei 2026-11-11）。 */
+export function MenuAt({ at, label, heading, items, onClose }: { at: { x: number; y: number } | null; label: string; heading?: string | undefined; items: MenuAction[]; onClose: () => void }) {
   const anchorRef = useRef<HTMLSpanElement>(null);
   if (!at) return null;
   return (
@@ -289,13 +302,14 @@ export function MenuAt({ at, label, items, onClose }: { at: { x: number; y: numb
             items.find((i) => i.id === k)?.onAction();
           }}
         >
-          {items.flatMap((i, n) => [
-            ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
-            <MenuItem key={i.id} id={i.id} className={`menu-item${i.danger ? ' is-danger' : ''}`} textValue={i.label}>
-              {i.icon}
-              <span>{i.label}</span>
-            </MenuItem>,
-          ])}
+          {heading ? (
+            <MenuSection>
+              <Header className="menu-header">{heading}</Header>
+              {menuAtItems(items)}
+            </MenuSection>
+          ) : (
+            menuAtItems(items)
+          )}
         </Menu>
       </Popover>
     </>

@@ -17,6 +17,10 @@
  *
  * 动画：被拖的那行跟着手走（浮起 + 阴影），其他行让位滑开（transform，150ms），落点画一个强调色淡底的占位格；
  * 松手时那行滑进占位格再写顺序。全部直接改 DOM 的 style，不经过 React，拖动时不重渲染。
+ *
+ * 图标网格（Rei 2026-11-11 侧栏项目「显示为：图标」）：父元素带 data-reorder-layout="grid" 时，各项按行排、会折行，
+ * 拖动改成横竖都能挪：落点是离被拖图标中心最近的那一格，别的图标挪到新顺序里自己那一格（gridTargetIndex / gridShift），
+ * 键盘多认 ⌥← / ⌥→。父元素要 position: relative（占位格按 offsetLeft / offsetTop 摆）。
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { moveInList } from '@mindough/core';
@@ -36,6 +40,38 @@ const CLICK_SUPPRESS_MS = 400;
 const EDGE_PX = 36;
 
 export type Slot = { top: number; height: number };
+/** 图标网格里的一格（同一参照系）。 */
+export type GridSlot = { left: number; top: number; width: number; height: number };
+
+/** 网格：被拖那格挪了 (dx, dy) 以后，离它中心最近的是第几格（拖完以后它的下标）。 */
+export function gridTargetIndex(slots: readonly GridSlot[], from: number, dx: number, dy: number): number {
+  const me = slots[from];
+  if (!me) return from;
+  const cx = me.left + me.width / 2 + dx;
+  const cy = me.top + me.height / 2 + dy;
+  let best = from;
+  let bestD = Infinity;
+  slots.forEach((s, k) => {
+    const d = (s.left + s.width / 2 - cx) ** 2 + (s.top + s.height / 2 - cy) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = k;
+    }
+  });
+  return best;
+}
+
+/** 网格：from 拖到 to 时，第 k 格要挪多少（挪到新顺序里它那一格）。 */
+export function gridShift(slots: readonly GridSlot[], k: number, from: number, to: number): { x: number; y: number } {
+  let pos = k;
+  if (k === from) pos = to;
+  else if (from < to && k > from && k <= to) pos = k - 1;
+  else if (to < from && k >= to && k < from) pos = k + 1;
+  const a = slots[k];
+  const b = slots[pos];
+  if (!a || !b) return { x: 0, y: 0 };
+  return { x: b.left - a.left, y: b.top - a.top };
+}
 
 /**
  * 拖到哪儿了：被拖那行的中线越过了哪几行的中线。返回拖完以后它的下标（0..n-1）。
@@ -85,12 +121,18 @@ export function keyboardMove(ids: readonly string[], id: string, delta: -1 | 1):
   return moveInList(ids, id, j);
 }
 
-/** ⌥↑ / ⌥↓（Alt+↑ / ↓）：上移 / 下移。别的键返回 0。 */
-export function reorderKey(e: { key: string; altKey: boolean; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean }): -1 | 0 | 1 {
+/** ⌥↑ / ⌥↓（Alt+↑ / ↓）：上移 / 下移；图标网格（grid）里 ⌥← / ⌥→ 也是前移 / 后移一位。别的键返回 0。 */
+export function reorderKey(e: { key: string; altKey: boolean; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean }, grid = false): -1 | 0 | 1 {
   if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return 0;
   if (e.key === 'ArrowUp') return -1;
   if (e.key === 'ArrowDown') return 1;
+  if (grid && e.key === 'ArrowLeft') return -1;
+  if (grid && e.key === 'ArrowRight') return 1;
   return 0;
+}
+
+function isGridItem(el: HTMLElement): boolean {
+  return el.parentElement?.dataset.reorderLayout === 'grid';
 }
 
 function scrollParent(el: HTMLElement): HTMLElement {
@@ -108,8 +150,12 @@ type Drag = {
   el: HTMLElement;
   items: HTMLElement[];
   slots: Slot[];
+  /** 图标网格才有：各格的位置（横竖都算）。 */
+  grid: GridSlot[] | null;
   from: number;
   to: number;
+  startX: number;
+  x: number;
   startY: number;
   y: number;
   scroller: HTMLElement;
@@ -230,7 +276,10 @@ export function useNavReorder({
     d.el.classList.remove('is-reorder-dragging');
     d.el.classList.add('is-reorder-dropping');
     d.el.style.transition = `transform ${SHIFT_MS}ms var(--ease, ease)`;
-    d.el.style.transform = `translateY(${slotTop(d.slots, d.from, to) - d.slots[d.from]!.top}px)`;
+    if (d.grid) {
+      const sh = gridShift(d.grid, d.from, d.from, to);
+      d.el.style.transform = `translate(${sh.x}px, ${sh.y}px)`;
+    } else d.el.style.transform = `translateY(${slotTop(d.slots, d.from, to) - d.slots[d.from]!.top}px)`;
     if (!commit) others.forEach((el) => {
       if (el !== d.el) el.style.transform = '';
     });
@@ -257,7 +306,36 @@ export function useNavReorder({
     }, SHIFT_MS);
   }, []);
 
+  const layoutGrid = useCallback((d: Drag, g: GridSlot[]) => {
+    const dyRaw = d.y - d.startY + (d.scroller.scrollTop - d.startScroll);
+    const dxRaw = d.x - d.startX;
+    const me = g[d.from]!;
+    // 不拖出这一块：中心最多到最外一格的边上
+    const minX = Math.min(...g.map((s) => s.left));
+    const maxX = Math.max(...g.map((s) => s.left + s.width));
+    const minY = Math.min(...g.map((s) => s.top));
+    const maxY = Math.max(...g.map((s) => s.top + s.height));
+    const dx = Math.max(minX - me.left - me.width / 2, Math.min(maxX - me.left - me.width / 2, dxRaw));
+    const dy = Math.max(minY - me.top - me.height / 2, Math.min(maxY - me.top - me.height / 2, dyRaw));
+    d.el.style.transform = `translate(${dx}px, ${dy}px)`;
+    const to = gridTargetIndex(g, d.from, dx, dy);
+    if (to !== d.to) {
+      d.to = to;
+      d.items.forEach((el, k) => {
+        if (el === d.el) return;
+        const sh = gridShift(g, k, d.from, to);
+        el.style.transform = `translate(${sh.x}px, ${sh.y}px)`;
+      });
+      const sh = gridShift(g, d.from, d.from, to);
+      if (d.placeholder) d.placeholder.style.transform = `translate(${sh.x}px, ${sh.y}px)`;
+    }
+  }, []);
+
   const layout = useCallback((d: Drag) => {
+    if (d.grid) {
+      layoutGrid(d, d.grid);
+      return;
+    }
     const dyRaw = d.y - d.startY + (d.scroller.scrollTop - d.startScroll);
     const me = d.slots[d.from]!;
     const first = d.slots[0]!;
@@ -275,7 +353,7 @@ export function useNavReorder({
       });
       if (d.placeholder) d.placeholder.style.transform = `translateY(${slotTop(d.slots, d.from, to) - me.top}px)`;
     }
-  }, []);
+  }, [layoutGrid]);
 
   const tick = useCallback(() => {
     const d = drag.current;
@@ -292,13 +370,14 @@ export function useNavReorder({
     d.raf = requestAnimationFrame(tick);
   }, [layout]);
 
-  const begin = useCallback((id: string, el: HTMLElement, y: number) => {
+  const begin = useCallback((id: string, el: HTMLElement, x: number, y: number) => {
     const parent = el.parentElement;
     if (!parent) return false;
     const items = [...parent.querySelectorAll<HTMLElement>(':scope > [data-reorder-group]')].filter((x) => x.dataset.reorderGroup === group);
     const from = items.indexOf(el);
     if (from < 0 || items.length < 2) return false;
     const slots = items.map((x) => ({ top: x.offsetTop, height: x.offsetHeight }));
+    const grid = parent.dataset.reorderLayout === 'grid' ? items.map((x) => ({ left: x.offsetLeft, top: x.offsetTop, width: x.offsetWidth, height: x.offsetHeight })) : null;
     const scroller = scrollParent(el);
     // 占位格：落点处一个强调色淡底的格子，圆角跟行一样
     const ph = document.createElement('div');
@@ -322,7 +401,7 @@ export function useNavReorder({
     el.classList.remove('is-reorder-lifted');
     el.classList.add('is-reorder-dragging');
     document.documentElement.classList.add('is-nav-reordering');
-    const d: Drag = { id, el, items, slots, from, to: from, startY: y, y, scroller, startScroll: scroller.scrollTop, placeholder: ph, raf: 0 };
+    const d: Drag = { id, el, items, slots, grid, from, to: from, startX: x, x, startY: y, y, scroller, startScroll: scroller.scrollTop, placeholder: ph, raf: 0 };
     drag.current = d;
     d.raf = requestAnimationFrame(tick);
     return true;
@@ -333,13 +412,14 @@ export function useNavReorder({
     const p = press.current;
     if (p && !drag.current && p.pointerType !== 'touch') {
       if (Math.abs(e.clientY - p.y) >= MOUSE_DRAG_PX || Math.abs(e.clientX - p.x) >= MOUSE_DRAG_PX * 2) {
-        const { id, el, y } = p;
+        const { id, el, x, y } = p;
         cleanupPress();
-        if (!begin(id, el, y)) return;
+        if (!begin(id, el, x, y)) return;
       }
     }
     const d = drag.current;
     if (d && e.pointerType !== 'touch') {
+      d.x = e.clientX;
       d.y = e.clientY;
       layout(d);
     }
@@ -370,14 +450,15 @@ export function useNavReorder({
       }
       if (e.cancelable) e.preventDefault();
       if (p && p.lifted && !drag.current) {
-        if (Math.abs(t.clientY - p.y) >= TOUCH_DRAG_PX) {
-          const { id, el, y } = p;
+        if (Math.abs(t.clientY - p.y) >= TOUCH_DRAG_PX || (isGridItem(p.el) && Math.abs(t.clientX - p.x) >= TOUCH_DRAG_PX)) {
+          const { id, el, x, y } = p;
           cleanupPress();
-          if (!begin(id, el, y)) return;
+          if (!begin(id, el, x, y)) return;
         } else return;
       }
       const d = drag.current;
       if (d) {
+        d.x = t.clientX;
         d.y = t.clientY;
         layout(d);
       }
@@ -491,7 +572,7 @@ export function useNavReorder({
       window.addEventListener('pointercancel', onWindowPointerUp);
     },
     onKeyDown: (e) => {
-      const delta = reorderKey(e);
+      const delta = reorderKey(e, isGridItem(e.currentTarget));
       if (!delta) return;
       e.preventDefault();
       const next = keyboardMove(latest.current.ids, id, delta);

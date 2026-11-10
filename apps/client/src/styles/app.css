@@ -4316,3 +4316,82 @@ html.is-nav-reordering .nav-item.is-active:not(.is-reorder-dragging) {
 .nav-item.is-active.is-reorder-dropping {
   background: linear-gradient(var(--nav-active-bg), var(--nav-active-bg)), linear-gradient(var(--surface), var(--surface)) var(--bg);
 }
+
+/* 侧栏里放进来的项目「显示为：列表 / 图标」（Rei 2026-11-11，components/PinnedStyleMenu、lib/pinned-style） */
+/* 「项目」那行右边的 ···：有鼠标时悬停这一行（或键盘聚焦、菜单开着）才显示，触屏常显 */
+.nav-item-split {
+  position: relative;
+}
+.nav-item-split > .nav-item {
+  padding-inline-end: 36px;
+}
+.nav-item-more.icon-btn {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 26px;
+  height: 26px;
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+.nav-item-split:hover .nav-item-more,
+.nav-item-more[data-focus-visible],
+.nav-item-more[data-pressed],
+.nav-item-more[aria-expanded='true'] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .nav-item-more.icon-btn {
+    opacity: 1;
+  }
+}
+/* 图标：按行排，放不下折行，不左右滚；左边和列表时的子项图标对齐 */
+.nav-pinned-grid {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-inline-start: calc(var(--space-3) + 11px);
+  padding-block: 2px;
+}
+.nav-item.nav-item-tile {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+}
+.app-desktop:not(.is-narrow) .nav-item-tile .nav-icon {
+  margin-inline-start: 0;
+}
+/* 「更多」页：「项目」那行右边的 ···，和放进来的项目的图标网格 */
+.more-item.more-item-split {
+  padding: 0;
+  padding-inline-end: var(--space-2);
+}
+.more-item-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px var(--space-2) 14px var(--space-4);
+}
+.more-item.more-pinned-grid {
+  position: relative;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px var(--space-4) 10px calc(var(--space-4) + 14px);
+}
+.more-tile {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-ctl);
+}
+.more-list .more-pinned-grid .nav-drop-slot {
+  border-radius: var(--radius-ctl);
+}
