@@ -1685,6 +1685,15 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡页顶部的活动图": "Aktivitätsdiagramm oben in Gewohnheiten",
   "在打卡页顶部显示活动图": "Aktivitätsdiagramm oben in Gewohnheiten anzeigen",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Zeigt oben in Gewohnheiten jeden Tag des letzten Jahres. Gilt nur auf diesem Gerät.",
+  "删除「{name}」": "„{name}“ löschen",
+  "删除资料库": "Sammlung löschen",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "Diese Sammlung ist leer. Beim Löschen verschwindet sie auf allen Geräten, das lässt sich nicht rückgängig machen.",
+  "已归档。这个资料库是空的，也可以删掉。": "Archiviert. Diese Sammlung ist leer, du kannst sie auch löschen.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "Diese Sammlung ist leer und kann gelöscht werden. Oder archiviere sie: Dann wird sie für neue Aufgaben nicht mehr angeboten.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Eingebaute Sammlungen können nicht gelöscht werden. Archiviere eine, die du nicht mehr brauchst: Sie wird für neue Aufgaben nicht mehr angeboten, Aufgaben und Einträge damit bleiben, wie sie sind.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Sammlungen mit Inhalt können nicht gelöscht werden. Archiviere eine, die du nicht mehr brauchst: Sie wird für neue Aufgaben nicht mehr angeboten, Aufgaben und Einträge damit bleiben, wie sie sind.",
+  "有内容的资料库不能删，只能归档": "Sammlungen mit Inhalt können nicht gelöscht, nur archiviert werden",
+  "内置资料库不能删，只能归档": "Eingebaute Sammlungen können nicht gelöscht, nur archiviert werden",
 };
 
 export const DATA: Record<string, string> = {

@@ -208,14 +208,11 @@ describe('Store 类型编辑', () => {
     expect(store.editableTypes().map((t) => t.id)).toEqual(after);
   });
 
-  it('类型不能删（Rei 2026-10-17）：Store 上没有删类型的入口，只有归档', async () => {
+  it('改类型不管归档：updateType 传 hidden 忽略（归档只走 archiveType）；删资料库走 deleteType（见 type-delete.test.ts）', async () => {
     const { store } = await open();
-    const api = store as unknown as Record<string, unknown>;
-    expect(api.deleteType).toBeUndefined();
-    expect(api.canDeleteType).toBeUndefined();
     expect(typeof store.archiveType).toBe('function');
     expect(typeof store.unarchiveType).toBe('function');
-    // updateType 不再管归档（归档只走 archiveType）
+    expect(typeof store.deleteType).toBe('function');
     const t = store.createType({ name: '播客' });
     store.updateType(t.id, { hidden: true } as never);
     expect(isArchivedType(store.get('task_type', t.id))).toBe(false);

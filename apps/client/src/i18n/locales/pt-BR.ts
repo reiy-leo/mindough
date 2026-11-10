@@ -1685,6 +1685,15 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡页顶部的活动图": "Gráfico de atividade no topo de Hábitos",
   "在打卡页顶部显示活动图": "Mostrar gráfico de atividade no topo de Hábitos",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Mostra no topo de Hábitos cada dia do último ano. Só neste dispositivo.",
+  "删除「{name}」": "Apagar “{name}”",
+  "删除资料库": "Apagar coleção",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "Esta coleção está vazia. Apagá-la remove-a de todos os seus dispositivos, e não dá para desfazer.",
+  "已归档。这个资料库是空的，也可以删掉。": "Arquivada. Esta coleção está vazia, então também dá para apagá-la.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "Esta coleção está vazia e pode ser apagada. Ou arquive: ela deixa de aparecer para tarefas novas.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Coleções integradas não podem ser apagadas. Arquive uma que você não usa mais: ela deixa de aparecer para tarefas novas, e as tarefas e itens que a usam continuam como estão.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Coleções com conteúdo não podem ser apagadas. Arquive uma que você não usa mais: ela deixa de aparecer para tarefas novas, e as tarefas e itens que a usam continuam como estão.",
+  "有内容的资料库不能删，只能归档": "Coleções com conteúdo não podem ser apagadas, só arquivadas",
+  "内置资料库不能删，只能归档": "Coleções integradas não podem ser apagadas, só arquivadas",
 };
 
 export const DATA: Record<string, string> = {

@@ -35,7 +35,7 @@ import {
   splitTypeData,
   type LibraryEntry,
 } from './library';
-import { LEGACY_BUILTIN_FIELDS, addField, cleanOptions, isEditableType, orderTypes, updateField, type NewFieldInput } from './typedef';
+import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
 import { BUILTIN_CATEGORIES } from './seed/builtin-checkin-categories';
 import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, categoryGroupOf, categoryGroupOverrides, categoryLastUsed, categoryStateOf, frequentCategoryIds, orderPickerCategories, withCategoryGroup, withCategoryState, type CategoryGroup, type CategoryState } from './category-prefs';
 import { CategoryDeleteError, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
@@ -2287,6 +2287,53 @@ export class Store {
     return { tasks, items };
   }
 
+  /**
+   * 资料库里有什么（判空用，见 typedef.ts TypeContent）：没删掉的任务（任何状态）、资料、默认资料库是它的项目（含归档的）。
+   * 删掉的任务不算：任务删了就不会回来（没有回收站），以前的墓碑也不挡删资料库。
+   */
+  typeContent(typeId: string): TypeContent {
+    let tasks = 0;
+    let items = 0;
+    let groups = 0;
+    for (const t of this.tables.task.values()) if (!t.deleted && t.type_id === typeId) tasks++;
+    for (const i of this.tables.library_item.values()) if (!i.deleted && i.type_id === typeId) items++;
+    for (const g of this.tables.group.values()) if (!g.deleted && g.default_type_id === typeId) groups++;
+    return { tasks, items, groups };
+  }
+
+  /** 空的资料库（没有任务、资料、项目引用它）。 */
+  isTypeEmpty(typeId: string): boolean {
+    return isTypeContentEmpty(this.typeContent(typeId));
+  }
+
+  /** 为什么不能删这个资料库；能删返回 null，资料库不在返回 'fixed'。 */
+  typeDeleteBlock(typeId: string): TypeDeleteBlock | null {
+    const t = this.get('task_type', typeId);
+    if (!t) return 'fixed';
+    return typeDeleteBlock(t, this.typeContent(typeId));
+  }
+
+  canDeleteType(typeId: string): boolean {
+    return this.typeDeleteBlock(typeId) === null;
+  }
+
+  /**
+   * 删资料库（Rei 2026-11-10「空资料库可以删，有内容的不可以」）：只删空的自定义资料库，别的抛 TypeDeleteError。
+   * task_type 行打墓碑（deleted，整行 LWW 同步，和删任务一样）；归档的也能删。顺序、侧边栏偏好里顺手去掉它。
+   * 墓碑不会被补回：内置补齐只管种子 id（内置的不给删），reviveReferencedTypes 只找回还有任务 / 资料在用的
+   * （别的设备同时往里加了东西时，它回来、是归档状态，东西不丢）。
+   */
+  deleteType(typeId: string): void {
+    const block = this.typeDeleteBlock(typeId);
+    if (block) throw new TypeDeleteError(block);
+    const cur = this.tables.task_type.get(typeId)!;
+    this.write([{ table: 'task_type', row: { ...cur, deleted: true } as BaseRow }]);
+    const order = this.pref(TYPE_ORDER_PREF);
+    const ids = Array.isArray(order) ? (order as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+    if (ids.includes(typeId)) this.setPref(TYPE_ORDER_PREF, ids.filter((x) => x !== typeId));
+    if (this.isLibraryInSidebar(typeId)) this.setLibraryInSidebar(typeId, false);
+  }
+
   /** 新建自定义类型：自带「名字」主字段和「图片」字段（固定，不能删），排在最后。 */
   createType(input: Partial<Pick<TableMap['task_type'], 'name' | 'icon' | 'color' | 'layout' | 'default_completion_mode' | 'body_template'>> = {}): TableMap['task_type'] {
     const sort = this.list('task_type').reduce((m, t) => Math.max(m, t.sort), 0) + 1;
@@ -2434,7 +2481,7 @@ export class Store {
   }
 
   /**
-   * 归档类型（Rei 2026-10-17：类型创建后只能改和归档，不支持删除；内置、自定义一样）。
+   * 归档类型（Rei 2026-10-17：类型创建后只能改和归档；2026-11-10 起空的自定义资料库可以删，见 deleteType）。
    * 归档后不出现在选择器（新建 / 改类型 / 组默认类型）、资料库标签条、类型编辑器主列表；引用它的任务和资料照常显示、能编辑字段值，
    * ⌘K 照常搜得到它的资料，以它为默认类型的组照常用它（Rei 2026-10-17 纠正）。存在 hidden 列（整行 LWW 同步）。
    */
@@ -2453,7 +2500,7 @@ export class Store {
 
   /**
    * 删掉的类型还有任务或资料在用：把它找回来、归档着，任务和资料照常显示。
-   * 现在类型不能删了（Rei 2026-10-17），这里兜的是以前版本留下的类型墓碑，和还没升级的旧客户端同步过来的删除。
+   * 兜的是以前版本留下的类型墓碑、旧客户端同步过来的删除，和 deleteType 删空库时别的设备正好往里加了任务 / 资料。
    * 每次打开都跑；无事可做是空操作。两台设备各找回一次，内容一样，LWW 后一致。
    */
   private reviveReferencedTypes() {

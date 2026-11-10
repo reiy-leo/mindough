@@ -1411,4 +1411,11 @@ export const EN: Record<string, EnValue> = {
   "打卡页顶部的活动图": "Activity chart at the top of Check-ins",
   "在打卡页顶部显示活动图": "Show Activity Chart at Top of Check-ins",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Shows each day of the past year at the top of Check-ins. Only on this device.",
+  "删除「{name}」": "Delete “{name}”",
+  "删除资料库": "Delete collection",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "This collection is empty. Deleting it removes it from all your devices, and it can’t be undone.",
+  "已归档。这个资料库是空的，也可以删掉。": "Archived. This collection is empty, so you can also delete it.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "This collection is empty, so you can delete it. Or archive it: it won’t be offered for new tasks.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Built-in collections can’t be deleted. Archive one you no longer use: it won’t be offered for new tasks, and tasks and entries that use it stay as they are.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "A collection with content can’t be deleted. Archive one you no longer use: it won’t be offered for new tasks, and tasks and entries that use it stay as they are.",
 };

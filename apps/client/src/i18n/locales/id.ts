@@ -1685,6 +1685,15 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡页顶部的活动图": "Grafik aktivitas di atas Kebiasaan",
   "在打卡页顶部显示活动图": "Tampilkan grafik aktivitas di atas Kebiasaan",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Menampilkan setiap hari selama setahun terakhir di atas Kebiasaan. Hanya di perangkat ini.",
+  "删除「{name}」": "Hapus “{name}”",
+  "删除资料库": "Hapus koleksi",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "Koleksi ini kosong. Jika dihapus, koleksi hilang dari semua perangkat dan tidak bisa dikembalikan.",
+  "已归档。这个资料库是空的，也可以删掉。": "Diarsipkan. Koleksi ini kosong, jadi bisa juga dihapus.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "Koleksi ini kosong dan bisa dihapus. Atau arsipkan: tidak akan ditawarkan untuk tugas baru.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Koleksi bawaan tidak bisa dihapus. Arsipkan yang sudah tidak dipakai: tidak akan ditawarkan untuk tugas baru, sedangkan tugas dan entri yang memakainya tetap tampil seperti biasa.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Koleksi yang berisi tidak bisa dihapus. Arsipkan yang sudah tidak dipakai: tidak akan ditawarkan untuk tugas baru, sedangkan tugas dan entri yang memakainya tetap tampil seperti biasa.",
+  "有内容的资料库不能删，只能归档": "Koleksi yang berisi tidak bisa dihapus, hanya diarsipkan",
+  "内置资料库不能删，只能归档": "Koleksi bawaan tidak bisa dihapus, hanya diarsipkan",
 };
 
 export const DATA: Record<string, string> = {

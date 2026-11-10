@@ -16,6 +16,8 @@ export const CORE_EN: Record<string, V> = {
   '周末和小林窝在家：先看片，再一起打游戏': 'A weekend in with Lin: a movie first, then games together',
   // ── 类型（统一的分类，2026-10-26）──
   "类型不能删，可以设成不显示": "Categories can’t be deleted, but you can hide them",
+  "有内容的资料库不能删，只能归档": "A collection with content can’t be deleted, only archived",
+  "内置资料库不能删，只能归档": "Built-in collections can’t be deleted, only archived",
   // App 名字（i18n.ts appName，Rei 2026-10-24）
   念头团: 'Mindough',
   // ── 滴答清单导入（dida/，Rei 2026-10-21）──

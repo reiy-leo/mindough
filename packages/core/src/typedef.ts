@@ -9,9 +9,11 @@
  *   墓碑也让「用户改过的内置类型」在内置升级补字段（withNewBuiltinFields 按 key 判断）时不会把删掉的字段又补回来。
  * - 隐藏字段：编辑器里还在（灰显），新建 / 详情 / 资料页都不显示，值也保留。
  * - 主字段（名字）与图片字段固定是资料字段，不能隐藏、不能删、不能改种类。
+ * - 删资料库（Rei 2026-11-10「空资料库可以删，有内容的不可以」）：只有空的自定义资料库能删（typeDeleteBlock）；
+ *   有内容的、内置的只能归档。删 = task_type 行打墓碑（deleted），整行 LWW 同步，和别的表的删除一样。
  */
 import { BUILTIN_TYPE_IDS, PLAIN_TYPE_ID } from './seed/builtin-types';
-import { trc } from './i18n';
+import { tr, trc } from './i18n';
 import type { FieldDef, FieldKind, TaskType, TypeLayout } from './types';
 
 /** 资料库版式（编辑器里能选的四种）：竖版海报 2:3、方形、横幅 16:9、圆形。 */
@@ -207,3 +209,40 @@ export function orderTypes<T extends Pick<TaskType, 'id' | 'sort'>>(types: reado
 export const LEGACY_BUILTIN_FIELDS: Record<string, readonly FieldDef[]> = {
   [BUILTIN_TYPE_IDS.movie]: [{ key: 'platform', label: '平台', kind: 'text' }],
 };
+
+/**
+ * 资料库里有什么（Rei 2026-11-10：空的可以删，有内容的不可以）。只数没删掉的行；
+ * 任务不分状态（完成、关闭、归档的打卡、归档项目里的都算），项目也算归档的。
+ * - tasks：type_id 指着它的任务
+ * - items：这个库里的资料（task_item 关联的是资料，资料在就算有内容）
+ * - groups：默认资料库是它的项目
+ */
+export interface TypeContent {
+  tasks: number;
+  items: number;
+  groups: number;
+}
+
+export function isTypeContentEmpty(c: TypeContent): boolean {
+  return c.tasks === 0 && c.items === 0 && c.groups === 0;
+}
+
+/** 为什么不能删：fixed（普通、人物）/ builtin（内置资料库，只能归档）/ not_empty（有内容）；能删返回 null。 */
+export type TypeDeleteBlock = 'fixed' | 'builtin' | 'not_empty';
+
+export function typeDeleteBlock(type: Pick<TaskType, 'id' | 'builtin'>, content: TypeContent): TypeDeleteBlock | null {
+  if (!isEditableType(type)) return 'fixed';
+  // 内置资料库（种子里的固定 id）不给删：新设备、旧客户端打开时会按种子补齐，删了也可能被补回来，只能归档
+  if (type.builtin || (Object.values(BUILTIN_TYPE_IDS) as string[]).includes(type.id)) return 'builtin';
+  if (!isTypeContentEmpty(content)) return 'not_empty';
+  return null;
+}
+
+export class TypeDeleteError extends Error {
+  readonly reason: TypeDeleteBlock;
+  constructor(reason: TypeDeleteBlock) {
+    super(reason === 'not_empty' ? tr('有内容的资料库不能删，只能归档') : tr('内置资料库不能删，只能归档'));
+    this.name = 'TypeDeleteError';
+    this.reason = reason;
+  }
+}

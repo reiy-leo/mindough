@@ -1685,6 +1685,15 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡页顶部的活动图": "Gráfico de actividad arriba en Hábitos",
   "在打卡页顶部显示活动图": "Mostrar gráfico de actividad arriba en Hábitos",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Muestra arriba en Hábitos cada día del último año. Solo en este dispositivo.",
+  "删除「{name}」": "Eliminar «{name}»",
+  "删除资料库": "Eliminar colección",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "Esta colección está vacía. Al eliminarla desaparece de todos tus dispositivos y no se puede deshacer.",
+  "已归档。这个资料库是空的，也可以删掉。": "Archivada. Esta colección está vacía, también puedes eliminarla.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "Esta colección está vacía y se puede eliminar. O archívala: no se ofrecerá para tareas nuevas.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Las colecciones integradas no se pueden eliminar. Archiva la que ya no uses: no se ofrecerá para tareas nuevas, y las tareas y entradas que la usan se quedan como están.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Una colección con contenido no se puede eliminar. Archiva la que ya no uses: no se ofrecerá para tareas nuevas, y las tareas y entradas que la usan se quedan como están.",
+  "有内容的资料库不能删，只能归档": "Una colección con contenido no se puede eliminar, solo archivar",
+  "内置资料库不能删，只能归档": "Las colecciones integradas no se pueden eliminar, solo archivar",
 };
 
 export const DATA: Record<string, string> = {

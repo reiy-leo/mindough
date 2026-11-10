@@ -1,7 +1,9 @@
 /**
  * 类型编辑器（M4）：设置 →「类型」、资料库页标签条末尾「编辑」都打开它（同一个弹层）。
  * 第一屏是类型列表（拖动排序、归档、新建）；点进一个类型改名字、图标、颜色、资料库版式、默认完成方式、字段、正文模板。
- * 类型不能删，只能改和归档（Rei 2026-10-17）：归档的不在主列表里，列表最底下一行「已归档 N 个」点开可取消归档。
+ * 归档的不在主列表里，列表最底下一行「已归档 N 个」点开可取消归档。
+ * 删：只有空的自定义资料库能删（Rei 2026-11-10「空资料库可以删，有内容的不可以」，判空见 core Store.typeContent）；
+ * 有内容的、内置的只能归档。删前确认，删了同步到其他设备，不能撤销。
  * 纯逻辑在 core 的 typedef.ts 与 Store（updateType / setTypeFields / addTypeField / archiveType / unarchiveType…）。
  * 「普通」「人物」不在这里出现（人物类型已删，人物库保留）。文案见 docs/COPY.md「类型编辑器」。
  */
@@ -62,6 +64,7 @@ import {
   type FieldDef,
   type FieldKind,
   type TaskType,
+  type TypeDeleteBlock,
   type TypeLayout,
 } from '@mindough/core';
 import { IconPicker } from './IconPicker';
@@ -149,7 +152,7 @@ export function TypeManager({ isOpen, onOpenChange, initialTypeId }: { isOpen: b
         )
       }
     >
-      {type ? <TypeEditor key={type.id} type={type} onArchived={() => setEditing(null)} /> : <TypeList onOpen={setEditing} />}
+      {type ? <TypeEditor key={type.id} type={type} onLeave={() => setEditing(null)} /> : <TypeList onOpen={setEditing} />}
     </Sheet>
   );
 }
@@ -169,6 +172,32 @@ function useArchive() {
   };
 }
 
+/** 删一个空资料库：先弹确认，删完提示（不能撤销）。返回 [确认框, 打开确认框]。 */
+function useDeleteType(onDeleted?: () => void): [ReactNode, (t: TaskType) => void] {
+  const store = useStore();
+  const ui = useUi();
+  const [target, setTarget] = useState<TaskType | null>(null);
+  const name = target ? dataLabel(target.name) : '';
+  const dialog = (
+    <ConfirmDialog
+      isOpen={!!target}
+      onOpenChange={(open) => !open && setTarget(null)}
+      title={tr('删除「{name}」？', { name })}
+      message={tr('这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。')}
+      confirmLabel={tr('删除资料库')}
+      danger
+      onConfirm={() => {
+        if (!target || !store.canDeleteType(target.id)) return;
+        store.deleteType(target.id);
+        setTarget(null);
+        onDeleted?.();
+        ui.toast({ message: tr('已删除「{name}」', { name }) }, 2500);
+      }}
+    />
+  );
+  return [dialog, (t) => store.canDeleteType(t.id) && setTarget(t)];
+}
+
 function usageText(u: { tasks: number; items: number }): string {
   return [u.tasks ? tr('{n} 件任务', { n: u.tasks }) : '', u.items ? tr('资料 {n} 条', { n: u.items }) : ''].filter(Boolean).join(' · ');
 }
@@ -179,6 +208,7 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
   const archived = store.archivedTypes();
   const [showArchived, setShowArchived] = useState(false);
   const archive = useArchive();
+  const [deleteDialog, askDelete] = useDeleteType();
   const reorderGuard = useReorderGuard();
   const { dragAndDropHooks } = useDragAndDrop({
     ...reorderGuard.handlers,
@@ -244,6 +274,11 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
                       <span className="type-row-name">{name}</span>
                       <span className="type-row-sub">{usageText(store.typeUsage(t.id)) || (t.builtin ? tr('内置') : tr('自定义'))}</span>
                     </span>
+                    {store.canDeleteType(t.id) && (
+                      <IconButton label={tr('删除「{name}」', { name })} className="type-row-delete" onPress={() => askDelete(t)}>
+                        <Trash2 size={16} />
+                      </IconButton>
+                    )}
                     <Button variant="secondary" onPress={() => store.unarchiveType(t.id)}>
                       <ArchiveRestore size={15} />
                       {tr('取消归档')}
@@ -255,6 +290,7 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
           )}
         </div>
       )}
+      {deleteDialog}
     </>
   );
 }
@@ -274,9 +310,19 @@ function useCommitted(stored: string, save: (v: string) => void) {
   return { value: v, setValue: setV, commit };
 }
 
-function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => void }) {
+/** 编辑页底部的说明：能不能删、为什么。 */
+function dangerNote(archived: boolean, block: TypeDeleteBlock | null): string {
+  if (block === null) return archived ? tr('已归档。这个资料库是空的，也可以删掉。') : tr('这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。');
+  if (block === 'builtin' && !archived) return tr('内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
+  if (archived) return tr('已归档：新建任务时选不到它，用过它的任务和资料照常显示。');
+  return tr('有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
+}
+
+function TypeEditor({ type, onLeave }: { type: TaskType; onLeave: () => void }) {
   const store = useStore();
   const archive = useArchive();
+  const [deleteDialog, askDelete] = useDeleteType(onLeave);
+  const block = store.typeDeleteBlock(type.id);
   const { layout } = useSettings();
   const name = useCommitted(type.name, (n) => store.updateType(type.id, { name: n }));
   const tpl = useCommitted(type.body_template, (n) => store.updateType(type.id, { body_template: n }));
@@ -347,9 +393,15 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
 
       <div className="type-danger">
         <span className="foot-note">
-          {archived ? tr('已归档：新建任务时选不到它，用过它的任务和资料照常显示。') : tr('资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。')}
+          {dangerNote(archived, block)}
         </span>
         <span className="grow" />
+        {block === null && (
+          <Button variant="danger" className="type-delete-btn" onPress={() => askDelete(type)}>
+            <Trash2 size={15} />
+            {tr('删除资料库')}
+          </Button>
+        )}
         {archived ? (
           <Button variant="secondary" onPress={() => store.unarchiveType(type.id)}>
             <ArchiveRestore size={15} />
@@ -360,7 +412,7 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
             variant="secondary"
             onPress={() => {
               archive(type);
-              onArchived();
+              onLeave();
             }}
           >
             <Archive size={15} />
@@ -368,6 +420,7 @@ function TypeEditor({ type, onArchived }: { type: TaskType; onArchived: () => vo
           </Button>
         )}
       </div>
+      {deleteDialog}
     </div>
   );
 }

@@ -1685,6 +1685,15 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡页顶部的活动图": "Graphique d’activité en haut des Habitudes",
   "在打卡页顶部显示活动图": "Afficher le graphique d’activité en haut des Habitudes",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Affiche en haut des Habitudes chaque jour de l’année écoulée. Sur cet appareil uniquement.",
+  "删除「{name}」": "Supprimer « {name} »",
+  "删除资料库": "Supprimer la collection",
+  "这个资料库是空的。删掉后所有设备上都没有它了，不能恢复。": "Cette collection est vide. La supprimer l’enlève de tous vos appareils, sans retour possible.",
+  "已归档。这个资料库是空的，也可以删掉。": "Archivée. Cette collection est vide, vous pouvez aussi la supprimer.",
+  "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "Cette collection est vide, vous pouvez la supprimer. Ou archivez-la : elle ne sera plus proposée pour les nouvelles tâches.",
+  "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Les collections intégrées ne peuvent pas être supprimées. Archivez celle que vous n’utilisez plus : elle ne sera plus proposée pour les nouvelles tâches, et les tâches et fiches qui l’utilisent restent telles quelles.",
+  "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Une collection qui a du contenu ne peut pas être supprimée. Archivez celle que vous n’utilisez plus : elle ne sera plus proposée pour les nouvelles tâches, et les tâches et fiches qui l’utilisent restent telles quelles.",
+  "有内容的资料库不能删，只能归档": "Une collection qui a du contenu ne peut pas être supprimée, seulement archivée",
+  "内置资料库不能删，只能归档": "Les collections intégrées ne peuvent pas être supprimées, seulement archivées",
 };
 
 export const DATA: Record<string, string> = {
