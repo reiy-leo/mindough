@@ -1926,3 +1926,10 @@ Rei 2026-11-11 02:59（截图：「+」菜单原来是 类型、资料、完成�
 - `components/task/PropChips.tsx`：菜单按组渲染，组间 React Aria `Separator`（`.menu-sep`，三皮肤各自的分隔线样式，和「…」菜单同一个）。胶囊行用同一个 `PROP_ORDER`，所以也变成 日期、完成方式、重复、提醒、类型、心情、项目、卡片颜色，胶囊之间不画分隔。
 - 新建面板（TaskComposer）的胶囊是另一套固定排法（类型、资料…），Rei 这次说的是任务详情，没动。
 - 没有新文案、没有迁移，Worker 没改。
+
+### 侧栏资料库行右边的 ···、新建面板胶囊顺序、打卡页活动图核对 ✅（2026-11-11）
+Rei 2026-11-11 04:27 三件。
+- **置顶资料库行右边的 ···**（照 55fd7c4 置顶项目）：`App.tsx` 把 `PinnedGroupRow` 的行抽成 `PinnedNavRow`（侧栏）、`MoreGroupRow` 的行抽成 `MorePinnedRow`（「更多」页），项目、资料库共用；新 `PinnedLibraryRow`、`MoreLibraryRow`，菜单还是 `librarySidebarAction` 那一项（取消在侧边栏显示），读屏复用「「{name}」的更多操作」，没有新文案。不挂 `useContextMenuAt`：右键由全局拦掉，长按拿起没挪松开什么也不做，长按拖排序照旧。显示规则、截断、拖动时藏 ···、按 ··· 不拿起，都是 `.nav-pinned-row` / `.more-item-split` 原有样式，CSS 没改。960 图标栏（`rail`）照旧走 `PinnedLibraryLink` 右键。多彩档的库图标颜色照旧（`vividVar`）。
+- **新建面板胶囊顺序**：`lib/prop-chips.ts` 新 `ComposerChipId`（属性 + `related`）和 `composerChipOrder`，按同一份 `PROP_ORDER` 排，相关任务排最后（算其他属性）。`TaskComposer.tsx` 把胶囊放进 `chips` 表，按 `composerChipOrder` 渲染：日期、提醒 ｜ 资料、类型 ｜ 心情、项目、相关任务。新建面板没有「+」菜单，所以不画分隔线（同详情胶囊行）。完成方式、重复在新建面板是下面两段，不是胶囊，没挪；新建面板没有附件。
+- **打卡页活动图**：755b215 已经让工具栏和顶部活动图固定（`.checkin-head-sticky`，滚的是 `.main`）。这次截图核对：宽 1366 滚轮、手机 390 手指滑，三种皮肤，开着「顶部活动图」，滚后活动图位置不变、在手机顶栏下面、没被盖住，下面分区滚走，`is-stuck` 细线出来，两端都已固定，没改代码。
+- **测试**：`lib/prop-chips.test.ts` 加 2 项。截图脚本 `work/d1111-three/th.mjs`（LightVela Chromium，三皮肤 1366 + 960 + 390）。
