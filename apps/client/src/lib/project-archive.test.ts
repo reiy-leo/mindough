@@ -46,6 +46,11 @@ describe('我的一天里的归档项目任务', () => {
     store.addToMyDay(a.id, '2026-11-05');
     const water = store.createTask({ body_md: '喝水', group_id: g.id, recurrence: formatRecurrence({ kind: 'daily' }), created_at: new Date(2026, 10, 1).toISOString() });
     let s = buildWidgetSnapshot(store);
+    // 今天要打的打卡在我的一天里（Rei 2026-11-09），快照 myDay 带上它，checkIns 不重复列
+    expect(s.myDay.map((x) => x.id)).toEqual([a.id, water.id]);
+    expect(s.checkIns).toEqual([]);
+    store.removeFromMyDay(water.id, '2026-11-05');
+    s = buildWidgetSnapshot(store);
     expect(s.myDay.map((x) => x.id)).toEqual([a.id]);
     expect(s.checkIns.map((x) => x.id)).toEqual([water.id]);
     advance(1000);
