@@ -1861,3 +1861,12 @@ Rei 2026-11-10 19:45：「侧边栏时间轴换成"日历"；视图 dropdown 有
 - Worker `/api/calendar/ics`：重定向改成自己跟（最多 3 跳，每跳重查地址，跳到内网 400），上限 5 MB 边读边数（413），每 IP 每分钟 30 次、fresh=1 6 次（429，实例内计数），主机名再拒 `.localhost` / `.lan` / `.home.arpa` / 纯数字和十六进制主机。
 - 没做：拖动改日期、小时刻度的日程视图、订阅事件转任务。
 
+### 日历：默认周、删掉时间轴列表、月视图每格一件 ✅（2026-11-11）
+
+Rei 2026-11-11 00:37 定了 CALENDAR.md 第八节的五条：默认视图改为周（已记住视图的设备不改）；原来按天往下排的时间轴列表彻底删掉；月视图每个格子只显示一个任务，当天有倒数日时优先显示倒数日，另显示当天「任务 + 打卡 + 倒数日」的个数；周、多日视图不画小时刻度；拖动改日期仍是后续；外语界面默认显示节假日维持。细节和我代定的几条见 [CALENDAR.md](CALENDAR.md) 第九节。
+
+- core `calendar/views.ts`：`DEFAULT_CAL_VIEW` 改成周；新 `monthCell(day, items)` 挑一件（倒数日 → 任务 → 订阅事件，打卡不挑）并数任务 + 打卡 + 倒数日。删了 `date-range.ts` 的 `agendaBuckets`。
+- 客户端 `pages/Calendar.tsx`：条目多一个 `role`（task / countdown / checkin / event）；倒数日按 `target_date` 进日历；月视图另写 `MonthGrid`（格子自己画竖线和今天底色，不再用排道）；打卡只在月视图按 `dueToday` 逐天算，进个数和当天列表；手机小月历的点换成数字。
+- 删掉时间轴列表剩下的：TaskRow `spanNote` / `dateMetaOnly`、`.agenda*` 和 `.meta-span` 样式、Material 皮肤和农历里的 `.agenda-*`、文案「随手记下的琐事，按日期排开」「更早的 N 条」和 `导航|时间轴`。
+- 没有迁移，Worker 没改。
+
