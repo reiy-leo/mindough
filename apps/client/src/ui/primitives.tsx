@@ -379,7 +379,8 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
     long.current = false;
     return was;
   };
-  return { at, close: () => setAt(null), props, consumeLongPress };
+  // open：别处已经认出长按（侧栏置顶项拿起又原地松开，lib/nav-reorder）时直接在那儿开菜单
+  return { at, close: () => setAt(null), open: (p: { x: number; y: number }) => setAt(p), props, consumeLongPress };
 }
 
 /** 确认框（删除等不可撤销的操作）。 */

@@ -47,6 +47,7 @@ import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
 import { useAutoMyDay } from './lib/myday-auto';
 import { MenuAt, useContextMenuAt } from './ui/primitives';
+import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
 import { useAppMenu } from './lib/app-menu';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
@@ -251,13 +252,16 @@ function PinnedLink({ item, active }: { item: NavItem; active: boolean }) {
 /** 放进侧边栏的项目：右键 / 长按的菜单和项目页的 ··· 一样（编辑、取消在侧边栏显示、解散、删除，Rei 2026-11-01）。 */
 function PinnedGroupLink({ item, active, group }: { item: NavItem; active: boolean; group: Group }) {
   const store = useStore();
-  const menu = useContextMenuAt();
+  // 能拖动排序时（Rei 2026-11-10，components/NavReorderScope）：手指长按由拖动接管，拿起没挪就松开再开这个菜单
+  const menu = useContextMenuAt({ longPress: false });
+  const reorder = usePinnedReorder(group.id, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
   const actions = useProjectActions(store, group);
   return (
     <>
       <a
         href={href(item.to!)}
         {...menu.props}
+        {...reorder.props}
         onClick={(e) => {
           if (menu.consumeLongPress()) e.preventDefault();
         }}
@@ -278,7 +282,8 @@ function PinnedGroupLink({ item, active, group }: { item: NavItem; active: boole
 
 function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean }) {
   const store = useStore();
-  const menu = useContextMenuAt();
+  const menu = useContextMenuAt({ longPress: false });
+  const reorder = usePinnedReorder(item.libraryId, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
   const Icon = item.icon;
   const t = item.libraryId ? store.get('task_type', item.libraryId) : null;
   const action = t ? librarySidebarAction(store, t) : null;
@@ -289,6 +294,7 @@ function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean })
       <a
         href={href(item.to!)}
         {...menu.props}
+        {...reorder.props}
         onClick={(e) => {
           if (menu.consumeLongPress()) e.preventDefault();
         }}
@@ -361,23 +367,40 @@ function MorePage() {
         <section key={sec.id} className="more-section" aria-label={sec.title || SETTINGS.label}>
           {sec.title && <h2 className="more-section-title">{sec.title}</h2>}
           <div className="card more-list">
-            {sec.items.map((n) => {
-              const Icon = n.icon;
-              return (
-                <a key={n.key ?? n.page} className={`more-item${n.libraryId || n.groupId ? ' more-item-sub' : ''}`} href={href(n.to ?? ({ page: n.page } as Route))}>
-                  <span className="more-icon">
-                    <Icon size={20} />
-                  </span>
-                  <span className="grow">{n.label}</span>
-                  <ChevronRight size={16} className="muted" />
-                </a>
-              );
-            })}
+            <PinnedScope items={sec.items}>
+              {sec.items.map((n) => (
+                <MoreLink key={n.key ?? n.page} item={n} />
+              ))}
+            </PinnedScope>
           </div>
         </section>
       ))}
     </div>
   );
+}
+
+/** 「更多」页的一行；置顶的项目 / 资料库能长按拖动排序（Rei 2026-11-10），长按没挪就松开什么也不做。 */
+function MoreLink({ item: n }: { item: NavItem }) {
+  const Icon = n.icon;
+  const reorder = usePinnedReorder(n.groupId ?? n.libraryId);
+  return (
+    <a className={`more-item${n.libraryId || n.groupId ? ' more-item-sub' : ''}`} href={href(n.to ?? ({ page: n.page } as Route))} {...reorder.props}>
+      <span className="more-icon">
+        <Icon size={20} />
+      </span>
+      <span className="grow">{n.label}</span>
+      <ChevronRight size={16} className="muted" />
+    </a>
+  );
+}
+
+/** 一节里置顶的项目 / 资料库组成一串拖动范围（「计划」里是项目，「管理」里是资料库）；没有置顶的就原样。 */
+function PinnedScope({ items, children }: { items: NavItem[]; children: ReactNode }) {
+  const groupIds = items.flatMap((n) => (n.groupId ? [n.groupId] : []));
+  const libIds = items.flatMap((n) => (n.libraryId ? [n.libraryId] : []));
+  if (groupIds.length) return <NavReorderScope kind="group" ids={groupIds}>{children}</NavReorderScope>;
+  if (libIds.length) return <NavReorderScope kind="library" ids={libIds}>{children}</NavReorderScope>;
+  return <>{children}</>;
 }
 
 export function Toasts() {
@@ -517,8 +540,11 @@ export function App() {
                     <span>{sec.title}</span>
                     <ChevronRight size={12} aria-hidden className={`nav-section-chevron${isCollapsed ? '' : ' is-open'}`} />
                   </RacButton>
-                  {!isCollapsed &&
-                    sec.items.map((n) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} badge={n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined} />)}
+                  {!isCollapsed && (
+                    <PinnedScope items={sec.items}>
+                      {sec.items.map((n) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} badge={n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined} />)}
+                    </PinnedScope>
+                  )}
                 </div>
               );
             })}

@@ -4282,3 +4282,62 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .checkin-toolbar .checkin-head-actions {
   flex: none;
 }
+
+/* 侧栏置顶的项目 / 资料库拖动排序（Rei 2026-11-10，lib/nav-reorder）：
+   被拖那行浮起跟手（底色用卡片面、阴影用各皮肤的弹层阴影，圆角沿用行本身），别的行让位滑开，
+   落点是强调色淡底 + 虚线框的占位格（圆角跟行一样）。宽屏侧栏、图标栏、手机「更多」页共用。 */
+.nav-section,
+.more-list {
+  position: relative;
+}
+[data-reorder-group] {
+  -webkit-user-drag: none;
+}
+.is-reorder-dragging,
+.is-reorder-dropping {
+  position: relative;
+  z-index: 3;
+  /* WinUI 的 --surface 是半透明的：垫一层 --bg，压在别的行上面不透字 */
+  background: linear-gradient(var(--surface), var(--surface)) var(--bg);
+  box-shadow: var(--shadow-pop);
+}
+.is-reorder-dragging {
+  cursor: grabbing;
+}
+.is-reorder-lifted {
+  background: var(--surface-hover);
+  transform: scale(1.02);
+  transition: transform 0.12s var(--ease), background 0.12s var(--ease);
+}
+html.is-nav-reordering,
+html.is-nav-reordering * {
+  cursor: grabbing !important;
+}
+html.is-nav-reordering .nav-item:hover:not(.is-reorder-dragging) {
+  background: transparent;
+}
+html.is-nav-reordering .nav-item.is-active:not(.is-reorder-dragging) {
+  background: var(--nav-active-bg);
+}
+.nav-drop-slot {
+  position: absolute;
+  z-index: 0;
+  box-sizing: border-box;
+  background: var(--accent-soft);
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  pointer-events: none;
+  transition: transform 150ms var(--ease);
+}
+.more-list .nav-drop-slot {
+  border-radius: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-drop-slot,
+  .is-reorder-lifted {
+    transition: none;
+  }
+}
+.nav-item.is-active.is-reorder-dragging,
+.nav-item.is-active.is-reorder-dropping {
+  background: linear-gradient(var(--nav-active-bg), var(--nav-active-bg)), linear-gradient(var(--surface), var(--surface)) var(--bg);
+}

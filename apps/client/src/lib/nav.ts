@@ -43,7 +43,7 @@ export function activeLibraryEntry(route: Route, pinnedIds: readonly string[]): 
 }
 
 /**
- * 「管理」一节的入口，按顺序：资料库、放进侧边栏的库（按资料库顺序，调用方传 store.sidebarLibraries()）、类型、已完成。没有「人物」。
+ * 「管理」一节的入口，按顺序：资料库、放进侧边栏的库（没拖过按资料库顺序、拖过按侧栏里排的，调用方传 store.sidebarLibraries()）、类型、已完成。没有「人物」。
  * 「已完成」Rei 2026-11-08 加（「侧边栏 管理 添加一个"已完成"入口」），排在最后。
  */
 export type ManageEntry = { kind: 'library' } | { kind: 'pinned'; typeId: string } | { kind: 'types' } | { kind: 'done' };
@@ -53,7 +53,7 @@ export function manageEntries(pinned: ReadonlyArray<{ id: string }>): ManageEntr
 
 // ───────────── 「计划」一节里的项目（Rei 2026-10-28） ─────────────
 
-/** 「计划」一节的入口，按顺序：列表、项目、放进侧边栏的项目（按项目页顺序，调用方传 store.sidebarGroups()）。 */
+/** 「计划」一节的入口，按顺序：列表、项目、放进侧边栏的项目（没拖过按项目页顺序、拖过按侧栏里排的，调用方传 store.sidebarGroups()）。 */
 export type PlanEntry = { kind: 'agenda' } | { kind: 'groups' } | { kind: 'pinned'; groupId: string };
 export function planEntries(pinned: ReadonlyArray<{ id: string }>): PlanEntry[] {
   return [{ kind: 'agenda' }, { kind: 'groups' }, ...pinned.map((g) => ({ kind: 'pinned' as const, groupId: g.id }))];
