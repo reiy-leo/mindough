@@ -85,7 +85,7 @@ function SubRow({ sub }: { sub: CalendarSub }) {
       <SubColorPicker value={normalizeSubColor(sub.color)} onChange={(c) => store.update('calendar_sub', sub.id, { color: c })} />
       <div className="cal-sub-foot" aria-live="polite">
         <span className={`setting-hint lunar-status${st?.status ? (st.status.ok ? ' is-ok' : ' is-error') : ''}`}>
-          {busy ? tr('正在同步…') : ago ? `${tr('上次同步 · {ago}', { ago })}　` : ''}
+          {busy ? tr('正在同步…') : ago ? `${tr('上次同步 · {ago}', { ago })} · ` : ''}
           {!busy && calSubStatusText(st?.status ?? null)}
         </span>
         <span className="grow" />

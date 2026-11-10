@@ -42,6 +42,8 @@ export const CORE_EN: Record<string, V> = {
   手动: 'Manual',
   还没同步过: 'Not synced yet',
   '同步成功，{n} 个日子': (p) => `Synced: ${count(p.n, 'day', 'days')}`,
+  '同步成功，{n} 个事件': (p) => `Synced: ${count(p.n, 'event', 'events')}`,
+  '同步成功，{n} 个事件（太多了，只留前面这些）': (p) => `Synced: ${count(p.n, 'event', 'events')} (too many, kept the first ones)`,
   '同步失败：没连上网络': 'Sync failed: no network connection',
   '同步失败：这个地址不是日历文件（ICS）': 'Sync failed: this URL isn’t a calendar file (ICS)',
   '同步失败：日历里没有能显示的日子': 'Sync failed: the calendar has no days to show',
