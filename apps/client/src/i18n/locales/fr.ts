@@ -1682,6 +1682,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "过去 7 天": "7 derniers jours",
   "过去一个月": "Le mois dernier",
   "过期积压|更远": "Plus ancien",
+  "打卡页顶部的活动图": "Graphique d’activité en haut des Habitudes",
+  "在打卡页顶部显示活动图": "Afficher le graphique d’activité en haut des Habitudes",
+  "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Affiche en haut des Habitudes chaque jour de l’année écoulée. Sur cet appareil uniquement.",
 };
 
 export const DATA: Record<string, string> = {

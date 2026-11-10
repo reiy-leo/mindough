@@ -1408,4 +1408,7 @@ export const EN: Record<string, EnValue> = {
   "过去 7 天": "Past 7 Days",
   "过去一个月": "Past Month",
   "过期积压|更远": "Earlier",
+  "打卡页顶部的活动图": "Activity chart at the top of Check-ins",
+  "在打卡页顶部显示活动图": "Show Activity Chart at Top of Check-ins",
+  "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Shows each day of the past year at the top of Check-ins. Only on this device.",
 };

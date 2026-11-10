@@ -45,6 +45,11 @@ export interface Settings {
   myDayDefaultToday: boolean;
   /** 我的一天「已完成」那段展开着吗（Rei 2026-11-08 分两段）：默认展开，只记在本机。 */
   myDayDoneOpen: boolean;
+  /**
+   * 打卡页顶部显示活动图吗（Rei 2026-11-10 08:30「设置里新增「打卡」选项卡，里面一个开关「在打卡页顶部显示活动图」…默认关」）：
+   * 管打卡页最上面那张「过去一年」的总图。默认关；和「默认日期：今天」一样只记在本机，不同步。每张打卡卡片左上角的活动图开关（habitHeatmapOpen）不归它管。
+   */
+  checkInsYearHeatmap: boolean;
   /** 打卡页「已打卡」那段展开着吗（Rei 2026-11-09「今天打卡完成的放在已打卡section」）：默认展开，只记在本机。 */
   checkInsDoneOpen: boolean;
   /**
@@ -71,7 +76,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, strictMode: false, listViews: {}, colorLevel: 'standard' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

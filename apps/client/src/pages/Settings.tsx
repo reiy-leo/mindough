@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
-import { AlertCircle, ArrowLeftRight, Bell, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, Bell, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
 import { focusMainWindow, isSettingsWindow, SETTINGS_NAV_EVENT } from '../lib/windows';
 import { relay } from '../lib/window-relay';
@@ -34,17 +34,18 @@ const ArchiveImportSheet = lazy(() => import('../components/ArchiveImport').then
 import type { LocalePref } from '../lib/i18n';
 
 /**
- * 设置分成七项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
+ * 设置分成八项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
  * 又说「农历、类型、日记这三个可以放在一个」；同一天又说「这个页面的底部的关于念头团的说明，可以放在一个单独的选项卡：关于」「设置中日记单独一个tab」）：
  * - 账户：登录、同步状态、数据怎么走
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
  * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示、农历（资料库入口 2026-11-09 删了，从侧栏「管理」进）
+ * - 打卡：在打卡页顶部显示活动图（Rei 2026-11-10 加）
  * - 日记：一天从几点开始、每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
  * 桌面 app（Tauri）里设置是单独的窗口（SettingsWindow，?window=settings）；Web 和手机是页面：
- * 宽屏左边一列七项、右边内容；窄屏先列出七项，点进去整页推入，左上角返回。
+ * 宽屏左边一列八项、右边内容；窄屏先列出八项，点进去整页推入，左上角返回。
  */
 type SettingsItem = { id: SettingsSection; icon: LucideIcon; label: () => string; hint: () => string };
 
@@ -54,6 +55,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
   { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('我的一天、严格模式、日期显示、农历') : tr('我的一天、严格模式、日期显示')) },
+  { id: 'checkin', icon: CalendarCheck2, label: () => trc('导航', '打卡'), hint: () => tr('打卡页顶部的活动图') },
   { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('一天从几点开始、每天提醒写日记') },
   { id: 'about', icon: Info, label: () => tr('关于'), hint: () => tr('版本、数据来源') },
 ];
@@ -95,6 +97,8 @@ function SectionBody({ id }: { id: SettingsSection }) {
           <LunarSection />
         </>
       );
+    case 'checkin':
+      return <CheckInSection />;
     case 'journal':
       return <JournalSection />;
     case 'about':
@@ -102,7 +106,7 @@ function SectionBody({ id }: { id: SettingsSection }) {
   }
 }
 
-/** 左边那一列（宽屏页面和设置窗口共用）：↑ ↓ 在七项之间换。名字太长就截断加省略号，整列不左右滚（Rei 2026-10-26「设置的侧边栏禁止左右滚动」）。 */
+/** 左边那一列（宽屏页面和设置窗口共用）：↑ ↓ 在八项之间换。名字太长就截断加省略号，整列不左右滚（Rei 2026-10-26「设置的侧边栏禁止左右滚动」）。 */
 function SettingsNav({ current }: { current: SettingsSection }) {
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
@@ -141,7 +145,7 @@ function SettingsNav({ current }: { current: SettingsSection }) {
 
 /**
  * 设置底部那行小字版本号（Rei 2026-11-03：macOS app 要分得出第几个 alpha）：「版本 v0.1.0-alpha.13」，网页版和非标签构建是「v0.1.0-dev+短哈希」。
- * 点一下复制完整版本（报问题时好贴）。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在七项列表下面。
+ * 点一下复制完整版本（报问题时好贴）。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在八项列表下面。
  */
 function VersionFooter() {
   const { toast } = useUi();
@@ -175,7 +179,7 @@ async function copyText(text: string) {
   }
 }
 
-/** Web 与手机的设置页。section 省略：宽屏显示上次那项，窄屏列出七项。 */
+/** Web 与手机的设置页。section 省略：宽屏显示上次那项，窄屏列出八项。 */
 export function SettingsPage({ section }: { section?: SettingsSection }) {
   const { layout } = useSettings();
   const narrow = layout === 'mobile';
@@ -485,6 +489,25 @@ function MyDaySection() {
         </div>
       </div>
     </Section>
+  );
+}
+
+/**
+ * 打卡（Rei 2026-11-10 08:30「设置里新增「打卡」选项卡，里面一个开关「在打卡页顶部显示活动图」」）：
+ * 开 = 打卡页顶部显示「过去一年」的活动图，关 = 不显示；默认关，只存本机（同「默认日期：今天」）。
+ */
+function CheckInSection() {
+  const { settings, set } = useSettings();
+  return (
+    <div className="card settings-card">
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('在打卡页顶部显示活动图')}</div>
+          <div className="setting-hint">{tr('打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。')}</div>
+        </div>
+        <Switch label={tr('在打卡页顶部显示活动图')} isSelected={settings.checkInsYearHeatmap} onChange={(v) => set('checkInsYearHeatmap', v)} />
+      </div>
+    </div>
   );
 }
 

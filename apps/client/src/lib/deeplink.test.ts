@@ -110,6 +110,7 @@ describe('设置分成五项（Rei 2026-10-26）', () => {
     expect(parseHash('#/settings/appearance')).toEqual({ page: 'settings', section: 'appearance' });
     expect(parseHash('#/settings/tasks')).toEqual({ page: 'settings', section: 'tasks' });
     expect(parseHash('#/settings/journal')).toEqual({ page: 'settings', section: 'journal' });
+    expect(parseHash('#/settings/checkin')).toEqual({ page: 'settings', section: 'checkin' });
     expect(parseHash('#/settings/about')).toEqual({ page: 'settings', section: 'about' });
     expect(parseHash('#/settings/nope')).toEqual({ page: 'settings' });
     expect(href({ page: 'settings', section: 'data' })).toBe('#/settings/data');

@@ -259,7 +259,8 @@ export function CheckInsPage() {
         </div>
       </div>
 
-      {view === 'today' && (
+      {/* 顶部活动图由设置 → 打卡的开关管（Rei 2026-11-10 08:30），默认关 */}
+      {view === 'today' && settings.checkInsYearHeatmap && (
       <section className="card heatmap-card">
         <div className="heatmap-card-head">
           <span className="section-title">{tr('过去一年')}</span>
