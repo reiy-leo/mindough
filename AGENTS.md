@@ -40,7 +40,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   project-libraries.ts  项目关联资料库（Rei 2026-11-10）：group_library 一库一行、task.lib_via 记因哪个库进的项目；placeTask / manualVia 纯规则，写入在 Store.setGroupLibraries / settleProjectLibraries，同步拉完由 SyncEngine 调 settleAfterSync
   preview.ts search.ts  无标题任务的预览、全局搜索（⌘F / Ctrl+F）
   task-mention.ts       正文里 @ 提到任务（Rei 2026-11-10）：存成链接 `[标题](mindough://task/<id>)`、能 @ 谁（任务里普通任务，日记里多倒数日）、候选过滤排序、光标前的 @；编辑器节点在 client `components/editor/mention.ts`，胶囊在 `lib/task-mention.ts`
-  library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色
+  library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色；侧栏置顶（偏好 library.sidebar / group.sidebar）和拖动后的顺序（偏好 *.sidebar_order，orderBySidebar，Rei 2026-11-10）
   typedef.ts            类型编辑器（界面叫资料库编辑器）的纯逻辑：字段增改排序隐藏、删字段留墓碑（key 不变、值保留）、类型顺序（同步偏好 type_order）；归档存 hidden 列（Store.archiveType）；只有空的自定义资料库能删（typeDeleteBlock / Store.deleteType 打墓碑，Rei 2026-11-10），有内容的、内置的只能归档
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用
   attachments.ts        附件（Rei 2026-10-17）：文件类型（10 种）、大小显示、文件名安全化 / 改名保留扩展名 / 导出去重、50 MB 上限；写入在 Store（attachmentsOf / addAttachment / setAttachmentFile / renameAttachment / removeAttachment / restoreAttachment / ensureJournal）
@@ -73,6 +73,7 @@ apps/client/src/
   pages/Journal.tsx     日记页（docs/JOURNAL.md）
   pages/Library.tsx     资料库页与资料详情（人物库沿用 pages/People.tsx 的人物详情）
   components/ pages/    业务组件与页面（不写死平台样式）
+  lib/nav-reorder.ts    侧栏 / 「更多」页置顶项拖动排序（Rei 2026-11-10）：鼠标拖、手指长按拿起再拖、⌥↑↓，直接改 DOM 做让位和占位格；范围和右键菜单衔接在 components/NavReorderScope.tsx
   styles/task.css       新建面板与详情的结构样式
   styles/library.css    资料库（占位图、选择框、资料卡、资料库页）的结构样式
   lib/ store/           设置、路由、提示、账户（account.ts：全局账户状态，Web cookie / 原生 Bearer）、同步（sync.ts：凭据、HTTP 传输、开停与触发）、原生登录（native-login.ts）、图片上传（upload.ts）、附件上传队列（attachments.ts：IndexedDB 队列 attachments-queue.ts、XHR 进度、取消重试、显示地址、下载）、附件本机缓存（attachment-cache.ts：Web Cache Storage / Tauri 缓存目录，24 小时清理）、云端文件没了时补传或标已删除（attachment-gone.ts）、Store 上下文与存储选择（sqlite-web.ts / sqlite-tauri.ts）
