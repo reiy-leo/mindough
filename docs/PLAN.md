@@ -1818,3 +1818,24 @@ Rei 2026-11-10 11:45：「侧边栏"在侧边栏展示"的项目列表可以拖�
 - **键盘**：置顶项上 ⌥↑ / ⌥↓ 上移下移一位，`aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`，换完把焦点放回它身上。没做读屏播报。
 - **用在哪**：宽屏侧栏（含中等宽度图标栏）`components/NavReorderScope.tsx` 包每一节，`PinnedGroupLink` / `PinnedLibraryLink` 用 `usePinnedReorder`；手机「更多」页 `MoreLink` 同样。没有新文案。
 - **测试**：core `sidebar-order.test.ts`（纯函数、升级不变样、新放进来排最后、归档留位、老客户端开关、两台同步后拖的赢、资料库），`group-sidebar` / `library-sidebar` 改成按新规则；client `nav-reorder.test.ts`（换位、让位、占位格、键盘）。截图 `work/d1110g/so.mjs`（LightVela `~/so-tool`）：三皮肤亮色宽屏 1366 鼠标拖 + 手机 390 CDP 触摸长按拖。
+
+### 餐厅、目的地接高德：搜地点 + 地图选点 ✅（2026-11-10）
+Rei 2026-11-09 定：资料库里「餐厅」和「目的地」（内置类型 travel）只接高德，不接大众点评，也不加大众点评链接。2026-11-10 给了 JS API Key，地图选点一起做。
+
+- **字段**（内置定义 r5，`BUILTIN_TYPES_REVISION` 0005）：两种都加 城市 / 区 `city`、经纬度 `location`（「经度,纬度」，高德坐标 GCJ-02）、电话 `phone`、类别 `category`、评分 `rating`、营业时间 `hours`、高德地图 `amap`（site_id，站点 `amap`，存 POI id，链接到 `https://uri.amap.com/poidetail?poiid=…`）；餐厅另加人均 `cost`（money，人民币）；目的地加地址 `address`。都是资料字段。用户改过的这两种类型照旧由 `withNewBuiltinFields` 补上新字段，不覆盖。没加迁移（字段定义整行存在 task_type 里）。高德地图链接就用 `amap` 字段的链接，没另加一个链接字段；餐厅原有的「链接」留给用户自己填。
+- **服务端**（`apps/server/src/lookup/amap.ts`）：`kind=restaurant|place` 只问 `amap` 一个来源。
+  - 搜：`/v5/place/text`，`show_fields=business,photos`，`page_size=10`；餐厅加 `types=050000`（餐饮服务），目的地不限。`city` 参数（上次选的城市）→ `region` + `city_limit=false`：优先、不限定（试过 region=上海 搜「北京故宫」照样出北京）。搜索结果已经带全字段，选中后不再请求详情（省配额）。
+  - 取一条：`/v5/place/detail?id=`；`id` 也可以是分享短链，Worker 只请求 `surl.amap.com/<码>`、不跟跳转，从 Location（`wb.amap.com/?p=<POI id>,纬度,经度,…`）里取 POI id。别的域名直接 400，不发请求。
+  - 字段换算：类别取 type 每段大类后面的部分（「餐饮服务;中餐厅;火锅店」→「中餐厅 · 火锅店」，多类别用 | 分开的都取）；城市 / 区「上海市 黄浦区」（直辖市 city 为空用省）；电话分号换成「 / 」；评分、人均转数字；营业时间取 `opentime_week`，没有就 `opentime_today`。照片取第一张，http 换 https，列表小图 store.is.autonavi.com 加 `?operate=merge&w=160&h=90&position=5`；`/api/lookup/image` 白名单加 `store.is.autonavi.com`、`aos-comment.amap.com`，照片和豆瓣封面一样拉进 R2。
+  - 逆地理：`GET /api/lookup/regeo?lng=&lat=` → `/v3/geocode/regeo`（`extensions=all`、`radius=200`），回地址、城市 / 区、附近 5 个地点（按距离）。
+  - 缓存：搜索、逆地理 1 天，详情 1 天（营业时间、评分会变，不按 7 天）。
+  - 错误：高德 `status=0` 时按 infocode 换成 HTTP 状态码和中文：Key 问题（10001、10002、10005–10009、10012、10013、10026、10041）→ 503 + `unconfigured`；配额、QPS（10003、10004、10010、10014、10019–10021、10029、10044、10045）→ 429 + 新状态 `limited`；参数（20000–20002、20011、20012）→ 400；10015 → 504；其余 502。说明里带 infocode，比如「429 请求太多：高德今天的调用次数用完了，明天再试（10003）」。没配 `AMAP_KEY` → 503「未配置高德 Key」。
+  - Key：只从 Worker 机密 `AMAP_KEY` 读，只拼进发往 restapi.amap.com 的地址；报错、结果里都不带地址和 Key（单测查过）。
+- **客户端**：`lookupKindOf` 认餐厅 → restaurant、旅行（界面叫目的地）→ place；`lookupSearchText` 对这两种不去季标记，认 POI id、高德链接里的编号、分享文字里的短链；搜索带 `city=` 上次选的城市（本机 localStorage `mindough:amap-city`，选中一条高德结果时记，不同步）。界面语言不影响结果：高德只有中文，非中文界面在候选下面说一句「高德地图只有中文结果」。配额超了显示「高德地图 查询次数超了，过一会儿再试（429 请求太多）」。
+- **地图选点**（`components/library/MapPicker.tsx`、`lib/amap.ts`）：资料编辑底部「在地图上选点」（只有餐厅、目的地，且经纬度字段没删）。点了先问 `GET /api/amap/config`（`{ js, rest }`），`js=false` 提示没配置；否则按需注入 `https://webapi.amap.com/maps?v=2.0&key=<JS Key>`（不加 npm 依赖），注入前设 `window._AMapSecurityConfig = { serviceHost: '<API 源>/_AMapService' }`（网页版同源，原生端 `https://app.mindough.rei8t.dev`）。标记可拖、点地图也挪过去；停 400 毫秒后经 `/api/lookup/regeo` 逆地理（Web 服务 Key，不用 JS API 的 Geocoder）。「用这个位置」用 core `applyMapPick`：经纬度总是换；地址、城市 / 区原来空着才填，勾了「地址也换成这个」才覆盖；高德地点编号不动。没有经纬度时地图从北京开始（缩放 11），有就在那一点（缩放 16）。
+- **安全密钥代理**（`apps/server/src/amap-proxy.ts`）：`/_AMapService/v4/map/styles` → webapi.amap.com，`/_AMapService/v3/vectordata/` → fmap01.amap.com，其余 `/_AMapService/*` → restapi.amap.com，都附加 `jscode=AMAP_JS_SECRET`（客户端带来的 jscode 丢掉）。只收 GET，只转 key 等于我们 JS Key 的请求（别的 Key 403），没配密钥 503。JS Key 是公开的，前端、Worker 各写一份常量。
+- **CSP**：Tauri 加 `script-src 'self' 'unsafe-eval' blob: https://webapi.amap.com https://*.amap.com https://app.mindough.rei8t.dev`（JS API 的 JSONP 走代理）、`worker-src 'self' blob:`，`connect-src` 加 `https://*.amap.com https://*.autonavi.com`；图片本来就放行 https。网页版只有 COEP credentialless，没有 CSP。
+- **待办**：
+  - 高德控制台 JS Key 的域名白名单（Rei 来配）：app.mindough.rei8t.dev、mindough.rei8t.dev、localhost（macOS / iOS / Linux App 的 tauri://localhost 和本地开发）、tauri.localhost（Windows / Android App）。
+  - Mac / 手机 App 要下个 alpha 才有新的 CSP；原生 WebView 里的地图没真机验过。
+  - 没做：按当前位置定位、在地图上看所有餐厅、路线。
