@@ -778,7 +778,6 @@ export const EN: Record<string, EnValue> = {
   // ── 过期积压（原「可做」→「积压」2026-11-04 →「过期积压」2026-11-10）──
   过期积压: 'Overdue',
   已过期: 'Overdue',
-  接下来: 'Coming Up',
   定了日期的都做完了: 'Everything with a date is done',
   '{n} 件定了日期还没做完': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open`,
   '{n} 件定了日期还没做完，{m} 件已过期': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open, ${p.m} overdue`,
@@ -1407,7 +1406,6 @@ export const EN: Record<string, EnValue> = {
   "昨天": "Yesterday",
   "过去 7 天": "Past 7 Days",
   "过去一个月": "Past Month",
-  "过期积压|更远": "Earlier",
   "打卡页顶部的活动图": "Activity chart at the top of Check-ins",
   "在打卡页顶部显示活动图": "Show Activity Chart at Top of Check-ins",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Shows each day of the past year at the top of Check-ins. Only on this device.",
@@ -1441,4 +1439,6 @@ export const EN: Record<string, EnValue> = {
   "附近：{name}": "Near {name}",
   "地址也换成这个": "Replace the address too",
   "用这个位置": "Use This Location",
+  "超过一年": "Over a Year Ago",
+  "还没到期": "Not Due Yet",
 };

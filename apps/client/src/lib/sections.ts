@@ -10,7 +10,7 @@
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
 import { addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, startOfWeek, taskEndDate, taskToday, type DateKey, type Group, type Task } from '@mindough/core';
-import { tr, trc } from './i18n';
+import { tr } from './i18n';
 
 export type SectionBy = 'none' | 'mood' | 'project' | 'due';
 export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'due'];
@@ -69,7 +69,8 @@ export function dueBucketLabel(b: DueBucket): string {
 /**
  * 过期积压页按日期分区（Rei 2026-11-10「按照这个来：昨天，过去7天，过去一个月，过去一年，更远」）。
  * 只管已过期的任务，按过期了几天（任务今天 − 结束日，和 isTaskOverdue 同一个今天、同一个结束日）分，区间不重叠：
- * 昨天 = 1 天前；过去 7 天 = 2–7 天前；过去一个月 = 8–30 天前；过去一年 = 31–365 天前；更远 = 366 天及以前。
+ * 昨天 = 1 天前；过去 7 天 = 2–7 天前；过去一个月 = 8–30 天前；过去一年 = 31–365 天前；超过一年 = 366 天及以前
+ * （Rei 2026-11-10 19:1x「"接下来"应该换成"超过一年"」：最后这段原来叫「更远」，改叫「超过一年」）。
  * 「一个月」「一年」按天数算（30 / 365），不按日历月、日历年：跨月跨年都不跳。
  */
 export type OverdueBucket = 'yesterday' | 'week' | 'month' | 'year' | 'older';
@@ -101,7 +102,7 @@ export function overdueBucketLabel(b: OverdueBucket): string {
     case 'year':
       return tr('过去一年');
     case 'older':
-      return trc('过期积压', '更远');
+      return tr('超过一年');
   }
 }
 
@@ -115,11 +116,23 @@ export function sectionOverdue<T extends Task>(tasks: readonly T[], now: Date, d
   return OVERDUE_BUCKETS.filter((b) => by.get(b)?.length).map((b) => ({ key: b, label: overdueBucketLabel(b), tasks: by.get(b)! }));
 }
 
+/**
+ * 过期积压页的全部分段（Rei 2026-11-10「过期积压不显示分区按钮，只有按日期分区这一种模式」）：过期的 5 段在前，
+ * 还没到期的（今天和以后、日期段还没过完的）放最后一段「还没到期」（原叫「接下来」）。空段不出现。
+ * 两组都由调用方先排好：过期的最近过期在上，没到期的按到期日从近到远。
+ */
+export function backlogSections<T extends Task>(overdue: readonly T[], upcoming: readonly T[], now: Date, deviceToday: DateKey): ListSection<T>[] {
+  const out: ListSection<T>[] = sectionOverdue(overdue, now, deviceToday).map((s) => ({ key: s.key, label: s.label, kind: 'overdue' as const, tasks: s.tasks }));
+  if (upcoming.length) out.push({ key: 'upcoming', label: tr('还没到期'), kind: 'overdue', tasks: [...upcoming] });
+  return out;
+}
+
 export interface ListSection<T> {
-  /** 分区的 key：心情 id / 项目 id / 目标日期段；「没有」的那段是 'none'。折叠状态按它记。 */
+  /** 分区的 key：心情 id / 项目 id / 目标日期段 / 过期段；「没有」的那段是 'none'。折叠状态按它记。 */
   key: string;
   label: string;
-  kind: Exclude<SectionBy, 'none'>;
+  /** overdue = 过期积压页的固定分段（过期天数 5 段 + 还没到期），不是能选的分区方式。 */
+  kind: Exclude<SectionBy, 'none'> | 'overdue';
   /** 按项目时是那个项目（画图标）。 */
   group?: Group;
   tasks: T[];
@@ -134,7 +147,7 @@ export function sectionTasks<T extends Task>(
   if (by === 'none') return null;
   const out: ListSection<T>[] = [];
   const push = (key: string, label: string, list: T[], group?: Group) => {
-    if (list.length) out.push({ key, label, kind: by, tasks: list, ...(group ? { group } : {}) });
+    if (list.length) out.push({ key, label, kind: by as Exclude<SectionBy, 'none'>, tasks: list, ...(group ? { group } : {}) });
   };
   if (by === 'mood') {
     for (const id of MOOD_IDS) push(id, moodLabel(id), tasks.filter((t) => t.mood === id));

@@ -771,7 +771,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   // 侧栏「过期积压」（2026-11-10 由「积压」改名）（原「可做」，Rei 2026-11-04；待母语者看）
   "过期积压": "Atrasadas",
   "已过期": "Vencidas",
-  "接下来": "Próximas",
   "定了日期的都做完了": "Todo lo que tiene fecha está hecho",
   "{n} 件定了日期还没做完": "{n} tareas con fecha sin terminar",
   "{n} 件定了日期还没做完，{m} 件已过期": "{n} tareas con fecha sin terminar, {m} vencidas",
@@ -1681,7 +1680,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "桌面和手机 app 用 Tauri 打包。还用到这些开源库，感谢作者们：": "Las apps de escritorio y móvil están hechas con Tauri. También usamos estas bibliotecas de código abierto; gracias a sus autores:",
   "过去 7 天": "Últimos 7 días",
   "过去一个月": "Último mes",
-  "过期积压|更远": "Más antiguas",
   "打卡页顶部的活动图": "Gráfico de actividad arriba en Hábitos",
   "在打卡页顶部显示活动图": "Mostrar gráfico de actividad arriba en Hábitos",
   "打卡页最上面显示过去一年每天的打卡情况。只在这台设备上生效。": "Muestra arriba en Hábitos cada día del último año. Solo en este dispositivo.",
@@ -1720,6 +1718,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "附近：{name}": "Cerca: {name}",
   "地址也换成这个": "Cambiar también la dirección",
   "用这个位置": "Usar esta ubicación",
+  "超过一年": "Hace más de un año",
+  "还没到期": "Aún no vencidas",
 };
 
 export const DATA: Record<string, string> = {

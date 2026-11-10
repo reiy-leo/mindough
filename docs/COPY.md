@@ -204,7 +204,7 @@
 | 中国农历 | Chinese Lunar Calendar | 设置开关；英文界面不显示整个农历小节，译文备用（2026-10-25） |
 | 每年 · 下次 2027年9月15日 | Yearly · next Sep 15, 2027 | 农历界面隐藏时每年农历重复的说法 |
 | 等待安排 | Inbox | 新建默认进这里（同 Things 的 Inbox）；2026-11-10 中文由「待安排」改名，各语言译名没变（意思一样） |
-| 过期积压 | Overdue | 侧栏页名（2026-11-10 由「积压」改名，原译 Backlog）。按日期分区段标题：昨天 Yesterday / 过去 7 天 Past 7 Days / 过去一个月 Past Month / 过去一年 Past Year / 更远 Earlier（代码 `trc('过期积压', '更远')`，和目标日期分区往后的「更远 Later」分开）/ 接下来 Coming Up |
+| 过期积压 | Overdue | 侧栏页名（2026-11-10 由「积压」改名，原译 Backlog）。按日期分区段标题：昨天 Yesterday / 过去 7 天 Past 7 Days / 过去一个月 Past Month / 过去一年 Past Year / 超过一年 Over a Year Ago（2026-11-10 由「更远 Earlier」改）/ 还没到期 Not Due Yet（2026-11-10 由「接下来 Coming Up」改）。没有分区按钮 |
 | 打卡（导航 / 页面） | Check-ins | 按钮上的「打卡」是 Check In |
 | 持续（导航小节） | Ongoing | 打卡、倒数日、日记这一节（2026-10-26） |
 | 已完成（导航 / 页面） | Completed | 侧栏「管理」最下面（2026-11-08）；空状态 Nothing completed yet；没有时间的那段 Earlier |
@@ -273,7 +273,7 @@ Rei 2026-10-25：「支持西、葡、俄、日、德、法、印尼」。设置
 | 我的一天 | My Day | Mi día | Meu dia | Мой день | 今日の予定 | Mein Tag | Ma journée | Hari Saya |
 | 等待安排 | Inbox | Entrada | Entrada | Входящие | インボックス | Eingang | Réception | Kotak Masuk |
 | 过期积压 | Overdue | Atrasadas | Atrasadas | Просроченное | 期限切れ | Überfällig | En retard | Terlambat |
-| 昨天 / 过去 7 天 / 过去一个月 / 过去一年 / 更远（过期积压分区） | Yesterday / Past 7 Days / Past Month / Past Year / Earlier | Ayer / Últimos 7 días / Último mes / Último año / Más antiguas | Ontem / Últimos 7 dias / Último mês / Último ano / Mais antigas | Вчера / Последние 7 дней / Последний месяц / За год / Ранее | 昨日 / 過去7日間 / 過去1か月 / 過去1年 / それ以前 | Gestern / Letzte 7 Tage / Letzter Monat / Letztes Jahr / Älter | Hier / 7 derniers jours / Le mois dernier / Année écoulée / Plus ancien | Kemarin / 7 hari terakhir / Sebulan terakhir / Setahun terakhir / Lebih lama |
+| 昨天 / 过去 7 天 / 过去一个月 / 过去一年 / 超过一年 / 还没到期（过期积压分区） | Yesterday / Past 7 Days / Past Month / Past Year / Over a Year Ago / Not Due Yet | Ayer / Últimos 7 días / Último mes / Último año / Hace más de un año / Aún no vencidas | Ontem / Últimos 7 dias / Último mês / Último ano / Há mais de um ano / Ainda não vencidas | Вчера / Последние 7 дней / Последний месяц / За год / Больше года назад / Срок ещё не наступил | 昨日 / 過去7日間 / 過去1か月 / 過去1年 / 1年以上前 / 期限前 | Gestern / Letzte 7 Tage / Letzter Monat / Letztes Jahr / Vor über einem Jahr / Noch nicht fällig | Hier / 7 derniers jours / Le mois dernier / Année écoulée / Il y a plus d’un an / Pas encore échues | Kemarin / 7 hari terakhir / Sebulan terakhir / Setahun terakhir / Lebih dari setahun lalu / Belum jatuh tempo |
 | 打卡（导航） | Check-ins | Hábitos | Hábitos | Привычки | 習慣 | Gewohnheiten | Habitudes | Kebiasaan |
 | 打卡（按钮） | Check In | Registrar | Registrar | Отметить | 記録 | Abhaken | Cocher | Catat |
 | 可做 | Available | Disponibles | Disponíveis | Доступные | 着手可能 | Verfügbar | Disponibles | Tersedia |

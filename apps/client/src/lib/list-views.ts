@@ -1,7 +1,8 @@
 /**
  * 我的一天、积压、已完成页的分区 / 排序（Rei 2026-11-08）：存在本机设置 settings.listViews[页名]，不同步（和项目页的 projectViews 一样）。
  * - 我的一天：分区 不分区（默认）/ 按心情 / 按项目；排序 手动（默认，拖动排的）/ 心情。分区只管「未完成」那段，置顶的总在最上面、不进分区。
- * - 积压、已完成：原来强制分段（已过期 / 接下来、按天），现在能选「不分区」（Rei「所有列表支持不分区」）；默认照旧分段（date）。
+ * - 已完成：按天分段（date，默认）或「不分区」（Rei「所有列表支持不分区」）。
+ * - 过期积压：只有按日期分段一种（Rei 2026-11-10「过期积压不显示分区按钮」），section 字段不再用，只用 collapsed（收起了哪几段）。
  */
 import { useSettings } from './settings';
 import { normalizeSectionBy, type SectionBy } from './sections';

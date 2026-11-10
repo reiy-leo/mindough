@@ -1,11 +1,11 @@
-import { compareDateKey, isFinished, isTaskOverdue, toDateKey, type Task } from '@mindough/core';
+import { compareDateKey, isFinished, isTaskOverdue, taskEndDate, toDateKey, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
-import { Empty, Section } from '../ui/primitives';
+import { Empty } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
 import { QuickAddBar } from '../components/QuickAddBar';
-import { SectionMenu } from '../components/project/ProjectMenus';
-import { DATE_SECTIONS, useListView, type DateSection } from '../lib/list-views';
-import { sectionOverdue } from '../lib/sections';
+import { SectionedList } from '../components/SectionedList';
+import { useListView } from '../lib/list-views';
+import { backlogSections } from '../lib/sections';
 
 import { tr } from '../lib/i18n';
 
@@ -14,11 +14,12 @@ import { tr } from '../lib/i18n';
  * 显示所有没完成的任务，过期的倒序显示」「积压的是有日期的」「待安排的是没日期的」）：
  * 所有定了日期、还没做完的任务（待办 / 进行中），不算打卡、倒数日、重复任务。
  * - 「已过期」：日期（日期段看结束日）早于今天的，最近过期的在最上面，越早越往下。
- * - 「接下来」：今天和以后的，按日期从近到远。
+ * - 「还没到期」（原叫「接下来」）：今天和以后的、日期段还没过完的，按到期日（日期段看结束日）从近到远。
  * 没日期的在「待安排」里，这里不放。
- * 右上角分区（Rei 2026-11-08「所有列表支持不分区」）：按日期（默认）/ 不分区（一张清单，顺序不变：过期的在前）。
- * 按日期（Rei 2026-11-10「按照这个来：昨天，过去7天，过去一个月，过去一年，更远」）：过期的分成这 5 段（lib/sections sectionOverdue，
- * 按过期天数 1 / 2–7 / 8–30 / 31–365 / 更早），段内照旧最近过期在上；今天和以后的仍在最后一段「接下来」，不丢。
+ * 按日期分段（Rei 2026-11-10「按照这个来：昨天，过去7天，过去一个月，过去一年，更远」，19:1x 最后一段改叫「超过一年」）：
+ * 过期的分成 5 段（lib/sections backlogSections，按过期天数 1 / 2–7 / 8–30 / 31–365 / 更早），段内照旧最近过期在上；没到期的在最后一段。
+ * 只有这一种模式（Rei 2026-11-10「过期积压不显示分区按钮，只有按日期分区这一种模式」）：右上角没有分区按钮，也没有「不分区」。
+ * 段标题点一下收起 / 展开（SectionedList，和我的一天、项目页分区一样），收起了哪几段记在本机 settings.listViews.doable.collapsed。
  * 页名 Rei 2026-11-10 改成「过期积压」（原「积压」），路由不变。
  */
 export function DoablePage() {
@@ -29,9 +30,9 @@ export function DoablePage() {
   // 归档了的项目里的任务不算（Rei 2026-11-05）
   const open = store.activeTasks().filter((t) => t.scheduled_date && !isFinished(t.status) && !t.recurrence && t.completion_mode !== 'countdown');
   const overdue = open.filter((t) => isTaskOverdue(t, now, today)).sort((a, b) => compareDateKey(last(b), last(a)));
-  const upcoming = open.filter((t) => !isTaskOverdue(t, now, today)).sort((a, b) => compareDateKey(a.scheduled_date!, b.scheduled_date!));
+  // 按到期日排（日期段看结束日）：开始日很早、还没过完的日期段不会排到最前（原来按开始日）
+  const upcoming = open.filter((t) => !isTaskOverdue(t, now, today)).sort((a, b) => compareDateKey(taskEndDate(a)!, taskEndDate(b)!) || compareDateKey(a.scheduled_date!, b.scheduled_date!));
   const [view, setView] = useListView('doable');
-  const section = view.section as DateSection;
   const rows = (list: Task[]) => (
     <div className="task-list plain">
       {list.map((t) => (
@@ -52,25 +53,17 @@ export function DoablePage() {
             <span className="list-meta-text">
               {overdue.length ? tr('{n} 件定了日期还没做完，{m} 件已过期', { n: open.length, m: overdue.length }) : tr('{n} 件定了日期还没做完', { n: open.length })}
             </span>
-            <span className="list-tools">
-              <SectionMenu value={section} options={DATE_SECTIONS} plain="date" onChange={(v) => setView({ section: v })} />
-            </span>
           </div>
         }
       />
       {open.length === 0 && <Empty title={tr('定了日期的都做完了')} />}
-      {section === 'none' ? (
-        open.length > 0 && rows([...overdue, ...upcoming])
-      ) : (
-        <>
-          {sectionOverdue(overdue, now, today).map((s) => (
-            <Section key={s.key} title={s.label}>
-              {rows(s.tasks)}
-            </Section>
-          ))}
-          {upcoming.length > 0 && <Section title={tr('接下来')}>{rows(upcoming)}</Section>}
-        </>
-      )}
+      <SectionedList
+        sections={backlogSections(overdue, upcoming, now, today)}
+        collapsed={view.collapsed}
+        onCollapsedChange={(collapsed) => setView({ collapsed })}
+        idPrefix="doable"
+        renderList={(list) => rows(list)}
+      />
     </div>
   );
 }
