@@ -253,6 +253,9 @@
   --surface: #f7f2fa;
   --surface-2: #f3edf7;
   --surface-3: #ece6f0;
+  /* 任务列表的底（Rei 2026-11-10「安卓亮色任务列表背景灰蒙蒙的」）：M3 surface-container-lowest，白卡片放在 #fef7ff 页面底上；
+     原来用 --surface（surface-container-low #f7f2fa），比页面底还深一档，整片列表发灰 */
+  --list-surface: #ffffff;
   --surface-hover: rgba(29, 27, 32, 0.08);
   --border: #cac4d0;
   --border-strong: #79747e;
@@ -291,6 +294,7 @@
   --bg: #141218;
   --sidebar-bg: #1d1b20;
   --surface: #1d1b20;
+  --list-surface: #1d1b20; /* 暗色不变：同 --surface */
   --surface-2: #211f26;
   --surface-3: #2b2930;
   --surface-hover: rgba(230, 224, 233, 0.08);

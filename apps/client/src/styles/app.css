@@ -831,6 +831,14 @@ button {
 .task-row:hover {
   background: var(--surface-hover);
 }
+/* 触屏没有真悬停：点过的行会一直留着 :hover，灰着一块（Rei 2026-11-10「安卓亮色任务列表灰蒙蒙的」截图时看到）。
+   选中的行照旧用选中色 */
+@media (hover: none) {
+  .task-row:hover:not(.is-selected),
+  .list-item:hover:not(.is-selected):not([data-drop-target]) {
+    background: transparent;
+  }
+}
 .check {
   flex: none;
   display: inline-flex;
