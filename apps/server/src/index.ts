@@ -114,10 +114,10 @@ async function route(request: Request, env: Env, url: URL, pathname: string, met
   if (pathname.startsWith('/api/files/check/') && method === 'GET') return handleFileCheck(request, pathname.slice('/api/files/check/'.length), env);
   if (pathname.startsWith('/api/files/') && (method === 'GET' || method === 'HEAD')) return handleFileGet(request, pathname.slice('/api/files/'.length), env, url);
 
-  // 农历订阅：代拉 ICS（不用登录，只收日历文件）
+  // 节假日订阅、日历订阅：代拉 ICS（不用登录，只收日历文件）
   if (pathname === '/api/calendar/ics') {
     if (method !== 'GET') return json({ error: '405 方法不允许：请用 GET' }, 405);
-    return handleIcsProxy(url);
+    return handleIcsProxy(url, fetch, request.headers.get('cf-connecting-ip') ?? '');
   }
 
   // 在线找资料（TMDB / 豆瓣 / Open Library / Steam），要登录
