@@ -48,7 +48,7 @@ const selectionInTitle = (state: EditorState) => {
 
 // ───────── 规范第一块 ─────────
 
-/** 行内的原子节点变回原文（公式 $x$、HTML 片段、脚注 [^1]）；拿不到原文的给空串。 */
+/** 行内的原子节点变回原文（公式 $x$、HTML 片段、脚注 [^1]、提及胶囊变成标题文字）；拿不到原文的给空串。 */
 function literalOf(node: PMNode): string {
   switch (node.type.name) {
     case 'math_inline': {
@@ -60,7 +60,8 @@ function literalOf(node: PMNode): string {
     case 'footnote_reference':
       return `[^${String(node.attrs.label ?? '')}]`;
     default:
-      return node.textContent;
+      // 提及胶囊（mention.ts）这类有 leafText 的：变成它显示的字（任务现在的标题）
+      return node.isLeaf && node.type.spec.leafText ? node.type.spec.leafText(node) : node.textContent;
   }
 }
 

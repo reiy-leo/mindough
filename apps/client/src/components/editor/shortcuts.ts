@@ -72,6 +72,8 @@ export const shortcutTexts = (mac: boolean) => ({
   combo: tr('波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。', { mod: modName(mac) }),
   /** ⌘K 读剪贴板（Rei 2026-11-04）。 */
   clipLink: tr('{keys} 加链接时，剪贴板里的链接会自动填上。', { keys: formatChord(['mod', 'K'], mac) }),
+  /** 能打 @ 的编辑器才显示（任务正文、日记，Rei 2026-11-10）。 */
+  mention: tr('打 @ 提到一件任务，点它就打开那件任务。'),
   close: tr('{keys} 或 Esc 关闭', { keys: formatChord(['mod', '?'], mac) }),
 });
 

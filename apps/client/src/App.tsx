@@ -33,6 +33,7 @@ import { CategoriesPage } from './pages/Categories';
 import { DonePage } from './pages/Done';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
+import { useMentionSource } from './lib/task-mention';
 import { detailInModal, WIDE_MIN } from './lib/detail-pane';
 import { DetailModal } from './components/task/DetailModal';
 import { DeepLinks } from './components/DeepLinks';
@@ -431,6 +432,10 @@ export function App() {
   // 多彩档（色彩设置，Rei 2026-11-09）：详情栏顶部的项目 / 类型淡色
   useDetailTint(store, ui.editingId);
   useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
+  // 正文里的 @ 提及胶囊（Rei 2026-11-10）：按 id 取标题、点了打开详情（lib/task-mention.ts）
+  const { toast: uiToast, openEditor: uiOpenEditor } = ui;
+  const mentionNotFound = useCallback(() => uiToast({ tone: 'error', message: tr('找不到这件任务') }), [uiToast]);
+  useMentionSource(store, uiOpenEditor, mentionNotFound);
   const { setDidaImportOpen } = ui;
   const { layout, platform, settings } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面

@@ -21,19 +21,23 @@
  * - ⌘? / ⌘/（Windows / Linux 是 Ctrl）：光标旁弹出「写法和快捷键」浮层（Rei 2026-11-03），只看不点；Esc、再按一次、点别处、离开编辑器都收起。
  *   下划线 ⌘U（+1 波浪线、+2 双线）见 underline.ts。
  * - 粘贴进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。从外面拖进来的文件（包括图片、落在正文上）都是附件，外框先接住，见 Attachments.tsx attachFileDrop。
+ * - @ 提及任务（Rei 2026-11-10）：给了 mention（任务正文、日记）就能打 @，光标旁弹出候选（mention.ts 管 @ 和键盘，这里画浮层）；
+ *   ↑ ↓ 换、回车 / Tab / 点一下选、Esc 收起；组字时不弹不过滤。插进去是胶囊，点了打开那件任务。
  * 内核是 Tiptap 3（@tiptap/react 的 useEditor + EditorContent，Rei 2026-10-25 从 Milkdown 换过来），读写 markdown 见 editor.ts / markdown.ts。
  * 这个文件按需加载（LazyMdEditor），加载完之前显示排好版的预览。
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
-import { ExternalLink } from 'lucide-react';
+import { Circle, CircleCheck, ExternalLink, Hourglass } from 'lucide-react';
+import type { MentionCandidate, MentionScope } from '@mindough/core';
+import { mentionChoices, mentionInfo } from '../../lib/task-mention';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
 import { readClipboardLink } from '../../lib/clip-link';
 import { useUiOptional } from '../../lib/ui';
-import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions } from './editor';
+import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
@@ -53,6 +57,8 @@ export interface MdEditorProps {
   handleRef?: MutableRefObject<MdEditorHandle | null>;
   /** 任务正文：第一行是标题，只能是纯文字（Rei 2026-11-03，见 title.ts）。日记、备注不给。 */
   plainTitle?: boolean;
+  /** 能打 @ 提及任务（Rei 2026-11-10）：任务正文 scope task（selfId = 这件任务，不列自己）、日记 scope journal（多列倒数日）。备注不给。 */
+  mention?: { scope: MentionScope; selfId?: string | null };
 }
 
 /** 链接框：改哪一段（新加时是选区 / 光标）、是不是已有的链接、两栏的值。 */
@@ -71,7 +77,7 @@ interface LinkDialog {
 /** 输入法正在选字时的回车（Safari 选完字的那次 keydown 是 229）不算保存。 */
 const composing = (e: React.KeyboardEvent) => e.nativeEvent.isComposing || e.keyCode === 229;
 
-export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef, plainTitle = false }: MdEditorProps) {
+export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef, plainTitle = false, mention }: MdEditorProps) {
   const ui = useUiOptional();
   const handle = useRef<MdEditorHandle | null>(null);
   const cb = useRef({ onChange, onBlur, onEscape, onModEnter });
@@ -104,6 +110,28 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   };
   const toggleHelpRef = useRef(toggleHelp);
   toggleHelpRef.current = toggleHelp;
+
+  /** 正在打的 @（mention.ts 报上来的）、候选里选中第几条、手指 / 鼠标正按在浮层上（这时编辑器失焦不收）。 */
+  const [mq, setMq] = useState<MentionState | null>(null);
+  const [mActive, setMActive] = useState(0);
+  const mPointer = useRef(false);
+  const mentionRef = useRef(mention);
+  mentionRef.current = mention;
+  const choices: MentionCandidate[] = useMemo(
+    () => (mq && mention ? mentionChoices(mention.scope, mention.selfId, mq.query) : []),
+    [mq?.query, mq != null, mention?.scope, mention?.selfId], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const mRef = useRef({ mq, choices, mActive });
+  mRef.current = { mq, choices, mActive };
+  useEffect(() => setMActive(0), [mq?.query, mq?.from]);
+  const pickMention = (c: MentionCandidate) => {
+    const cur = mRef.current.mq;
+    if (!cur) return;
+    handle.current?.insertMention({ from: cur.from, to: cur.to }, { id: c.id, title: c.title });
+    mPointer.current = false;
+  };
+  const pickRef = useRef(pickMention);
+  pickRef.current = pickMention;
 
   const cancelHide = () => clearTimeout(hideTimer.current);
   const scheduleHide = () => {
@@ -181,7 +209,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     onBlur: () => {
       // 点链接框里的输入框不算离开
       setTimeout(() => {
-        if (linkingRef.current || wrap.current?.contains(document.activeElement)) return;
+        if (linkingRef.current || mPointer.current || wrap.current?.contains(document.activeElement)) return;
         setFocused(false);
         setHelp(null);
         cb.current.onBlur?.();
@@ -206,6 +234,24 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     },
     onLinkOpen: (u) => openLink(u),
     onImageBlocked: () => ui?.toast({ message: tr('正文里不能放图片') }, 4000),
+    ...(mention
+      ? {
+          mention: {
+            onState: (st: MentionState | null) => setMq(st),
+            onKey: (key: 'up' | 'down' | 'enter') => {
+              const { choices: list, mActive: at } = mRef.current;
+              if (key === 'enter') {
+                const c = list[at];
+                if (!c) return false;
+                pickRef.current(c);
+                return true;
+              }
+              if (list.length) setMActive((a) => (key === 'down' ? (a + 1) % list.length : (a - 1 + list.length) % list.length));
+              return true;
+            },
+          },
+        }
+      : {}),
   };
   const ctl = useMemo(() => new MdController(() => optsRef.current), []);
   // 编辑器只建一次（官方 useEditor）；value 的变化走下面的 setMarkdown
@@ -362,6 +408,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
             {plainTitle && <p className="md-keys-note">{t.title1}</p>}
             <p className="md-keys-note">{t.combo}</p>
             <p className="md-keys-note">{t.clipLink}</p>
+            {mention && <p className="md-keys-note">{t.mention}</p>}
             <p className="md-keys-note">{t.close}</p>
           </div>
         );
@@ -495,6 +542,88 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     </form>
   );
 
+  // @ 浮层：贴着 @（下面放不下就放上面，手机按键盘上沿算），收在视口里
+  const mPopEl = useRef<HTMLDivElement>(null);
+  const [mPos, setMPos] = useState<{ left: number; top: number } | null>(null);
+  const mOpen = !!(mq && mention && focused && !readOnly);
+  useLayoutEffect(() => {
+    const el = mPopEl.current;
+    const h = handle.current;
+    if (!mOpen || !el || !h || !mq) return setMPos(null);
+    const c = h.coordsOf({ from: mq.from, to: mq.from });
+    if (!c) return setMPos(null);
+    const vv = window.visualViewport;
+    const vTop = vv ? vv.offsetTop : 0;
+    const vBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    const vw = window.innerWidth;
+    const w = el.offsetWidth;
+    const hgt = el.offsetHeight;
+    const left = Math.max(8, Math.min(c.left - 8, vw - w - 8));
+    let top = c.bottom + 6;
+    if (top + hgt > vBottom - 8 && c.top - 6 - hgt >= vTop + 8) top = c.top - 6 - hgt;
+    // 浮层放在编辑器里面（不放 body：弹层 / 新建面板会把点在外面的当成「点了外面」关掉自己），position: fixed。
+    // 外面哪层有 transform 时 fixed 是相对那一层的：先放到 0,0 量出那一层的原点，再减掉
+    el.style.left = '0px';
+    el.style.top = '0px';
+    const o = el.getBoundingClientRect();
+    setMPos({ left: left - o.left, top: Math.max(vTop + 8, top) - o.top });
+  }, [mOpen, mq?.from, mq?.to, choices.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 选中的那条滚进来
+  useEffect(() => {
+    mPopEl.current?.querySelector('.mention-item.is-active')?.scrollIntoView({ block: 'nearest' });
+  }, [mActive, mOpen]);
+  const mUid = useId();
+  // 读屏：编辑器指向浮层和选中的那条
+  useEffect(() => {
+    const dom = handle.current?.view().dom;
+    if (!dom) return;
+    if (mOpen && choices.length) {
+      dom.setAttribute('aria-controls', `${mUid}-list`);
+      dom.setAttribute('aria-activedescendant', `${mUid}-opt-${mActive}`);
+    } else {
+      dom.removeAttribute('aria-controls');
+      dom.removeAttribute('aria-activedescendant');
+    }
+  }, [mOpen, mActive, choices.length, mUid]);
+  const mentionPop = mOpen && (
+      <div
+        ref={mPopEl}
+        id={`${mUid}-list`}
+        className="mention-pop"
+        role="listbox"
+        aria-label={tr('提到一件任务')}
+        style={mPos ? { left: mPos.left, top: mPos.top } : { left: 0, top: 0, visibility: 'hidden' }}
+        onMouseDown={(e) => e.preventDefault()}
+        onPointerDown={() => (mPointer.current = true)}
+        onPointerUp={() => setTimeout(() => (mPointer.current = false), 400)}
+        onPointerCancel={() => (mPointer.current = false)}
+      >
+        {choices.length ? (
+          choices.map((c, i) => {
+            const meta = c.ended ? tr('已结束') : c.kind === 'countdown' ? mentionInfo(c.id, '').suffix || tr('倒数日') : '';
+            const Icon = c.kind === 'countdown' ? Hourglass : c.ended ? CircleCheck : Circle;
+            return (
+              <div
+                key={c.id}
+                id={`${mUid}-opt-${i}`}
+                role="option"
+                aria-selected={i === mActive}
+                className={`mention-item${i === mActive ? ' is-active' : ''}${c.ended ? ' is-ended' : ''}${c.kind === 'countdown' ? ' is-countdown' : ''}`}
+                onMouseMove={() => i !== mActive && setMActive(i)}
+                onClick={() => pickMention(c)}
+              >
+                <Icon size={14} aria-hidden className="mention-item-icon" />
+                <span className="grow ellipsis">{c.title}</span>
+                {meta && <span className="mention-item-meta">{meta}</span>}
+              </div>
+            );
+          })
+        ) : (
+          <div className="mention-empty">{tr('没有找到')}</div>
+        )}
+      </div>
+  );
+
   return (
     <div
       ref={wrap}
@@ -504,6 +633,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     >
       <EditorContent editor={editor} className="md-editor-root" />
       {helpPop}
+      {mentionPop}
       {(pop || (dialog && !dialog.sheet)) && (
         <div
           ref={popEl}

@@ -249,6 +249,8 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
         // 打卡 / 倒数日页「新建」的空任务：光标直接进正文第一行（lib/blank-task）
         autoFocus={!readOnly && wantsBodyFocus(task.id)}
         className="detail-md"
+        // 打 @ 提到别的普通任务（Rei 2026-11-10），不列自己
+        mention={{ scope: 'task', selfId: task.id }}
         label={tr('内容')}
         placeholder={placeholder}
         value={body}

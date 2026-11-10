@@ -229,6 +229,7 @@
 [data-skin='winui'] .toast,
 [data-skin='winui'] .md-link-pop,
 [data-skin='winui'] .md-keys-pop,
+[data-skin='winui'] .mention-pop,
 [data-skin='winui'] .md-link-sheet {
   --popup-bg: #f9f9f9;
   background-color: var(--popup-bg);
@@ -241,6 +242,7 @@
 [data-skin='winui'][data-theme='dark'] .toast,
 [data-skin='winui'][data-theme='dark'] .md-link-pop,
 [data-skin='winui'][data-theme='dark'] .md-keys-pop,
+[data-skin='winui'][data-theme='dark'] .mention-pop,
 [data-skin='winui'][data-theme='dark'] .md-link-sheet {
   --popup-bg: #2c2c2c;
 }

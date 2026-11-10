@@ -1701,6 +1701,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "改关联到这个项目？": "¿Vincularla a este proyecto?",
   "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "«{library}» está vinculada a «{project}». Una biblioteca solo puede estar en un proyecto; al cambiarla, sus tareas pasan a este proyecto.",
   "改关联": "Cambiar",
+  "提到一件任务": "Mencionar una tarea",
+  "打 @ 提到一件任务，点它就打开那件任务。": "Escribe @ para mencionar una tarea; haz clic en ella para abrirla.",
 };
 
 export const DATA: Record<string, string> = {

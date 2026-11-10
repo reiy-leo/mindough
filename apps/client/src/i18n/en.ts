@@ -1425,4 +1425,6 @@ export const EN: Record<string, EnValue> = {
   "改关联到这个项目？": "Link it to this project instead?",
   "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "“{library}” is linked to “{project}”. A library can be linked to only one project; once you switch it, its tasks move to this project.",
   "改关联": "Switch",
+  "提到一件任务": "Mention a task",
+  "打 @ 提到一件任务，点它就打开那件任务。": "Type @ to mention a task; click it to open that task.",
 };

@@ -550,3 +550,122 @@
 .md-keys-note + .md-keys-note {
   margin-top: 2px;
 }
+
+/* ───────── @ 提及任务（Rei 2026-11-10）───────── */
+/* 胶囊：编辑器里（.task-mention-node 里那个）和只读 Markdown（a.task-mention）长得一样。
+   强调色淡底 + 强调色字，倒数日带沙漏和「还有 N 天」，结束的带对勾、字变淡，找不到的划掉、虚线框。 */
+.task-mention-node {
+  white-space: nowrap;
+}
+.task-mention-node.ProseMirror-selectednode .task-mention {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.task-mention,
+.md a.task-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  margin: 0 1px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-soft-text, var(--accent));
+  font-size: 0.94em;
+  line-height: 1.5;
+  vertical-align: baseline;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.md a.task-mention:hover,
+.task-mention:hover {
+  text-decoration: none;
+  filter: brightness(0.96);
+}
+.task-mention-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 24em;
+}
+.task-mention-icon {
+  flex: none;
+}
+.task-mention-meta {
+  flex: none;
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+.task-mention-meta::before {
+  content: '·';
+  margin: 0 3px 0 1px;
+}
+.task-mention.is-ended {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.task-mention.is-missing {
+  background: transparent;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong, var(--border));
+  padding: 0 5px;
+  cursor: default;
+}
+.task-mention.is-missing .task-mention-title {
+  text-decoration: line-through;
+}
+
+/* @ 候选浮层：贴着 @，fixed（位置在 MdEditor 里算） */
+.mention-pop {
+  position: fixed;
+  z-index: 1000;
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(264px, 45vh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  color: var(--text);
+  background: var(--surface);
+  background-color: color-mix(in srgb, var(--surface) 100%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  font-size: 13.5px;
+}
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.mention-item.is-active {
+  background: var(--surface-hover);
+}
+.mention-item-icon {
+  flex: none;
+  color: var(--text-3);
+}
+.mention-item.is-countdown .mention-item-icon {
+  color: var(--accent);
+}
+.mention-item.is-ended {
+  color: var(--text-2);
+}
+.mention-item-meta {
+  flex: none;
+  color: var(--text-3);
+  font-size: 12px;
+}
+.mention-empty {
+  padding: 8px 10px;
+  color: var(--text-3);
+}
+[data-layout='mobile'] .mention-item {
+  min-height: 40px;
+}

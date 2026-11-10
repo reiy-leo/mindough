@@ -20,6 +20,8 @@ import { imeGuardExtension } from './ime-guard';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
+import { insertMention, mentionExtension, mentionParse, mentionSerialize, remarkTaskMentions, type MentionHooks } from './mention';
+export type { MentionState } from './mention';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
 export { finishMarkdown, prepareMarkdown, sameMarkdown } from './markdown';
 
@@ -33,9 +35,9 @@ export function markdownIO(schema: Schema | null | undefined): MarkdownIO {
   let io = ios.get(schema);
   if (!io) {
     io = createMarkdownIO(schema, {
-      remark: [remarkGh, remarkDetails, remarkUnderline],
-      parse: [...ghParse, ...detailsParse, ...underlineParse],
-      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize },
+      remark: [remarkGh, remarkDetails, remarkUnderline, remarkTaskMentions],
+      parse: [...ghParse, ...detailsParse, ...underlineParse, ...mentionParse],
+      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...mentionSerialize },
       wrapText: mathSafeText as never,
       handlers: { underline: underlineHandler },
     });
@@ -174,6 +176,8 @@ export interface MdEditorHandle {
   setLink(range: { from: number; to: number }, href: string): void;
   /** 链接框保存：文字 + 地址一起换（见 applyLinkTr）；href 不像网址返回 false、什么都不改。 */
   applyLink(range: { from: number; to: number }, text: string, href: string): boolean;
+  /** 把正在打的 @（range）换成提及（第一行是纯文字标题时换成标题文字）。 */
+  insertMention(range: { from: number; to: number }, task: { id: string; title: string }): void;
   /** 一段的纯文字（链接框预填）。 */
   textOf(range: { from: number; to: number }): string;
   /** 当前选区（链接框新加时用）。 */
@@ -206,6 +210,8 @@ export interface MdEditorOptions {
   onLinkOpen?: (href: string) => void;
   /** 粘贴 / 拖进正文的图片被拦下了（正文不收新图片）。 */
   onImageBlocked?: () => void;
+  /** 给了就能打 @ 提及任务（mention.ts）：正在打的 @ 变了、浮层开着时的按键。 */
+  mention?: MentionHooks;
 }
 
 /** 编辑器的状态和回调（React 外壳和 createMdEditor 共用）。opts 用 getter 取，React 里每次渲染换最新的回调。 */
@@ -227,6 +233,7 @@ export class MdController {
     const extensions: AnyExtension[] = [
       ...(o.plainTitle ? guardTitleInputRules(schemaExtensions()) : schemaExtensions()),
       imeGuardExtension(),
+      ...(o.mention ? [mentionExtension(() => this.get().mention ?? { onState: () => {}, onKey: () => false })] : []),
       ...(o.plainTitle ? [plainTitleExtension({ io })] : []),
       underlineKeysExtension(),
       behaviorExtension({
@@ -341,6 +348,9 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
       if (range.from < 0 || range.to > size || range.from > range.to) return false;
       v.dispatch(applyLinkTr(v.state, range, text, url));
       return true;
+    },
+    insertMention(range, task) {
+      insertMention(view(), range, task);
     },
     textOf(range) {
       try {
