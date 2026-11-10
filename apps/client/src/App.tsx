@@ -182,8 +182,8 @@ const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置');
 const MOBILE_TABS: Route['page'][] = ['myday', 'backlog', 'checkin', 'agenda'];
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。 */
 const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown', 'done'];
-/** 中间列不放页头、最上面是添加框的页面（Rei 2026-10-26）：手机上标题显示在顶栏。 */
-const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable'];
+/** 中间列不放页头的页面（Rei 2026-10-26；打卡页 2026-11-10 去掉页头）：手机上标题显示在顶栏。 */
+const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin'];
 const COLLAPSED_KEY = 'mindough:nav_collapsed';
 
 function useCollapsed() {

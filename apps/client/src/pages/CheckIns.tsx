@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { ListBox, ListBoxItem, Menu, MenuItem, MenuTrigger, Popover, Button as RacButton, Select as RacSelect, SelectValue } from 'react-aria-components';
-import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Menu, MenuItem, MenuTrigger, Popover, Button as RacButton } from 'react-aria-components';
+import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -14,7 +14,7 @@ import {
   type Task,
 } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
-import { CategoryLabel, CategoryLabels, NO_CATEGORY, openCategoryPage } from '../components/CategoryPicker';
+import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { Button, Empty, MenuAt, Section, Segmented, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
@@ -26,7 +26,6 @@ import { isHeatmapOpen, toggleHeatmapOpen } from '../lib/habit-heatmap';
 import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
 import { MakeupButton } from '../components/MakeupButton';
-import { PageHeader } from '../components/PageHeader';
 import { HoverTip } from '../ui/HoverTip';
 import { titleOf } from '../lib/view';
 
@@ -46,8 +45,8 @@ export function CheckInsPage() {
   const idx = useMemo(() => buildRatioIndex(tasks, checkIns, now), [store.version, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const dayRatio = useCallback((d: DateKey) => idx.dayRatio(d), [idx]);
 
-  // 类型筛选（Rei 2026-11-09 01:06「打卡的全部、类型部分换成dropdown，默认显示全部」）：不记，每次进来都是「全部」
-  const [cat, setCat] = useState<string>('all');
+  // 类型下拉和「编辑」按钮去掉了（Rei 2026-11-10 08:27「打卡页 不显示 类型dropdown和编辑btn」）：打卡页不再按类型筛选，
+  // 想按类型看用「按类型」排列；改类型去侧栏「类型」页
   const [arrange, setArrange] = useState<'today' | 'category'>('today');
   // 归档了的（Rei 2026-11-02「打卡任务可以归档」）不在主列表里，放在最下面折叠的「已归档」一节
   const liveRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
@@ -93,13 +92,10 @@ export function CheckInsPage() {
   // 一件任务能挂几个类型（Rei 2026-10-28）：筛选看挂没挂这个类型；按类型分组时放在第一个类型下面（不重复出现）
   const hasCat = (t: Task, id: string) => store.categoryIdsOfTask(t).includes(id);
   // 筛选标签：只列出有重复任务挂着的类型（按类型顺序，不显示的也算，挂着就列），有没类型的再加一个“没有类型”
-  // 「已归档的打卡」视图里按归档的那些列
-  const catBase = view === 'archived' ? allArchived : allRecurring;
-  const usedCats = store.categories(true).filter((c) => catBase.some((t) => hasCat(t, c.id)));
-  const hasUncategorized = catBase.some((t) => !catOf(t));
-  const byCat = (list: Task[]) => (cat === 'all' ? list : list.filter((t) => (cat === NO_CATEGORY ? !catOf(t) : hasCat(t, cat))));
-  const recurring = byCat(allRecurring);
-  const archived = byCat(allArchived);
+  // 「按类型」排列用：只列有打卡挂着的类型
+  const usedCats = store.categories(true).filter((c) => allRecurring.some((t) => hasCat(t, c.id)));
+  const recurring = allRecurring;
+  const archived = allArchived;
   const dueNow = recurring.filter((t) => dueToday(t, today));
   // 按今天排（Rei 2026-11-09 01:05「今天打卡完成的放在已打卡section，不是今天的打卡不显示」）：
   // 今天要打、还没达标的在上；今天达标的进「已打卡」（可折叠，本机记住，默认展开）；今天不用打的不列（「按类型」里还看得到）
@@ -108,10 +104,7 @@ export function CheckInsPage() {
   const doneOpen = settings.checkInsDoneOpen !== false;
   // 可以补打（Rei 2026-11-09 01:52）：今天不用打、上一个节点没达标、还没到下一个节点的（core makeupNode）；严格模式下不给补
   const makeupList = settings.strictMode ? [] : recurring.filter((t) => !dueToday(t, today) && !!store.makeupNode(t.id, today));
-  const metToday = dueNow.filter((t) => store.progress(t.id, today)?.met).length;
-  const running = byCat(tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running));
-  const streaks = recurring.map((t) => taskStreak(t, store.checkInsOf(t.id), now)?.current ?? 0);
-  const best = Math.max(0, ...streaks);
+  const running = tasks.filter((t) => t.completion_mode === 'timer' && !t.archived_at && store.progress(t.id, today)?.running);
   const title = (t: Task) => titleOf(store, t);
 
   const row = (t: Task) => {
@@ -194,74 +187,77 @@ export function CheckInsPage() {
 
   return (
     <div className="page">
-      <PageHeader
-        title={view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}
-        subtitle={
-          view === 'all'
-            ? tr('{length} 项', { length: recurring.length })
-            : view === 'archived'
-              ? tr('{length} 项', { length: archived.length })
-              : tr('今天 {metToday}/{length} 已完成 · 最长连续 {best} 天', { metToday, length: dueNow.length, best })
-        }
-        icon={view === 'archived' ? <Archive size={22} /> : <CalendarCheck2 size={22} />}
-        actions={
-          <div className="checkin-head-actions">
-            {/* 只放图标（Rei 2026-11-09 01:59「新建按钮只显示图标」），文字在悬停提示和读屏名里 */}
-            <Tip content={tr('新建打卡')}>
-              <Button
-                variant="primary"
-                className="btn-icon-only"
-                aria-label={tr('新建打卡')}
-                // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
-                onPress={() => createBlankTask(store, ui.openEditor, 'checkin', cat !== 'all' && cat !== NO_CATEGORY ? cat : null)}
-              >
-                <Plus size={18} aria-hidden />
-              </Button>
+      {/* 页头去掉（Rei 2026-11-10 08:27「打卡页 去掉标题和下方统计信息」「按今天、按类型btn group放到左边」）：
+          一行工具栏，左边「按今天 / 按类型」（所有 / 已归档视图里换成「回到今天」），右边新建和「显示哪些打卡」。
+          手机上标题在顶栏（App 的 HEADERLESS_PAGES） */}
+      <div className="filter-row checkin-toolbar">
+        {view !== 'today' ? (
+          <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
+            <ArrowLeft size={16} aria-hidden />
+            {tr('回到今天')}
+          </RacButton>
+        ) : allRecurring.length > 0 ? (
+          <Segmented
+            label={tr('排列方式')}
+            value={arrange}
+            onChange={setArrange}
+            options={[
+              { id: 'today', label: tr('按今天') },
+              { id: 'category', label: tr('按类型') },
+            ]}
+          />
+        ) : (
+          <span />
+        )}
+        <div className="checkin-head-actions">
+          {/* 只放图标（Rei 2026-11-09 01:59「新建按钮只显示图标」），文字在悬停提示和读屏名里 */}
+          <Tip content={tr('新建打卡')}>
+            <Button
+              variant="primary"
+              className="btn-icon-only"
+              aria-label={tr('新建打卡')}
+              // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
+              onPress={() => createBlankTask(store, ui.openEditor, 'checkin', null)}
+            >
+              <Plus size={18} aria-hidden />
+            </Button>
+          </Tip>
+          <MenuTrigger>
+            <Tip content={tr('显示哪些打卡')}>
+              <RacButton className={`icon-btn${view !== 'today' ? ' is-active' : ''}`} aria-label={tr('显示哪些打卡')}>
+                <ListFilter size={18} aria-hidden />
+              </RacButton>
             </Tip>
-            <MenuTrigger>
-              <Tip content={tr('显示哪些打卡')}>
-                <RacButton className={`icon-btn${view !== 'today' ? ' is-active' : ''}`} aria-label={tr('显示哪些打卡')}>
-                  <ListFilter size={18} aria-hidden />
-                </RacButton>
-              </Tip>
-              <Popover className="popover menu-popover" placement="bottom end" offset={4}>
-                {/* 单选；再点一次选中的那项 = 取消选择，回到默认的今天 */}
-                <Menu
-                  className="menu"
-                  aria-label={tr('显示哪些打卡')}
-                  selectionMode="single"
-                  selectedKeys={view === 'today' ? [] : [view]}
-                  onSelectionChange={(keys) => {
-                    const k = [...keys][0];
-                    setView(k === 'all' || k === 'archived' ? k : 'today');
-                  }}
-                >
-                  {([['all', tr('所有打卡'), <CalendarCheck2 key="i" size={16} aria-hidden />], ['archived', tr('已归档的打卡'), <Archive key="i" size={16} aria-hidden />]] as const).map(([id, label, icon]) => (
-                    <MenuItem key={id} id={id} className="menu-item menu-check" textValue={label}>
-                      {({ isSelected }) => (
-                        <>
-                          {icon}
-                          <span className="menu-check-text">{label}</span>
-                          <span className="menu-check-mark" aria-hidden>
-                            {isSelected && <Check size={15} />}
-                          </span>
-                        </>
-                      )}
-                    </MenuItem>
-                  ))}
-                </Menu>
-              </Popover>
-            </MenuTrigger>
-          </div>
-        }
-      />
-
-      {view !== 'today' && (
-        <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
-          <ArrowLeft size={16} aria-hidden />
-          {tr('回到今天')}
-        </RacButton>
-      )}
+            <Popover className="popover menu-popover" placement="bottom end" offset={4}>
+              {/* 单选；再点一次选中的那项 = 取消选择，回到默认的今天 */}
+              <Menu
+                className="menu"
+                aria-label={tr('显示哪些打卡')}
+                selectionMode="single"
+                selectedKeys={view === 'today' ? [] : [view]}
+                onSelectionChange={(keys) => {
+                  const k = [...keys][0];
+                  setView(k === 'all' || k === 'archived' ? k : 'today');
+                }}
+              >
+                {([['all', tr('所有打卡'), <CalendarCheck2 key="i" size={16} aria-hidden />], ['archived', tr('已归档的打卡'), <Archive key="i" size={16} aria-hidden />]] as const).map(([id, label, icon]) => (
+                  <MenuItem key={id} id={id} className="menu-item menu-check" textValue={label}>
+                    {({ isSelected }) => (
+                      <>
+                        {icon}
+                        <span className="menu-check-text">{label}</span>
+                        <span className="menu-check-mark" aria-hidden>
+                          {isSelected && <Check size={15} />}
+                        </span>
+                      </>
+                    )}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Popover>
+          </MenuTrigger>
+        </div>
+      </div>
 
       {view === 'today' && (
       <section className="card heatmap-card">
@@ -273,62 +269,15 @@ export function CheckInsPage() {
       </section>
       )}
 
-      {(view === 'archived' ? allArchived.length > 0 : allRecurring.length > 0) && (
-        <div className="filter-row checkin-filters">
-          {/* 类型筛选是个下拉（Rei 2026-11-09 01:06），各皮肤的 .select-btn 样式；选了「全部」以外的用强调色 */}
-          <RacSelect
-            aria-label={tr('按类型筛选')}
-            className={`checkin-type-select${cat !== 'all' ? ' is-active' : ''}`}
-            selectedKey={cat}
-            onSelectionChange={(k) => k !== null && setCat(String(k))}
-          >
-            <RacButton className="input select-btn">
-              <SelectValue className="select-value" />
-              <ChevronDown size={16} aria-hidden />
-            </RacButton>
-            <Popover className="popover">
-              <ListBox className="listbox">
-                <ListBoxItem id="all" className="listbox-item" textValue={tr('全部')}>
-                  {tr('全部')}
-                </ListBoxItem>
-                {usedCats.map((c) => (
-                  <ListBoxItem key={c.id} id={c.id} className="listbox-item" textValue={c.name}>
-                    <CategoryLabel c={c} size={14} />
-                  </ListBoxItem>
-                ))}
-                {hasUncategorized && (
-                  <ListBoxItem id={NO_CATEGORY} className="listbox-item" textValue={tr('没有类型')}>
-                    {tr('没有类型')}
-                  </ListBoxItem>
-                )}
-              </ListBox>
-            </Popover>
-          </RacSelect>
-          <RacButton className="btn btn-quiet filter-edit" onPress={openCategoryPage}>
-            {tr('编辑')}</RacButton>
-          {view === 'today' && (
-          <Segmented
-            label={tr('排列方式')}
-            value={arrange}
-            onChange={setArrange}
-            options={[
-              { id: 'today', label: tr('按今天') },
-              { id: 'category', label: tr('按类型') },
-            ]}
-          />
-          )}
-        </div>
-      )}
-
       {view === 'all' ? (
         // 所有没归档的打卡平铺：今天要打的在前，其余按打卡页的顺序；类型筛选照样管
         recurring.length ? (
           <div className="habit-list">{[...recurring].sort((a, b) => Number(dueToday(b, today)) - Number(dueToday(a, today)) || a.sort - b.sort).map(row)}</div>
         ) : (
-          <Empty title={allRecurring.length ? tr('这个类型下还没有重复任务') : tr('还没有打卡')} />
+          <Empty title={tr('还没有打卡')} />
         )
       ) : view === 'archived' ? (
-        archived.length ? <div className="habit-list">{archived.map(row)}</div> : <Empty title={allArchived.length ? tr('这个类型下没有归档的打卡') : tr('没有归档的打卡')} />
+        archived.length ? <div className="habit-list">{archived.map(row)}</div> : <Empty title={tr('没有归档的打卡')} />
       ) : arrange === 'category' ? (
         <>
           {[...usedCats.map((c) => ({ key: c.id, c })), { key: NO_CATEGORY, c: undefined }].map(({ key, c }) => {
@@ -342,7 +291,7 @@ export function CheckInsPage() {
               </Section>
             );
           })}
-          {!recurring.length && <Empty title={tr('这个类型下还没有重复任务')} />}
+          {!recurring.length && <Empty title={tr('还没有打卡')} />}
         </>
       ) : (
         <>
