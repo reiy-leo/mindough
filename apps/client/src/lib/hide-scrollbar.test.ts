@@ -21,7 +21,7 @@ describe('滚动条不显示', () => {
       expect(ruleHas(`${sel}::-webkit-scrollbar`, /display:\s*none/), `${sel}::-webkit-scrollbar 缺 display: none`).toBe(true);
     }
   });
-  it('只给任务列表：我的一天、待安排、积压、时间轴、项目页、已完成；日记、设置不在里面', () => {
+  it('只给任务列表：我的一天、待安排、积压、日历、项目页、已完成；日记、设置不在里面', () => {
     const app = read('../App.tsx');
     const pages = /HIDE_SCROLLBAR_PAGES: Route\['page'\]\[\] = \[([^\]]+)\]/.exec(app)?.[1] ?? '';
     expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done']);

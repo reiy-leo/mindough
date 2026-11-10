@@ -818,8 +818,7 @@ button {
 }
 /* 第一行、最后一行的底色跟着卡片圆角走（卡片 1px 边框，往里收 1px） */
 .task-list,
-.habit-list,
-.agenda-items {
+.habit-list {
   --list-inner-r: calc(var(--radius-lg) - 1px);
 }
 .task-list > :first-child,
@@ -1016,11 +1015,6 @@ span.drag-handle.is-pin {
 }
 .meta-date.is-overdue {
   color: var(--danger);
-}
-/* 日期段：列表里「第 3/5 天」（Rei 2026-10-26） */
-.meta-span {
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
 }
 .myday-btn.is-on {
   color: #f5a623;
@@ -1265,90 +1259,6 @@ span.drag-handle.is-pin {
   width: 32px;
   height: 32px;
   min-width: 32px;
-}
-
-/* ───────── Agenda ───────── */
-.load-past {
-  margin: 0 auto var(--space-3);
-  display: flex;
-}
-.agenda {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.agenda-day {
-  display: grid;
-  grid-template-columns: 112px 1fr;
-  gap: var(--space-4);
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--border);
-  scroll-margin: 120px;
-}
-.agenda-day.is-past {
-  opacity: 0.72;
-}
-.agenda-date {
-  display: flex;
-  flex-direction: column;
-  padding-top: 10px;
-}
-.agenda-rel {
-  font-weight: 700;
-  font-size: 15px;
-}
-.agenda-full {
-  font-size: 12px;
-  color: var(--text-2);
-}
-.agenda-day.is-today .agenda-rel {
-  color: var(--accent);
-}
-.agenda-day.is-today .agenda-items {
-  border-color: var(--accent);
-}
-.agenda-items {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  min-width: 0;
-}
-.agenda-items .task-row + .task-row {
-  border-top: 1px solid var(--border);
-}
-.agenda-add {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  height: 36px;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-top: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-3);
-  cursor: pointer;
-  font-size: 13px;
-}
-.agenda-items > .agenda-add:first-child {
-  border-top: 0;
-}
-.agenda-add[data-hovered] {
-  color: var(--accent);
-}
-[data-layout='mobile'] .agenda-day {
-  grid-template-columns: 1fr;
-  gap: var(--space-2);
-}
-[data-layout='mobile'] .agenda-date {
-  flex-direction: row;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding-top: 0;
 }
 
 /* ───────── 组 ───────── */

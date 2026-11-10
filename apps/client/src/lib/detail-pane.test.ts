@@ -71,7 +71,7 @@ describe('看板视图的详情用浮层，不占右列（Rei 2026-11-09）', ()
     // 认不出的视图（老的 graph）回落成列表
     expect(detailInModal({ page: 'group', id: 'g1' }, { g1: { view: 'graph' } })).toBe(false);
   });
-  it('侧栏时间轴页（agenda）：也用浮层（Rei 2026-11-10）', () => {
+  it('侧栏日历页（agenda）：也用浮层（Rei 2026-11-10）', () => {
     expect(detailInModal({ page: 'agenda' }, {})).toBe(true);
   });
   it('只看当前这个项目的视图；别的页面不管', () => {

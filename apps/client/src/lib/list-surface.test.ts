@@ -31,8 +31,8 @@ describe('Material 列表底色', () => {
     expect(prop(dark, '--list-surface')).toBe(prop(dark, '--surface'));
   });
 
-  it('任务列表、打卡列表、时间轴都用 --list-surface', () => {
-    const body = ruleBody(skins, "[data-skin='material'] .task-list,\n[data-skin='material'] .habit-list,\n[data-skin='material'] .agenda-items");
+  it('任务列表、打卡列表都用 --list-surface', () => {
+    const body = ruleBody(skins, "[data-skin='material'] .task-list,\n[data-skin='material'] .habit-list");
     expect(body).toMatch(/--surface:\s*var\(--list-surface\)/);
     expect(body).toMatch(/background:\s*var\(--surface\)/);
   });

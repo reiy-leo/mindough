@@ -265,7 +265,7 @@ function GroupDetail({
           <Archive size={18} aria-hidden />
           <span className="grow">
             <strong>{tr('这个项目已归档')}</strong>
-            <span className="muted"> {tr('里面的任务不会进我的一天，也不在等待安排、过期积压、时间轴里。')}</span>
+            <span className="muted"> {tr('里面的任务不会进我的一天，也不在等待安排、过期积压、日历里。')}</span>
           </span>
           <Button variant="tonal" className="small" onPress={() => unarchiveProject(store, ui, g)}>
             <ArchiveRestore size={15} aria-hidden />

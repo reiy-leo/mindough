@@ -35,15 +35,8 @@ export interface TaskRowProps {
   trailing?: ReactNode;
   /** 打卡任务是否显示行内打卡按钮。 */
   showCheckIn?: boolean;
-  /** 列表（Agenda）里日期段的小字：「10月26日 – 30日」「第 3/5 天」（Rei 2026-10-26 日期段）。 */
-  spanNote?: string;
   /** 置顶的图钉由外面的 RowLead 放在把手那格（我的一天、待安排、看板），行里不再放。 */
   pinInLead?: boolean;
-  /**
-   * 第二行只留日期定位：日期段小字（spanNote）和任务时区的偏移，不放类型、项目、重复、心情、相关、状态这些（时间轴，
-   * Rei 2026-11-10「时间轴中不显示已完成的任务，不显示任务详情，点击任务不显示详情侧边栏」）。都没有时第二行不占地方。
-   */
-  dateMetaOnly?: boolean;
 }
 
 /**
@@ -88,7 +81,7 @@ export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: st
   );
 }
 
-export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, spanNote, pinInLead = false, dateMetaOnly = false }: TaskRowProps) {
+export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, pinInLead = false }: TaskRowProps) {
   const ui = useUi();
   const v = viewOf(store, task);
   const today = toDateKey(store.now());
@@ -219,8 +212,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           {v.title}
         </span>
         <span className="row-meta">
-          {!dateMetaOnly && (
-            <>
           {/* 类型（Rei 2026-10-28 能挂多个）：克制地写「游戏 +2」——第一个类型，其余类型和资料合成 +N，悬停看全部 */}
           {cats.length > 0 && (
             <span className="meta-type meta-refs" style={{ color: typeTint(cats[0]?.color ?? v.type?.color) }}>
@@ -254,9 +245,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
               <TaskDateText task={task} today={today} relative />
             </span>
           )}
-            </>
-          )}
-          {spanNote && <span className="meta-span">{spanNote}</span>}
           {/* 按天分组的列表不写日期，但任务时区和设备不同时照样标出偏移（Rei 2026-10-25 任务时区） */}
           {!showDate && tzBadge && (
             <HoverTip className="meta-tz" tip={tr('时区：{zone}', { zone: task.time_zone ?? '' })}>
@@ -264,8 +252,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
               {tzBadge}
             </HoverTip>
           )}
-          {!dateMetaOnly && (
-            <>
           {rec && (
             <span className="meta-rec">
               <Repeat size={11} />
@@ -306,8 +292,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
             <HoverTip className="meta-state state-closed" tip={tr('已关闭')}>
               <Ban size={12} aria-hidden />
             </HoverTip>
-          )}
-            </>
           )}
         </span>
       </RacButton>

@@ -352,7 +352,6 @@ export const EN: Record<string, EnValue> = {
   打卡: 'Check In',
   可做: 'Available',
   计划: 'Plan',
-  '导航|时间轴': 'Timeline',
   列表: 'List',
   '导航|项目': 'Projects',
   '导航|持续': 'Ongoing',
@@ -737,8 +736,6 @@ export const EN: Record<string, EnValue> = {
   同步出错: 'Sync Error',
 
   // ── 时间轴（导航「计划 → 时间轴」，路由 agenda）──
-  '随手记下的琐事，按日期排开': 'Quick notes and errands, by date',
-  '更早的 {hiddenPast} 条': (p) => `${n(p.hiddenPast, 'earlier item', 'earlier items')}`,
   '添加到{formatDateZh}': 'Add to {formatDateZh}',
   '写下一件事，按回车添加': 'Write something, then press Return',
 
@@ -748,7 +745,7 @@ export const EN: Record<string, EnValue> = {
   等待安排的任务: 'Inbox tasks',
   拖动排序: 'Drag to reorder',
   安排日期: 'Schedule',
-  '已安排到时间轴：「{titleOf}」': 'Scheduled “{titleOf}”',
+  '已安排到日历：「{titleOf}」': 'Scheduled “{titleOf}”',
   没有等待安排的事: 'Inbox Zero',
   '想到什么先记下来，有空再决定哪天做。': 'Jot things down now and decide when to do them later.',
   记一件事: 'Add to Inbox',
@@ -1350,7 +1347,7 @@ export const EN: Record<string, EnValue> = {
   "已归档「{name}」，在项目列表最下面「已归档」里": "Archived “{name}”. Find it under Archived at the bottom of Projects.",
   "已归档（{n}）": "Archived ({n})",
   "这个项目已归档": "This project is archived",
-  "里面的任务不会进我的一天，也不在等待安排、过期积压、时间轴里。": "Its tasks won’t be added to My Day and don’t show in Inbox, Overdue or Timeline.",
+  "里面的任务不会进我的一天，也不在等待安排、过期积压、日历里。": "Its tasks won’t be added to My Day and don’t show in Inbox, Overdue or Calendar.",
   "卡片颜色": "Card Color",
   "颜色…": "Color…",
   "倒数日操作": "Countdown actions",
@@ -1473,6 +1470,7 @@ export const EN: Record<string, EnValue> = {
   "天": "days",
   "周数": "Number of weeks",
   "还有 {n} 件": "{n} more",
+  "{n} 件任务、打卡和倒数日": (p) => `${n(p.n, 'task, check-in or countdown', 'tasks, check-ins and countdowns')}`,
   "这天没有安排": "Nothing planned",
   "全天": "All day",
   "来自订阅「{name}」，只能看，不能改。": "From the subscription “{name}”. Read-only.",

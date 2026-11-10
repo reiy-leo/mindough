@@ -116,12 +116,6 @@ html[data-layout='mobile'] .date-panel.has-lunar .lunar-text {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
-.agenda-date .date-lunar {
-  display: block;
-  font-size: 12px;
-  margin-top: 1px;
-}
-
 /* 设置：农历订阅 */
 .lunar-url-row {
   display: flex;

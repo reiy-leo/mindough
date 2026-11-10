@@ -1,7 +1,11 @@
 /**
  * 日历（Rei 2026-11-10「侧边栏时间轴换成"日历"」，方案 docs/CALENDAR.md）：路由仍是 agenda（#/calendar，旧 #/agenda 也行）。
- * - 视图下拉：周、月、年、多日（2–14 天）、多周（1–6 周）；每台设备记住上次的视图和参数（settings.calendarView）。
+ * - 视图下拉：周、月、年、多日（2–14 天）、多周（1–6 周）；每台设备记住上次的视图和参数（settings.calendarView），没记过的默认周（Rei 2026-11-11）。
  * - 任务：有日期、没结束、不重复的，按日期 / 日期段画进格子（core layoutRow 排道），只写标题；宽屏点开是居中浮层（lib/detail-pane），手机整页。
+ * - 倒数日：没结束的，画在目标日那天（Rei 2026-11-11 月视图「当天有倒数日时优先显示倒数日」）。
+ * - 月视图（Rei 2026-11-11）：每格只放一件（core monthCell：倒数日 → 任务 → 订阅事件），日期段不画横条、每天各放一次；
+ *   日期旁数「任务 + 打卡 + 倒数日」，点数字看那天全部。打卡只在月视图出现：算进个数、列在那天的列表里，不占格子。
+ *   原来按天往下排的时间轴列表已经删掉（旧地址 #/agenda、view/timeline 打开的就是这一页）。
  * - 订阅事件（lib/calendar-subs）：带订阅颜色的竖线、只读，点开看详情（EventSheet）。
  * - 节假日 / 农历：日期旁的小字和「休」「班」都走 useLunar（同日期面板的 LunarMark）。
  * - 新建：格子右上角「+」→ 格子里输入，回车建那天的任务。拖动改日期没做（待 Rei 确认）。
@@ -9,7 +13,7 @@
  */
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Form, TextField, Button as RacButton } from 'react-aria-components';
-import { Calendar, ChevronLeft, ChevronRight, Plus, MapPin } from 'lucide-react';
+import { Calendar, CalendarCheck2, ChevronLeft, ChevronRight, Hourglass, Plus, MapPin } from 'lucide-react';
 import {
   CAL_VIEW_KINDS,
   DAYS_MAX,
@@ -18,15 +22,19 @@ import {
   WEEKS_MIN,
   calRange,
   compareDateKey,
+  dueToday,
   formatDateRange,
   isFinished,
   itemsOnDay,
   layoutRow,
+  monthCell,
   normalizeCalView,
   normalizeSubColor,
+  parseRecurrence,
   parseDateKey,
   plainTitleMarkdown,
   stepCalAnchor,
+  addDays,
   taskEndDate,
   toDateKey,
   weekday,
@@ -53,6 +61,8 @@ import '../styles/calendar.css';
 
 interface TaskItem {
   kind: 'task';
+  /** 普通任务、倒数日（目标日那天）、打卡（月视图里每个要打卡的日子一条）。 */
+  role: 'task' | 'countdown' | 'checkin';
   id: string;
   start: DateKey;
   end: DateKey;
@@ -60,6 +70,7 @@ interface TaskItem {
 }
 interface EventItem extends CalEvent {
   kind: 'event';
+  role: 'event';
 }
 type Item = TaskItem | EventItem;
 
@@ -71,8 +82,8 @@ const VIEW_LABEL: Record<CalViewKind, () => string> = {
   weeks: () => trc('日历视图', '多周'),
 };
 
-/** 每格最多几道（多了显示「还有 N 件」）。 */
-const MAX_LANES: Record<CalViewKind, number> = { week: 12, days: 12, weeks: 4, month: 3, year: 0 };
+/** 每格最多几道（多了显示「还有 N 件」）。月视图另走 MonthGrid，每格一件。 */
+const MAX_LANES: Record<CalViewKind, number> = { week: 12, days: 12, weeks: 4, month: 1, year: 0 };
 
 const timeFmt = () => new Intl.DateTimeFormat(intlLocale(), { hour: '2-digit', minute: '2-digit' });
 
@@ -100,15 +111,31 @@ export function CalendarPage() {
   const lunar = useLunar(store);
   const events = useCalendarEvents(store);
 
-  // 同时间轴（Rei 2026-11-10）：完成、关闭的不列；重复的（打卡）不上日历；归档项目里的不列（activeTasks 已排除）
-  const tasks = store.activeTasks().filter((t) => t.scheduled_date && !t.recurrence && !isFinished(t.status));
+  // 完成、关闭的不列；重复的（打卡）不画进格子；归档项目里的不列（activeTasks 已排除）
+  const active = store.activeTasks();
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
-    for (const t of tasks) out.push({ kind: 'task', id: t.id, start: t.scheduled_date!, end: taskEndDate(t) ?? t.scheduled_date!, task: t });
-    for (const e of events) out.push({ ...e, kind: 'event' });
+    for (const t of active) {
+      if (isFinished(t.status) || t.recurrence) continue;
+      if (t.completion_mode === 'countdown') {
+        if (t.target_date) out.push({ kind: 'task', role: 'countdown', id: t.id, start: t.target_date, end: t.target_date, task: t });
+      } else if (t.scheduled_date) out.push({ kind: 'task', role: 'task', id: t.id, start: t.scheduled_date, end: taskEndDate(t) ?? t.scheduled_date, task: t });
+    }
+    for (const e of events) out.push({ ...e, kind: 'event', role: 'event' });
     return out.filter((it) => compareDateKey(it.end, range.from) >= 0 && compareDateKey(it.start, range.to) <= 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.version, events, range.from, range.to]);
+  // 打卡：只在月视图里算（每个要打卡的日子一条），进个数和那天的列表
+  const listItems: Item[] = useMemo(() => {
+    if (view.kind !== 'month') return items;
+    const out: Item[] = [...items];
+    const habits = active.filter((t) => t.completion_mode !== 'countdown' && parseRecurrence(t.recurrence));
+    for (let d = range.from; compareDateKey(d, range.to) <= 0; d = addDays(d, 1)) {
+      for (const t of habits) if (dueToday(t, d)) out.push({ kind: 'task', role: 'checkin', id: `checkin:${t.id}:${d}`, start: d, end: d, task: t });
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, view.kind, store.version, range.from, range.to]);
 
   const go = (dir: 1 | -1) => {
     const next = stepCalAnchor(view, anchor, dir);
@@ -169,8 +196,8 @@ export function CalendarPage() {
   } else if (mobile && view.kind === 'month') {
     body = (
       <>
-        <MiniMonth rows={range.rows} weekStart={weekStart} coreFrom={range.coreFrom} coreTo={range.coreTo} today={today} picked={picked} items={items} lunar={lunar} onPick={setPicked} />
-        <DayList date={picked} today={today} items={itemsOnDay(picked, items)} lunar={lunar} onItem={onItem} onCreate={create} />
+        <MiniMonth rows={range.rows} weekStart={weekStart} coreFrom={range.coreFrom} coreTo={range.coreTo} today={today} picked={picked} items={listItems} lunar={lunar} onPick={setPicked} />
+        <DayList date={picked} today={today} items={itemsOnDay(picked, listItems)} lunar={lunar} onItem={onItem} onCreate={create} />
       </>
     );
   } else if (mobile) {
@@ -181,6 +208,8 @@ export function CalendarPage() {
         ))}
       </div>
     );
+  } else if (view.kind === 'month') {
+    body = <MonthGrid rows={range.rows} coreFrom={range.coreFrom} coreTo={range.coreTo} today={today} items={listItems} lunar={lunar} onItem={onItem} onDay={setDayOpen} onCreate={create} />;
   } else {
     body = (
       <GridView view={view} rows={range.rows} weekStart={weekStart} coreFrom={range.coreFrom} coreTo={range.coreTo} today={today} items={items} lunar={lunar} onItem={onItem} onMore={setDayOpen} onCreate={create} />
@@ -194,7 +223,7 @@ export function CalendarPage() {
       {body}
       <EventSheet event={openEvent} onClose={() => setOpenEvent(null)} />
       <Sheet isOpen={!!dayOpen} onOpenChange={(v) => !v && setDayOpen(null)} title={dayOpen ? formatDateRange(dayOpen, null, today) : ''}>
-        {dayOpen && <DayList date={dayOpen} today={today} items={itemsOnDay(dayOpen, items)} lunar={lunar} onItem={(it) => {
+        {dayOpen && <DayList date={dayOpen} today={today} items={itemsOnDay(dayOpen, listItems)} lunar={lunar} onItem={(it) => {
           if (it.kind === 'event') setOpenEvent(it);
           setDayOpen(null);
         }} onCreate={create} bare />}
@@ -226,9 +255,10 @@ function ItemButton({ it, onItem, compact }: { it: Item; onItem: (it: Item) => v
   const ui = useUi();
   if (it.kind === 'task') {
     const title = titleOf(store, it.task) || tr('无标题');
+    const id = it.task.id;
     return (
-      <RacButton className={`cal-item is-task${ui.editingId === it.id ? ' is-selected' : ''}`} data-task-id={it.id} onPress={() => ui.openEditor(it.id)} aria-label={title}>
-        <span className="cal-item-dot" aria-hidden />
+      <RacButton className={`cal-item is-task${it.role !== 'task' ? ` is-${it.role}` : ''}${ui.editingId === id ? ' is-selected' : ''}`} data-task-id={id} onPress={() => ui.openEditor(id)} aria-label={it.role === 'countdown' ? `${tr('倒数日')} · ${title}` : it.role === 'checkin' ? `${trc('导航', '打卡')} · ${title}` : title}>
+        {it.role === 'countdown' ? <Hourglass size={12} className="cal-item-icon" aria-hidden /> : it.role === 'checkin' ? <CalendarCheck2 size={12} className="cal-item-icon" aria-hidden /> : <span className="cal-item-dot" aria-hidden />}
         <span className="cal-item-text">{title}</span>
       </RacButton>
     );
@@ -330,6 +360,55 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
   );
 }
 
+/** 宽屏月视图（Rei 2026-11-11）：每格一件 + 这天的个数；日期段每天各放一次，接着前后天的那一边不留圆角。 */
+function MonthGrid(p: { rows: DateKey[][]; coreFrom: DateKey; coreTo: DateKey; today: DateKey; items: Item[]; lunar: Lunar; onItem: (it: Item) => void; onDay: (d: DateKey) => void; onCreate: (d: DateKey, text: string) => void }) {
+  const [adding, setAdding] = useState<DateKey | null>(null);
+  return (
+    <div className="cal-grid is-month" style={{ ['--cols' as string]: 7 } as CSSProperties} role="grid" aria-label={tr('日历')}>
+      <div className="cal-dow" role="row">
+        {(p.rows[0] ?? []).map((d) => (
+          <div key={d} role="columnheader" className="cal-dow-cell">
+            {weekdayLabel(weekday(d), 'short')}
+          </div>
+        ))}
+      </div>
+      {p.rows.map((row) => (
+        <div key={row[0]} className="cal-row cal-month-row" role="row">
+          {row.map((d) => {
+            const { shown, count } = monthCell(d, p.items);
+            const span = shown?.kind === 'task' && shown.role === 'task' && shown.start !== shown.end;
+            const label = tr('{n} 件任务、打卡和倒数日', { n: count });
+            return (
+              <div key={d} role="gridcell" className={`cal-cell cal-month-cell${d === p.today ? ' is-today' : ''}`} data-date={d}>
+                <DayHead date={d} today={p.today} lunar={p.lunar} inCore={compareDateKey(d, p.coreFrom) >= 0 && compareDateKey(d, p.coreTo) <= 0}>
+                  <RacButton className="cal-cell-add" aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateRange(d, null) })} onPress={() => setAdding(d)}>
+                    <Plus size={14} />
+                  </RacButton>
+                  {count > 0 && (
+                    <RacButton className="cal-cell-count" aria-label={`${formatDateRange(d, null)} · ${label}`} onPress={() => p.onDay(d)}>
+                      {count}
+                    </RacButton>
+                  )}
+                </DayHead>
+                {shown && (
+                  <div className={`cal-slot${span ? ' is-span' : ''}${span && shown.start < d ? ' cont-left' : ''}${span && shown.end > d ? ' cont-right' : ''}`}>
+                    <ItemButton it={shown} onItem={p.onItem} compact />
+                  </div>
+                )}
+                {adding === d && (
+                  <div className="cal-add-slot">
+                    <AddInline date={d} onCreate={p.onCreate} onDone={() => setAdding(null)} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; coreTo: DateKey; today: DateKey; picked: DateKey; items: Item[]; lunar: Lunar; onPick: (d: DateKey) => void }) {
   return (
     <div className="cal-mini" role="grid" aria-label={tr('日历')}>
@@ -343,7 +422,8 @@ function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; 
       {p.rows.map((row) => (
         <div key={row[0]} className="cal-mini-row" role="row">
           {row.map((d) => {
-            const n = itemsOnDay(d, p.items);
+            const { count } = monthCell(d, p.items);
+            const ev = count ? null : itemsOnDay(d, p.items).find((it): it is EventItem => it.kind === 'event');
             const inCore = compareDateKey(d, p.coreFrom) >= 0 && compareDateKey(d, p.coreTo) <= 0;
             const info = p.lunar.any ? p.lunar.day(d) : null;
             return (
@@ -351,15 +431,14 @@ function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; 
                 key={d}
                 className={`cal-mini-cell${d === p.today ? ' is-today' : ''}${d === p.picked ? ' is-picked' : ''}${inCore ? '' : ' is-outside'}`}
                 onPress={() => p.onPick(d)}
-                aria-label={formatDateRange(d, null)}
+                aria-label={count ? `${formatDateRange(d, null)} · ${tr('{n} 件任务、打卡和倒数日', { n: count })}` : formatDateRange(d, null)}
                 aria-pressed={d === p.picked}
               >
                 <span className="cal-mini-num">{parseDateKey(d).d}</span>
                 {info && <span className="cal-mini-lunar"><LunarMark info={info} /></span>}
-                <span className="cal-mini-dots" aria-hidden>
-                  {n.slice(0, 3).map((it) => (
-                    <i key={it.id} className={it.kind === 'event' ? 'is-event' : 'is-task'} style={it.kind === 'event' ? ({ ['--sub' as string]: `var(--cal-${normalizeSubColor(it.color)})` } as CSSProperties) : undefined} />
-                  ))}
+                {/* 同宽屏月视图：数任务 + 打卡 + 倒数日；只有订阅事件的画一个彩色点 */}
+                <span className="cal-mini-count" aria-hidden>
+                  {count > 0 ? count : ev ? <i style={{ ['--sub' as string]: `var(--cal-${normalizeSubColor(ev.color)})` } as CSSProperties} /> : null}
                 </span>
               </RacButton>
             );
@@ -373,11 +452,9 @@ function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; 
 function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar; onItem: (it: Item) => void; onCreate: (d: DateKey, text: string) => void; bare?: boolean }) {
   const [adding, setAdding] = useState(false);
   const info = p.lunar.any ? p.lunar.day(p.date) : null;
-  const sorted = [...p.items].sort((a, b) => {
-    const ta = a.kind === 'event' ? (a.allDay ? 0 : 1) : 2;
-    const tb = b.kind === 'event' ? (b.allDay ? 0 : 1) : 2;
-    return ta - tb || (a.kind === 'event' && b.kind === 'event' ? (a.startMs ?? 0) - (b.startMs ?? 0) : 0);
-  });
+  // 倒数日 → 全天事件 → 带时间的事件（按时间）→ 任务 → 打卡
+  const rank = (it: Item) => (it.kind === 'event' ? (it.allDay ? 1 : 2) : it.role === 'countdown' ? 0 : it.role === 'task' ? 3 : 4);
+  const sorted = [...p.items].sort((a, b) => rank(a) - rank(b) || (a.kind === 'event' && b.kind === 'event' ? (a.startMs ?? 0) - (b.startMs ?? 0) : 0));
   return (
     <section className={`cal-day-list${p.date === p.today ? ' is-today' : ''}`} aria-label={formatDateRange(p.date, null)}>
       {!p.bare && (
@@ -395,7 +472,7 @@ function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar
         {adding ? (
           <AddInline date={p.date} onCreate={p.onCreate} onDone={() => setAdding(false)} />
         ) : (
-          <RacButton className="agenda-add" onPress={() => setAdding(true)}>
+          <RacButton className="cal-day-add" onPress={() => setAdding(true)}>
             <Plus size={14} /> {tr('添加')}
           </RacButton>
         )}

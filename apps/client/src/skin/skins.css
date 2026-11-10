@@ -301,15 +301,13 @@
 [data-skin='material'] .card,
 [data-skin='material'] .task-list,
 [data-skin='material'] .habit-list,
-[data-skin='material'] .agenda-items,
 [data-skin='material'] .add-bar {
   border: 0;
   background: var(--surface);
   border-radius: 12px;
 }
 [data-skin='material'] .task-list,
-[data-skin='material'] .habit-list,
-[data-skin='material'] .agenda-items {
+[data-skin='material'] .habit-list {
   --list-inner-r: 12px;
   /* 列表里也把 --surface 换成列表底，行内拿 --surface 垫底 / 混色的东西（胶囊、描边圈）跟着一起白 */
   --surface: var(--list-surface);
