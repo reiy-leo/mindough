@@ -19,6 +19,13 @@ export interface Settings {
    */
   chineseLunar: boolean;
   /**
+   * 显示节假日（Rei 2026-11-10 定：和农历开关拆开，节假日默认开、农历仍默认关）：「休」「班」角标和放假的节日名，
+   * 数据来自节假日订阅（lib/lunar.ts）。只记在本机，不同步。不分界面语言。
+   */
+  holidays: boolean;
+  /** 日历页的视图（docs/CALENDAR.md）：core CalView，读写经 core normalizeCalView。只记在本机。 */
+  calendarView: unknown;
+  /**
    * 打卡页哪几张卡片展开了活动图（Rei 2026-10-25「check-ins 中的任务活动图，不要显示在列表中，而是左上角一个圆点，toggle 全宽显示活动图」）：
    * 存打卡任务的 id，只记在本机，不同步，默认都收起。读写经 lib/habit-heatmap。
    */
@@ -76,7 +83,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

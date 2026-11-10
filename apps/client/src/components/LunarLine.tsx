@@ -1,6 +1,6 @@
 /**
  * 日期标题旁的农历一行（Rei 2026-10-17）：「农历九月初八 · 国庆节 [休]」。我的一天副标题、列表每天的标题用。
- * 只读：订阅到的节日 / 节气 / 调休只显示，不成任务。没开「显示农历」时什么都不显示。
+ * 只读：订阅到的节日 / 节气 / 调休只显示，不成任务。农历、节假日都关着时什么都不显示；只开节假日时只写放假的节日名和休 / 班。
  */
 import { lunarFestivalOf, lunarFullName, plainSubTitle, solarTermOf, solarToLunar, type DateKey } from '@mindough/core';
 import { useLunar } from '../lib/lunar';
@@ -9,8 +9,9 @@ import { tr } from '../lib/i18n';
 
 export function LunarLine({ date, className }: { date: DateKey; className?: string }) {
   const lunar = useLunar(useStore());
-  if (!lunar.show) return null;
-  const l = solarToLunar(date);
+  if (!lunar.any) return null;
+  // 农历关着只开节假日（Rei 2026-11-10）：只写放假的节日名和「休」「班」
+  const l = lunar.show ? solarToLunar(date) : null;
   const { sub } = lunar.day(date);
   // 订阅的事件名（去掉（休）（班））优先；本地的节日、节气补上订阅里没有的
   const names: string[] = [];
@@ -18,7 +19,7 @@ export function LunarLine({ date, className }: { date: DateKey; className?: stri
     const p = plainSubTitle(t);
     if (p && !names.includes(p)) names.push(p);
   }
-  const local = [l ? lunarFestivalOf(l) : null, solarTermOf(date)].filter((x): x is string => !!x);
+  const local = [l ? lunarFestivalOf(l) : null, lunar.show ? solarTermOf(date) : null].filter((x): x is string => !!x);
   for (const n of local) if (!names.some((x) => x.includes(n) || n.includes(x))) names.push(n);
   if (!l && !names.length) return null;
   return (

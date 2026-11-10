@@ -197,7 +197,7 @@ export function DateGrid(p: DateGridProps) {
           {rows.map((row, ri) => (
             <tr key={ri}>
               {row.map(({ date, inMonth }) => {
-                const info = lunar.show ? lunar.day(date) : null;
+                const info = lunar.any ? lunar.day(date) : null;
                 const role = rangeCellRole(shown, date);
                 const ranged = !!shown.end;
                 const selected = role === 'single' || role === 'start' || role === 'end';

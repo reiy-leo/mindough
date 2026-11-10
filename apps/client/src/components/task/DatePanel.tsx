@@ -119,7 +119,7 @@ export function DatePanel({
   const mobile = layout === 'mobile';
 
   return (
-    <div className={`date-panel${lunar.show ? ' has-lunar' : ''}${ranged ? ' is-range' : ''}`}>
+    <div className={`date-panel${lunar.any ? ' has-lunar' : ''}${ranged ? ' is-range' : ''}`}>
       {quick && (
         <div className="date-quick">
           {quickDates(zoneToday).map((q) => {

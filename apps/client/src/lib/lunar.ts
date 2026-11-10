@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import {
   LUNAR_PREFS,
+  holidayCell,
   groupSubEvents,
   lunarCellLabel,
   lunarUiVisible,
@@ -145,10 +146,16 @@ export function useLunarUi(): boolean {
   return lunarUiVisible(useSettings().settings.chineseLunar);
 }
 
-/** 到点自动同步：启动、回到前台、每小时看一眼（只在农历界面显示时）。挂在 App 里一次。 */
+/** 显示节假日（本机设置 holidays，默认开；Rei 2026-11-10 和农历开关拆开）。 */
+export function useHolidaysUi(): boolean {
+  return useSettings().settings.holidays !== false;
+}
+
+/** 到点自动同步：启动、回到前台、每小时看一眼（农历界面显示或节假日开着时）。挂在 App 里一次。 */
 export function useLunarSubScheduler(store: Store) {
   const { url, freq } = lunarPrefs(store);
-  const show = useLunarUi();
+  const holidays = useHolidaysUi();
+  const show = useLunarUi() || holidays;
   useEffect(() => {
     if (!show) return;
     const check = () => {
@@ -175,19 +182,29 @@ export interface DayLunar {
   sub: CellSub | null;
 }
 
-/** 拿某天的农历和订阅事件；农历界面不显示时 show = false（调用方不显示）。 */
-export function useLunar(store: Store): { show: boolean; day: (d: DateKey) => DayLunar } {
+/**
+ * 拿某天的农历和订阅事件。show = 农历界面显示；holidays = 节假日开着；any = 两个有一个开着（调用方据此决定画不画小字）。
+ * 农历关着只开节假日时，day() 只给「休」「班」和放假的节日名（core holidayCell），label 是那个节日名。
+ */
+export function useLunar(store: Store): { show: boolean; holidays: boolean; any: boolean; day: (d: DateKey) => DayLunar } {
   const { url } = lunarPrefs(store);
   const show = useLunarUi();
+  const holidays = useHolidaysUi();
   const { byDate, state } = useLunarSub();
   return useMemo(() => {
     const ours = state?.url === url ? byDate : new Map<DateKey, SubEvent[]>();
     return {
       show,
+      holidays,
+      any: show || holidays,
       day: (d: DateKey) => {
-        const sub = pickCellEvent(ours.get(d));
-        return { label: lunarCellLabel(d, sub?.label ?? null), sub };
+        if (show) {
+          const sub = holidays ? pickCellEvent(ours.get(d)) : null;
+          return { label: lunarCellLabel(d, sub?.label ?? null), sub };
+        }
+        const sub = holidays ? holidayCell(ours.get(d), false) : null;
+        return { label: sub?.label ? { text: sub.label, kind: 'subscribed' as const, full: sub.label } : null, sub };
       },
     };
-  }, [show, url, byDate, state?.url]);
+  }, [show, holidays, url, byDate, state?.url]);
 }
