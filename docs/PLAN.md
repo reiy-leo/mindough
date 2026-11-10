@@ -1822,7 +1822,7 @@ Rei 2026-11-10 11:45：「侧边栏"在侧边栏展示"的项目列表可以拖�
 ### 餐厅、目的地接高德：搜地点 + 地图选点 ✅（2026-11-10）
 Rei 2026-11-09 定：资料库里「餐厅」和「目的地」（内置类型 travel）只接高德，不接大众点评，也不加大众点评链接。2026-11-10 给了 JS API Key，地图选点一起做。
 
-- **字段**（内置定义 r5，`BUILTIN_TYPES_REVISION` 0005）：两种都加 城市 / 区 `city`、经纬度 `location`（「经度,纬度」，高德坐标 GCJ-02）、电话 `phone`、类别 `category`、评分 `rating`、营业时间 `hours`、高德地图 `amap`（site_id，站点 `amap`，存 POI id，链接到 `https://uri.amap.com/poidetail?poiid=…`）；餐厅另加人均 `cost`（money，人民币）；目的地加地址 `address`。都是资料字段。用户改过的这两种类型照旧由 `withNewBuiltinFields` 补上新字段，不覆盖。没加迁移（字段定义整行存在 task_type 里）。高德地图链接就用 `amap` 字段的链接，没另加一个链接字段；餐厅原有的「链接」留给用户自己填。
+- **字段**（内置定义 r5，`BUILTIN_TYPES_REVISION` 0005）：两种都加 城市 / 区 `city`、经纬度 `location`（`经度,纬度`，高德坐标 GCJ-02）、电话 `phone`、类别 `category`、评分 `rating`、营业时间 `hours`、高德地图 `amap`（site_id，站点 `amap`，存 POI id，链接到 `https://uri.amap.com/poidetail?poiid=…`）；餐厅另加人均 `cost`（money，人民币）；目的地加地址 `address`。都是资料字段。用户改过的这两种类型照旧由 `withNewBuiltinFields` 补上新字段，不覆盖。没加迁移（字段定义整行存在 task_type 里）。高德地图链接就用 `amap` 字段的链接，没另加一个链接字段；餐厅原有的「链接」留给用户自己填。
 - **服务端**（`apps/server/src/lookup/amap.ts`）：`kind=restaurant|place` 只问 `amap` 一个来源。
   - 搜：`/v5/place/text`，`show_fields=business,photos`，`page_size=10`；餐厅加 `types=050000`（餐饮服务），目的地不限。`city` 参数（上次选的城市）→ `region` + `city_limit=false`：优先、不限定（试过 region=上海 搜「北京故宫」照样出北京）。搜索结果已经带全字段，选中后不再请求详情（省配额）。
   - 取一条：`/v5/place/detail?id=`；`id` 也可以是分享短链，Worker 只请求 `surl.amap.com/<码>`、不跟跳转，从 Location（`wb.amap.com/?p=<POI id>,纬度,经度,…`）里取 POI id。别的域名直接 400，不发请求。
