@@ -27,6 +27,7 @@ import { Heatmap } from '../components/Heatmap';
 import { CheckInControl } from '../components/CheckInControl';
 import { MakeupButton } from '../components/MakeupButton';
 import { HoverTip } from '../ui/HoverTip';
+import { useStuck } from '../components/QuickAddBar';
 import { titleOf } from '../lib/view';
 
 import { tr, trc } from '../lib/i18n';
@@ -34,6 +35,7 @@ import { useLunarUi } from '../lib/lunar';
 export function CheckInsPage() {
   const store = useStore();
   const ui = useUi();
+  const head = useStuck();
   const { layout, settings, set } = useSettings();
   const colorLevel = useColorLevel();
   const now = useNow();
@@ -186,12 +188,15 @@ export function CheckInsPage() {
   };
 
   return (
-    <div className="page">
+    <div className="page checkin-page">
       {/* 页头去掉（Rei 2026-11-10 08:27「打卡页 去掉标题和下方统计信息」「按今天、按类型btn group放到左边」）：
           一行工具栏，左边「按今天 / 按类型」（所有 / 已归档视图里换成「回到今天」），右边新建和「显示哪些打卡」。
           手机上标题在顶栏（App 的 HEADERLESS_PAGES） */}
       {/* 没有可见标题，读屏还是要有页面名（同等待安排、过期积压） */}
       <h1 className="sr-only">{view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}</h1>
+      {/* 工具栏和顶部活动图固定在顶上，只有下面的分区滚（Rei 2026-11-11「打卡页只滚动下面的 sections」）；滚动条藏起来（App 的 HIDE_SCROLLBAR_PAGES） */}
+      <div ref={head.sentinel} className="add-bar-sentinel" aria-hidden />
+      <div className={`checkin-head-sticky${head.stuck ? ' is-stuck' : ''}`}>
       <div className="filter-row checkin-toolbar">
         {view !== 'today' ? (
           <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
@@ -271,6 +276,7 @@ export function CheckInsPage() {
         <Heatmap end={today} ratioFor={dayRatio} label={tr('过去一年的打卡热力图')} />
       </section>
       )}
+      </div>
 
       {view === 'all' ? (
         // 所有没归档的打卡平铺：今天要打的在前，其余按打卡页的顺序；类型筛选照样管

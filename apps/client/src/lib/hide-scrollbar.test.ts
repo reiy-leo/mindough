@@ -21,10 +21,23 @@ describe('滚动条不显示', () => {
       expect(ruleHas(`${sel}::-webkit-scrollbar`, /display:\s*none/), `${sel}::-webkit-scrollbar 缺 display: none`).toBe(true);
     }
   });
-  it('只给任务列表：我的一天、待安排、积压、日历、项目页、已完成；日记、设置不在里面', () => {
+  it('只给任务列表和打卡页：我的一天、待安排、积压、日历、项目页、已完成、打卡（Rei 2026-11-11）；日记、设置不在里面', () => {
     const app = read('../App.tsx');
     const pages = /HIDE_SCROLLBAR_PAGES: Route\['page'\]\[\] = \[([^\]]+)\]/.exec(app)?.[1] ?? '';
-    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done']);
+    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done', 'checkin']);
     expect(app.match(/data-hide-scrollbar=/g)?.length).toBe(2);
+  });
+  it('打卡页：工具栏和顶部活动图一起 sticky、不透明底，页面上边距挪进固定块', () => {
+    expect(ruleHas('.checkin-head-sticky', /position:\s*sticky/)).toBe(true);
+    expect(ruleHas('.checkin-head-sticky', /top:\s*0/)).toBe(true);
+    expect(ruleHas('.checkin-head-sticky', /background:\s*var\(--bg\)/)).toBe(true);
+    expect(ruleHas('.app-mobile .page.checkin-page', /padding-top:\s*0/)).toBe(true);
+    const page = read('../pages/CheckIns.tsx');
+    const sticky = page.indexOf('checkin-head-sticky');
+    expect(sticky).toBeGreaterThan(-1);
+    // 工具栏、活动图在固定块里，分区在它后面
+    expect(page.indexOf('checkin-toolbar')).toBeGreaterThan(sticky);
+    expect(page.indexOf('heatmap-card')).toBeGreaterThan(sticky);
+    expect(page.indexOf("tr('今天要打卡')")).toBeGreaterThan(page.indexOf('heatmap-card'));
   });
 });

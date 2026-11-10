@@ -443,8 +443,8 @@ function newTaskDefaults(route: Route, store: Store, myDayDefaultToday: boolean,
   return {};
 }
 
-/** 不显示滚动条（还能滚）的页面：任务列表（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）；侧栏总是不显示。编辑器、日记、设置等照旧。 */
-const HIDE_SCROLLBAR_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'group', 'done'];
+/** 不显示滚动条（还能滚）的页面：任务列表（Rei 2026-11-08「侧边栏、任务列表的scrollbar不显示」）、打卡页（Rei 2026-11-11）；侧栏总是不显示。编辑器、日记、设置等照旧。 */
+const HIDE_SCROLLBAR_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'group', 'done', 'checkin'];
 
 export function App() {
   const route = useRoute();

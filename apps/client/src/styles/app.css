@@ -4216,6 +4216,43 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   flex: none;
 }
 
+/* 打卡页只有下面的分区滚（Rei 2026-11-11「打卡页只滚动下面的 sections」）：工具栏和顶部活动图（设置 → 打卡开着时）一起 sticky，
+   做法同 .project-head-sticky（不透明页面底色、左右多铺一点盖住行的悬停底色、滚动后底下一条细线）。
+   滚的还是 .main（macOS 无标题栏时是 .main-scroll），所以触屏照常滑、手机的返回手势和安全区都不受影响；滚动条由 App 的 HIDE_SCROLLBAR_PAGES 藏起来。
+   页面上边距挪进固定块里，免得一开始滚页头先跟着往上走一截。 */
+.checkin-head-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-5) var(--space-2) var(--space-3);
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+.checkin-head-sticky.is-stuck {
+  border-bottom-color: var(--border);
+}
+.page.checkin-page,
+.app-mobile .page.checkin-page,
+.platform-macos-overlay .app-desktop .page.checkin-page {
+  padding-top: 0;
+}
+.app-mobile .checkin-head-sticky,
+.platform-macos-overlay .app-desktop .checkin-head-sticky {
+  padding-top: var(--space-2);
+}
+.checkin-head-sticky > .checkin-toolbar {
+  margin-bottom: 0;
+}
+.checkin-head-sticky > .heatmap-card {
+  margin-top: var(--space-4);
+}
+
 /* 侧栏置顶的项目 / 资料库拖动排序（Rei 2026-11-10，lib/nav-reorder）：
    被拖那行浮起跟手（底色用卡片面、阴影用各皮肤的弹层阴影，圆角沿用行本身），别的行让位滑开，
    落点是强调色淡底 + 虚线框的占位格（圆角跟行一样）。宽屏侧栏、图标栏、手机「更多」页共用。 */
