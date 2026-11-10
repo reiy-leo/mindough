@@ -4217,11 +4217,16 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   align-items: center;
   gap: 6px;
 }
-.btn.btn-icon-only {
+/* WinUI 的 .btn 自带左右 12px 内边距，选择器更具体，会把 18px 的加号挤成 8px 宽：这里同样加上 [data-skin] 压回 0，图标不缩 */
+.btn.btn-icon-only,
+[data-skin] .btn.btn-icon-only {
   padding: 0;
   width: 34px;
   min-width: 34px;
   justify-content: center;
+}
+.btn.btn-icon-only svg {
+  flex: none;
 }
 .checkin-back {
   align-self: flex-start;
