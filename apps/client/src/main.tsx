@@ -14,6 +14,7 @@ import { installExternalLinks } from './lib/external';
 import { installContextMenuBlock } from './lib/contextmenu';
 import { installLongPressGuard } from './lib/long-press';
 import { installSelectAllGuard } from './lib/no-select';
+import { installNoLinkDrag } from './lib/no-link-drag';
 import { installRootScrollGuard } from './lib/root-scroll';
 import { installBackspaceGuard } from './lib/backspace-guard';
 import { installBackLayers } from './lib/back-layers';
@@ -57,6 +58,7 @@ installContextMenuBlock();
 installLongPressGuard();
 // 界面文字不能选：⌘A 不在输入框里时不选整页（样式在 app.css 开头）
 installSelectAllGuard();
+installNoLinkDrag();
 // 整页不滚：外层万一被滚动了就复位（桌面布局才管，手机软键盘要滚整页）
 installRootScrollGuard();
 // 退格不返回上一页：WebKit 默认在不能打字的地方按退格就 history.back()（Rei 2026-11-08，lib/backspace-guard.ts）

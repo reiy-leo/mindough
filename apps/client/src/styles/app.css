@@ -79,6 +79,21 @@ textarea,
   user-select: text;
   -webkit-touch-callout: default;
 }
+/* 界面里的链接、图片拖不出系统预览（Rei 2026-11-11：Mac 客户端拖侧栏项目时冒出 WebKit 的链接卡片，
+   写着标题、tauri://localhost#/… 网址和绿色加号）。侧栏、底栏、设置列表、资料库卡片都是 <a href>，默认能当链接拖走；
+   能拖动排序的地方用自己的拖动，不要这层。WebKit、Chromium、WebView2 认这条；Firefox 靠 lib/no-link-drag 拦 dragstart。
+   编辑器和只读 Markdown 里的链接、图片是用户内容，照常能拖出去；@ 提到的任务是界面胶囊，不让拖。
+   写了 draggable="true" 的不管（React Aria 拖动排序的行）。 */
+a[href]:not([draggable='true']),
+img:not([draggable='true']) {
+  -webkit-user-drag: none;
+}
+.ProseMirror a[href]:not([data-task-mention]),
+.ProseMirror img,
+.md a[href]:not([data-task-mention]),
+.md img {
+  -webkit-user-drag: auto;
+}
 /* 选中文字的底色（Rei 2026-11-10「安卓端 任务编辑器中，选择标题和内容时背景会变成黑色」）：不写的话用浏览器默认色，
    Chromium 在暗色（color-scheme: dark）下默认是深青灰底、选中的字变成黑色，在安卓 WebView 里看着就是一块黑。
    这里每个皮肤亮暗各给一个强调色的半透明浅底，只写底色、不写 color，选中的字保持原来的颜色。

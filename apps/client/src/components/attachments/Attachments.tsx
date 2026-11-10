@@ -85,6 +85,10 @@ let internalDrag = false;
 if (typeof window !== 'undefined') {
   window.addEventListener('dragstart', () => (internalDrag = true), true);
   const end = () => (internalDrag = false);
+  // 被拦下的拖动（界面链接、图片，lib/no-link-drag；侧栏拖动排序）根本没开始，也不会有 dragend：冒泡到最外层时清掉
+  window.addEventListener('dragstart', (e) => {
+    if (e.defaultPrevented) end();
+  });
   window.addEventListener('dragend', end, true);
   // drop 之后才清（捕获阶段先于各区域的处理，直接清掉它们就分不出来了）；拖到页面外面时只有 dragend
   window.addEventListener('drop', () => setTimeout(end, 0), true);

@@ -224,6 +224,7 @@ function NavLink({ item, active, badge, onOpen }: { item: NavItem; active: boole
   return (
     <a
       href={href(item.to ?? ({ page: item.page } as Route))}
+      draggable={false}
       onClick={
         onOpen
           ? (e) => {
@@ -261,6 +262,7 @@ function PinnedGroupLink({ item, active, group }: { item: NavItem; active: boole
     <>
       <a
         href={href(item.to!)}
+        draggable={false}
         {...menu.props}
         {...reorder.props}
         onClick={(e) => {
@@ -294,6 +296,7 @@ function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean })
     <>
       <a
         href={href(item.to!)}
+        draggable={false}
         {...menu.props}
         {...reorder.props}
         onClick={(e) => {
@@ -385,7 +388,7 @@ function MoreLink({ item: n }: { item: NavItem }) {
   const Icon = n.icon;
   const reorder = usePinnedReorder(n.groupId ?? n.libraryId);
   return (
-    <a className={`more-item${n.libraryId || n.groupId ? ' more-item-sub' : ''}`} href={href(n.to ?? ({ page: n.page } as Route))} {...reorder.props}>
+    <a className={`more-item${n.libraryId || n.groupId ? ' more-item-sub' : ''}`} href={href(n.to ?? ({ page: n.page } as Route))} draggable={false} {...reorder.props}>
       <span className="more-icon">
         <Icon size={20} />
       </span>
@@ -589,7 +592,7 @@ export function App() {
           {tabs.map((n) => {
             const Icon = n.icon;
             return (
-              <a key={n.page} href={href({ page: n.page } as Route)} className={`tab-item${isActive(n) ? ' is-active' : ''}`} aria-current={isActive(n) ? 'page' : undefined}>
+              <a key={n.page} href={href({ page: n.page } as Route)} draggable={false} className={`tab-item${isActive(n) ? ' is-active' : ''}`} aria-current={isActive(n) ? 'page' : undefined}>
                 <span className="tab-icon">
                   <Icon size={20} />
                 </span>
@@ -597,7 +600,7 @@ export function App() {
               </a>
             );
           })}
-          <a href="#/more" className={`tab-item${moreActive ? ' is-active' : ''}`} onClick={(e) => { if (route.page === 'more') { e.preventDefault(); navigate({ page: 'myday' }); } }}>
+          <a href="#/more" draggable={false} className={`tab-item${moreActive ? ' is-active' : ''}`} onClick={(e) => { if (route.page === 'more') { e.preventDefault(); navigate({ page: 'myday' }); } }}>
             <span className="tab-icon">
               <Menu size={20} />
             </span>
