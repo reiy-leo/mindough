@@ -1,0 +1,85 @@
+{
+ "count": "2",
+ "infocode": "10000",
+ "pois": [
+  {
+   "parent": "",
+   "address": "茂名南路58号",
+   "business": {
+    "keytag": "五星级酒店",
+    "rating": "4.6",
+    "business_area": "淮海路",
+    "tel": "021-64158866",
+    "rectag": "五星级酒店"
+   },
+   "distance": "",
+   "pcode": "310000",
+   "adcode": "310101",
+   "pname": "上海市",
+   "cityname": "上海市",
+   "type": "住宿服务;宾馆酒店;五星级宾馆|餐饮服务;餐饮相关场所;餐饮相关",
+   "photos": [
+    {
+     "title": "",
+     "url": "https://store.is.autonavi.com/showpic/2297151a6f2968d84af48e66749aa5e4"
+    },
+    {
+     "title": "",
+     "url": "https://aos-comment.amap.com/B00155QJJP/comment/content_media_external_file_100002267_1765619628249_19730191.jpg"
+    },
+    {
+     "title": "公共区域",
+     "url": "https://store.is.autonavi.com/showpic/4a7879a80aed6353afcd9954c621769f"
+    }
+   ],
+   "typecode": "100102|050000",
+   "adname": "黄浦区",
+   "citycode": "021",
+   "name": "花园饭店",
+   "location": "121.459832,31.219853",
+   "id": "B00155QJJP"
+  },
+  {
+   "parent": "B001549097",
+   "address": "滨江大道3510号(陆家嘴地铁站9B口步行480米)",
+   "business": {
+    "opentime_today": "09:00-22:30",
+    "cost": "814.00",
+    "keytag": "水上活动中心",
+    "rating": "4.3",
+    "business_area": "小陆家嘴商圈",
+    "tel": "19534075787",
+    "rectag": "水上活动中心",
+    "opentime_week": "周一至周日 09:00-22:30"
+   },
+   "distance": "",
+   "pcode": "310000",
+   "adcode": "310115",
+   "pname": "上海市",
+   "cityname": "上海市",
+   "type": "体育休闲服务;娱乐场所;娱乐场所|餐饮服务;中餐厅;中餐厅",
+   "photos": [
+    {
+     "title": "",
+     "url": "https://aos-comment.amap.com/B0FFG8DP3N/comment/cc8ca6f09cf1438b45a586a8424c3ae1_2048_2048_80.jpg"
+    },
+    {
+     "title": "",
+     "url": "http://store.is.autonavi.com/showpic/a03064416ecf4fd1a8f2ce2cd2e44ce1"
+    },
+    {
+     "title": "",
+     "url": "http://store.is.autonavi.com/showpic/84092366e5c8b81bf2ba9e08a63964aa"
+    }
+   ],
+   "typecode": "080300|050100",
+   "adname": "浦东新区",
+   "citycode": "021",
+   "name": "上海游艇会所(浦东店)",
+   "location": "121.502608,31.230672",
+   "id": "B0FFG8DP3N"
+  }
+ ],
+ "status": "1",
+ "info": "OK"
+}

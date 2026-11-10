@@ -1,0 +1,51 @@
+{
+ "count": "1",
+ "infocode": "10000",
+ "pois": [
+  {
+   "parent": "B0FFF65YS3",
+   "address": "南京东路123号中央商场5楼",
+   "business": {
+    "opentime_today": "11:00-07:00",
+    "cost": "120.00",
+    "keytag": "火锅",
+    "rating": "4.7",
+    "business_area": "北京路",
+    "tel": "021-63339190;021-63339199",
+    "tag": "内蒙罕山白绒山羊,虫草花乌鸡丸,川味果香五花腊肉,黄土高原滩羊卷,冰爽葡萄柠檬茶,雪人豆乳蛋糕,云南文山红甸山药,单人餐,双人餐",
+    "rectag": "火锅",
+    "opentime_week": "周一至周日 11:00-07:00"
+   },
+   "distance": "",
+   "pcode": "310000",
+   "adcode": "310101",
+   "pname": "上海市",
+   "cityname": "上海市",
+   "type": "餐饮服务;中餐厅;火锅店",
+   "photos": [
+    {
+     "title": "",
+     "url": "https://store.is.autonavi.com/showpic/bcb84a02dd0ebb388d01c309af554414?operate=original"
+    },
+    {
+     "title": "",
+     "url": "http://store.is.autonavi.com/showpic/0416f6f64b163ff1c02475980c2452ac"
+    },
+    {
+     "title": "",
+     "url": "https://aos-comment.amap.com/B0FFKKRXAZ/comment/content_media_external_file_1000092557_ss__1762833017600_14442933.jpg"
+    }
+   ],
+   "typecode": "050117",
+   "updateflag": "0",
+   "adname": "黄浦区",
+   "citycode": "021",
+   "atag": "火锅",
+   "name": "海底捞火锅(外滩店)",
+   "location": "121.487590,31.238251",
+   "id": "B0FFKKRXAZ"
+  }
+ ],
+ "status": "1",
+ "info": "OK"
+}

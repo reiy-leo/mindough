@@ -14,5 +14,9 @@ TURSO_DB_URL=
 TURSO_DB_TOKEN=
 # 在线找影视（可不配；不配时界面显示「TMDB 还没配置」）：themoviedb.org → 设置 → API，v3 API key 或 v4 读访问令牌都行
 TMDB_API_KEY=
+# 餐厅、目的地搜地点（可不配；不配时界面显示「高德地图还没配置」）：高德开放平台 → 应用管理 → 「Web 服务」Key
+AMAP_KEY=
+# 地图选点用的高德 JS API 安全密钥（「Web 端（JS API）」Key 的安全密钥；Key 本身是公开的，写在前端）
+AMAP_JS_SECRET=
 # 云端存储后端：turso（默认）| d1（本地 wrangler dev 用模拟的 D1）；wrangler.jsonc 的 vars 里也写着
 # STORAGE_BACKEND=turso

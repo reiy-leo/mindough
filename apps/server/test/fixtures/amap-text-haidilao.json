@@ -1,0 +1,90 @@
+{
+ "count": "2",
+ "infocode": "10000",
+ "pois": [
+  {
+   "parent": "B0FFF65YS3",
+   "address": "南京东路123号中央商场5楼",
+   "business": {
+    "opentime_today": "11:00-07:00",
+    "cost": "120.00",
+    "keytag": "火锅",
+    "rating": "4.7",
+    "business_area": "北京路",
+    "tel": "021-63339190;021-63339199",
+    "tag": "内蒙罕山白绒山羊,虫草花乌鸡丸,川味果香五花腊肉,黄土高原滩羊卷,冰爽葡萄柠檬茶,雪人豆乳蛋糕,云南文山红甸山药,单人餐,双人餐",
+    "rectag": "火锅",
+    "opentime_week": "周一至周日 11:00-07:00"
+   },
+   "distance": "",
+   "pcode": "310000",
+   "adcode": "310101",
+   "pname": "上海市",
+   "cityname": "上海市",
+   "type": "餐饮服务;中餐厅;火锅店",
+   "photos": [
+    {
+     "title": "",
+     "url": "https://store.is.autonavi.com/showpic/bcb84a02dd0ebb388d01c309af554414?operate=original"
+    },
+    {
+     "title": "",
+     "url": "http://store.is.autonavi.com/showpic/0416f6f64b163ff1c02475980c2452ac"
+    },
+    {
+     "title": "",
+     "url": "https://aos-comment.amap.com/B0FFKKRXAZ/comment/content_media_external_file_1000092557_ss__1762833017600_14442933.jpg"
+    }
+   ],
+   "typecode": "050117",
+   "adname": "黄浦区",
+   "citycode": "021",
+   "name": "海底捞火锅(外滩店)",
+   "location": "121.487590,31.238251",
+   "id": "B0FFKKRXAZ"
+  },
+  {
+   "parent": "B0G3SRWQQ3",
+   "address": "南京东路830号第一百货商业中心B馆五楼",
+   "business": {
+    "opentime_today": "10:00-07:00",
+    "cost": "120.00",
+    "keytag": "火锅",
+    "rating": "4.6",
+    "business_area": "北京路",
+    "tel": "021-63617188",
+    "tag": "冻基围虾,番茄锅底,顶级雪花牛肉,鸳鸯锅底,魔芋丝,毛肚,金针菇,澳洲精品肥牛,血旺,鸭肠,草原羔羊肉卷,翡翠墨鱼滑,秘制羊肉,黄喉,捞派巴沙鱼片,双人餐,单人餐",
+    "rectag": "川味火锅为主",
+    "opentime_week": "周一至周日 10:00-07:00"
+   },
+   "distance": "",
+   "pcode": "310000",
+   "adcode": "310101",
+   "pname": "上海市",
+   "cityname": "上海市",
+   "type": "餐饮服务;中餐厅;火锅店",
+   "photos": [
+    {
+     "title": "",
+     "url": "https://store.is.autonavi.com/showpic/bcb84a02dd0ebb388d01c309af554414?operate=original"
+    },
+    {
+     "title": "",
+     "url": "http://store.is.autonavi.com/showpic/e133bd0bc3b6648b637d458e3c9b2af4"
+    },
+    {
+     "title": "",
+     "url": "https://aos-comment.amap.com/B0FFHCZJ95/comment/AFBB5836_3B0F_4D60_B8BD_342818E24D83_L0_001_2000_150_1757784071633_78440251.jpg"
+    }
+   ],
+   "typecode": "050117",
+   "adname": "黄浦区",
+   "citycode": "021",
+   "name": "海底捞火锅(人民广场店)",
+   "location": "121.474402,31.235907",
+   "id": "B0FFHCZJ95"
+  }
+ ],
+ "status": "1",
+ "info": "OK"
+}

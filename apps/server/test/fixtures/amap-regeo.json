@@ -1,0 +1,109 @@
+{
+ "status": "1",
+ "regeocode": {
+  "roads": [
+   {
+    "id": "021H51F010012734",
+    "location": "121.488,31.2383",
+    "direction": "西南",
+    "name": "四川中路",
+    "distance": "18.268"
+   }
+  ],
+  "roadinters": [
+   {
+    "second_name": "沙市二路",
+    "first_id": "021H51F010012734",
+    "second_id": "021H51F010012800412",
+    "location": "121.487662,31.238497",
+    "distance": "28.1924",
+    "first_name": "四川中路",
+    "direction": "南"
+   }
+  ],
+  "formatted_address": "上海市黄浦区外滩街道南京路步行街123号外滩中央商场",
+  "addressComponent": {
+   "city": [],
+   "province": "上海市",
+   "adcode": "310101",
+   "district": "黄浦区",
+   "towncode": "310101013000",
+   "streetNumber": {
+    "number": "123号",
+    "location": "121.487514,31.238292",
+    "direction": "西北",
+    "distance": "8.5431",
+    "street": "南京路步行街"
+   },
+   "country": "中国",
+   "township": "外滩街道",
+   "businessAreas": [
+    {
+     "location": "121.481498,31.239494",
+     "name": "北京路",
+     "id": "310101"
+    }
+   ],
+   "building": {
+    "name": [],
+    "type": []
+   },
+   "neighborhood": {
+    "name": [],
+    "type": []
+   },
+   "citycode": "021"
+  },
+  "aois": [
+   {
+    "area": "4372.210916",
+    "type": "060000",
+    "id": "B0FFF65YS3",
+    "location": "121.487173,31.237999",
+    "adcode": "310101",
+    "name": "外滩中央商场",
+    "distance": "0"
+   }
+  ],
+  "pois": [
+   {
+    "id": "B0FFG7HY0E",
+    "direction": "东南",
+    "businessarea": "北京路",
+    "address": "滇池路63号",
+    "poiweight": "0.304269",
+    "name": "万国建筑博览群",
+    "location": "121.489271,31.237208",
+    "distance": "197.487",
+    "tel": [],
+    "type": "风景名胜;风景名胜;风景名胜"
+   },
+   {
+    "id": "B0FFFWUMC9",
+    "direction": "北",
+    "businessarea": "北京路",
+    "address": "南京东路100号(近四川中路)",
+    "poiweight": "0.185507",
+    "name": "惠罗商厦",
+    "location": "121.487740,31.238845",
+    "distance": "67.5628",
+    "tel": "021-63235028;021-63239198",
+    "type": "购物服务;商场;普通商场"
+   },
+   {
+    "id": "B00153831C",
+    "direction": "东南",
+    "businessarea": "北京路",
+    "address": "四川中路320号(南京东路地铁站7号口步行460米)",
+    "poiweight": "0.266682",
+    "name": "安利大楼",
+    "location": "121.488436,31.237671",
+    "distance": "103.109",
+    "tel": [],
+    "type": "商务住宅;楼宇;商务写字楼"
+   }
+  ]
+ },
+ "info": "OK",
+ "infocode": "10000"
+}

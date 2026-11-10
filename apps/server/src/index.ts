@@ -11,6 +11,7 @@ import { handleLookup } from './lookup';
 import { handleFileCheck, handleFileGet, handleFileUpload } from './files';
 import { handleIcsProxy } from './calendar';
 import { handleDidaProxy } from './dida';
+import { handleAmapConfig, handleAmapProxy } from './amap-proxy';
 import { purgeAfterPush, purgeOrphans, type PurgeBucket } from './purge';
 import { openDb, storageBackend } from './storage';
 import type { LookupEnv } from './lookup/types';
@@ -123,6 +124,9 @@ async function route(request: Request, env: Env, url: URL, pathname: string, met
   if (pathname.startsWith('/api/lookup/')) return handleLookup(request, env, url);
   // 滴答清单 Open API 代理（导入用，令牌在 x-dida-token 头里，不存）
   if (pathname.startsWith('/api/dida/')) return handleDidaProxy(request, env, url);
+  // 高德：JS API 安全密钥代理（/_AMapService/*，附加 jscode）与配置状态（Rei 2026-11-10）
+  if (pathname === '/api/amap/config') return handleAmapConfig(env);
+  if (pathname.startsWith('/_AMapService/')) return handleAmapProxy(request, env, url);
 
   if (pathname.startsWith('/api/') || pathname.startsWith('/auth/')) return json({ error: '404 未找到' }, 404);
   // 旧域名 mindough.rei8t.dev 留给介绍页（Rei 2026-10-26）：根路径出介绍页，/sw.js 换成注销自己的版本；

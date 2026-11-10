@@ -1,11 +1,12 @@
 /**
  * 在线找资料：各来源适配器共用的结果形状与请求工具。
  * LookupResult 与 packages/core/src/lookup.ts 的同名类型一致（Worker 不依赖 core，两处一起改）。
- * fields 的 key 是内置类型的字段 key：影视 year / kind（电影、剧集）/ imdb / douban；书 author / publisher / year / isbn / total_pages（按名字只有作品级的 author / year / total_pages）；游戏 platform / links。
+ * fields 的 key 是内置类型的字段 key：餐厅 / 目的地 amap / address / city / location / phone / category / rating / cost / hours（见 amap.ts）；影视 year / kind（电影、剧集）/ imdb / douban；书 author / publisher / year / isbn / total_pages（按名字只有作品级的 author / year / total_pages）；游戏 platform / links。
  */
-export type FieldValue = string | number | boolean | string[] | Array<{ url: string; label?: string }> | null;
-export type LookupKind = 'movie' | 'book' | 'game';
-export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb';
+export type FieldValue = string | number | boolean | string[] | Array<{ url: string; label?: string }> | { amount: number; currency: string } | null;
+/** restaurant / place：餐厅、目的地，只接高德（Rei 2026-11-09）。 */
+export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place';
+export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb' | 'amap';
 export type Lang = 'zh' | 'en';
 
 export interface LookupResult {
@@ -20,7 +21,8 @@ export interface LookupResult {
   url: string;
 }
 
-export type LookupSourceState = 'ok' | 'unconfigured' | 'blocked' | 'error';
+/** limited：配额、QPS 超了（高德 10003 / 10004 / 10019…），过一会儿或明天再试。 */
+export type LookupSourceState = 'ok' | 'unconfigured' | 'blocked' | 'limited' | 'error';
 
 export interface LookupSourceStatus {
   source: LookupSource;
@@ -35,6 +37,10 @@ export interface LookupEnv {
   /** IGDB：Twitch 应用的 Client ID 和 Client Secret（client_credentials 换令牌）。 */
   IGDB_CLIENT_ID?: string;
   IGDB_CLIENT_SECRET?: string;
+  /** 高德 Web 服务 Key（Worker 机密，Rei 2026-11-10）：搜地点、取地点、逆地理。绝不进前端、不打印。 */
+  AMAP_KEY?: string;
+  /** 高德 JS API 安全密钥（Worker 机密）：/_AMapService/* 代理附加 jscode，见 amap-proxy.ts。 */
+  AMAP_JS_SECRET?: string;
 }
 
 /** 来源出错：带 HTTP 状态码与中文说明，接口原样返回给界面。 */
