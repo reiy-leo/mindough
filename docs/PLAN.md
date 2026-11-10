@@ -1777,6 +1777,15 @@ Rei 2026-11-10 19:1x：「"接下来"应该换成"超过一年"；点击 section
 - **折叠**：改用 `components/SectionedList`（和我的一天、项目页同一个组件）：段标题是按钮，点了收起 / 展开，回车、空格也行，`aria-expanded` + `aria-controls`；收起了哪几段存本机 `settings.listViews.doable.collapsed`（`overdue:<段>`，不同步）。`ListSection.kind` 多一种 `overdue`，图标用日历钟。
 - 测试：`lib/sections.test.ts` 加 2 项（段顺序和名字、kind、折叠键、空段）。
 
+### 过期积压只放已过期的，去掉「还没到期」那段 ✅（2026-11-11）
+Rei 2026-11-11 02:40（附截图）：「过期积压页里不能有未到期的任务，只列已过期的」；最后那段「还没到期」去掉；366 天及以前那段叫「超过一年」，意思是过期超过一年。上一节「没到期的任务怎么办」那条我定的做法就此作废。
+
+- **core**：新 `overdue-backlog.ts`：`isOverdueBacklogTask(t, now, today)`（没删、没做完、有日期、不是打卡和倒数日、`isTaskOverdue` 为真）、`overdueBacklogTasks`（最近过期在上，结束日一样时开始日晚的在上）；`Store.overdueBacklog(now, today)` 用 `activeTasks()`，归档项目里的不算。今天到期的不算过期，不放。
+- **页面**：`pages/Doable.tsx` 只取 `store.overdueBacklog`，不再算 `upcoming`；`backlogSections(overdue, now, today)` 去掉第二个参数，只出过期的 5 段：昨天 1 天 / 过去 7 天 2–7 / 过去一个月 8–30 / 过去一年 31–365 / 超过一年 ≥366，都按结束日算。小字改成「{n} 件已过期」（0 件不写），空状态「没有过期的任务」。
+- **侧栏计数**：侧栏只有「我的一天」「等待安排」带数字，「过期积压」本来没有，不用改。
+- **文案**：新 2 条「{n} 件已过期」「没有过期的任务」9 种语言（7 种待母语者看）；删 4 条没人用的：「还没到期」「定了日期的都做完了」「{n} 件定了日期还没做完」「{n} 件定了日期还没做完，{m} 件已过期」。
+- 测试：core `test/overdue-backlog.test.ts` 5 项（今天 / 明天不放、日期段看结束日、各种不放的、排序、归档项目）；client `lib/sections.test.ts` 过期积压分段 2 项改写（没有「还没到期」、5 段顺序和名字）。
+
 ### 打卡页去掉页头，「按今天 / 按类型」放左边 ✅（2026-11-10）
 Rei 2026-11-10 08:27：「打卡页 去掉标题和下方统计信息。打卡页 不显示 类型dropdown和编辑btn。打卡页 按今天、按类型btn group放到左边。」
 
