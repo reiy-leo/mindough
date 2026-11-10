@@ -1469,7 +1469,6 @@ export const EN: Record<string, EnValue> = {
   "天数": "Number of days",
   "天": "days",
   "周数": "Number of weeks",
-  "还有 {n} 件": "{n} more",
   "{n} 件任务、打卡和倒数日": (p) => `${n(p.n, 'task, check-in or countdown', 'tasks, check-ins and countdowns')}`,
   "这天没有安排": "Nothing planned",
   "全天": "All day",

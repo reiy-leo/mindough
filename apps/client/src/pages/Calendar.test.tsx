@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * 日历（Rei 2026-11-10，docs/CALENDAR.md）：完成、关闭、重复的不画进格子；任务、倒数日、订阅事件画进格子；
- * 视图从本机设置读，没记过默认周（Rei 2026-11-11）；月视图每格一件、倒数日优先、数任务 + 打卡 + 倒数日；手机月视图下面是选中那天的列表。
+ * 视图从本机设置读，没记过默认周（Rei 2026-11-11）；周、多日、多周、月都列出当天全部条目，没有「还有 N 件」，每天倒数日 → 任务 → 订阅事件（Rei 2026-11-11 01:10）；月视图日期旁数任务 + 打卡 + 倒数日；打卡只算个数，格子和列表都不列（Rei 01:08）；手机月视图下面是选中那天的列表。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
@@ -75,29 +75,45 @@ describe('日历', () => {
     expect(openEditor).toHaveBeenCalledWith('span');
   });
 
-  it('月视图：每格只放一件，倒数日优先；日期旁数任务 + 打卡 + 倒数日；日期段每天各放一次', () => {
+  it('月视图：列出当天全部，倒数日 → 任务 → 订阅事件；日期旁数任务 + 打卡 + 倒数日；没有「还有 N 件」；不列打卡', () => {
     tasks.push(
       task('a', '待办'),
       task('b', '待办'),
+      task('c', '待办'),
       task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }),
       task('habit', '待办', { recurrence: 'FREQ=DAILY' }),
       task('span', '待办', { scheduled_date: '2026-11-20', end_date: '2026-11-22' }),
     );
+    events.push({ id: 's1:e1', key: 'e1', subId: 's1', subName: '工作', color: 'green', title: '周会', allDay: true, startDate: today, endDate: today, start: today, end: today, startMs: null, endMs: null, location: '', description: '' });
     act(() => root.render(<CalendarPage />));
-    const cell = host.querySelector(`.cal-month-cell[data-date="${today}"]`)!;
-    const shown = [...cell.querySelectorAll('.cal-item')];
-    expect(shown).toHaveLength(1);
-    expect(shown[0]!.classList.contains('is-countdown')).toBe(true);
-    expect(cell.querySelector('.cal-cell-count')!.textContent).toBe('4');
+    const cell = host.querySelector(`.cal-cell[data-date="${today}"]`)!;
+    const row = cell.closest('.cal-row')!;
+    const slots = [...row.querySelectorAll<HTMLElement>('.cal-slot')].sort((x, y) => Number(x.style.gridRow) - Number(y.style.gridRow));
+    expect(slots.map((el) => el.querySelector('.cal-item')!.getAttribute('data-task-id') ?? 'event')).toEqual(['cd', 'a', 'b', 'c', 'event']);
+    expect(cell.querySelector('.cal-cell-count')!.textContent).toBe('5');
     expect(host.querySelector('.cal-more')).toBeNull();
-    // 只有打卡的日子：不放打卡，只有个数
-    const other = host.querySelector('.cal-month-cell[data-date="2026-11-12"]')!;
-    expect(other.querySelector('.cal-item')).toBeNull();
+    expect(host.querySelector('.cal-item.is-checkin')).toBeNull();
+    // 只有打卡的日子：没有条目，只有个数
+    const other = host.querySelector('.cal-cell[data-date="2026-11-12"]')!;
     expect(other.querySelector('.cal-cell-count')!.textContent).toBe('1');
-    // 日期段：三天各一次，中间那天两边都接着
-    expect(host.querySelectorAll('.cal-item[data-task-id="span"]')).toHaveLength(3);
-    const mid = host.querySelector('.cal-month-cell[data-date="2026-11-21"] .cal-slot')!;
-    expect(mid.classList.contains('cont-left') && mid.classList.contains('cont-right')).toBe(true);
+    // 日期段跨格画一条
+    const spanSlot = host.querySelector('.cal-item[data-task-id="span"]')!.closest('.cal-slot') as HTMLElement;
+    expect(spanSlot.style.gridColumn).toContain('span 3');
+    // 点个数弹出那天的列表：倒数日 → 任务 → 事件，不列打卡
+    act(() => (cell.querySelector('.cal-cell-count') as HTMLElement).click());
+    const listed = [...document.querySelectorAll('.cal-day-list .cal-item')].map((el) => el.getAttribute('data-task-id') ?? 'event');
+    expect(listed).toEqual(['cd', 'a', 'b', 'c', 'event']);
+  });
+
+  it('周视图：一天很多件也全部列出，没有「还有 N 件」', () => {
+    settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
+    for (let i = 0; i < 16; i++) tasks.push(task(`t${i}`, '待办'));
+    tasks.push(task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
+    act(() => root.render(<CalendarPage />));
+    expect(ids()).toHaveLength(17);
+    expect(host.querySelector('.cal-more')).toBeNull();
+    const top = [...host.querySelectorAll<HTMLElement>('.cal-slot')].find((el) => el.style.gridRow === '2')!;
+    expect(top.querySelector('.cal-item')!.getAttribute('data-task-id')).toBe('cd');
   });
 
   it('订阅事件带颜色和时间（周视图）', () => {
@@ -116,11 +132,12 @@ describe('日历', () => {
     expect(host.querySelectorAll('.cal-cell').length).toBe(4);
   });
 
-  it('手机月视图：小月历写个数 + 当天列表（倒数日在前，打卡在后）', () => {
+  it('手机月视图：小月历写个数（含打卡）+ 当天列表（倒数日 → 任务 → 事件，不列打卡）', () => {
     settings.layout = 'mobile';
     tasks.push(task('open', '待办'), task('habit', '待办', { recurrence: 'FREQ=DAILY' }), task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
     act(() => root.render(<CalendarPage />));
     expect(host.querySelector('.cal-mini-cell.is-today .cal-mini-count')!.textContent).toBe('3');
-    expect([...host.querySelectorAll('.cal-day-list .cal-item.is-task')].map((el) => el.getAttribute('data-task-id'))).toEqual(['cd', 'open', 'habit']);
+    expect([...host.querySelectorAll('.cal-day-list .cal-item.is-task')].map((el) => el.getAttribute('data-task-id'))).toEqual(['cd', 'open']);
+    expect(host.querySelector('.cal-item.is-checkin')).toBeNull();
   });
 });

@@ -1748,7 +1748,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "天数": "Jumlah hari",
   "天": "hari",
   "周数": "Jumlah minggu",
-  "还有 {n} 件": "{n} lagi",
   "{n} 件任务、打卡和倒数日": "{n} tugas, kebiasaan, dan hitung mundur",
   "这天没有安排": "Tidak ada rencana",
   "全天": "Sepanjang hari",

@@ -158,25 +158,40 @@ export interface CalPlaced<T extends CalSpanItem> {
 
 /**
  * 把一行（连续的几天）里的东西排成道：多天的先排、长的先排，同一条道不重叠。
- * 返回每件的位置，和每格（按列）一共压了多少件（「还有 N 件」用）。
+ * 给了 tier 时按档分批排（数小的先排），后一档每件从它覆盖的每一格里前几档用到的最下一道之后开始，
+ * 所以每一天从上往下一定是先第 0 档、再第 1 档……（Rei 2026-11-11「倒数日都排在最上面，其后任务，再后订阅事件」）。
+ * 同一档里：开始早的、长的在前，再按传进来的顺序（没给 tier 时按 id）。
+ * 返回每件的位置，和每格（按列）一共压了多少件。
  */
-export function layoutRow<T extends CalSpanItem>(row: readonly DateKey[], items: readonly T[]): { placed: CalPlaced<T>[]; perDay: number[] } {
+export function layoutRow<T extends CalSpanItem>(
+  row: readonly DateKey[],
+  items: readonly T[],
+  tier?: (it: T) => number,
+): { placed: CalPlaced<T>[]; perDay: number[] } {
   const first = row[0];
   const last = row[row.length - 1];
   const perDay = row.map(() => 0);
   if (!first || !last) return { placed: [], perDay };
   const inRow = items
     .filter((it) => compareDateKey(it.start, last) <= 0 && compareDateKey(it.end, first) >= 0)
-    .map((it) => {
+    .map((it, i) => {
       const s = compareDateKey(it.start, first) < 0 ? first : it.start;
       const e = compareDateKey(it.end, last) > 0 ? last : it.end;
-      return { it, col: diffDays(first, s), span: diffDays(s, e) + 1, total: diffDays(it.start, it.end) + 1 };
+      return { it, i, t: tier ? tier(it) : 0, col: diffDays(first, s), span: diffDays(s, e) + 1, total: diffDays(it.start, it.end) + 1 };
     })
-    .sort((a, b) => a.col - b.col || b.total - a.total || (a.it.id < b.it.id ? -1 : 1));
+    .sort((a, b) => a.t - b.t || a.col - b.col || b.total - a.total || (tier ? a.i - b.i : a.it.id < b.it.id ? -1 : 1));
   const lanes: number[][] = []; // 每条道已占的列
   const placed: CalPlaced<T>[] = [];
+  const floor = row.map(() => 0); // 每格：前几档用到的最下一道 + 1
+  const deepest = row.map(() => -1); // 每格：到目前为止用到的最下一道
+  let curTier = inRow[0]?.t ?? 0;
   for (const x of inRow) {
+    if (x.t !== curTier) {
+      for (let c = 0; c < row.length; c++) floor[c] = deepest[c]! + 1;
+      curTier = x.t;
+    }
     let lane = 0;
+    for (let c = x.col; c < x.col + x.span; c++) lane = Math.max(lane, floor[c]!);
     for (; ; lane++) {
       const used = lanes[lane] ?? (lanes[lane] = []);
       let free = true;
@@ -186,7 +201,10 @@ export function layoutRow<T extends CalSpanItem>(row: readonly DateKey[], items:
         break;
       }
     }
-    for (let c = x.col; c < x.col + x.span; c++) perDay[c]! += 1;
+    for (let c = x.col; c < x.col + x.span; c++) {
+      perDay[c]! += 1;
+      deepest[c] = Math.max(deepest[c]!, lane);
+    }
     placed.push({ item: x.it, col: x.col, span: x.span, lane, contLeft: compareDateKey(x.it.start, first) < 0, contRight: compareDateKey(x.it.end, last) > 0 });
   }
   return { placed, perDay };
@@ -197,7 +215,7 @@ export function itemsOnDay<T extends CalSpanItem>(day: DateKey, items: readonly 
   return items.filter((it) => compareDateKey(it.start, day) <= 0 && compareDateKey(it.end, day) >= 0);
 }
 
-/** 月视图格子里的一件：任务、打卡、倒数日、订阅事件。 */
+/** 日历里的一件：任务、打卡（只算数）、倒数日、订阅事件。 */
 export type CalItemRole = 'countdown' | 'task' | 'checkin' | 'event';
 export interface CalCellItem extends CalSpanItem {
   role: CalItemRole;
@@ -206,21 +224,20 @@ export interface CalCellItem extends CalSpanItem {
   startMs?: number | null;
 }
 
+/** 日历里谁在上面（Rei 2026-11-11 01:10「倒数日都排在最上面，其后任务，再后订阅事件」）；打卡不显示，排最后。 */
+export function calItemTier(role: CalItemRole): number {
+  return role === 'countdown' ? 0 : role === 'task' ? 1 : role === 'event' ? 2 : 9;
+}
+
 /**
- * 月视图一格（Rei 2026-11-11「每个格子只显示一个任务；当天有倒数日时优先显示倒数日；另显示当天任务+打卡+倒数日的个数」）：
- * - 只挑一件：倒数日 → 任务（那天开始的在前，再按短的在前）→ 订阅事件（全天在前，再按时间）。打卡不挑（每天都有的话会占满整月）。
- * - count：这天的任务 + 打卡 + 倒数日，订阅事件不算。
- * 同一档里保持传进来的顺序。
+ * 某天的列表顺序：倒数日 → 任务（那天开始的在前，再按短的在前）→ 订阅事件（全天在前，再按时间）。
+ * 同一档里保持传进来的顺序。不过滤打卡（打卡排最后），要不要列由调用的地方决定。
  */
-export function monthCell<T extends CalCellItem>(day: DateKey, items: readonly T[]): { shown: T | null; count: number } {
-  const on = itemsOnDay(day, items);
-  const count = on.filter((it) => it.role !== 'event').length;
-  const rank = (it: T) => (it.role === 'countdown' ? 0 : it.role === 'task' ? 1 : it.role === 'event' ? 2 : 9);
-  const pickable = on
+export function sortDayItems<T extends CalCellItem>(day: DateKey, items: readonly T[]): T[] {
+  return items
     .map((it, i) => ({ it, i }))
-    .filter(({ it }) => rank(it) < 9)
     .sort((a, b) => {
-      const r = rank(a.it) - rank(b.it);
+      const r = calItemTier(a.it.role) - calItemTier(b.it.role);
       if (r) return r;
       if (a.it.role === 'task') {
         const sa = a.it.start === day ? 0 : 1;
@@ -236,6 +253,13 @@ export function monthCell<T extends CalCellItem>(day: DateKey, items: readonly T
         if (t) return t;
       }
       return a.i - b.i;
-    });
-  return { shown: pickable[0]?.it ?? null, count };
+    })
+    .map(({ it }) => it);
+}
+
+/**
+ * 日期旁的个数（Rei 2026-11-11）：这天的任务 + 打卡 + 倒数日，订阅事件不算。打卡只算数、不显示（Rei 01:08）。
+ */
+export function dayCount(day: DateKey, items: readonly CalCellItem[]): number {
+  return itemsOnDay(day, items).filter((it) => it.role !== 'event').length;
 }

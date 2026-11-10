@@ -1748,7 +1748,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "天数": "Nombre de jours",
   "天": "jours",
   "周数": "Nombre de semaines",
-  "还有 {n} 件": "{n} de plus",
   "{n} 件任务、打卡和倒数日": "{n, plural, one {# tâche, habitude ou compte à rebours} other {# tâches, habitudes et comptes à rebours}}",
   "这天没有安排": "Rien de prévu",
   "全天": "Toute la journée",

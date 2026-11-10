@@ -96,6 +96,9 @@
 .cal-grid.is-tall .cal-row {
   min-height: 420px;
 }
+.cal-grid.is-month .cal-row {
+  min-height: 96px;
+}
 .cal-cell-bg {
   border-left: 1px solid var(--border);
   z-index: 0;
@@ -187,7 +190,6 @@
 }
 
 .cal-slot,
-.cal-more-slot,
 .cal-add-slot {
   position: relative;
   z-index: 1;
@@ -276,40 +278,7 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.cal-more {
-  border: 0;
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 11.5px;
-  padding: 1px 6px;
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-}
-.cal-more[data-hovered] {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-/* 月视图（Rei 2026-11-11）：每格一件 + 这天的个数，格子自己画竖线和今天的底色 */
-.cal-month-row {
-  min-height: 84px;
-  row-gap: 0;
-  padding-bottom: 0;
-}
-.cal-month-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-bottom: 6px;
-  border-left: 1px solid var(--border);
-}
-.cal-month-cell:first-child {
-  border-left: 0;
-}
-.cal-month-cell.is-today {
-  background: var(--accent-soft);
-}
+/* 月视图日期旁的个数（Rei 2026-11-11）：任务 + 打卡 + 倒数日，点了看那天的列表 */
 .cal-cell-count {
   flex: none;
   min-width: 20px;
@@ -341,9 +310,6 @@
 }
 .cal-item.is-countdown {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-}
-.cal-item.is-checkin .cal-item-icon {
-  color: var(--text-2);
 }
 .cal-day-add {
   display: flex;

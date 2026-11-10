@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calRange, layoutRow, monthCell, normalizeCalView, stepCalAnchor, yearMonths, type CalCellItem } from '../src/calendar/views';
+import { calRange, calItemTier, dayCount, layoutRow, normalizeCalView, sortDayItems, stepCalAnchor, yearMonths, type CalCellItem } from '../src/calendar/views';
 import { parseIcsEvents, resolveTzid, wallToMs } from '../src/calendar/ics-events';
 import { calSubDue, holidayCell, nextSubColor } from '../src/calendar/subs';
 import type { SubEvent } from '../src/lunar/ics';
@@ -231,30 +231,40 @@ describe('subs helpers', () => {
   });
 });
 
-describe('月视图一格 monthCell（Rei 2026-11-11）', () => {
+describe('一天的顺序和个数（Rei 2026-11-11 01:08 / 01:10）', () => {
   const day = '2026-11-11';
   const it_ = (id: string, role: CalCellItem['role'], start = day, end = start, extra: Partial<CalCellItem> = {}): CalCellItem => ({ id, role, start, end, ...extra });
-  it('有倒数日先显示倒数日；个数 = 任务 + 打卡 + 倒数日，订阅事件不算', () => {
-    const r = monthCell(day, [it_('t', 'task'), it_('e', 'event'), it_('c', 'checkin'), it_('cd', 'countdown')]);
-    expect(r.shown?.id).toBe('cd');
-    expect(r.count).toBe(3);
+  it('个数 = 任务 + 打卡 + 倒数日，订阅事件不算，不在这天的不算', () => {
+    expect(dayCount(day, [it_('t', 'task'), it_('e', 'event'), it_('c', 'checkin'), it_('cd', 'countdown'), it_('x', 'task', '2026-11-12')])).toBe(3);
+    expect(dayCount(day, [it_('c1', 'checkin'), it_('c2', 'checkin')])).toBe(2);
   });
-  it('没有倒数日：那天开始的任务在前，再按短的在前', () => {
-    const r = monthCell(day, [it_('long', 'task', '2026-11-01', '2026-11-30'), it_('span', 'task', day, '2026-11-13'), it_('one', 'task')]);
-    expect(r.shown?.id).toBe('one');
-    expect(r.count).toBe(3);
+  it('列表：倒数日 → 任务（那天开始的、短的在前）→ 订阅事件（全天在前，再按时间）', () => {
+    const r = sortDayItems(day, [
+      it_('late', 'event', day, day, { startMs: 2000 }),
+      it_('long', 'task', '2026-11-01', '2026-11-30'),
+      it_('early', 'event', day, day, { startMs: 1000 }),
+      it_('span', 'task', day, '2026-11-13'),
+      it_('cd', 'countdown'),
+      it_('one', 'task'),
+      it_('all', 'event', day, day, { allDay: true }),
+    ]);
+    expect(r.map((x) => x.id)).toEqual(['cd', 'one', 'span', 'long', 'all', 'early', 'late']);
   });
-  it('只有打卡：不挑打卡，只算个数', () => {
-    const r = monthCell(day, [it_('c1', 'checkin'), it_('c2', 'checkin')]);
-    expect(r.shown).toBeNull();
-    expect(r.count).toBe(2);
-  });
-  it('只有订阅事件：显示事件（全天在前，再按时间），个数 0', () => {
-    const r = monthCell(day, [it_('late', 'event', day, day, { startMs: 2000 }), it_('early', 'event', day, day, { startMs: 1000 }), it_('all', 'event', day, day, { allDay: true })]);
-    expect(r.shown?.id).toBe('all');
-    expect(r.count).toBe(0);
-  });
-  it('不在这天的不算', () => {
-    expect(monthCell(day, [it_('x', 'task', '2026-11-12')])).toEqual({ shown: null, count: 0 });
+  it('分档排道：每一天倒数日在任务上面，任务在订阅事件上面', () => {
+    const row = ['2026-11-09', '2026-11-10', '2026-11-11'];
+    const items = [
+      it_('ev', 'event', '2026-11-10'),
+      it_('span', 'task', '2026-11-09', '2026-11-10'),
+      it_('cd', 'countdown', '2026-11-09'),
+      it_('ev2', 'event', '2026-11-11'),
+    ];
+    const { placed } = layoutRow(row, items, (x) => calItemTier(x.role));
+    const by = Object.fromEntries(placed.map((p) => [p.item.id, p]));
+    expect(by.cd!.lane).toBe(0);
+    expect(by.span!.lane).toBe(1);
+    // 11-10 那天倒数日没有，但事件仍排在跨过来的任务下面
+    expect(by.ev!.lane).toBe(2);
+    // 11-11 只有事件，从最上面开始
+    expect(by.ev2!.lane).toBe(0);
   });
 });
