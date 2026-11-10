@@ -592,6 +592,7 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   white-space: normal;
