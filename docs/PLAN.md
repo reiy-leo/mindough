@@ -1734,9 +1734,19 @@ Rei 2026-11-10 07:52：「“积压”页，按日期分区不一样，按照这
 ### 打卡页去掉页头，「按今天 / 按类型」放左边 ✅（2026-11-10）
 Rei 2026-11-10 08:27：「打卡页 去掉标题和下方统计信息。打卡页 不显示 类型dropdown和编辑btn。打卡页 按今天、按类型btn group放到左边。」
 
-- **页面**：`pages/CheckIns.tsx` 不再用 `PageHeader`。最上面一行 `.filter-row.checkin-toolbar`：左边 `Segmented`（今天视图且有打卡时）或「回到今天」（所有 / 已归档视图），右边 `.checkin-head-actions`（新建、`ListFilter` 下拉，原样搬过来）。全年热力图挪到工具栏下面，列表不变。
+- **页面**：`pages/CheckIns.tsx` 不再用 `PageHeader`。最上面一行 `.filter-row.checkin-toolbar`：左边 `Segmented`（今天视图且有打卡时）或「回到今天」（所有 / 已归档视图），右边 `.checkin-head-actions`（新建、`ListFilter` 下拉，原样搬过来）。全年热力图挪到工具栏下面（08:30 起由设置开关管，见下一节），列表不变。
 - **去掉的**：标题、统计行（`metToday`、`best` 一起删）、类型下拉（`cat` state、`byCat` 删，`recurring` / `archived` 就是全部）、「编辑」按钮。新建打卡不再带筛选的类型（传 `null`）。空状态「这个类型下……」不会再出现，换成「还没有打卡」「没有归档的打卡」。
 - **没别的入口了的**：打卡页按类型「筛选」没了，只剩「按类型」排列（分组看）；改类型还有侧栏「管理 → 类型」页和类型选择器底部「管理类型…」。没有另加入口。
 - **手机**：`App.tsx` 的 `HEADERLESS_PAGES` 加 `checkin`，顶栏标题显示「打卡」，页面里没大标题。
 - **样式**：`.checkin-toolbar` 一行不换、两头对齐；删了只给类型下拉用的 `.checkin-type-select`。`.checkin-filters`、`.filter-edit` 倒数日页、资料库还在用，留着。
 - 文案：没加新的；「按类型筛选」「全部」「编辑」「这个类型下还没有重复任务」「这个类型下没有归档的打卡」「今天 {metToday}/{length} 已完成 · 最长连续 {best} 天」留在词典里没删。
+
+### 设置 → 打卡：在打卡页顶部显示活动图 ✅（2026-11-10）
+Rei 2026-11-10 08:30：「设置里新增「打卡」选项卡，里面一个开关「在打卡页顶部显示活动图」，开=打卡页顶部显示活动图，关=不显示，默认关。」
+
+- **设置项**：`lib/router.ts` `SETTINGS_SECTIONS` 在 `tasks` 和 `journal` 之间加 `checkin`；`pages/Settings.tsx` `SETTINGS_ITEMS` 加一项（Lucide `CalendarCheck2`，名字用 `trc('导航', '打卡')`，小字「打卡页顶部的活动图」），`CheckInSection` 一张卡一个开关。设置窗口、Web、手机共用这份列表，深链 `view/settings/checkin` 自动认。
+- **存哪**：`lib/settings.tsx` 新字段 `checkInsYearHeatmap`，默认 `false`，存 localStorage `mindough:settings`，不同步，和 `myDayDefaultToday` 一样。
+- **打卡页**：`view === 'today' && settings.checkInsYearHeatmap` 才渲染「过去一年」那张卡。
+- **行上的 activity 图标不动**：它是每张打卡自己的活动图（`habitHeatmapOpen`），和顶部总图不是一回事，不重复，没并进开关。
+- 文案 3 条，9 种语言（7 种待母语者看）。测试：deeplink 加 `#/settings/checkin`。
+
