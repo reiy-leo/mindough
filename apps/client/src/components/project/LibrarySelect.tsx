@@ -24,12 +24,15 @@ export function LibrarySelect({ store, groupId, value, onChange }: { store: Stor
     return gid && gid !== groupId ? (store.get('group', gid)?.name ?? '') : undefined;
   };
   const [confirm, setConfirm] = useState<{ typeId: string; next: string[]; project: string } | null>(null);
+  // 下拉开没开：要弹确认时先收起下拉，免得盖在确认框上面
+  const [open, setOpen] = useState(false);
   const names = libs.filter((t) => value.includes(t.id)).map((t) => libraryCopy(t).name);
   const text = names.join(tr('、'));
   const change = (keys: Key[]) => {
     const next = libs.map((t) => t.id).filter((id) => keys.map(String).includes(id));
     const added = next.find((id) => !value.includes(id) && elsewhere(id) !== undefined);
     if (added) {
+      setOpen(false);
       setConfirm({ typeId: added, next, project: elsewhere(added)! });
       return;
     }
@@ -38,7 +41,7 @@ export function LibrarySelect({ store, groupId, value, onChange }: { store: Stor
   const joining = store.libraryJoinCount(groupId, value);
   return (
     <div className="project-libs">
-      <RacSelect className="field multi-select project-libs-select" selectionMode="multiple" value={value} onChange={(keys) => change(keys as Key[])} placeholder={tr('不关联')}>
+      <RacSelect className="field multi-select project-libs-select" selectionMode="multiple" isOpen={open} onOpenChange={setOpen} value={value} onChange={(keys) => change(keys as Key[])} placeholder={tr('不关联')}>
         <Label className="field-label">{tr('资料库')}</Label>
         <RacButton className="input select-btn">
           <span className={`select-value${text ? '' : ' is-placeholder'}`}>{text || tr('不关联')}</span>
@@ -63,10 +66,8 @@ export function LibrarySelect({ store, groupId, value, onChange }: { store: Stor
           </ListBox>
         </Popover>
       </RacSelect>
-      <p className="setting-hint project-libs-hint">
-        {tr('选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。')}
-        {joining > 0 && <> {tr('会有 {n} 件任务放进来。', { n: joining })}</>}
-      </p>
+      <p className="setting-hint project-libs-hint">{tr('选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。')}</p>
+      {joining > 0 && <p className="setting-hint project-libs-hint project-libs-count">{tr('会有 {n} 件任务放进来。', { n: joining })}</p>}
       <ConfirmDialog
         isOpen={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
