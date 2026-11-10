@@ -1428,3 +1428,62 @@
 [data-layout='mobile'] .lib-select-count {
   margin-right: auto;
 }
+
+/* ── 剧集的季（Rei 2026-11-11）：海报小图 + 第 N 季 + 年份 · 集数，一行排不下就换行 ── */
+.season-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 16px 14px;
+}
+.season-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.season-art {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+.season-art .art-initials {
+  font-size: 18px;
+}
+.season-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.season-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+}
+.season-sub,
+.season-meta {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.season-sub {
+  color: var(--text-2);
+}
+.season-source {
+  margin-top: 12px;
+}
+[data-skin='winui'] .season-art {
+  border-radius: 4px;
+}
+[data-skin='material'] .season-art {
+  border-radius: 12px;
+}
+[data-layout='mobile'] .season-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 12px;
+}

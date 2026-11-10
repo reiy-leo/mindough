@@ -110,3 +110,60 @@ export async function tmdbByImdb(env: LookupEnv, imdb: string, lang: Lang): Prom
   if (tv) return toResult(tv, 'tv', imdb);
   throw new LookupError(404, `404 未找到：TMDB 上没有 ${imdb}`);
 }
+
+// ───────────── 剧集的季（Rei 2026-11-11「影视库里的剧集显示 seasons」） ─────────────
+
+/** 一季：number 是 TMDB 的 season_number（0 = 特别篇）；poster 只存 TMDB 的图片路径（/abc.jpg），客户端拼小图地址。 */
+export interface TmdbSeason {
+  number: number;
+  name?: string;
+  year?: number;
+  episodes: number;
+  poster?: string;
+}
+
+/** tv：这部剧在 TMDB 的编号（tv/1399）；按 IMDb 编号查到的是电影 → tv 为 null、没有季。 */
+export interface TmdbSeasons {
+  tv: string | null;
+  seasons: TmdbSeason[];
+}
+
+interface TmdbTv {
+  id: number;
+  seasons?: Array<{ season_number?: number; name?: string; air_date?: string | null; episode_count?: number; poster_path?: string | null }>;
+}
+
+const POSTER_PATH = /^\/[\w-]+\.(jpg|jpeg|png|webp)$/i;
+
+/** id：「tv/1399」，或 IMDb 编号「tt0903747」（先 find 出 TMDB 的剧集编号）。 */
+export async function tmdbSeasons(env: LookupEnv, id: string, lang: Lang): Promise<TmdbSeasons> {
+  let tvId: string;
+  const tv = /^tv\/(\d{1,10})$/.exec(id);
+  if (tv) tvId = tv[1]!;
+  else if (/^tt\d{7,10}$/.test(id)) {
+    let hit: LookupResult;
+    try {
+      hit = await tmdbByImdb(env, id, lang);
+    } catch (e) {
+      if (e instanceof LookupError && e.status === 404) return { tv: null, seasons: [] };
+      throw e;
+    }
+    const m = /^tv\/(\d+)$/.exec(hit.sourceId);
+    if (!m) return { tv: null, seasons: [] };
+    tvId = m[1]!;
+  } else throw new LookupError(400, '400 请求有误：剧集编号要写成 tv/1399 或 IMDb 编号 tt0903747');
+  const data = await tmdb<TmdbTv>(env, `/tv/${tvId}`, { language: language(lang) });
+  const seasons: TmdbSeason[] = [];
+  for (const s of data.seasons ?? []) {
+    if (typeof s.season_number !== 'number' || s.season_number < 0) continue;
+    const year = yearOf(s.air_date);
+    seasons.push({
+      number: s.season_number,
+      ...(s.name?.trim() ? { name: s.name.trim() } : {}),
+      ...(year ? { year } : {}),
+      episodes: Math.max(0, Math.floor(s.episode_count ?? 0)),
+      ...(s.poster_path && POSTER_PATH.test(s.poster_path) ? { poster: s.poster_path } : {}),
+    });
+  }
+  return { tv: `tv/${tvId}`, seasons };
+}

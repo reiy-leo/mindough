@@ -37,6 +37,7 @@ import { TaskRow } from '../components/TaskRow';
 import { Markdown } from '../components/Markdown';
 import { ItemArt, ItemSheet, artShape, entryArt } from '../components/library/Library';
 import { OnlineOptions, SourceNote } from '../components/library/Lookup';
+import { SeasonsSection } from '../components/library/Seasons';
 import { createItemFromLookup, useOnlineSearch } from '../lib/lookup';
 import { LinkChips } from '../components/library/LinkFields';
 import { DuplicatesSheet, MergeIntoSheet, MergeSheet } from '../components/library/MergeSheet';
@@ -400,6 +401,7 @@ export function LibraryItemPage({ typeId, id }: { typeId: string; id: string }) 
         </div>
       </header>
       {item.note_md.trim() && <Markdown source={item.note_md} className="card note-card" />}
+      <SeasonsSection store={store} type={type} item={item} />
       <Section title={tr('相关任务 {length}', { length: tasks.length })}>
         {tasks.length ? (
           <div className="task-list plain">

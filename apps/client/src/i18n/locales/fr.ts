@@ -1761,6 +1761,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 件已过期": "{n} en retard",
   "没有过期的任务": "Rien en retard",
   "「{name}」的更多操作": "Autres actions pour « {name} »",
+  "季 {length}": "Saisons · {length}",
+  "特别篇": "Épisodes spéciaux",
+  "{n} 集": "{n, plural, one {# épisode} other {# épisodes}}",
 };
 
 export const DATA: Record<string, string> = {

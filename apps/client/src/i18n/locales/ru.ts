@@ -1761,6 +1761,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 件已过期": "Просрочено: {n}",
   "没有过期的任务": "Просроченных задач нет",
   "「{name}」的更多操作": "Другие действия: «{name}»",
+  "季 {length}": "Сезоны · {length}",
+  "特别篇": "Спецвыпуски",
+  "{n} 集": "{n, plural, one {# серия} few {# серии} many {# серий} other {# серии}}",
 };
 
 export const DATA: Record<string, string> = {

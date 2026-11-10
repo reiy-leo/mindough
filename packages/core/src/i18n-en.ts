@@ -177,6 +177,8 @@ export const CORE_EN: Record<string, V> = {
   '第 {s} 季第 {e} 集': 'Season {s}, Episode {e}',
   '第 {s} 季': 'Season {s}',
   '第 {e} 集': 'Episode {e}',
+  特别篇: 'Specials',
+  '{n} 集': (p) => count(p.n, 'episode', 'episodes'),
 
   // ── 资料库 ──
   影视库: 'Movies & TV',

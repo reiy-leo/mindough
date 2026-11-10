@@ -18,6 +18,9 @@
  * - POST /api/lookup/image { url } → 把选中结果的封面拉进 R2（mindough-assets），返回同 POST /api/assets 的 { url, r2_key, sha256, mime, size }。
  *   { url, raw: true } → 只代拉原图字节回去（不存）：客户端先按版式统一宽高，再自己 POST /api/assets。
  *        只拉这几个来源的图床（防止拿 Worker 去请求任意地址）。
+ * - GET  /api/lookup/seasons?id=tv/1399|tt0903747&lang=zh|en → { tv: 'tv/1399' | null, seasons: [{ number, name?, year?, episodes, poster? }] }
+ *        剧集的季（TMDB /tv/{id}，Rei 2026-11-11）：id 是 TMDB 剧集编号或 IMDb 编号；IMDb 查到的是电影 → tv null、没有季。
+ *        poster 是 TMDB 图片路径（/abc.jpg），客户端拼 image.tmdb.org/t/p/w154 小图。缓存 1 天（播出中的剧会加季）。
  * 缓存：Cache API（caches.default），每个来源的搜索结果 1 天、详情 7 天；只缓存成功的。对外请求 8 秒超时（504 网关超时）。
  */
 import { requestUser, storeAsset, MAX_ASSET_BYTES, type AssetEnv } from '../assets';
@@ -26,7 +29,7 @@ import { doubanBookByIsbn, doubanBookItem, searchDoubanBook } from './doubanbook
 import { openLibraryByIsbn, openLibraryItem, searchOpenLibrary, validIsbn } from './openlibrary';
 import { searchSteam, steamItem } from './steam';
 import { igdbItem, searchIgdb, type IgdbHit } from './igdb';
-import { searchTmdb, tmdbByImdb, tmdbItem, type Media } from './tmdb';
+import { searchTmdb, tmdbByImdb, tmdbItem, tmdbSeasons, type Media } from './tmdb';
 import { amapItem, amapRegeo, searchAmap, type AmapKind } from './amap';
 import { LookupError, upstream, type Lang, type LookupEnv, type LookupKind, type LookupResult, type LookupSource, type LookupSourceStatus } from './types';
 
@@ -273,7 +276,7 @@ async function importImage(req: Request, env: LookupWorkerEnv, who: string): Pro
 export async function handleLookup(req: Request, env: LookupWorkerEnv, url: URL): Promise<Response> {
   const path = url.pathname;
   const method = req.method;
-  const known = path === '/api/lookup/search' || path === '/api/lookup/item' || path === '/api/lookup/image' || path === '/api/lookup/regeo';
+  const known = path === '/api/lookup/search' || path === '/api/lookup/item' || path === '/api/lookup/image' || path === '/api/lookup/regeo' || path === '/api/lookup/seasons';
   if (!known) return json({ error: '404 未找到' }, 404);
   const wantMethod = path === '/api/lookup/image' ? 'POST' : 'GET';
   if (method !== wantMethod) return json({ error: `405 方法不允许：请用 ${wantMethod}` }, 405);
@@ -289,6 +292,16 @@ export async function handleLookup(req: Request, env: LookupWorkerEnv, url: URL)
       return json({ error: '400 请求有误：lng、lat 要是经纬度数字' }, 400);
     try {
       return json(await cached(`regeo/${lng.toFixed(6)},${lat.toFixed(6)}`, SEARCH_TTL, () => amapRegeo(env, lng, lat)));
+    } catch (e) {
+      if (e instanceof LookupError) return json({ error: e.message, state: e.state }, e.status);
+      return json({ error: '500 服务器出错' }, 500);
+    }
+  }
+  if (path === '/api/lookup/seasons') {
+    const id = (url.searchParams.get('id') ?? '').trim().toLowerCase();
+    if (!id) return json({ error: '400 请求有误：id 不能为空' }, 400);
+    try {
+      return json(await cached(`seasons/${lang}/${encodeURIComponent(id)}`, SEARCH_TTL, () => tmdbSeasons(env, id, lang)));
     } catch (e) {
       if (e instanceof LookupError) return json({ error: e.message, state: e.state }, e.status);
       return json({ error: '500 服务器出错' }, 500);

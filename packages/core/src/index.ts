@@ -36,6 +36,7 @@ export * from './merge';
 export * from './links';
 export * from './money';
 export * from './episode';
+export * from './seasons';
 export * from './lookup';
 export * from './group';
 export * from './project-libraries';

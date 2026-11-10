@@ -1761,6 +1761,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 件已过期": "{n} terlambat",
   "没有过期的任务": "Tidak ada yang terlambat",
   "「{name}」的更多操作": "Tindakan lain untuk “{name}”",
+  "季 {length}": "Musim · {length}",
+  "特别篇": "Spesial",
+  "{n} 集": "{n} episode",
 };
 
 export const DATA: Record<string, string> = {

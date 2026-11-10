@@ -19,6 +19,7 @@ import {
   type LookupResult,
   type LookupSearchResponse,
   type LookupSource,
+  type SeasonsResponse,
   type Store,
   type TaskType,
 } from '@mindough/core';
@@ -103,6 +104,11 @@ export function searchOnline(kind: LookupKind, q: string, signal?: AbortSignal, 
  */
 export function fetchLookupItem(source: LookupSource | 'imdb' | 'isbn', id: string, signal?: AbortSignal, fetcher?: typeof fetch, kind?: LookupKind | null): Promise<LookupResult> {
   return getJson(`/api/lookup/item?source=${source}&id=${encodeURIComponent(id)}&lang=${lang()}${source === 'amap' && kind ? `&kind=${kind}` : ''}`, signal, fetcher);
+}
+
+/** 剧集的季（TMDB）：ref 是「tv/1399」或 IMDb 编号（Rei 2026-11-11）。 */
+export function fetchSeasons(ref: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<SeasonsResponse> {
+  return getJson(`/api/lookup/seasons?id=${encodeURIComponent(ref)}&lang=${lang()}`, signal, fetcher);
 }
 
 /**

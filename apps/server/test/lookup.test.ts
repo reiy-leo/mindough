@@ -216,6 +216,57 @@ describe('TMDB', () => {
   });
 });
 
+describe('剧集的季（Rei 2026-11-11）', () => {
+  const TV = {
+    id: 1399,
+    seasons: [
+      { season_number: 0, name: '特别篇', air_date: '2010-12-05', episode_count: 14, poster_path: '/s0.jpg' },
+      { season_number: 1, name: '第 1 季', air_date: '2011-04-17', episode_count: 10, poster_path: '/s1.jpg' },
+      { season_number: 2, name: '第 2 季', air_date: null, episode_count: 0, poster_path: null },
+      { season_number: 3, name: 'x', poster_path: 'https://evil.example/a.jpg' },
+    ],
+  };
+
+  it('按 tv/编号取：列出各季，海报只留 TMDB 图片路径，没日期不写年份', async () => {
+    const calls = mockFetch({ 'https://api.themoviedb.org/3/tv/1399': () => Response.json(TV) });
+    const res = await call('/api/lookup/seasons?id=tv/1399&lang=zh', baseEnv({ TMDB_API_KEY: V3 }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { tv: string; seasons: Array<Record<string, unknown>> };
+    expect(body.tv).toBe('tv/1399');
+    expect(body.seasons).toEqual([
+      { number: 0, name: '特别篇', year: 2010, episodes: 14, poster: '/s0.jpg' },
+      { number: 1, name: '第 1 季', year: 2011, episodes: 10, poster: '/s1.jpg' },
+      { number: 2, name: '第 2 季', episodes: 0 },
+      { number: 3, name: 'x', episodes: 0 },
+    ]);
+    expect(calls[0]!.url.searchParams.get('language')).toBe('zh-CN');
+  });
+
+  it('按 IMDb 编号：先 find 出剧集；查到的是电影就没有季', async () => {
+    mockFetch({
+      'https://api.themoviedb.org/3/find/tt0944947': () => Response.json({ movie_results: [], tv_results: [{ id: 1399, name: '权力的游戏' }] }),
+      'https://api.themoviedb.org/3/find/tt1375666': () => Response.json({ movie_results: [{ id: 27205, title: '盗梦空间' }], tv_results: [] }),
+      'https://api.themoviedb.org/3/tv/1399': () => Response.json(TV),
+    });
+    const env = baseEnv({ TMDB_API_KEY: V3 });
+    const a = (await (await call('/api/lookup/seasons?id=tt0944947', env)).json()) as { tv: string; seasons: unknown[] };
+    expect(a.tv).toBe('tv/1399');
+    expect(a.seasons).toHaveLength(4);
+    const b = await call('/api/lookup/seasons?id=tt1375666', env);
+    expect(b.status).toBe(200);
+    expect(await b.json()).toEqual({ tv: null, seasons: [] });
+  });
+
+  it('编号不对 400，没配置 503，方法不对 405', async () => {
+    mockFetch({});
+    expect((await call('/api/lookup/seasons?id=movie/550', baseEnv({ TMDB_API_KEY: V3 }))).status).toBe(400);
+    expect((await call('/api/lookup/seasons', baseEnv({ TMDB_API_KEY: V3 }))).status).toBe(400);
+    const r = await call('/api/lookup/seasons?id=tv/1', baseEnv());
+    expect(r.status).toBe(503);
+    expect((await call('/api/lookup/seasons?id=tv/1', baseEnv(), { method: 'POST' })).status).toBe(405);
+  });
+});
+
 describe('豆瓣（尽力而为）', () => {
   it('被跳去验证页：搜索里降级成 blocked，不影响 TMDB', async () => {
     mockFetch({

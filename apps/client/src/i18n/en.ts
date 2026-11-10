@@ -1480,4 +1480,5 @@ export const EN: Record<string, EnValue> = {
   "节假日、农历、日历订阅": "Holidays, lunar calendar, subscriptions",
   "节假日、日历订阅": "Holidays, subscriptions",
   "「{name}」的更多操作": "More Actions for “{name}”",
+  "季 {length}": "Seasons {length}",
 };

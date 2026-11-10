@@ -1761,6 +1761,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 件已过期": "{n} 件が期限切れ",
   "没有过期的任务": "期限切れのタスクはありません",
   "「{name}」的更多操作": "「{name}」のその他の操作",
+  "季 {length}": "シーズン · {length}",
+  "特别篇": "特別編",
+  "{n} 集": "{n}話",
 };
 
 export const DATA: Record<string, string> = {
