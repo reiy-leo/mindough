@@ -257,9 +257,10 @@
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
   background-repeat: no-repeat;
 }
-/* 手机整页详情：正文那层有自己的不透明底（app.css .page-detail .pane-body，安卓放大镜变黑），会盖住上面这条淡色的下半截，
-   这里在正文层上接着画同一条渐变，往上挪「状态栏 + 顶栏」那么高，接缝对得上（顶栏高 Apple / WinUI 52、Material 64，见 skins.css）。 */
-:root[data-color-level='vivid'][style*='--detail-tint'] .page-detail .pane-body {
+/* 手机整页详情：正文外面那层不透明的「纸」（app.css .page-detail .pane-body-sheet，安卓选字变黑）会盖住上面这条淡色的下半截，
+   这里在「纸」上接着画同一条渐变，往上挪「状态栏 + 顶栏」那么高，接缝对得上（顶栏高 Apple / WinUI 52、Material 64，见 skins.css）。
+   「纸」跟着正文滚，这截淡色也跟着滚走（以前停在原地）。 */
+:root[data-color-level='vivid'][style*='--detail-tint'] .page-detail .pane-body-sheet {
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
   background-repeat: no-repeat;
   background-position: 0 calc(-1 * (env(safe-area-inset-top) + var(--page-head-h, 52px)));

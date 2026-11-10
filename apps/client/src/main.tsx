@@ -18,6 +18,7 @@ import { installNoLinkDrag } from './lib/no-link-drag';
 import { installRootScrollGuard } from './lib/root-scroll';
 import { installBackspaceGuard } from './lib/backspace-guard';
 import { installBackLayers } from './lib/back-layers';
+import { installAndroidBackground } from './lib/android-bg';
 import { applyLocalePref, initialLocalePref, loadLocale, resolveLocale } from './lib/i18n';
 import { LocaleRoot } from './lib/locale';
 import { preloadMdEditor } from './components/editor/LazyMdEditor';
@@ -65,6 +66,8 @@ installRootScrollGuard();
 installBackspaceGuard();
 // 系统返回 / 返回手势先关弹窗、菜单，没有弹层时才照原来退页面（Rei 2026-11-10，lib/back-layers.ts）
 installBackLayers();
+// 安卓 App：界面底色告诉原生，WebView 和窗口后面那几层跟着换（选字变黑的兜底，lib/android-bg.ts、scripts/android-webview.sh）
+installAndroidBackground();
 
 // 编辑器在空闲时先加载好：新建面板一打开就能写
 const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));

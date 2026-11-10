@@ -179,7 +179,8 @@ function DetailFrame({
           </Tip>
         )}
       </div>
-      <div className="dialog-body pane-body">{children}</div>
+      {/* 手机整页：正文包一层不透明的「纸」，铺满滚动区（安卓选字变黑，见 app.css .page-detail .pane-body-sheet） */}
+      <div className="dialog-body pane-body">{page ? <div className="pane-body-sheet">{children}</div> : children}</div>
       {footer && <div className="dialog-foot pane-foot">{footer}</div>}
     </section>
   );

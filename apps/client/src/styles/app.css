@@ -44,6 +44,10 @@ html[data-layout='mobile'] body {
 html[data-layout='mobile'] {
   touch-action: pan-x pan-y;
 }
+/* 手机上根元素自己画不透明底（2026-11-11 安卓选字变黑的兜底）：不靠 body 的底色传上来，也不让任何一处露出 WebView 后面的颜色 */
+html[data-layout='mobile'] {
+  background-color: var(--bg);
+}
 @media (hover: none) and (pointer: coarse) {
   html {
     touch-action: pan-x pan-y;
@@ -3289,12 +3293,20 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   min-width: 0;
 }
 .page-detail .pane-body {
+  /* 内边距挪到下面的 .pane-body-sheet 上，好让「纸」连内边距一起铺满 */
+  padding: 0;
+  /* 滚动区自己的底色。alpha.22 只写了 background-color，没用（Rei 2026-11-11 05:27「还是在 select text 时就会背景变黑」）：
+     滚动容器在 Chromium 里分成两层，底色画在外面那层，正文的字画在里面跟着滚的那层（scrolling contents），里面那层还是透明的。
+     加 local 让底色也画进跟着滚的那层。 */
+  background: var(--pane-page-bg, var(--bg)) local;
+}
+/* 正文的「纸」（Rei 2026-11-11 录屏：安卓选中文字、拖手柄、放大镜出来时，顶栏以下整块变黑，黑字看不见，只剩彩色的字和边框）。
+   看上去是跟着滚的那层里透明的像素被当成黑色画出来（推断，没在真机上确认）：顶栏在别的层，不受影响。
+   所以让这一层里没有透明像素：内容外面包一层不透明的底，至少铺满滚动区，内边距也在它里面。只在手机整页详情（TaskDetail page）。 */
+.page-detail .pane-body-sheet {
+  box-sizing: border-box;
+  min-height: 100%;
   padding: var(--space-1) var(--space-4) var(--space-8);
-  /* 正文这层自己画不透明底（Rei 2026-11-11 录屏：安卓拖选区手柄、系统放大镜出来时，顶栏以下整块变黑，松手恢复）。
-     这层是滚动容器，安卓 Chromium 给它单独一个合成层；底色透明、靠下面 .page-detail 透上来时，放大镜那几帧这层被画成黑底，
-     黑字跟着看不见，只剩彩色的字和边框。自己有底色就不靠下层。另外上面 .page-detail 去掉了常驻的 will-change: transform
-     （推入动画照旧，手势滑回用的行内 transform 照旧），少一层没必要的合成层。
-     彩色档位的顶部淡色（color-level.css 画在 .pane-detail 上）被这层盖住的那段，在 color-level.css 里接着画。 */
   background-color: var(--pane-page-bg, var(--bg));
 }
 .page-detail .pane-foot {
