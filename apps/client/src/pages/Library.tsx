@@ -44,6 +44,7 @@ import { DuplicatesSheet, MergeIntoSheet, MergeSheet } from '../components/libra
 import { PersonDialog } from './People';
 import { imageUrl } from '../lib/view';
 import { longPressNow, longPressStillValid } from '../lib/long-press';
+import { tileSubText } from '../lib/lib-tile';
 
 import { dataLabel, tr } from '../lib/i18n';
 function useLibraries(): TaskType[] {
@@ -61,6 +62,8 @@ function Tile({ entry, type, onPress, selected, onSelect }: { entry: LibraryEntr
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const long = useRef(false);
   const selecting = selected !== undefined;
+  // 目的地只显示名字，地址留在详情里（lib/lib-tile）
+  const sub = tileSubText(type, entry.subtitle, entry.uses > 0 ? tr('{uses} 件任务', { uses: entry.uses }) : '');
   return (
     <RacButton
       className={`lib-tile shape-${shape}${selecting ? ' is-selecting' : ''}${selected ? ' is-selected' : ''}`}
@@ -93,12 +96,9 @@ function Tile({ entry, type, onPress, selected, onSelect }: { entry: LibraryEntr
       )}
       {entryArt(store, entry, shape, 'lib-tile-art')}
       <span className="lib-tile-text">
-        <span className="lib-tile-name">{entry.name}</span>
-        {(entry.subtitle || entry.uses > 0) && (
-          <span className="lib-tile-sub">
-            {[entry.subtitle, entry.uses > 0 ? tr('{uses} 件任务', { uses: entry.uses }) : ''].filter(Boolean).join(' · ')}
-          </span>
-        )}
+        {/* 名字最多两行，超出省略号；title 给全名（读屏本来就念全文） */}
+        <span className="lib-tile-name" title={entry.name}>{entry.name}</span>
+        {sub && <span className="lib-tile-sub">{sub}</span>}
       </span>
     </RacButton>
   );

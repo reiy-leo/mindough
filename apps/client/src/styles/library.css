@@ -527,6 +527,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   padding: 0;
   border: none;
   background: none;
@@ -572,20 +573,34 @@
   outline-offset: 3px;
 }
 .lib-tile-text {
+  /* 文字框钉在卡片宽度里，再长也不伸到隔壁卡片（Rei 2026-11-11 目的地名字、地址叠在一起） */
   display: flex;
   flex-direction: column;
+  align-self: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   padding: 0 2px;
+  overflow: hidden;
 }
 .lib-tile-name {
+  /* 最多两行，超出省略号；没空格的长串（英文、网址）也在卡片宽度内折行 */
   font-weight: 550;
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
+  max-width: 100%;
   overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .lib-tile-sub {
+  display: block;
+  max-width: 100%;
   margin-top: 1px;
   font-size: var(--fs-small);
   color: var(--text-3);
