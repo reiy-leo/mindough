@@ -67,11 +67,11 @@
 | 文字 / 数字 / 进度 / 日期 / 单选 / 多选 / 链接 / 更多链接 / 站点编号 / 图片 / 清单 / 金额 / 看到第几集 | 文本 / 下拉 / 复选 / URL / 货币 | 字段种类（core `FIELD_KIND_LABEL`）；新字段占位「新字段」 |
 | 删除字段 | 移除字段 | 字段设置弹层里；下面轻提「删掉后已填的值还留着，加回同名字段就又能看到。」；有值时「已经填过值，种类和归属不能再改；要换就新加一个字段。」；主字段和图片悬停「名字和图片是固定的，不能隐藏或删除」 |
 | 归档这个资料库 / 取消归档 | 隐藏 / 停用 / 删除资料库 | 资料库不能删，只能改和归档（Rei 2026-10-17）。资料库编辑页底部；说明「资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。」，已归档的「已归档：新建任务时选不到它，用过它的任务和资料照常显示。」；归档后提示「已归档「X」」+「撤销」，不用确认（能取消归档）；归档了的库（从它的资料页返回时）工具栏条数后轻标「已归档」 |
-| 我的一天 | — | 加入我的一天 / 移出我的一天。顶部添加框占位「今天要做什么？按回车添加」，读屏名「添加任务到今天」；右边原来的「从全部任务添加 ⌘K」按钮去掉了（Rei 2026-10-26），字符串九种语言都删了。待安排页顶上占位「想到什么先记下，按回车添加到待安排」，可做页「现在想做什么？按回车添加到待安排」，读屏名都是「添加任务到待安排」；这三页没有页头，副标题那句挪到添加框下面的小字（Rei 2026-10-26） |
+| 我的一天 | — | 加入我的一天 / 移出我的一天。顶部添加框占位「今天要做什么？按回车添加」，读屏名「添加任务到今天」；右边原来的「从全部任务添加 ⌘K」按钮去掉了（Rei 2026-10-26），字符串九种语言都删了。等待安排页顶上占位「想到什么先记下，按回车添加到等待安排」，过期积压页「现在想做什么？按回车添加到等待安排」，读屏名都是「添加任务到等待安排」；这三页没有页头，副标题那句挪到添加框下面的小字（Rei 2026-10-26） |
 | 查看详情 / 加入我的一天 / 移出我的一天（行菜单） | 打开 / 添加 / 加入（行尾按钮） | 任务列表行的右键 / 长按菜单（读屏名「任务操作」）：查看详情 ｜ 加入 / 移出我的一天（Rei 2026-10-25「任何情况下都不显示这两个按钮」：我的一天「建议」行尾的「今天到期」等原因徽章和「+ 加入」按钮去掉了，到期看行里的日期，加入我的一天走这个菜单）；我的一天行尾的 ×（移出我的一天）也去掉了（Rei 2026-10-25），移出走这个菜单 |
 | 置顶 / 取消置顶 / 已置顶 | 固定 / 钉住 / 星标 / 常驻 | 任务置顶（Rei 2026-11-08）。任务行右键 / 长按菜单：查看详情 ｜ 加入 / 移出我的一天 · 置顶；置顶了的是 查看详情 ｜ 取消置顶。详情 ··· 菜单、打卡行菜单同样排在「加入 / 移出我的一天」后面一组。红色图钉（Lucide pin）放在勾选圆圈前面、拖动把手那格（2026-11-09），悬停「已置顶」；能拖的那格读屏念「已置顶 · 拖动排序」。提示「已置顶「X」，每天都在我的一天最上面」/「已取消置顶「X」」，都带「撤销」；点太阳按钮提示「置顶的任务每天都在我的一天里，要移出先取消置顶」+「取消置顶」。英文 Pin / Unpin / Pinned，Pinned “X”. It stays at the top of My Day every day / Unpinned “X” |
-| 待安排 | 收件箱 / 未分配 / 待办箱 | 页面名（导航「今天」小节）；副标题「N 件还没定哪天做」/「都安排好了」；行上按钮读屏「安排日期」，安排后提示「已安排到时间轴：「X」」；空状态「没有待安排的事」+「想到什么先记下来，有空再决定哪天做。」+「记一件事」；新建后提示「已添加到待安排：「X」」 |
-| 今天 / 计划 / 持续 / 管理 | 资料（2026-10-26 18:02 以前的叫法） | 侧边栏和「更多」的小节标题：今天（我的一天、待安排、可做）、计划（时间轴、项目、放进侧边栏的项目）、持续（打卡、倒数日、日记）、管理（资料库、放进侧边栏的库、类型、已完成）（Rei 2026-10-26 加「持续」；同一天「资料」改叫「管理」、加「类型」，18:54 删掉「人物」入口）。代码里是 `trc('导航', '持续')`、`trc('导航', '管理')`，英文 Manage |
+| 等待安排 | 待安排（2026-11-10 前）/ 收件箱 / 未分配 / 待办箱 | 页面名（导航「今天」小节，Rei 2026-11-10 由「待安排」改名，路由 backlog 不变；文案里提到这页的都跟着改：「没有等待安排的事」「已添加到等待安排：「X」」「添加任务到等待安排」「想到什么先记下，按回车添加到等待安排」「不放进项目（进等待安排）」、解散项目确认「没日期的回到等待安排」、归档项目提示「也不在等待安排、过期积压、时间轴里」）；副标题「N 件还没定哪天做」/「都安排好了」；行上按钮读屏「安排日期」，安排后提示「已安排到时间轴：「X」」；空状态「没有等待安排的事」+「想到什么先记下来，有空再决定哪天做。」+「记一件事」；新建后提示「已添加到等待安排：「X」」 |
+| 今天 / 计划 / 持续 / 管理 | 资料（2026-10-26 18:02 以前的叫法） | 侧边栏和「更多」的小节标题：今天（我的一天、等待安排、过期积压；2026-11-10 前叫待安排、积压，更早是可做）、计划（时间轴、项目、放进侧边栏的项目）、持续（打卡、倒数日、日记）、管理（资料库、放进侧边栏的库、类型、已完成）（Rei 2026-10-26 加「持续」；同一天「资料」改叫「管理」、加「类型」，18:54 删掉「人物」入口）。代码里是 `trc('导航', '持续')`、`trc('导航', '管理')`，英文 Manage |
 | 在侧边栏显示 / 取消在侧边栏显示 | 固定到侧边栏 / 置顶 / 收藏 | Rei 2026-10-26 原话就是这两个说法。资料库页标签条末尾 ··· 菜单（读屏名「资料库操作」）、库标签右键 / 长按菜单、侧栏里那一项的右键菜单；设置 → 任务 → 编辑资料库列表每行的侧栏按钮（读屏名同样随状态变，亮着用强调色）。项目也用这两个说法（Rei 2026-10-28）：项目页右上角 ··· 菜单、项目卡片右键 / 长按菜单（读屏名都是「项目操作」，英文 Project Actions）、侧栏里那一项的右键菜单。英文 Show in Sidebar / Hide from Sidebar |
 | 已完成（导航 / 页面） | 完成的任务 / 归档 / 历史 / 已做完 | Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」。侧栏「管理」最下面，页头同名（代码 `trc('导航', '已完成')`，和状态徽章的「已完成」分开）。段标题「今天」「昨天」「11月6日 周五」（没有时间的那段「更早」），右边「3 项」；空状态「还没有做完的任务」+「做完或关闭的任务会按时间排在这里。」。英文 Completed（导航 Title Case），空状态 Nothing completed yet、Tasks you complete or close show up here, newest first. |
 | 倒数日（导航 / 页面） | 纪念日 / 倒计时 | 页面名，侧边栏「持续」里；页头按钮「新建倒数日」；空状态「还没有倒数日」+「考试、纪念日、出发那天，记下来看看还有几天。」 |
@@ -196,12 +196,13 @@
 | 时区 | Time Zone | 日期面板；城市名用 IANA 英文（New York (UTC−4)）；Search city or time zone、No matching time zone、Show More、This device；英文不写「跟着设备」（太窄）（2026-10-25） |
 | 中国农历 | Chinese Lunar Calendar | 设置开关；英文界面不显示整个农历小节，译文备用（2026-10-25） |
 | 每年 · 下次 2027年9月15日 | Yearly · next Sep 15, 2027 | 农历界面隐藏时每年农历重复的说法 |
-| 待安排 | Inbox | 新建默认进这里（同 Things 的 Inbox） |
+| 等待安排 | Inbox | 新建默认进这里（同 Things 的 Inbox）；2026-11-10 中文由「待安排」改名，各语言译名没变（意思一样） |
+| 过期积压 | Overdue | 侧栏页名（2026-11-10 由「积压」改名，原译 Backlog）。按日期分区段标题：昨天 Yesterday / 过去 7 天 Past 7 Days / 过去一个月 Past Month / 过去一年 Past Year / 更远 Earlier（代码 `trc('过期积压', '更远')`，和目标日期分区往后的「更远 Later」分开）/ 接下来 Coming Up |
 | 打卡（导航 / 页面） | Check-ins | 按钮上的「打卡」是 Check In |
 | 持续（导航小节） | Ongoing | 打卡、倒数日、日记这一节（2026-10-26） |
 | 已完成（导航 / 页面） | Completed | 侧栏「管理」最下面（2026-11-08）；空状态 Nothing completed yet；没有时间的那段 Earlier |
 | 倒数日（导航 / 页面） | Countdown | 「新建倒数日」= New Countdown；空状态 No countdowns yet |
-| 归档 / 取消归档 / 已归档（项目） | Archive / Unarchive / Archived (N) | 项目页提示 This project is archived + Its tasks won’t be added to My Day and don’t show in Inbox, Backlog or Timeline.；提示 Archived “X”. Find it under Archived at the bottom of Projects. / Unarchived “X” |
+| 归档 / 取消归档 / 已归档（项目） | Archive / Unarchive / Archived (N) | 项目页提示 This project is archived + Its tasks won’t be added to My Day and don’t show in Inbox, Overdue or Timeline.；提示 Archived “X”. Find it under Archived at the bottom of Projects. / Unarchived “X” |
 | 归档 / 取消归档 / 已归档（打卡） | Archive / Unarchive / Archived | 行菜单读屏 Check-in actions；提示 Archived “X”. Find it under Archived at the bottom of Check-ins. / Unarchived “X” |
 | 置顶 / 取消置顶 / 已置顶 | Pin / Unpin / Pinned | 菜单项用动词（Pin / Unpin），图钉悬停 Pinned |
 | 卡片颜色 / 颜色… | Card Color / Color… | 颜色名 Default, Red, Orange, Yellow, Green, Teal, Blue, Indigo, Purple, Pink, Brown, Gray；卡片菜单读屏 Countdown actions |
@@ -226,7 +227,7 @@
 | 严格模式 | Strict Mode | 设置 → 任务的开关（2026-11-08）；说明 Completed or closed tasks can’t be changed, only reopened or deleted. Applies to this device only.；被拦时提示 Strict mode is on: completed or closed tasks can’t be changed |
 | 显示建议 / 隐藏建议 | Show Suggestions / Hide Suggestions | 设置开关和建议那段「…」菜单（Title Case，2026-11-01）；菜单读屏 Suggestion Actions |
 | 查看详情 · 任务操作（行菜单） | View Details · Task actions | 行的右键 / 长按菜单，第二项 Add to My Day / Remove from My Day |
-| 没有待安排的事 | Inbox Zero | |
+| 没有等待安排的事 | Inbox Zero | |
 | 影视库 / 书库 / 游戏库 … / 好物清单 / 菜谱 | Movies & TV / Books / Games … / Wish List / Recipes | 条数 7 titles / 5 books / 3 items |
 | 皮肤 / 明暗 / 语言 | Style / Theme / Language | |
 | 色彩：素净 / 标准 / 多彩 | Color: Plain / Standard / Vivid | 设置 → 外观的三段（2026-11-09），默认标准；说明「素净只用黑白灰；多彩把项目和类型的颜色铺开。只在这台设备上」= Plain uses only black, white and gray; Vivid spreads project and type colors further. This device only |
@@ -263,7 +264,9 @@ Rei 2026-10-25：「支持西、葡、俄、日、德、法、印尼」。设置
 |---|---|---|---|---|---|---|---|---|
 | 念头团 | Mindough | Mindough | Mindough | Mindough | Mindough | Mindough | Mindough | Mindough |
 | 我的一天 | My Day | Mi día | Meu dia | Мой день | 今日の予定 | Mein Tag | Ma journée | Hari Saya |
-| 待安排 | Inbox | Entrada | Entrada | Входящие | インボックス | Eingang | Réception | Kotak Masuk |
+| 等待安排 | Inbox | Entrada | Entrada | Входящие | インボックス | Eingang | Réception | Kotak Masuk |
+| 过期积压 | Overdue | Atrasadas | Atrasadas | Просроченное | 期限切れ | Überfällig | En retard | Terlambat |
+| 昨天 / 过去 7 天 / 过去一个月 / 过去一年 / 更远（过期积压分区） | Yesterday / Past 7 Days / Past Month / Past Year / Earlier | Ayer / Últimos 7 días / Último mes / Último año / Más antiguas | Ontem / Últimos 7 dias / Último mês / Último ano / Mais antigas | Вчера / Последние 7 дней / Последний месяц / За год / Ранее | 昨日 / 過去7日間 / 過去1か月 / 過去1年 / それ以前 | Gestern / Letzte 7 Tage / Letzter Monat / Letztes Jahr / Älter | Hier / 7 derniers jours / Le mois dernier / Année écoulée / Plus ancien | Kemarin / 7 hari terakhir / Sebulan terakhir / Setahun terakhir / Lebih lama |
 | 打卡（导航） | Check-ins | Hábitos | Hábitos | Привычки | 習慣 | Gewohnheiten | Habitudes | Kebiasaan |
 | 打卡（按钮） | Check In | Registrar | Registrar | Отметить | 記録 | Abhaken | Cocher | Catat |
 | 可做 | Available | Disponibles | Disponíveis | Доступные | 着手可能 | Verfügbar | Disponibles | Tersedia |
