@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
  * 设置的五个分区（Rei 2026-10-26「设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」）：
  * #/settings/account|appearance|data|reminders|tasks；不带分区的 #/settings 照旧能用。
  */
-export const SETTINGS_SECTIONS = ['account', 'appearance', 'data', 'reminders', 'tasks', 'checkin', 'journal', 'about'] as const;
+export const SETTINGS_SECTIONS = ['account', 'appearance', 'data', 'reminders', 'tasks', 'calendar', 'checkin', 'journal', 'about'] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 export const isSettingsSection = (v: unknown): v is SettingsSection => typeof v === 'string' && (SETTINGS_SECTIONS as readonly string[]).includes(v);
 
 export type Route =
   | { page: 'myday' }
   | { page: 'backlog' }
+  /** 日历（Rei 2026-11-10 从「时间轴」换过来，docs/CALENDAR.md）：#/calendar，旧的 #/agenda 也行；id 还叫 agenda。 */
   | { page: 'agenda' }
   | { page: 'groups' }
   | { page: 'group'; id: string }
@@ -47,7 +48,8 @@ export function parseHash(hash: string): Route {
   const [a, anchor] = (rawA ?? '').split('#');
   if (a === 'checkin' && (anchor === 'countdown' || anchor === 'countdowns')) return { page: 'countdown' };
   switch (a) {
-    case 'agenda':
+    case 'agenda': // 旧地址（侧栏「时间轴」，Rei 2026-11-10 换成「日历」）照样能开
+    case 'calendar':
       return { page: 'agenda' };
     case 'backlog':
       return { page: 'backlog' };
@@ -99,6 +101,8 @@ export function href(route: Route): string {
       return route.section ? `#/settings/${route.section}` : '#/settings';
     case 'types':
       return route.id ? `#/types/${route.id}` : '#/types';
+    case 'agenda':
+      return '#/calendar';
     default:
       return `#/${route.page}`;
   }

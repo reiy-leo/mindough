@@ -1,29 +1,55 @@
 /**
- * 设置 →「农历」（Rei 2026-10-17；2026-10-25 改）：「中国农历」开关（本机设置，默认关、不同步）；开着才显示下面的订阅设置。
- * 整节只在中文界面（简 / 繁，core isChineseLocale）出现，英文等其他语言下连开关都不显示。
- * 订阅：农历订阅——源地址（可复制、可改、可恢复默认）、同步频率、上次同步时间、立即同步、状态（失败附 HTTP 状态码中文）。
- * 地址和频率跟着账户同步；同步状态和数据只在这台设备。
+ * 设置 →「日历」（Rei 2026-11-10，docs/CALENDAR.md 第四节；原来是设置 → 任务里的「农历」）：
+ * - 节假日：「显示节假日」开关（本机，默认开）+ 节假日订阅（源地址、同步频率、上次同步、立即同步、状态）。
+ * - 农历：「中国农历」开关（本机，默认关；只在中文界面出现）。
+ * - 日历订阅：用户自己的只读 ICS 列表（CalendarSubsSection）。
+ * 节假日订阅的地址和频率跟着账户同步（偏好 lunar.sub_url / lunar.sub_freq，key 没改）；同步状态和数据只在这台设备。
+ * 节假日、农历都关着时订阅设置收起来（不拉也就不用设）。
  */
 import { useEffect, useState } from 'react';
 import { Copy, RefreshCw, RotateCcw } from 'lucide-react';
 import { DEFAULT_LUNAR_SUB_URL, isChineseLocale, LUNAR_PREFS, SUB_FREQS, normalizeSubUrl, subFreqLabel, subStatusText, syncedAgo, type SubFreq } from '@mindough/core';
 import { Button, Section, Segmented, Switch } from '../ui/primitives';
 import { lunarPrefs, syncLunarSub, useLunarSub } from '../lib/lunar';
+import { CalendarSubsSection } from './CalendarSubs';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { useNow, useStore } from '../store/StoreProvider';
 import { tr } from '../lib/i18n';
 import { imeBusy } from '../lib/ime';
 
-export function LunarSection() {
-  // 不是中文界面：整节不显示（开关之前打开过也不显示，农历界面一律隐藏）
-  if (!isChineseLocale()) return null;
-  return <LunarSectionInner />;
+export function CalendarSettings() {
+  return (
+    <>
+      <HolidaySection />
+      {isChineseLocale() && <LunarSwitchSection />}
+      <CalendarSubsSection />
+    </>
+  );
 }
 
-function LunarSectionInner() {
+/** 农历：只在中文界面（简 / 繁）出现；英文等语言下连开关都不显示（Rei 2026-10-25）。 */
+function LunarSwitchSection() {
   const { settings, set } = useSettings();
-  const on = settings.chineseLunar;
+  return (
+    <Section title={tr('农历')}>
+      <div className="card settings-card">
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('中国农历')}</div>
+            <div className="setting-hint">{tr('打开后日期格子下显示农历、节气和节日，选日期时可以按农历选，重复可以选每年农历。只在这台设备上生效。')}</div>
+          </div>
+          <Switch label={tr('中国农历')} isSelected={settings.chineseLunar} onChange={(v) => set('chineseLunar', v)} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function HolidaySection() {
+  const { settings, set } = useSettings();
+  const on = settings.holidays !== false;
+  const lunarOn = settings.chineseLunar && isChineseLocale();
   const store = useStore();
   const { toast } = useUi();
   const prefs = lunarPrefs(store);
@@ -59,20 +85,20 @@ function LunarSectionInner() {
       : tr('{freq}自动更新一次；拉到的存在这台设备上，离线也能看。', { freq: subFreqLabel(prefs.freq) });
 
   return (
-    <Section title={tr('农历')}>
+    <Section title={tr('节假日')}>
       <div className="card settings-card">
         <div className="setting">
           <div className="setting-text">
-            <div className="setting-name">{tr('中国农历')}</div>
-            <div className="setting-hint">{tr('打开后日期格子下显示农历、节气和节日，选日期时可以按农历选，重复可以选每年农历。只在这台设备上生效。')}</div>
+            <div className="setting-name">{tr('显示节假日')}</div>
+            <div className="setting-hint">{tr('日历和日期格子上标出法定假日的「休」和调休上班的「班」。只在这台设备上生效。')}</div>
           </div>
-          <Switch label={tr('中国农历')} isSelected={on} onChange={(v) => set('chineseLunar', v)} />
+          <Switch label={tr('显示节假日')} isSelected={on} onChange={(v) => set('holidays', v)} />
         </div>
-        {on && (
+        {(on || lunarOn) && (
           <>
         <div className="setting is-stacked">
           <div className="setting-text">
-            <div className="setting-name">{tr('农历订阅')}</div>
+            <div className="setting-name">{tr('节假日订阅')}</div>
             <div className="setting-hint">
               {prefs.custom ? tr('用的是你填的日历地址。') : tr('默认订阅 Apple 的「中国大陆节假日」日历：节气、传统节日、法定假日的放假和调休上班。')}
               {tr('只用来显示，不会变成任务。')}

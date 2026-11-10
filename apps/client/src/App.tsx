@@ -2,7 +2,7 @@ import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarCheck2, CalendarClock, CircleCheck, CalendarDays, ChevronRight, Hourglass, Library, Menu, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
 import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
@@ -11,7 +11,7 @@ import { useSettings } from './lib/settings';
 import { useUi } from './lib/ui';
 import { useStore } from './store/StoreProvider';
 import { MyDayPage } from './pages/MyDay';
-import { AgendaPage } from './pages/Agenda';
+import { CalendarPage } from './pages/Calendar';
 import { BacklogPage } from './pages/Backlog';
 import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
@@ -45,6 +45,7 @@ import { LoginErrorBanner } from './components/LoginErrorBanner';
 import { MovedBanner } from './components/MovedBanner';
 import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
+import { useCalendarSubScheduler } from './lib/calendar-subs';
 import { useAutoMyDay } from './lib/myday-auto';
 import { MenuAt, useContextMenuAt } from './ui/primitives';
 import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
@@ -103,7 +104,7 @@ const NAV_SECTIONS: NavSection[] = [
     id: 'plan',
     get title() { return tr('计划'); },
     items: [
-      { page: 'agenda', get label() { return trc('导航', '时间轴'); }, icon: CalendarDays, match: ['agenda'] },
+      { page: 'agenda', get label() { return trc('导航', '日历'); }, icon: Calendar, match: ['agenda'] },
       { page: 'groups', get label() { return trc('导航', '项目'); }, icon: Shapes, match: ['groups', 'group'] },
     ],
   },
@@ -317,7 +318,7 @@ function Page({ route }: { route: Route }) {
     case 'myday':
       return <MyDayPage />;
     case 'agenda':
-      return <AgendaPage />;
+      return <CalendarPage />;
     case 'backlog':
       return <BacklogPage />;
     case 'groups':
@@ -447,6 +448,7 @@ export function App() {
   const ui = useUi();
   const store = useStore();
   useLunarSubScheduler(store);
+  useCalendarSubScheduler(store);
   useAutoMyDay(store);
   // 打卡 / 倒数日「新建」出来的空任务：正文空着离开就删（lib/blank-task，Rei 2026-11-09 01:31）
   useEffect(() => void sweepBlankTasks(store, ui.editingId), [store, ui.editingId]);

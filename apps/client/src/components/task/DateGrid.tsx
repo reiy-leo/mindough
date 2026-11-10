@@ -73,7 +73,7 @@ export interface DateGridProps {
   today: DateKey;
   weekStart: 0 | 1;
   /** 农历界面显示（格子下农历小字）。 */
-  lunar: { show: boolean; day: (d: DateKey) => DayLunar };
+  lunar: { show: boolean; any: boolean; day: (d: DateKey) => DayLunar };
   /** 农历开关：顶上「农历」按钮（只在 lunar.show 时出现）。 */
   lunarOn: boolean;
   onLunarToggle?: () => void;

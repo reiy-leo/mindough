@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
-import { AlertCircle, ArrowLeftRight, Bell, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
 import { focusMainWindow, isSettingsWindow, SETTINGS_NAV_EVENT } from '../lib/windows';
 import { relay } from '../lib/window-relay';
@@ -17,7 +17,7 @@ import { JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from 
 import { formatRemindTime } from '../components/task/RemindPanel';
 import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPermission, setRemindersEnabled, type NotifyPermission } from '../lib/reminders';
 import { PageHeader } from '../components/PageHeader';
-import { LunarSection } from '../components/LunarSettings';
+import { CalendarSettings } from '../components/CalendarSettings';
 import { normalizeColorLevel, useSettings, type Settings } from '../lib/settings';
 import { suggestionsOn } from '../lib/myday-suggest';
 import { PLATFORM_LABEL, SKIN_LABEL, skinForPlatform } from '../skin/platform';
@@ -40,7 +40,8 @@ import type { LocalePref } from '../lib/i18n';
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
- * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示、农历（资料库入口 2026-11-09 删了，从侧栏「管理」进）
+ * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
+ * - 日历：节假日（显示开关 + 节假日订阅）、农历开关、日历订阅（Rei 2026-11-10，农历从「任务」挪过来，docs/CALENDAR.md）
  * - 打卡：在打卡页顶部显示活动图（Rei 2026-11-10 加）
  * - 日记：一天从几点开始、每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
@@ -54,7 +55,8 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
-  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => (isChineseLocale() ? tr('我的一天、严格模式、日期显示、农历') : tr('我的一天、严格模式、日期显示')) },
+  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、严格模式、日期显示') },
+  { id: 'calendar', icon: CalendarIcon, label: () => trc('设置分区', '日历'), hint: () => (isChineseLocale() ? tr('节假日、农历、日历订阅') : tr('节假日、日历订阅')) },
   { id: 'checkin', icon: CalendarCheck2, label: () => trc('导航', '打卡'), hint: () => tr('打卡页顶部的活动图') },
   { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('一天从几点开始、每天提醒写日记') },
   { id: 'about', icon: Info, label: () => tr('关于'), hint: () => tr('版本、数据来源') },
@@ -94,9 +96,10 @@ function SectionBody({ id }: { id: SettingsSection }) {
           <MyDaySection />
           <StrictSection />
           <DateDisplaySection />
-          <LunarSection />
         </>
       );
+    case 'calendar':
+      return <CalendarSettings />;
     case 'checkin':
       return <CheckInSection />;
     case 'journal':

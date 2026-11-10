@@ -22,7 +22,9 @@ export type DeepLinkAction =
 const VIEWS: Record<string, Route> = {
   myday: { page: 'myday' },
   inbox: { page: 'backlog' },
+  // 侧栏「时间轴」换成「日历」（Rei 2026-11-10）：view/calendar，旧的 view/timeline 照样能开
   timeline: { page: 'agenda' },
+  calendar: { page: 'agenda' },
   groups: { page: 'groups' },
   // 界面上「组」改叫「项目」（Rei 2026-10-25）：view/projects 是别名，旧的 view/groups 照样能用
   projects: { page: 'groups' },

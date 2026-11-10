@@ -1,0 +1,584 @@
+/* 日历页与日历订阅设置（Rei 2026-11-10，docs/CALENDAR.md）。只用皮肤令牌；订阅颜色是 --cal-*，暗色调亮一档。 */
+:root {
+  --cal-blue: #2f6fde;
+  --cal-green: #2e9b4f;
+  --cal-orange: #d9822b;
+  --cal-red: #d64545;
+  --cal-purple: #8a5cd1;
+  --cal-teal: #1f9a9a;
+  --cal-pink: #d0508f;
+  --cal-gray: #7a7f87;
+}
+[data-theme='dark'] {
+  --cal-blue: #6aa0ff;
+  --cal-green: #5cc77c;
+  --cal-orange: #f0a35a;
+  --cal-red: #f07a7a;
+  --cal-purple: #b493f0;
+  --cal-teal: #4fc9c9;
+  --cal-pink: #f07fb5;
+  --cal-gray: #a2a7ae;
+}
+
+.cal-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.cal-nav,
+.cal-view-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.cal-range-title {
+  margin: 0 0 0 var(--space-2);
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cal-view-select {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+.cal-view-select .field-label {
+  margin: 0;
+}
+.cal-view-select .select-btn {
+  min-width: 96px;
+}
+.cal-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+/* 宽屏格子 */
+.cal-grid {
+  --cols: 7;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+.cal-dow,
+.cal-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+}
+.cal-dow-cell {
+  padding: 6px 8px;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.cal-row {
+  position: relative;
+  min-height: 108px;
+  row-gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.cal-row:last-child {
+  border-bottom: 0;
+}
+.cal-grid.is-tall .cal-row {
+  min-height: 420px;
+}
+.cal-cell-bg {
+  border-left: 1px solid var(--border);
+  z-index: 0;
+}
+.cal-cell-bg:first-child {
+  border-left: 0;
+}
+.cal-cell-bg.is-today {
+  background: var(--accent-soft);
+}
+.cal-cell {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.cal-day-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 2px 8px;
+  min-height: 26px;
+  position: relative;
+}
+.cal-day-num {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cal-day-head.is-today .cal-day-num {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  padding: 0 7px;
+}
+.cal-day-head.is-outside .cal-day-num {
+  color: var(--text-3);
+  font-weight: 400;
+}
+.cal-day-lunar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.cal-day-lunar .lunar-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-day-lunar .lunar-badge {
+  position: static;
+  font-size: 10px;
+  padding: 1px 3px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+.cal-day-lunar .lunar-badge.is-work {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.cal-cell-add {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  opacity: 0;
+  cursor: pointer;
+}
+.cal-cell:hover .cal-cell-add,
+.cal-cell-add[data-focus-visible] {
+  opacity: 1;
+}
+.cal-cell-add[data-hovered] {
+  background: var(--surface-hover);
+}
+@media (hover: none) {
+  .cal-cell-add {
+    opacity: 0.6;
+  }
+}
+
+.cal-slot,
+.cal-more-slot,
+.cal-add-slot {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 0 4px;
+}
+.cal-add-slot {
+  padding-top: 2px;
+}
+.cal-add-slot .add-bar {
+  margin: 0;
+}
+.cal-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.cal-item[data-hovered] {
+  background: var(--surface-hover);
+}
+.cal-item[data-focus-visible] {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.cal-item-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-item-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+}
+.cal-item.is-task.is-selected {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+.cal-slot.is-span .cal-item.is-task {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+.cal-slot.cont-left .cal-item {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.cal-slot.cont-right .cal-item {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.cal-slot.cont-left {
+  padding-left: 0;
+}
+.cal-slot.cont-right {
+  padding-right: 0;
+}
+/* 订阅事件：彩色竖线、文字淡一点；全天和跨天的铺一层淡底色 */
+.cal-item.is-event {
+  --sub: var(--cal-blue);
+  color: var(--text-2);
+  box-shadow: inset 3px 0 0 var(--sub);
+  padding-left: 8px;
+}
+.cal-item.is-event.is-allday,
+.cal-slot.is-span .cal-item.is-event {
+  background: color-mix(in srgb, var(--sub) 14%, transparent);
+  color: var(--text);
+}
+.cal-item-time {
+  flex: none;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.cal-more {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+.cal-more[data-hovered] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* 年视图 */
+.cal-year {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: var(--space-4) var(--space-5);
+}
+.cal-year-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  text-align: center;
+}
+.cal-year-dow {
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+.cal-year-day {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+.cal-year-day[data-hovered] {
+  background: var(--surface-hover);
+}
+.cal-year-day.is-off {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+.cal-year-day.is-work {
+  color: var(--danger);
+}
+.cal-year-day.has-items::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.cal-year-day.is-today {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.cal-year-day.is-today::after {
+  background: var(--accent-contrast);
+}
+html[data-layout='mobile'] .cal-year {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+}
+
+/* 手机：小月历 + 当天列表 */
+.cal-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cal-mini-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.cal-mini .cal-dow-cell {
+  text-align: center;
+  border: 0;
+  padding: 2px 0;
+}
+.cal-mini-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  height: 52px;
+  padding: 3px 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.cal-mini-cell.is-outside {
+  color: var(--text-3);
+}
+.cal-mini-num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.cal-mini-cell.is-today .cal-mini-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+.cal-mini-cell.is-picked .cal-mini-num {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.cal-mini-lunar {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 9.5px;
+  line-height: 1;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.cal-mini-lunar .lunar-badge {
+  top: -24px;
+  right: -6px;
+}
+.cal-mini-dots {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+}
+.cal-mini-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.cal-mini-dots i.is-event {
+  background: var(--sub);
+}
+.cal-day-lists {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.cal-day-list-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.cal-day-list.is-today .cal-day-list-head > span:first-child {
+  color: var(--accent);
+}
+.cal-day-list-dow {
+  font-size: var(--fs-small);
+  font-weight: 400;
+  color: var(--text-3);
+}
+.cal-day-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cal-day-items .cal-item {
+  height: 34px;
+  font-size: 14px;
+}
+.cal-empty {
+  color: var(--text-3);
+  font-size: var(--fs-small);
+  padding: 4px 6px;
+}
+html[data-layout='mobile'] .cal-toolbar {
+  gap: var(--space-2);
+}
+html[data-layout='mobile'] .cal-range-title {
+  font-size: 15px;
+  margin-left: 0;
+}
+html[data-layout='mobile'] .cal-view-select .field-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* 事件详情 */
+.cal-event {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-left: 3px solid var(--sub);
+  padding-left: var(--space-3);
+}
+.cal-event-when {
+  font-weight: 600;
+}
+.cal-event-loc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.cal-event-desc {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-2);
+  max-height: 40vh;
+  overflow: auto;
+}
+.cal-event-from {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+
+/* 设置：日历订阅 */
+.cal-sub-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sub, var(--cal-blue));
+}
+.cal-sub-row {
+  gap: var(--space-2);
+}
+.cal-sub-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+.cal-sub-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+.cal-sub-url {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-sub-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+}
+.cal-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cal-color-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--dot);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px transparent;
+}
+.cal-color-dot[data-selected] {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--dot);
+}
+.cal-color-dot[data-focus-visible] {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.cal-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.cal-add-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
