@@ -183,8 +183,9 @@ function navSections(store: Store): NavSection[] {
   });
 }
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
-/** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。 */
-const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown', 'done'];
+/** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。
+ *  项目总览页（groups）只有项目卡片，不算（Rei 2026-11-11「项目列表页 不显示任务详情侧边栏」，详情走浮层，见 detailInModal）。 */
+const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'group', 'doable', 'checkin', 'countdown', 'done'];
 const COLLAPSED_KEY = 'mindough:nav_collapsed';
 
 function useCollapsed() {
@@ -512,7 +513,7 @@ export function App() {
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
-  // 项目页看板视图、侧栏时间轴页：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」、2026-11-10 时间轴「点击任务不显示详情侧边栏」，lib/detail-pane detailInModal）。
+  // 项目页看板视图、侧栏日历页、项目总览页：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」、2026-11-10 时间轴「点击任务不显示详情侧边栏」、2026-11-11「项目列表页 不显示任务详情侧边栏」，lib/detail-pane detailInModal）。
   // 切进看板那一下把开着的详情收起来；切回列表右列照旧（空状态或之后点开的任务）。
   const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews);
   const wasBoardModal = useRef(boardModal);

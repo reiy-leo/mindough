@@ -44,9 +44,10 @@ export function nextTaskId(ids: readonly string[], current: string | null, dir: 
  * 桌面布局下这一页的任务详情用浮层，不占右列（Rei 2026-11-09 00:25「项目 看板 不显示详情第三列，点击不显示详情」、
  * 00:28「切换到看板视图后，不要显示侧边的详情column」）：项目页切到看板视图时，看板占满，右列不出现，点卡片弹出详情浮层
  * （components/task/DetailModal.tsx）。侧栏的日历页（路由 agenda，原来的时间轴）也一样（Rei 2026-11-10「点击任务不显示详情侧边栏」）。
+ * 侧栏「项目」总览页（路由 groups，只列项目卡片）也一样：没有右列，从搜索等处打开任务时弹浮层（Rei 2026-11-11「项目列表页 不显示任务详情侧边栏」）。
  * 项目页的列表、时间轴、任务链视图和别的页面照旧用右列；手机布局本来就是整页详情，不走这里。
  */
 export function detailInModal(route: { page: string; id?: string }, projectViews: Record<string, unknown>): boolean {
-  if (route.page === 'agenda') return true;
+  if (route.page === 'agenda' || route.page === 'groups') return true;
   return route.page === 'group' && !!route.id && normalizePrefs(projectViews[route.id]).view === 'board';
 }

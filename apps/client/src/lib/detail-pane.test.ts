@@ -74,9 +74,12 @@ describe('看板视图的详情用浮层，不占右列（Rei 2026-11-09）', ()
   it('侧栏日历页（agenda）：也用浮层（Rei 2026-11-10）', () => {
     expect(detailInModal({ page: 'agenda' }, {})).toBe(true);
   });
+  it('侧栏「项目」总览页（groups）：也用浮层，不出右列（Rei 2026-11-11）', () => {
+    expect(detailInModal({ page: 'groups' }, {})).toBe(true);
+    expect(detailInModal({ page: 'groups' }, { g1: { view: 'list' } })).toBe(true);
+  });
   it('只看当前这个项目的视图；别的页面不管', () => {
     expect(detailInModal({ page: 'group', id: 'g2' }, { g1: { view: 'board' } })).toBe(false);
-    expect(detailInModal({ page: 'groups' }, { g1: { view: 'board' } })).toBe(false);
     expect(detailInModal({ page: 'myday' }, { g1: { view: 'board' } })).toBe(false);
   });
 });
