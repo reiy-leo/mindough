@@ -1,7 +1,6 @@
 /** 日期段（Rei 2026-10-26「现在的日期只是单个日期，要支持日期段」）。 */
 import { afterEach, describe, expect, it } from 'vitest';
 import {
-  agendaBuckets,
   formatDateRange,
   formatTaskDateRange,
   isDateRange,
@@ -164,40 +163,6 @@ describe('选择器：快捷项和格子角色', () => {
     expect(rangeCellRole(r, '2026-10-30')).toBe('end');
     expect(rangeCellRole(r, '2026-10-31')).toBeNull();
     expect(rangeCellRole({ start: '2026-10-26', end: null }, '2026-10-26')).toBe('single');
-  });
-});
-
-describe('列表（Agenda）', () => {
-  const today = '2026-10-28';
-  it('放在开始那天；跨过今天的今天也放一份，标第几天', () => {
-    const a = mkTask('a', { scheduled_date: '2026-10-26', end_date: '2026-10-30' });
-    const b = mkTask('b', { scheduled_date: '2026-10-28' });
-    const c = mkTask('c', { scheduled_date: '2026-10-28', end_date: '2026-10-29' });
-    const { byDate, hiddenPast } = agendaBuckets([a, b, c], '2026-10-14', today);
-    expect(byDate.get('2026-10-26')!.map((x) => [x.task.id, x.span])).toEqual([['a', { index: 1, total: 5 }]]);
-    // 今天：a 第 3/5 天；c 今天开始（只放一次）
-    expect(byDate.get(today)!.map((x) => [x.task.id, x.span ?? null])).toEqual([
-      ['a', { index: 3, total: 5 }],
-      ['b', null],
-      ['c', { index: 1, total: 2 }],
-    ]);
-    expect(hiddenPast).toBe(0);
-  });
-
-  it('开始在「更早」之前、还没结束的照样出现在今天，不算进「更早的 N 条」', () => {
-    const a = mkTask('a', { scheduled_date: '2026-09-01', end_date: '2026-11-30' });
-    const old = mkTask('old', { scheduled_date: '2026-09-02' });
-    const { byDate, hiddenPast } = agendaBuckets([a, old], '2026-10-14', today);
-    expect(byDate.has('2026-09-01')).toBe(false);
-    expect(byDate.get(today)!.map((x) => x.task.id)).toEqual(['a']);
-    expect(hiddenPast).toBe(1);
-  });
-
-  it('已经结束的日期段只在开始那天', () => {
-    const a = mkTask('a', { scheduled_date: '2026-10-20', end_date: '2026-10-25' });
-    const { byDate } = agendaBuckets([a], '2026-10-14', today);
-    expect(byDate.get('2026-10-20')).toHaveLength(1);
-    expect(byDate.get(today)).toBeUndefined();
   });
 });
 

@@ -20,7 +20,8 @@ export const DAYS_MIN = 2;
 export const DAYS_MAX = 14;
 export const WEEKS_MIN = 1;
 export const WEEKS_MAX = 6;
-export const DEFAULT_CAL_VIEW: CalView = { kind: 'month', days: 3, weeks: 2 };
+/** 默认「周」（Rei 2026-11-11 定；之前是月）。已经记住视图的设备照旧。 */
+export const DEFAULT_CAL_VIEW: CalView = { kind: 'week', days: 3, weeks: 2 };
 
 const clampInt = (v: unknown, lo: number, hi: number, dflt: number) => {
   const n = typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : dflt;
@@ -194,4 +195,47 @@ export function layoutRow<T extends CalSpanItem>(row: readonly DateKey[], items:
 /** 某天有哪些（按开始日、长短排）。 */
 export function itemsOnDay<T extends CalSpanItem>(day: DateKey, items: readonly T[]): T[] {
   return items.filter((it) => compareDateKey(it.start, day) <= 0 && compareDateKey(it.end, day) >= 0);
+}
+
+/** 月视图格子里的一件：任务、打卡、倒数日、订阅事件。 */
+export type CalItemRole = 'countdown' | 'task' | 'checkin' | 'event';
+export interface CalCellItem extends CalSpanItem {
+  role: CalItemRole;
+  /** 订阅事件：全天的排在带时间的前面，带时间的按开始时间。 */
+  allDay?: boolean;
+  startMs?: number | null;
+}
+
+/**
+ * 月视图一格（Rei 2026-11-11「每个格子只显示一个任务；当天有倒数日时优先显示倒数日；另显示当天任务+打卡+倒数日的个数」）：
+ * - 只挑一件：倒数日 → 任务（那天开始的在前，再按短的在前）→ 订阅事件（全天在前，再按时间）。打卡不挑（每天都有的话会占满整月）。
+ * - count：这天的任务 + 打卡 + 倒数日，订阅事件不算。
+ * 同一档里保持传进来的顺序。
+ */
+export function monthCell<T extends CalCellItem>(day: DateKey, items: readonly T[]): { shown: T | null; count: number } {
+  const on = itemsOnDay(day, items);
+  const count = on.filter((it) => it.role !== 'event').length;
+  const rank = (it: T) => (it.role === 'countdown' ? 0 : it.role === 'task' ? 1 : it.role === 'event' ? 2 : 9);
+  const pickable = on
+    .map((it, i) => ({ it, i }))
+    .filter(({ it }) => rank(it) < 9)
+    .sort((a, b) => {
+      const r = rank(a.it) - rank(b.it);
+      if (r) return r;
+      if (a.it.role === 'task') {
+        const sa = a.it.start === day ? 0 : 1;
+        const sb = b.it.start === day ? 0 : 1;
+        const len = diffDays(a.it.start, a.it.end) - diffDays(b.it.start, b.it.end);
+        if (sa - sb || len) return sa - sb || len;
+      }
+      if (a.it.role === 'event') {
+        const ad = a.it.allDay ? 0 : 1;
+        const bd = b.it.allDay ? 0 : 1;
+        if (ad - bd) return ad - bd;
+        const t = (a.it.startMs ?? 0) - (b.it.startMs ?? 0);
+        if (t) return t;
+      }
+      return a.i - b.i;
+    });
+  return { shown: pickable[0]?.it ?? null, count };
 }

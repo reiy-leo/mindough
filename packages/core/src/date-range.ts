@@ -116,36 +116,6 @@ export function rangeCellRole(range: DateRange, day: DateKey): 'start' | 'end' |
   return day > start && day < end ? 'middle' : null;
 }
 
-/** 列表（Agenda）里的一行：哪件任务；日期段的话写上是第几天。 */
-export interface AgendaItem<T> {
-  task: T;
-  /** 日期段才有：这一天是第几天 / 共几天。 */
-  span?: { index: number; total: number };
-}
-
-/**
- * 列表（Agenda）按日期分组（Rei 2026-10-26 日期段）：
- * - 每件任务放在开始那天（from 之前的不放）；
- * - 日期段跨过今天（开始在今天之前、结束在今天或之后）的，今天也放一份，标「第 3/5 天」。
- * 返回 日期 → 行；hiddenPast = 开始在 from 之前、今天也没出现的件数（「更早的 N 条」）。
- */
-export function agendaBuckets<T extends Pick<Task, 'scheduled_date' | 'end_date'>>(tasks: readonly T[], from: DateKey, today: DateKey): { byDate: Map<DateKey, AgendaItem<T>[]>; hiddenPast: number } {
-  const byDate = new Map<DateKey, AgendaItem<T>[]>();
-  const push = (d: DateKey, item: AgendaItem<T>) => byDate.set(d, [...(byDate.get(d) ?? []), item]);
-  let hiddenPast = 0;
-  for (const t of tasks) {
-    const s = t.scheduled_date;
-    if (!s) continue;
-    const end = isDateRange(t) ? t.end_date! : null;
-    const span = end ? rangeDayIndex(s, end, s)! : undefined;
-    if (s >= from) push(s, span ? { task: t, span } : { task: t });
-    const inToday = end && s < today ? rangeDayIndex(s, end, today) : null;
-    if (inToday) push(today, { task: t, span: inToday });
-    else if (s < from) hiddenPast++;
-  }
-  return { byDate, hiddenPast };
-}
-
 /** 详情顶栏日期按钮的四种状态（Rei 2026-11-08）。 */
 export type DateQuickKind = 'none' | 'today' | 'future' | 'past';
 

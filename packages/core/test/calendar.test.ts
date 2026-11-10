@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { calRange, layoutRow, normalizeCalView, stepCalAnchor, yearMonths } from '../src/calendar/views';
+import { calRange, layoutRow, monthCell, normalizeCalView, stepCalAnchor, yearMonths, type CalCellItem } from '../src/calendar/views';
 import { parseIcsEvents, resolveTzid, wallToMs } from '../src/calendar/ics-events';
 import { calSubDue, holidayCell, nextSubColor } from '../src/calendar/subs';
 import type { SubEvent } from '../src/lunar/ics';
 
 describe('calendar views', () => {
   it('normalizes stored view', () => {
-    expect(normalizeCalView(null)).toEqual({ kind: 'month', days: 3, weeks: 2 });
+    expect(normalizeCalView(null)).toEqual({ kind: 'week', days: 3, weeks: 2 });
     expect(normalizeCalView({ kind: 'days', days: 40, weeks: 0 })).toEqual({ kind: 'days', days: 14, weeks: 1 });
-    expect(normalizeCalView({ kind: 'nope', days: 1 })).toMatchObject({ kind: 'month', days: 2 });
+    expect(normalizeCalView({ kind: 'nope', days: 1 })).toMatchObject({ kind: 'week', days: 2 });
+    // 已经记住视图的设备照旧
+    expect(normalizeCalView({ kind: 'month', days: 3, weeks: 2 }).kind).toBe('month');
   });
 
   it('week range respects week start', () => {
@@ -226,5 +228,33 @@ describe('subs helpers', () => {
     expect(holidayCell([ev('国庆节', 'event'), ev('国庆节（休）', 'off')], false)).toEqual({ label: '国庆节', badge: 'off', titles: ['国庆节（休）'] });
     expect(holidayCell([ev('补班', 'work')], false)).toMatchObject({ label: null, badge: 'work' });
     expect(holidayCell([ev('国庆节', 'event'), ev('国庆节（休）', 'off')], true)).toMatchObject({ label: '国庆节', badge: 'off' });
+  });
+});
+
+describe('月视图一格 monthCell（Rei 2026-11-11）', () => {
+  const day = '2026-11-11';
+  const it_ = (id: string, role: CalCellItem['role'], start = day, end = start, extra: Partial<CalCellItem> = {}): CalCellItem => ({ id, role, start, end, ...extra });
+  it('有倒数日先显示倒数日；个数 = 任务 + 打卡 + 倒数日，订阅事件不算', () => {
+    const r = monthCell(day, [it_('t', 'task'), it_('e', 'event'), it_('c', 'checkin'), it_('cd', 'countdown')]);
+    expect(r.shown?.id).toBe('cd');
+    expect(r.count).toBe(3);
+  });
+  it('没有倒数日：那天开始的任务在前，再按短的在前', () => {
+    const r = monthCell(day, [it_('long', 'task', '2026-11-01', '2026-11-30'), it_('span', 'task', day, '2026-11-13'), it_('one', 'task')]);
+    expect(r.shown?.id).toBe('one');
+    expect(r.count).toBe(3);
+  });
+  it('只有打卡：不挑打卡，只算个数', () => {
+    const r = monthCell(day, [it_('c1', 'checkin'), it_('c2', 'checkin')]);
+    expect(r.shown).toBeNull();
+    expect(r.count).toBe(2);
+  });
+  it('只有订阅事件：显示事件（全天在前，再按时间），个数 0', () => {
+    const r = monthCell(day, [it_('late', 'event', day, day, { startMs: 2000 }), it_('early', 'event', day, day, { startMs: 1000 }), it_('all', 'event', day, day, { allDay: true })]);
+    expect(r.shown?.id).toBe('all');
+    expect(r.count).toBe(0);
+  });
+  it('不在这天的不算', () => {
+    expect(monthCell(day, [it_('x', 'task', '2026-11-12')])).toEqual({ shown: null, count: 0 });
   });
 });
