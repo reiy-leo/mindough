@@ -576,3 +576,34 @@
 .page-header:has(.groups-new) {
   align-items: center;
 }
+/* 项目面板的「资料库」多选（Rei 2026-11-10）：已关联别的项目的库在名字下面写一行小字 */
+.project-libs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.project-libs-hint {
+  margin: 0;
+}
+.project-libs-popover .project-libs-item {
+  min-height: 36px;
+}
+.project-libs-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.project-libs-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-libs-linked {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

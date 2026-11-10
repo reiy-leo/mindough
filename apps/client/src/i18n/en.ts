@@ -1418,4 +1418,11 @@ export const EN: Record<string, EnValue> = {
   "这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。": "This collection is empty, so you can delete it. Or archive it: it won’t be offered for new tasks.",
   "内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Built-in collections can’t be deleted. Archive one you no longer use: it won’t be offered for new tasks, and tasks and entries that use it stay as they are.",
   "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "A collection with content can’t be deleted. Archive one you no longer use: it won’t be offered for new tasks, and tasks and entries that use it stay as they are.",
+  "不关联": "None",
+  "已关联：{name}": "Linked: {name}",
+  "选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。": "Tasks in the selected libraries go into this project automatically, including ones added later.",
+  "会有 {n} 件任务放进来。": "{n} tasks will move in.",
+  "改关联到这个项目？": "Link it to this project instead?",
+  "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "“{library}” is linked to “{project}”. A library can be linked to only one project; once you switch it, its tasks move to this project.",
+  "改关联": "Switch",
 };

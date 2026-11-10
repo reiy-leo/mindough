@@ -1,6 +1,7 @@
 /**
  * 新建项目和编辑项目用的同一个面板（Rei 2026-11-02「新建项目的弹窗需要优化，删掉默认资料库，开始结束删掉。和编辑窗口统一」）。
  * 两边字段一样：图标预览 + 名字 + 颜色和图标（IconStylePicker，2026-11-04 起项目能选颜色）+「出现在我的一天」开关（Rei 2026-11-02，存在 group.my_day_auto，默认开）+「默认日期：今天」开关（Rei 2026-11-09，group.default_date_today，默认关）。只有标题和主按钮不同：新建是「新建项目」+「创建」，编辑是「编辑项目」+「保存」。
+ * 「资料库」多选（Rei 2026-11-10，LibrarySelect）：选中的库里的任务自动进这个项目，保存时 store.setGroupLibraries 关联并挪任务。
  * 开始 / 结束、类型、默认资料库界面上不再填，数据字段还在（老项目照常读）；新建的项目这几项都是空的。
  */
 import { useState } from 'react';
@@ -9,6 +10,7 @@ import { defaultIconColor, groupAutoMyDay, groupColor, groupIconFromPicker, grou
 import { Button, Sheet, Switch } from '../../ui/primitives';
 import { IconStylePicker } from '../IconStylePicker';
 import { GroupIcon } from './GroupIcon';
+import { LibrarySelect } from './LibrarySelect';
 import { navigate } from '../../lib/router';
 import { tr } from '../../lib/i18n';
 import { imeBusy } from '../../lib/ime';
@@ -24,10 +26,15 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
   const [myDay, setMyDay] = useState(group ? groupAutoMyDay(group) : true);
   // 「默认日期：今天」（Rei 2026-11-09 03:52）：项目里新建的任务日期填今天，新建默认关；存在 group.default_date_today，跟着同步
   const [dateToday, setDateToday] = useState(group?.default_date_today === true);
+  // 关联的资料库（Rei 2026-11-10）：面板里先选，保存时才关联、挪任务
+  const [libs, setLibs] = useState<string[]>(() => (group ? store.groupLibraryIds(group.id) : []));
   const save = () => {
     if (!name.trim()) return;
     if (group) {
-      store.updateGroup(group.id, { name, icon, my_day_auto: myDay, default_date_today: dateToday, ...(color !== (group.color ?? null) ? { color } : {}) });
+      store.batch(() => {
+        store.updateGroup(group.id, { name, icon, my_day_auto: myDay, default_date_today: dateToday, ...(color !== (group.color ?? null) ? { color } : {}) });
+        store.setGroupLibraries(group.id, libs);
+      });
       onClose();
       return;
     }
@@ -42,6 +49,7 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
       color,
       default_date_today: dateToday,
     });
+    if (libs.length) store.setGroupLibraries(g.id, libs);
     onClose();
     navigate({ page: 'group', id: g.id });
   };
@@ -78,6 +86,7 @@ export function ProjectSheet({ store, group, onClose }: { store: Store; group?: 
           </div>
           <Switch label={tr('默认日期：今天')} isSelected={dateToday} onChange={setDateToday} />
         </div>
+        <LibrarySelect store={store} groupId={group?.id ?? null} value={libs} onChange={setLibs} />
       </div>
     </Sheet>
   );

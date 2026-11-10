@@ -1694,6 +1694,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Koleksi yang berisi tidak bisa dihapus. Arsipkan yang sudah tidak dipakai: tidak akan ditawarkan untuk tugas baru, sedangkan tugas dan entri yang memakainya tetap tampil seperti biasa.",
   "有内容的资料库不能删，只能归档": "Koleksi yang berisi tidak bisa dihapus, hanya diarsipkan",
   "内置资料库不能删，只能归档": "Koleksi bawaan tidak bisa dihapus, hanya diarsipkan",
+  "不关联": "Tidak ada",
+  "已关联：{name}": "Tertaut: {name}",
+  "选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。": "Tugas di pustaka yang dipilih otomatis masuk ke proyek ini, termasuk yang ditambahkan nanti.",
+  "会有 {n} 件任务放进来。": "{n} tugas akan masuk.",
+  "改关联到这个项目？": "Tautkan ke proyek ini?",
+  "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "“{library}” sudah tertaut ke “{project}”. Satu pustaka hanya bisa tertaut ke satu proyek; setelah dipindah, tugasnya ikut pindah ke proyek ini.",
+  "改关联": "Pindahkan",
 };
 
 export const DATA: Record<string, string> = {

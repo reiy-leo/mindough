@@ -1694,6 +1694,13 @@ export const MESSAGES: Record<string, MessageValue> = {
   "有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。": "Sammlungen mit Inhalt können nicht gelöscht werden. Archiviere eine, die du nicht mehr brauchst: Sie wird für neue Aufgaben nicht mehr angeboten, Aufgaben und Einträge damit bleiben, wie sie sind.",
   "有内容的资料库不能删，只能归档": "Sammlungen mit Inhalt können nicht gelöscht, nur archiviert werden",
   "内置资料库不能删，只能归档": "Eingebaute Sammlungen können nicht gelöscht, nur archiviert werden",
+  "不关联": "Keine",
+  "已关联：{name}": "Verknüpft: {name}",
+  "选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。": "Aufgaben in den gewählten Bibliotheken kommen automatisch in dieses Projekt, auch später hinzugefügte.",
+  "会有 {n} 件任务放进来。": "{n} Aufgaben kommen dazu.",
+  "改关联到这个项目？": "Stattdessen mit diesem Projekt verknüpfen?",
+  "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "„{library}“ ist mit „{project}“ verknüpft. Eine Bibliothek gehört zu genau einem Projekt; nach dem Wechsel ziehen ihre Aufgaben in dieses Projekt um.",
+  "改关联": "Wechseln",
 };
 
 export const DATA: Record<string, string> = {
