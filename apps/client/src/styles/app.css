@@ -261,7 +261,12 @@ button {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  height: 48px;
+  /* 高度要把状态栏加上（Rei 2026-11-10 安卓「我的一天、待安排、积压顶部没有留空间」「项目页顶部不显示搜索图标行」）：
+     安卓 App 是 edge-to-edge（Tauri 模板 enableEdgeToEdge），env(safe-area-inset-top) = 状态栏高。
+     以前写死 48px、又是 border-box，状态栏的上内边距从 48px 里扣，顶栏只剩十来像素：标题和搜索按钮被挤出顶栏下沿，
+     盖到页面第一块上；项目页固定头（z-index 6）不透明，反过来把搜索按钮盖住。网页版这个值是 0，不受影响。 */
+  flex: none;
+  height: calc(48px + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) var(--space-2) 0 var(--space-4);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(16px);

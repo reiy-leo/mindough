@@ -407,7 +407,7 @@
   --tabbar-h: 80px;
 }
 [data-skin='material'][data-layout='mobile'] .topbar {
-  height: 64px;
+  height: calc(64px + env(safe-area-inset-top));
 }
 [data-skin='material'][data-layout='mobile'] .tabbar {
   border-top: 0;
