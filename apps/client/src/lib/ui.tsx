@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { NewTaskInput } from '@mindough/core';
+import { onLayerEntry } from './back-layers';
 import { hashWithTask, taskInHash } from './router';
 import { useSettings } from './settings';
 
@@ -73,7 +74,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
       if (cur !== id) {
         const url = `${location.pathname}${location.search}${hashWithTask(location.hash, id)}`;
         // 手机：列表 → 详情是「推进去」，进一条记录；换一件 / 桌面上只替换，不攒记录
-        if (id && !cur && layoutRef.current === 'mobile') history.pushState({ mdDetail: true }, '', url);
+        // 从弹层里打开（搜索里点了任务）：记录顶上是弹层那条，换成详情这条（lib/back-layers）
+        if (id && !cur && layoutRef.current === 'mobile') {
+          if (onLayerEntry()) history.replaceState({ mdDetail: true }, '', url);
+          else history.pushState({ mdDetail: true }, '', url);
+        }
         else history.replaceState(id ? history.state : null, '', url);
       }
       setEditingId(id);

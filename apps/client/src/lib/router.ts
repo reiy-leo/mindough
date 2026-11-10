@@ -1,3 +1,4 @@
+import { onLayerEntry } from './back-layers';
 import { useEffect, useState } from 'react';
 
 /**
@@ -128,7 +129,9 @@ export function hashWithTask(hash: string, id: string | null): string {
 }
 
 export function navigate(route: Route) {
-  location.hash = href(route);
+  // 弹层开着时记录顶上是它的那条（lib/back-layers）：换掉，不再叠一条，返回不用多按一下
+  if (onLayerEntry()) location.replace(`${location.pathname}${location.search}${href(route)}`);
+  else location.hash = href(route);
 }
 
 export function useRoute(): Route {
