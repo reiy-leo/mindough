@@ -663,16 +663,17 @@ html.is-cal-dragging * {
 html.is-cal-dragging .cal-item[data-hovered] {
   background: transparent;
 }
+/* 比「今天」那格的淡底深一档，再描一圈强调色，两者挨着也分得清 */
 .cal-cell-bg.is-drop-target {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 .cal-day-list.is-drop-target {
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
-  box-shadow: 0 0 0 4px var(--accent-soft), inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 4px var(--accent-soft), inset 0 0 0 2px var(--accent);
 }
 .cal-mini-cell.is-drop-target {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--accent);
 }

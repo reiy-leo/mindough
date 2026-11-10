@@ -163,7 +163,8 @@ export function useCalDrag(rootRef: RefObject<HTMLElement | null>, opts: CalDrag
       ghost.classList.add('cal-drag-ghost');
       ghost.classList.remove('is-cal-lifted');
       const w = Math.min(rect.width, 240);
-      Object.assign(ghost.style, { position: 'fixed', left: '0px', top: '0px', width: `${w}px`, height: `${rect.height}px`, margin: '0', pointerEvents: 'none', zIndex: '2000' });
+      const cs = getComputedStyle(p.el);
+      Object.assign(ghost.style, { fontSize: cs.fontSize, padding: cs.padding, position: 'fixed', left: '0px', top: '0px', width: `${w}px`, height: `${rect.height}px`, margin: '0', pointerEvents: 'none', zIndex: '2000' });
       document.body.appendChild(ghost);
       const dx = Math.min(p.x - rect.left, w - 8);
       drag = { ...p, ghost, dx, dy: p.y - rect.top, target: p.grabbed, lit: [], px: p.x, py: p.y, raf: 0, scroller: scrollerOf(root) };
