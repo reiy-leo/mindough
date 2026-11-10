@@ -508,7 +508,7 @@ export function App() {
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
   const selected = !!store.get('task', ui.editingId);
-  // 项目页看板视图：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」，lib/detail-pane detailInModal）。
+  // 项目页看板视图、侧栏时间轴页：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」、2026-11-10 时间轴「点击任务不显示详情侧边栏」，lib/detail-pane detailInModal）。
   // 切进看板那一下把开着的详情收起来；切回列表右列照旧（空状态或之后点开的任务）。
   const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews);
   const wasBoardModal = useRef(boardModal);

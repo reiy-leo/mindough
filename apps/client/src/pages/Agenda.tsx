@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Form, TextField, Button as RacButton } from 'react-aria-components';
 import { WrapInput, stripNewlines } from '../components/WrapInput';
 import { CalendarDays, ChevronsUp, Plus } from 'lucide-react';
-import { weekdayLabel, addDays, agendaBuckets, compareDateKey, diffDays, formatTaskDateRange, formatDateZh, relativeDayZh, toDateKey, weekday, type AgendaItem, type Task, plainTitleMarkdown } from '@mindough/core';
+import { weekdayLabel, addDays, agendaBuckets, compareDateKey, diffDays, formatTaskDateRange, formatDateZh, relativeDayZh, toDateKey, weekday, type AgendaItem, type Task, plainTitleMarkdown, isFinished } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
@@ -12,7 +12,10 @@ import { PageHeader } from '../components/PageHeader';
 import { tr, trc } from '../lib/i18n';
 import { useDateDisplay } from '../lib/date-display';
 import { scrollIntoContainer } from '../lib/root-scroll';
-/** 时间轴（导航「计划 → 时间轴」，路由仍是 agenda）：按日期往下流，今天居中；过去在上、将来在下。 */
+/**
+ * 时间轴（导航「计划 → 时间轴」，路由仍是 agenda）：按日期往下流，今天居中；过去在上、将来在下。
+ * 只列没结束的任务，行里只有标题和日期定位小字；宽屏点任务弹居中详情浮层（lib/detail-pane detailInModal），不开右列（Rei 2026-11-10）。
+ */
 export function AgendaPage() {
   const store = useStore();
   const now = useNow();
@@ -23,8 +26,9 @@ export function AgendaPage() {
   const [draft, setDraft] = useState('');
   const todayRef = useRef<HTMLLIElement>(null);
 
-  // 归档了的项目里的任务不上时间轴（Rei 2026-11-05）
-  const dated = store.activeTasks().filter((t) => t.scheduled_date && !t.recurrence);
+  // 归档了的项目里的任务不上时间轴（Rei 2026-11-05）；完成、关闭的也不列（Rei 2026-11-10「时间轴中不显示已完成的任务」，
+  // 关闭和完成一样算结束了，用 core isFinished）。「更早的 N 条」也只数没结束的
+  const dated = store.activeTasks().filter((t) => t.scheduled_date && !t.recurrence && !isFinished(t.status));
   const from = addDays(today, -pastDays);
   // 日期段（Rei 2026-10-26）：放在开始那天；跨过今天的，今天也放一份，标「第 3/5 天」
   const { byDate, hiddenPast } = agendaBuckets(dated, from, today);
@@ -75,7 +79,7 @@ export function AgendaPage() {
               </div>
               <div className="agenda-items">
                 {list.map((it) => (
-                  <TaskRow key={it.task.id} store={store} task={it.task} spanNote={spanNote(it, d)} />
+                  <TaskRow key={it.task.id} store={store} task={it.task} spanNote={spanNote(it, d)} dateMetaOnly />
                 ))}
                 {adding === d ? (
                   <Form
