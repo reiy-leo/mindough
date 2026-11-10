@@ -86,10 +86,10 @@ export function GroupsPage() {
         subtitle={tr('把相关的任务放在一起')}
         icon={<Shapes size={22} />}
         actions={
+          // 只放图标（Rei 2026-11-10「项目列表页 右上角的新建项目用icon btn」），和打卡、倒数日页同一个按钮；文字在悬停提示和读屏名里
           <Tip content={tr('新建项目')}>
-            <Button variant="primary" className="page-cta" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
-              <Plus size={16} aria-hidden />
-              <span className="page-cta-label">{tr('新建项目')}</span>
+            <Button variant="primary" className="btn-icon-only" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
+              <Plus size={18} aria-hidden />
             </Button>
           </Tip>
         }

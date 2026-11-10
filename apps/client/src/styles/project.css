@@ -571,48 +571,4 @@
   opacity: 1;
 }
 
-/* 项目列表右上角「新建项目」：和各皮肤工具栏按钮一样高，和标题一行；窄了只留图标 */
-.page-header:has(.page-cta) {
-  align-items: center;
-}
-.btn.page-cta {
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  gap: 4px;
-}
-[data-skin='apple'] .btn.page-cta {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 7px;
-}
-[data-skin='material'] .btn.page-cta {
-  height: 36px;
-  padding: 0 16px 0 12px;
-  border-radius: 18px;
-}
-[data-layout='mobile'] .btn.page-cta,
-.is-narrow .btn.page-cta {
-  width: 32px;
-  padding: 0;
-  border-radius: 50%;
-}
-[data-layout='mobile'] .btn.page-cta .page-cta-label,
-.is-narrow .btn.page-cta .page-cta-label {
-  display: none;
-}
-[data-skin='material'][data-layout='mobile'] .btn.page-cta {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-}
-@media (max-width: 560px) {
-  .btn.page-cta {
-    width: 32px;
-    padding: 0;
-    border-radius: 50%;
-  }
-  .btn.page-cta .page-cta-label {
-    display: none;
-  }
-}
+/* 项目列表右上角「新建项目」2026-11-10 起只放图标，用 app.css 的 .btn-icon-only（和打卡、倒数日页一样），这里不再单独写样式 */
