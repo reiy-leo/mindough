@@ -1899,7 +1899,8 @@ Rei 2026-11-10 19:45：「侧边栏时间轴换成"日历"；视图 dropdown 有
 - 设置：新的一项 `calendar`（`components/CalendarSettings.tsx`，原 `LunarSettings.tsx`）：节假日（开关 + 节假日订阅）、农历开关（只在中文界面）、日历订阅（`components/CalendarSubs.tsx`）。设置 → 任务里的农历去掉了。偏好 key `lunar.sub_url` / `lunar.sub_freq` 没改。
 - 日历订阅：同步表 `calendar_sub`（迁移 v22，name / url / color / sort / created_at，整行 LWW）；云端只存整行 JSON，同步部分不用改；老客户端不认这张表，不显示。事件、同步状态、「这台设备看不看」只存本机（`lib/calendar-subs.ts`，localStorage 一条订阅一个 key），展开今天前 1 年到后 2 年、最多 5000 个；6 小时没成功就自动拉，失败隔 1 小时。解析是 core `calendar/ics-events.ts`（复用 `lunar/ics.ts` 的折行，没加依赖）：全天 / 带时间、DTEND / DURATION、Z / IANA TZID / 常见 Windows 时区名 / 浮动时间、RRULE 日周月年 + INTERVAL / COUNT / UNTIL / BYDAY（含第几个星期几）/ BYMONTHDAY / BYMONTH、EXDATE、RECURRENCE-ID、取消的不要。
 - Worker `/api/calendar/ics`：重定向改成自己跟（最多 3 跳，每跳重查地址，跳到内网 400），上限 5 MB 边读边数（413），每 IP 每分钟 30 次、fresh=1 6 次（429，实例内计数），主机名再拒 `.localhost` / `.lan` / `.home.arpa` / 纯数字和十六进制主机。
-- 没做：拖动改日期、小时刻度的日程视图、订阅事件转任务。
+- 拖动改日期（Rei 2026-11-11 06:55）：周、多日、多周、月视图能拖任务和倒数日，年视图不拖；整段平移（core `calendar/drag.ts`），写入走 `store.updateTask`（我的一天跟着走），提示带撤销；手势在 `lib/cal-drag.ts`（鼠标 4px、手指长按 450ms、⌥← / ⌥→、Esc）。细节见 [CALENDAR.md](CALENDAR.md) 第十节。
+- 没做：小时刻度的日程视图、订阅事件转任务。
 
 ### 日历：默认周、删掉时间轴列表、月视图每格一件 ✅（2026-11-11）
 

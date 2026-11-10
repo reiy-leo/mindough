@@ -45,7 +45,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用
   attachments.ts        附件（Rei 2026-10-17）：文件类型（10 种）、大小显示、文件名安全化 / 改名保留扩展名 / 导出去重、50 MB 上限；写入在 Store（attachmentsOf / addAttachment / setAttachmentFile / renameAttachment / removeAttachment / restoreAttachment / ensureJournal）
   lunar/                农历（Rei 2026-10-17）：data.ts（1900–2100 表，scripts/gen-lunar-data.mjs 生成，别手改）、lunar.ts（公历 ⇄ 农历、节气、节日、格子小字）、names.ts（月名日名节气节日，i18n 白名单）、ics.ts（订阅日历解析）、subscription.ts（默认源、偏好 lunar.*、什么时候同步、状态文案）
-  calendar/             日历（Rei 2026-11-10，docs/CALENDAR.md）：views.ts（周 / 月 / 年 / 多日 / 多周的范围、翻页、排道 layoutRow）、ics-events.ts（日历订阅的完整事件解析：时间、时区、RRULE、EXDATE、RECURRENCE-ID）、subs.ts（订阅颜色、该不该拉、状态文案、只开节假日时的格子规则 holidayCell）
+  calendar/             日历（Rei 2026-11-10，docs/CALENDAR.md）：views.ts（周 / 月 / 年 / 多日 / 多周的范围、翻页、排道 layoutRow）、ics-events.ts（日历订阅的完整事件解析：时间、时区、RRULE、EXDATE、RECURRENCE-ID）、subs.ts（订阅颜色、该不该拉、状态文案、只开节假日时的格子规则 holidayCell）、drag.ts（拖动改日期：整段平移 calDropPatch、撤销字段，Rei 2026-11-11；手势在 client lib/cal-drag.ts）
   date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、Agenda 分组 agendaBuckets
   date-grid.ts          日期面板的月历格子（Rei 2026-11-01 方案 A）：公历 / 农历月都排 42 格（含闰月）、翻页 stepView、键盘翻页落点 shiftFocus、点格子规则 clickDay、拖选 dragRange
   timezone.ts           任务时区（Rei 2026-10-25）：task.time_zone（IANA，空 = 跟着设备）、常用 / 全部时区、那天的偏移（夏令时）、taskToday / isTaskOverdue / timeZoneBadge；中文城市名在 timezone-names.ts
