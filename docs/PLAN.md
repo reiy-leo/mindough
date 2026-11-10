@@ -1121,7 +1121,7 @@ Rei 2026-11-01 原话：「项目的图标、名称要可以编辑」；同日�
 
 做了什么：
 - **改名、换图标**：项目页左上角点名字就地改（回车或点别处存，Esc 不改，改成空的不算）；点图标弹出图标选择（和类型、资料库同一个：搜 lucide 图标，或填一个 emoji）。··· 菜单里还有「编辑…」，弹一个面板，名字和图标一起改。新建项目也换成这个图标选择，默认文件夹图标。
-- **··· 菜单**：项目页右上角、项目列表卡片右上角（鼠标移上去才出现，触屏一直在）、侧栏里那一项的右键 / 长按，三处一样：编辑… ｜ 在侧边栏显示 ｜ 解散项目… · 删除项目…（红色）。
+- **··· 菜单**：项目页右上角、项目列表卡片右上角（鼠标移上去才出现，触屏一直在）、侧栏里那一项右边的 ···（2026-11-11 起；图标样式、图标栏照旧右键 / 长按），三处一样：编辑… ｜ 在侧边栏显示 ｜ 解散项目… · 删除项目…（红色）。
 - **解散**：项目没了，任务都留着、移出项目：没日期的回待安排，有日期的还在那天。先确认，写明留下几件。
 - **删除**：项目和里面的任务一起删，任务的前后关系、相关任务、我的一天、附件跟 `deleteTask` 一样打墓碑。先确认，写明删几件，提醒「只想留下任务，就选「解散项目」」。
 - 解散、删除后提示里都有「撤销」（8 秒）；开着的就是这个项目时回项目列表，右列开着的任务被删了就关掉。
@@ -1657,6 +1657,16 @@ Rei 2026-11-11 02:15「右上角加一个按钮组…列表…图标」，02:18 
 - **拖动排序**：`lib/nav-reorder.ts` 认父元素 `data-reorder-layout="grid"`：按 offsetLeft / offsetTop 记每格，落点是离被拖那格中心最近的一格（`gridTargetIndex`），别的格子挪到新顺序里自己那一格（`gridShift`，折行处跨行挪），占位格横竖都跟；手指拿起后横挪也开始拖；键盘多认 ⌥← / ⌥→（`reorderKey(e, grid)`）。列表的算法没动。
 - **测试**：`lib/pinned-style.test.ts` 2 项、`lib/nav-reorder.test.ts` 加 3 项（网格落点、跨行挪、⌥← / ⌥→）。截图脚本 `work/d1111-pinstyle/ps.mjs`（LightVela Chromium，三皮肤宽屏 1366 + 960 + 手机 390）。
 - **没做**：资料库那一串的图标显示；手机「更多」页列表模式里置顶项目的图标样子没改。
+
+### 侧栏项目的菜单换成行右边的 ··· ✅（2026-11-11）
+Rei 2026-11-11 02:56「添加到侧边栏的项目，右键菜单换成右侧的『···』」。
+
+- **列表样式**：`App.tsx` 新 `PinnedGroupRow`（侧栏）、`MoreGroupRow`（「更多」页）。行外面套一层 div（侧栏 `.nav-item-split.nav-pinned-row`，「更多」页 `.more-item.more-item-split.more-item-sub`），里面是链接和 `RowMoreMenu`（`OverflowMenu`，读屏「「{name}」的更多操作」，菜单项是 `useProjectActions` 那一套）。不挂 `useContextMenuAt`：右键由全局 `lib/contextmenu` 拦掉、什么也不出；`usePinnedReorder` 不给 `openMenu`，手指拿起没挪松开什么也不做。
+- **显示**：沿用「项目」那行 ··· 的样式（`.nav-item-more`：悬停这一行、`[data-focus-visible]`、按下、菜单开着才显示，`(hover: none)` 常显），另加 `.nav-pinned-row:has(:focus-visible)`（键盘聚焦到行里的链接也显示）。「更多」页的 `.more-item-more` 一直显示（同「项目」那行）。链接 `padding-inline-end: 36px` 给 ··· 让位，长名字在前面截断。置顶项目行本来没有计数，不用处理和数字重叠。
+- **拖动排序**：拖动属性挂在外层 div 上（`lib/nav-reorder` 认直接子元素），··· 跟着整行挪。`RowMoreMenu` 外面一层 `span.row-more-slot`（`display: contents`）拦下 pointerdown / keydown / contextmenu 不往外传：按 ··· 不会拿起这一行，⌥↑ / ⌥↓ 在 ··· 上不挪。新 `reorderShapeOf`（占位格圆角取里面标了 `data-reorder-shape` 的链接）、`reorderFocusOf`（键盘挪完焦点回到链接）。浮起、阴影画在里面的链接上（`.nav-pinned-row.is-reorder-dragging > .nav-item`），外层不画；拖动时 ··· 藏起来。
+- **没改的**：图标样式（`PinnedGroupLink compact`、`MoreTile`）和中等宽度图标栏（`NavLink rail`）没地方放 ···，照旧右键 / 长按；资料库那一串照旧右键。
+- **文案**：新 1 条「「{name}」的更多操作」9 种语言（7 种待母语者看）。
+- **测试**：`lib/nav-reorder-row.test.ts` 4 项（形状、焦点、显示规则）。截图脚本 `work/d1111-rowmore/rm.mjs`（LightVela Chromium，三皮肤宽屏 1366 + 960 + 手机 390「更多」页）。
 
 ### 置顶图钉挪到圆圈前面、红色；可开始换绿色插头 ✅（2026-11-09）
 Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色。可开始的icon用plug，颜色用绿色。」
