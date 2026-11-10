@@ -1933,3 +1933,14 @@ Rei 2026-11-11 04:27 三件。
 - **新建面板胶囊顺序**：`lib/prop-chips.ts` 新 `ComposerChipId`（属性 + `related`）和 `composerChipOrder`，按同一份 `PROP_ORDER` 排，相关任务排最后（算其他属性）。`TaskComposer.tsx` 把胶囊放进 `chips` 表，按 `composerChipOrder` 渲染：日期、提醒 ｜ 资料、类型 ｜ 心情、项目、相关任务。新建面板没有「+」菜单，所以不画分隔线（同详情胶囊行）。完成方式、重复在新建面板是下面两段，不是胶囊，没挪；新建面板没有附件。
 - **打卡页活动图**：755b215 已经让工具栏和顶部活动图固定（`.checkin-head-sticky`，滚的是 `.main`）。这次截图核对：宽 1366 滚轮、手机 390 手指滑，三种皮肤，开着「顶部活动图」，滚后活动图位置不变、在手机顶栏下面、没被盖住，下面分区滚走，`is-stuck` 细线出来，两端都已固定，没改代码。
 - **测试**：`lib/prop-chips.test.ts` 加 2 项。截图脚本 `work/d1111-three/th.mjs`（LightVela Chromium，三皮肤 1366 + 960 + 390）。
+
+### 影视库剧集显示季 ✅（2026-11-11）
+Rei 2026-11-11 06:56「资料库「影视库」里的剧集显示 seasons」。
+
+- Worker：新接口 `GET /api/lookup/seasons?id=tv/1399|tt0903747&lang=zh|en`（`lookup/tmdb.ts` 的 `tmdbSeasons`）。id 是 TMDB 剧集编号，或者 IMDb 编号（先 `find` 出剧集，查到的是电影就回 `{ tv: null, seasons: [] }`）。调 TMDB `/tv/{id}`，每季回 `number`（0 是特别篇）、`name`、`year`（首播年）、`episodes`、`poster`（只留 TMDB 图片路径 `/abc.jpg`，别的不收）。Cache API 缓存 1 天（播出中的剧会加季）。要登录，同别的 lookup 接口。
+- core `seasons.ts`：存在资料的保留键 `_seasons`（JSON 文字 `{ v: 1, ref, tv, at, seasons }`），跟着资料同步，不加列、不加迁移。`isShowItem`（影视库里「电影/剧集」选了剧集，或没选但来源是 `tmdb:tv/…`）；`seasonsRef`（TMDB 剧集编号优先，其次 IMDb 编号，只有豆瓣的没有）；`needsSeasonsFetch`（没存过、`ref` 和现在的编号对不上、存了超过 30 天才重拉）；`seasonsOf` 按第 1、2…季排，特别篇最后；`seasonTitle` / `seasonSubtitle`（TMDB 默认季名「第 1 季」「Season 1」「Specials」等不另外显示）/ `seasonMeta`（「2011 · 10 集」）。
+- 客户端 `lib/seasons.ts` 的 `useSeasonsRefresh`：资料详情页打开、登录且在线、需要拉时在后台拉一次，写回资料；拉不到不写，同一条资料这次会话不再试；页面关掉取消的下次还会拉。写之前再看一眼，资料删了或来源又换了就不写。
+- 界面 `components/library/Seasons.tsx`：资料详情页备注下面、「相关任务」上面一节「季 N」，网格卡片：海报小图（TMDB w154 直接加载，加载失败用占位图写 S1 / SP）、季名、TMDB 起的名字、年份 · 集数。宽屏自动排列，手机一行三张。资料来源不是 TMDB 时，下面一行「资料来自 TMDB」（TMDB 要求署名）。
+- 默认的取舍（Rei 没定，按派活时给的默认做）：海报不拉进 R2，直接从 image.tmdb.org 加载（季多，存起来不划算；在线搜索结果的小图也是这样）；季名语言跟拉的那台设备的界面语言（中文界面中文，其他英文），换语言不重拉；不显示每季简介、评分；只显示，不记每季观看进度；卡片不能点。
+- 新文案：「季 {length}」「特别篇」「{n} 集」，9 种语言（外语待母语者看）。
+- 测试：core `seasons.test.ts` 10 项；Worker `lookup.test.ts` 加 3 项；客户端 `lib/seasons.test.ts` 4 项。
