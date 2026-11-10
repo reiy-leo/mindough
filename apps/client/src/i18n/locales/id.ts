@@ -1764,6 +1764,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "季 {length}": "Musim · {length}",
   "特别篇": "Spesial",
   "{n} 集": "{n} episode",
+  "已把「{title}」改到{date}": "“{title}” dipindah ke {date}",
 };
 
 export const DATA: Record<string, string> = {

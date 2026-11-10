@@ -9,10 +9,12 @@
  *   原来按天往下排的时间轴列表已经删掉（旧地址 #/agenda、view/timeline 打开的就是这一页）。
  * - 订阅事件（lib/calendar-subs）：带订阅颜色的竖线、只读，点开看详情（EventSheet）。
  * - 节假日 / 农历：日期旁的小字和「休」「班」都走 useLunar（同日期面板的 LunarMark）。
- * - 新建：格子右上角「+」→ 格子里输入，回车建那天的任务。拖动改日期没做（待 Rei 确认）。
+ * - 新建：格子右上角「+」→ 格子里输入，回车建那天的任务。
+ * - 拖动改日期（Rei 2026-11-11 06:55，lib/cal-drag）：周、多日、多周、月能拖，年视图不拖；能拖的是任务和倒数日，订阅事件只读。
+ *   有起止的整段平移、天数不变（core calDropPatch）；写入走 store.updateTask（我的一天跟着走），提示里能撤销。手机月视图从下面的列表拖到上面的小月历。
  * - 手机：月视图上面是小月历（只画点），下面是选中那天的列表；周、多日、多周按天竖排；年视图一列两个月。
  */
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Form, TextField, Button as RacButton } from 'react-aria-components';
 import { Calendar, ChevronLeft, ChevronRight, Hourglass, Plus, MapPin } from 'lucide-react';
 import {
@@ -23,6 +25,11 @@ import {
   WEEKS_MIN,
   calItemTier,
   calRange,
+  calDropPatch,
+  calPatchStart,
+  calShiftPatch,
+  calUndoPatch,
+  type CalDatePatch,
   dayCount,
   compareDateKey,
   dueToday,
@@ -57,6 +64,7 @@ import { LunarMark } from '../components/task/DateGrid';
 import { useLunar } from '../lib/lunar';
 import { useCalendarEvents, type CalEvent } from '../lib/calendar-subs';
 import { useSettings } from '../lib/settings';
+import { calDragSuppressed, useCalDrag, type CalDragRole } from '../lib/cal-drag';
 import { useUi } from '../lib/ui';
 import { titleOf } from '../lib/view';
 import { intlLocale, tr, trc } from '../lib/i18n';
@@ -186,6 +194,41 @@ export function CalendarPage() {
 
   const onItem = (it: Item) => (it.kind === 'task' ? undefined : setOpenEvent(it));
 
+  // 拖动改日期（年视图不拖）
+  const ui = useUi();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const applyMove = useCallback((id: string, patch: CalDatePatch | null) => {
+    const task = store.get('task', id);
+    if (!task || !patch || store.isLocked(task)) return;
+    const undo = calUndoPatch(task, patch);
+    const next = store.updateTask(id, patch);
+    const start = calPatchStart(patch);
+    const end = 'end_date' in patch ? next.end_date : null;
+    ui.toast(
+      {
+        tone: 'info',
+        message: tr('已把「{title}」改到{date}', { title: titleOf(store, next) || tr('无标题'), date: formatDateRange(start, end && end !== start ? end : null, today) }),
+        actions: [{ label: tr('撤销'), onPress: () => store.updateTask(id, undo) }],
+      },
+      6000,
+    );
+  }, [store, ui, today]);
+  useCalDrag(rootRef, {
+    enabled: view.kind !== 'year',
+    rangeOf: (id, role) => {
+      const it = items.find((x): x is TaskItem => x.kind === 'task' && x.id === id && x.role === role);
+      return it && !store.isLocked(it.task) ? { start: it.start, end: it.end } : null;
+    },
+    onDrop: (id, role, grabbed, dropped) => {
+      const task = store.get('task', id);
+      if (task) applyMove(id, calDropPatch(task, role, grabbed, dropped));
+    },
+    onShift: (id, role, n) => {
+      const task = store.get('task', id);
+      if (task) applyMove(id, calShiftPatch(task, role, n));
+    },
+  });
+
   let body: ReactNode;
   if (view.kind === 'year') {
     body = <YearView year={Number(anchor.slice(0, 4))} weekStart={weekStart} today={today} items={items} lunar={lunar} mobile={mobile} onPick={(d) => {
@@ -217,7 +260,7 @@ export function CalendarPage() {
   }
 
   return (
-    <div className={`page cal-page is-${view.kind}${mobile ? ' is-mobile' : ''}`}>
+    <div ref={rootRef} className={`page cal-page is-${view.kind}${mobile ? ' is-mobile' : ''}`}>
       <PageHeader title={trc('导航', '日历')} icon={<Calendar size={22} />} compact />
       {toolbar}
       {body}
@@ -256,8 +299,19 @@ function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
   if (it.kind === 'task') {
     const title = titleOf(store, it.task) || tr('无标题');
     const id = it.task.id;
+    const role: CalDragRole | undefined = it.role === 'task' || it.role === 'countdown' ? it.role : undefined;
     return (
-      <RacButton className={`cal-item is-task${it.role !== 'task' ? ` is-${it.role}` : ''}${ui.editingId === id ? ' is-selected' : ''}`} data-task-id={id} onPress={() => ui.openEditor(id)} aria-label={it.role === 'countdown' ? `${tr('倒数日')} · ${title}` : title}>
+      <RacButton
+        className={`cal-item is-task${it.role !== 'task' ? ` is-${it.role}` : ''}${ui.editingId === id ? ' is-selected' : ''}`}
+        data-task-id={id}
+        data-cal-drag={role && !store.isLocked(it.task) ? id : undefined}
+        data-cal-role={role}
+        onPress={() => {
+          // 刚拖完、手指刚拿起的那次点按不开详情
+          if (!calDragSuppressed()) ui.openEditor(id);
+        }}
+        aria-label={it.role === 'countdown' ? `${tr('倒数日')} · ${title}` : title}
+      >
         {it.role === 'countdown' ? <Hourglass size={12} className="cal-item-icon" aria-hidden /> : <span className="cal-item-dot" aria-hidden />}
         <span className="cal-item-text">{title}</span>
       </RacButton>
@@ -324,7 +378,7 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
         return (
           <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: `auto repeat(${lanes}, auto) auto 1fr`, ['--lanes' as string]: lanes } as CSSProperties}>
             {row.map((d, c) => (
-              <div key={`bg-${d}`} className={`cal-cell-bg${d === p.today ? ' is-today' : ''}`} style={{ gridColumn: c + 1, gridRow: '1 / -1' }} aria-hidden />
+              <div key={`bg-${d}`} className={`cal-cell-bg${d === p.today ? ' is-today' : ''}`} style={{ gridColumn: c + 1, gridRow: '1 / -1' }} data-drop-date={d} aria-hidden />
             ))}
             {row.map((d, c) => {
               const count = p.countItems ? dayCount(d, p.countItems) : 0;
@@ -385,6 +439,7 @@ function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; 
               <RacButton
                 key={d}
                 className={`cal-mini-cell${d === p.today ? ' is-today' : ''}${d === p.picked ? ' is-picked' : ''}${inCore ? '' : ' is-outside'}`}
+                data-drop-date={d}
                 onPress={() => p.onPick(d)}
                 aria-label={count ? `${formatDateRange(d, null)} · ${tr('{n} 件任务、打卡和倒数日', { n: count })}` : formatDateRange(d, null)}
                 aria-pressed={d === p.picked}
@@ -410,7 +465,7 @@ function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar
   // 倒数日 → 任务 → 订阅事件（全天在前，再按时间）（Rei 2026-11-11 01:10）；打卡不进列表
   const sorted = sortDayItems(p.date, p.items);
   return (
-    <section className={`cal-day-list${p.date === p.today ? ' is-today' : ''}`} aria-label={formatDateRange(p.date, null)}>
+    <section className={`cal-day-list${p.date === p.today ? ' is-today' : ''}`} aria-label={formatDateRange(p.date, null)} data-drop-date={p.bare ? undefined : p.date}>
       {!p.bare && (
         <h3 className="cal-day-list-head">
           <span>{formatDateRange(p.date, null, p.today)}</span>

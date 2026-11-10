@@ -627,3 +627,52 @@ html[data-layout='mobile'] .cal-view-select .field-label {
   flex-direction: column;
   gap: 4px;
 }
+
+/* 拖动改日期（Rei 2026-11-11 06:55，lib/cal-drag）：被拖的淡掉、影子跟着指针、要落下的那几天高亮 */
+.cal-item[data-cal-drag] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.cal-item.is-drag-source {
+  opacity: 0.35;
+}
+.cal-item.is-cal-lifted {
+  background: var(--surface-hover);
+  transform: scale(1.02);
+  transition: transform 0.12s var(--ease, ease), background 0.12s var(--ease, ease);
+}
+.cal-drag-ghost {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+  border-radius: var(--radius-xs);
+  opacity: 0.95;
+  will-change: transform;
+}
+.cal-drag-ghost.is-task:not(.is-countdown) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface)) !important;
+  color: var(--accent-soft-text);
+}
+html.is-cal-dragging,
+html.is-cal-dragging * {
+  cursor: grabbing !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+html.is-cal-dragging .cal-item[data-hovered] {
+  background: transparent;
+}
+.cal-cell-bg.is-drop-target {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.cal-day-list.is-drop-target {
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 4px var(--accent-soft), inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.cal-mini-cell.is-drop-target {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
