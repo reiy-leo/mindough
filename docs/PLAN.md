@@ -1879,3 +1879,12 @@ Rei 2026-11-11 00:37 定了 CALENDAR.md 第八节的五条：默认视图改为�
 - 删掉时间轴列表剩下的：TaskRow `spanNote` / `dateMetaOnly`、`.agenda*` 和 `.meta-span` 样式、Material 皮肤和农历里的 `.agenda-*`、文案「随手记下的琐事，按日期排开」「更早的 N 条」和 `导航|时间轴`。
 - 没有迁移，Worker 没改。
 
+### 日历：格子列出当天全部、倒数日在最上、不显示打卡 ✅（2026-11-11）
+
+Rei 2026-11-11 01:08–01:10 改了上一节的几条：日历所有视图和列表都不显示打卡，月视图个数照旧算上打卡；周、多日、多周、月视图都去掉「还有 N 件」，列出当天全部（月视图不再每格一件）；所有视图里倒数日在最上，其后任务，再后订阅事件。细节见 [CALENDAR.md](CALENDAR.md) 第九节。
+
+- core `calendar/views.ts`：`layoutRow(row, items, tier?)` 加分档排道（后一档每件从它覆盖的那几格里前几档用到的最下一道之后开始，保证每天的上下顺序）；新 `calItemTier`、`sortDayItems`（列表顺序）、`dayCount`（个数）；删了 `monthCell`。
+- 客户端 `pages/Calendar.tsx`：删了 `MonthGrid`，宽屏月视图也走 `GridView`（没有道数上限、没有「还有 N 件」，给了 `countItems` 时日期旁写个数）；打卡条目只进 `countItems`（月视图个数、手机小月历个数），不进任何格子和列表；`DayList` 用 `sortDayItems`。格子按内容撑高，不在格内滚。
+- 删了文案「还有 {n} 件」（9 种语言）和 `.cal-more*`、`.cal-month-*` 样式。
+- 没有迁移，Worker 没改。
+
