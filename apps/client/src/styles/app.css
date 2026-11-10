@@ -4322,8 +4322,16 @@ html.is-nav-reordering .nav-item.is-active:not(.is-reorder-dragging) {
 .nav-item-split {
   position: relative;
 }
-.nav-item-split > .nav-item {
+/* WinUI、Material 的 .nav-item 自己写了 padding（skins.css 在后面），加 [data-skin] 压过去，不然长名字压到 ··· */
+.nav-item-split > .nav-item,
+[data-skin] .nav-item-split > .nav-item {
   padding-inline-end: 36px;
+}
+.nav-pinned-row .nav-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .nav-item-more.icon-btn {
   position: absolute;
@@ -4345,6 +4353,40 @@ html.is-nav-reordering .nav-item.is-active:not(.is-reorder-dragging) {
   .nav-item-more.icon-btn {
     opacity: 1;
   }
+}
+/* 放进来的项目，列表样式（Rei 2026-11-11 02:56）：行右边的 ···（项目菜单）同上面的规矩显示；拖动排序挂在外层 .nav-pinned-row 上，
+   浮起、阴影、圆角画在里面的链接上（外层没有圆角） */
+.nav-pinned-row {
+  border-radius: var(--nav-radius);
+}
+.nav-pinned-row.is-reorder-dragging,
+.nav-pinned-row.is-reorder-dropping,
+.nav-pinned-row.is-reorder-lifted {
+  background: none;
+  box-shadow: none;
+}
+.nav-pinned-row.is-reorder-dragging > .nav-item,
+.nav-pinned-row.is-reorder-dropping > .nav-item,
+html.is-nav-reordering .nav-pinned-row.is-reorder-dragging > .nav-item {
+  background: linear-gradient(var(--surface), var(--surface)) var(--bg);
+  box-shadow: var(--shadow-pop);
+}
+.nav-pinned-row.is-reorder-dragging > .nav-item.is-active,
+.nav-pinned-row.is-reorder-dropping > .nav-item.is-active,
+html.is-nav-reordering .nav-pinned-row.is-reorder-dragging > .nav-item.is-active {
+  background: linear-gradient(var(--nav-active-bg), var(--nav-active-bg)), linear-gradient(var(--surface), var(--surface)) var(--bg);
+}
+.nav-pinned-row.is-reorder-lifted > .nav-item {
+  background: var(--surface-hover);
+}
+.nav-pinned-row:has(:focus-visible) .nav-item-more {
+  opacity: 1;
+}
+html.is-nav-reordering .nav-pinned-row .nav-item-more {
+  opacity: 0;
+}
+.row-more-slot {
+  display: contents;
 }
 /* 图标：按行排，放不下折行，不左右滚；左边和列表时的子项图标对齐 */
 .nav-pinned-grid {
@@ -4378,6 +4420,10 @@ html.is-nav-reordering .nav-item.is-active:not(.is-reorder-dragging) {
   align-items: center;
   gap: var(--space-3);
   padding: 14px var(--space-2) 14px var(--space-4);
+}
+/* 名字长到折行时右边的 › 不被挤小 */
+.more-item-link > svg {
+  flex: none;
 }
 .more-item.more-pinned-grid {
   position: relative;

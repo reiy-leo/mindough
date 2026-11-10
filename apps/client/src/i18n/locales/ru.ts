@@ -1760,6 +1760,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Синхронизировано: {n, plural, one {# событие} few {# события} many {# событий} other {# события}} (слишком много, оставлены первые)",
   "{n} 件已过期": "Просрочено: {n}",
   "没有过期的任务": "Просроченных задач нет",
+  "「{name}」的更多操作": "Другие действия: «{name}»",
 };
 
 export const DATA: Record<string, string> = {

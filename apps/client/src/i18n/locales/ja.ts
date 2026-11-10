@@ -1760,6 +1760,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "同步成功，{n} 个事件（太多了，只留前面这些）": "同期しました：{n} 件の予定（多すぎるため先頭だけ残しました）",
   "{n} 件已过期": "{n} 件が期限切れ",
   "没有过期的任务": "期限切れのタスクはありません",
+  "「{name}」的更多操作": "「{name}」のその他の操作",
 };
 
 export const DATA: Record<string, string> = {

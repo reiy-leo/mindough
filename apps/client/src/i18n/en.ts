@@ -1479,4 +1479,5 @@ export const EN: Record<string, EnValue> = {
   "来自订阅「{name}」，只能看，不能改。": "From the subscription “{name}”. Read-only.",
   "节假日、农历、日历订阅": "Holidays, lunar calendar, subscriptions",
   "节假日、日历订阅": "Holidays, subscriptions",
+  "「{name}」的更多操作": "More Actions for “{name}”",
 };

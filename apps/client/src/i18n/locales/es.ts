@@ -1760,6 +1760,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Sincronizado: {n, plural, one {# evento} other {# eventos}} (demasiados, solo se guardan los primeros)",
   "{n} 件已过期": "{n} vencidas",
   "没有过期的任务": "Nada vencido",
+  "「{name}」的更多操作": "Más acciones para «{name}»",
 };
 
 export const DATA: Record<string, string> = {

@@ -2,7 +2,7 @@ import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
-import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
 import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
@@ -47,7 +47,7 @@ import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
 import { useCalendarSubScheduler } from './lib/calendar-subs';
 import { useAutoMyDay } from './lib/myday-auto';
-import { MenuAt, useContextMenuAt } from './ui/primitives';
+import { MenuAt, OverflowMenu, useContextMenuAt, type MenuAction } from './ui/primitives';
 import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
 import { useAppMenu } from './lib/app-menu';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
@@ -220,8 +220,8 @@ function useNarrow(): boolean {
   return match;
 }
 
-function NavLink({ item, active, badge, onOpen, compact }: { item: NavItem; active: boolean; badge?: number; onOpen?: () => void; compact?: boolean }) {
-  if (item.libraryId || item.groupId) return <PinnedLink item={item} active={active} compact={compact} />;
+function NavLink({ item, active, badge, onOpen, compact, rail }: { item: NavItem; active: boolean; badge?: number; onOpen?: () => void; compact?: boolean; rail?: boolean }) {
+  if (item.libraryId || item.groupId) return <PinnedLink item={item} active={active} compact={compact} rail={rail} />;
   const Icon = item.icon;
   return (
     <a
@@ -246,14 +246,56 @@ function NavLink({ item, active, badge, onOpen, compact }: { item: NavItem; acti
 }
 
 /** 放进侧边栏的库 / 项目：缩进一点挂在「资料库」/「项目」下面；右键 / 长按能「取消在侧边栏显示」。 */
-function PinnedLink({ item, active, compact }: { item: NavItem; active: boolean; compact?: boolean }) {
+function PinnedLink({ item, active, compact, rail }: { item: NavItem; active: boolean; compact?: boolean; rail?: boolean }) {
   const store = useStore();
   const g = item.groupId ? store.get('group', item.groupId) : null;
-  if (g) return <PinnedGroupLink item={item} active={active} group={g} compact={compact} />;
+  // 列表样式：项目菜单从行右边的 ··· 进，不再右键 / 长按（Rei 2026-11-11 02:56）；图标样式、960 图标栏没地方放 ···，照旧右键 / 长按
+  if (g) return compact || rail ? <PinnedGroupLink item={item} active={active} group={g} compact={compact} /> : <PinnedGroupRow item={item} active={active} group={g} />;
   return <PinnedLibraryLink item={item} active={active} />;
 }
 
-/** 放进侧边栏的项目：右键 / 长按的菜单和项目页的 ··· 一样（编辑、取消在侧边栏显示、解散、删除，Rei 2026-11-01）。 */
+/**
+ * 放进侧边栏的项目，列表样式（Rei 2026-11-11 02:56「添加到侧边栏的项目，右键菜单换成右侧的『···』」）：
+ * 行右边一个 ···，点开就是项目页那个菜单（编辑、在侧边栏显示、归档、解散、删除）；有鼠标时悬停这一行或键盘聚焦才显示，触屏常显（同「项目」那行的 ···）。
+ * 不再有右键菜单（全局拦掉了浏览器自带的，右键什么也不出），手指长按只管拖动排序，拿起没挪松开什么也不做。
+ * 拖动排序挂在外面这层 div 上（lib/nav-reorder 认直接子元素），··· 跟着整行一起挪；按 ··· 不会拿起这一行。
+ */
+function PinnedGroupRow({ item, active, group }: { item: NavItem; active: boolean; group: Group }) {
+  const store = useStore();
+  const reorder = usePinnedReorder(group.id);
+  const actions = useProjectActions(store, group);
+  return (
+    <div className="nav-item-split nav-pinned-row" {...reorder.props}>
+      <a
+        href={href(item.to!)}
+        draggable={false}
+        data-reorder-shape
+        className={`nav-item nav-item-sub${active ? ' is-active' : ''}`}
+        aria-current={active ? 'page' : undefined}
+        title={item.label}
+      >
+        <span className="nav-icon">
+          <GroupIcon group={group} size={18} />
+        </span>
+        <span className="nav-label">{item.label}</span>
+      </a>
+      <RowMoreMenu label={tr('「{name}」的更多操作', { name: item.label })} items={actions.items} className="nav-item-more" />
+      {actions.dialogs}
+    </div>
+  );
+}
+
+/** 置顶项目行右边的 ···：按下、按键不往外传，免得被外层当成拖动排序（长按拿起、⌥↑ / ⌥↓）。 */
+function RowMoreMenu({ label, items, className }: { label: string; items: MenuAction[]; className: string }) {
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
+  return (
+    <span className="row-more-slot" onPointerDown={stop} onKeyDown={stop} onContextMenu={stop}>
+      <OverflowMenu label={label} items={items} icon={<MoreHorizontal size={16} aria-hidden />} className={className} />
+    </span>
+  );
+}
+
+/** 放进侧边栏的项目，图标样式 / 960 图标栏：没地方放 ···，右键 / 长按出项目页那个菜单（Rei 2026-11-01）。 */
 /** compact：「显示为：图标」时只放图标（Rei 2026-11-11），名字在悬停提示和读屏名里；手指长按没挪松开出的菜单顶上写项目名。 */
 function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; active: boolean; group: Group; compact?: boolean }) {
   const store = useStore();
@@ -459,6 +501,34 @@ function MoreItems({ items }: { items: NavItem[] }) {
 
 /** 「更多」页的一行；置顶的项目 / 资料库能长按拖动排序（Rei 2026-11-10），长按没挪就松开什么也不做。menu：「项目」那行右边放 ···。 */
 function MoreLink({ item: n, menu }: { item: NavItem; menu?: boolean }) {
+  const store = useStore();
+  const g = n.groupId ? store.get('group', n.groupId) : null;
+  if (g) return <MoreGroupRow item={n} group={g} />;
+  return <MoreLinkPlain item={n} {...(menu ? { menu } : {})} />;
+}
+
+/** 「更多」页放进侧栏的项目，列表样式：行右边常显 ···，点开项目菜单（Rei 2026-11-11 02:56）；长按只拖动排序，拿起没挪松开什么也不做。 */
+function MoreGroupRow({ item: n, group: g }: { item: NavItem; group: Group }) {
+  const store = useStore();
+  const reorder = usePinnedReorder(g.id);
+  const actions = useProjectActions(store, g);
+  const Icon = n.icon;
+  return (
+    <div className="more-item more-item-split more-item-sub" {...reorder.props}>
+      <a className="more-item-link" href={href(n.to!)} draggable={false}>
+        <span className="more-icon">
+          <Icon size={20} />
+        </span>
+        <span className="grow">{n.label}</span>
+        <ChevronRight size={16} className="muted" />
+      </a>
+      <RowMoreMenu label={tr('「{name}」的更多操作', { name: n.label })} items={actions.items} className="more-item-more" />
+      {actions.dialogs}
+    </div>
+  );
+}
+
+function MoreLinkPlain({ item: n, menu }: { item: NavItem; menu?: boolean }) {
   const Icon = n.icon;
   const reorder = usePinnedReorder(n.groupId ?? n.libraryId);
   const link = (
@@ -662,7 +732,7 @@ export function App() {
                   </RacButton>
                   {!isCollapsed && (
                     <PinnedScope items={sec.items}>
-                      <SidebarItems items={sec.items} narrow={narrow} render={(n, compact) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} compact={compact} badge={n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined} />} />
+                      <SidebarItems items={sec.items} narrow={narrow} render={(n, compact) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} compact={compact} rail={narrow} badge={n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined} />} />
                     </PinnedScope>
                   )}
                 </div>

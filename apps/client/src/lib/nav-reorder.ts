@@ -9,7 +9,7 @@
  *
  * 手势：
  * - 鼠标 / 触控笔：按住挪 4px 以上开始拖；没挪就是普通点击。拖过的那次 click 吃掉，不跳转。右键菜单照旧。
- * - 手指：按住 450ms 拿起（行稍微浮起来，能震就震一下），这时挪动开始拖；不挪松手 → onLiftRelease（侧栏开右键同款菜单，
+ * - 手指：按住 450ms 拿起（行稍微浮起来，能震就震一下），这时挪动开始拖；不挪松手 → onLiftRelease（侧栏图标样式 / 图标栏开右键同款菜单；列表样式的项目菜单在行右边的 ···，不开，
  *   「更多」页什么也不做）。拿起前挪动 > 10px 或页面滚动了就作废，照常滚页面（同 lib/long-press 的规矩）。
  *   拿起后整页不滚（touchmove preventDefault），拖到滚动区上下边缘会自动滚。
  * - 键盘：焦点在置顶项上按 ⌥↑ / ⌥↓（Windows / Linux Alt+↑ / ↓）上移 / 下移一位，焦点留在它身上。
@@ -25,6 +25,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { moveInList } from '@mindough/core';
 import { installLongPressGuard, isTouchContextMenu, longPressNow, longPressStillValid, movedTooFar } from './long-press';
+
+/**
+ * 拖动的一项外面套了一层（侧栏 / 「更多」页置顶项目行右边带 ···，Rei 2026-11-11）时：
+ * 圆角、占位格的形状取里面标了 data-reorder-shape 的那块；键盘挪完焦点放回里面的链接。没套就是它自己。
+ */
+export function reorderShapeOf(el: HTMLElement): HTMLElement {
+  return el.querySelector<HTMLElement>(':scope > [data-reorder-shape]') ?? el;
+}
+export function reorderFocusOf(row: HTMLElement | null): HTMLElement | null {
+  if (!row || row.matches('a[href], button, [tabindex]')) return row;
+  return row.querySelector<HTMLElement>('a[href]');
+}
 
 /** 鼠标挪多少开始拖。 */
 export const MOUSE_DRAG_PX = 4;
@@ -383,7 +395,7 @@ export function useNavReorder({
     const ph = document.createElement('div');
     ph.className = 'nav-drop-slot';
     ph.setAttribute('aria-hidden', 'true');
-    const cs = getComputedStyle(el);
+    const cs = getComputedStyle(reorderShapeOf(el));
     Object.assign(ph.style, {
       top: `${slots[from]!.top}px`,
       left: `${el.offsetLeft}px`,
@@ -580,7 +592,7 @@ export function useNavReorder({
       latest.current.onCommit(next);
       // 换完顺序 DOM 节点挪了，焦点可能丢：放回去
       requestAnimationFrame(() => {
-        const el = document.querySelector<HTMLElement>(`[data-reorder-group="${CSS.escape(group)}"][data-reorder-id="${CSS.escape(id)}"]`);
+        const el = reorderFocusOf(document.querySelector<HTMLElement>(`[data-reorder-group="${CSS.escape(group)}"][data-reorder-id="${CSS.escape(id)}"]`));
         if (el && document.activeElement !== el) el.focus();
       });
     },
