@@ -140,7 +140,9 @@ describe('侧边栏里的项目拖动排序', () => {
 
   it('老客户端开关 group.sidebar（不认识排序偏好）：顺序照旧，新加的排最后', async () => {
     const { store } = await open();
-    const [a, b, c] = ['A', 'B', 'C'].map((n) => mk(store, n));
+    const a = mk(store, 'A');
+    const b = mk(store, 'B');
+    const c = mk(store, 'C');
     store.setGroupInSidebar(a.id, true);
     store.setGroupInSidebar(b.id, true);
     store.reorderSidebarGroups([b.id, a.id]);

@@ -59,7 +59,7 @@ describe('Store 判空', () => {
     const task = store.createTask({ type_id: c.id, body_md: '只选了库没选资料\n' });
     expect(store.typeContent(c.id).tasks).toBe(1);
     // 完成、关闭的任务也算内容
-    store.updateTask(task.id, { status: 'done' });
+    store.updateTask(task.id, { status: '完成' });
     expect(store.canDeleteType(c.id)).toBe(false);
   });
 
