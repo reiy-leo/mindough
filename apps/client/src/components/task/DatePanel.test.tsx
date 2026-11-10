@@ -12,7 +12,7 @@ vi.mock('../../store/StoreProvider', () => ({ useStore: () => ({ now: () => new 
 vi.mock('../../lib/settings', () => ({ useSettings: () => ({ layout: 'desktop', settings: {} }) }));
 vi.mock('../../lib/lunar', () => ({
   LUNAR_PICK_KEY: 'mindough:lunar-pick',
-  useLunar: () => ({ show: lunarShow.on, day: (d: string) => ({ label: lunarCellLabel(d), sub: null }) }),
+  useLunar: () => ({ show: lunarShow.on, holidays: false, any: lunarShow.on, day: (d: string) => ({ label: lunarCellLabel(d), sub: null }) }),
 }));
 vi.mock('./TimeZonePicker', () => ({ TimeZoneRow: () => null }));
 
