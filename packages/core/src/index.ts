@@ -16,6 +16,7 @@ export * from './myday';
 export * from './makeup';
 export * from './strict';
 export * from './backlog';
+export * from './overdue-backlog';
 export * from './done-list';
 export * from './reminders';
 export * from './timezone';

@@ -781,9 +781,8 @@ export const EN: Record<string, EnValue> = {
   // ── 过期积压（原「可做」→「积压」2026-11-04 →「过期积压」2026-11-10）──
   过期积压: 'Overdue',
   已过期: 'Overdue',
-  定了日期的都做完了: 'Everything with a date is done',
-  '{n} 件定了日期还没做完': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open`,
-  '{n} 件定了日期还没做完，{m} 件已过期': (p) => `${n(p.n, 'dated task', 'dated tasks')} still open, ${p.m} overdue`,
+  '{n} 件已过期': (p) => `${p.n} overdue`,
+  没有过期的任务: 'Nothing overdue',
 
   // ── 可做 ──
   '{length} 件任务的前置都已完成，现在就能开始': (p) => `${n(p.length, 'task is', 'tasks are')} ready to start now`,
@@ -1443,7 +1442,6 @@ export const EN: Record<string, EnValue> = {
   "地址也换成这个": "Replace the address too",
   "用这个位置": "Use This Location",
   "超过一年": "Over a Year Ago",
-  "还没到期": "Not Due Yet",
   "导航|日历": "Calendar",
   "设置分区|日历": "Calendar",
   "日历": "Calendar",

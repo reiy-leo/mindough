@@ -9,6 +9,7 @@ import { normalizeIconColor } from './icon-color';
 import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
+import { overdueBacklogTasks } from './overdue-backlog';
 import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
@@ -1991,6 +1992,12 @@ export class Store {
     // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
     // 置顶的任务每天都在我的一天里，不进待安排（Rei 2026-11-08）
     return backlogTasks(this.activeTasks().filter((t) => !t.pinned_at), this.list('my_day'), today);
+  }
+
+  /** 过期积压：定了日期、没做完、已经过期的任务，最近过期在上；没到期的不放（见 overdue-backlog.ts，Rei 2026-11-11）。 */
+  overdueBacklog(now: Date = this.now(), deviceToday: string = toDateKey(now)): Task[] {
+    // 归档了的项目里的任务不算（Rei 2026-11-05）
+    return overdueBacklogTasks(this.activeTasks(), now, deviceToday);
   }
 
   /** 待安排里拖动排序：这几件按新顺序重新占用它们原来的那些 sort 值（不影响别的任务的相对顺序）。 */

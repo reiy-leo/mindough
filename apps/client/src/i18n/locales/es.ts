@@ -777,9 +777,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   // 侧栏「过期积压」（2026-11-10 由「积压」改名）（原「可做」，Rei 2026-11-04；待母语者看）
   "过期积压": "Atrasadas",
   "已过期": "Vencidas",
-  "定了日期的都做完了": "Todo lo que tiene fecha está hecho",
-  "{n} 件定了日期还没做完": "{n} tareas con fecha sin terminar",
-  "{n} 件定了日期还没做完，{m} 件已过期": "{n} tareas con fecha sin terminar, {m} vencidas",
   "计划": "Plan",
   // 侧栏「计划 → 时间轴」（原名「列表」，Rei 2026-11-02 改名；译法待母语者看）
   "列表": "Lista",
@@ -1722,7 +1719,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "地址也换成这个": "Cambiar también la dirección",
   "用这个位置": "Usar esta ubicación",
   "超过一年": "Hace más de un año",
-  "还没到期": "Aún no vencidas",
   "导航|日历": "Calendario",
   "设置分区|日历": "Calendario",
   "日历": "Calendario",
@@ -1762,6 +1758,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "节假日、日历订阅": "Festivos, suscripciones",
   "同步成功，{n} 个事件": "Sincronizado: {n, plural, one {# evento} other {# eventos}}",
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Sincronizado: {n, plural, one {# evento} other {# eventos}} (demasiados, solo se guardan los primeros)",
+  "{n} 件已过期": "{n} vencidas",
+  "没有过期的任务": "Nada vencido",
 };
 
 export const DATA: Record<string, string> = {

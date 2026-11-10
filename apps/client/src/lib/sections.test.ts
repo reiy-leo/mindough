@@ -122,21 +122,21 @@ describe('过期积压按日期分区（Rei 2026-11-10：昨天 / 过去 7 天 /
   });
 });
 
-describe('过期积压页的分段（Rei 2026-11-10「过期积压不显示分区按钮」「"接下来"应该换成"超过一年"」）', () => {
+describe('过期积压页的分段（Rei 2026-11-10「过期积压不显示分区按钮」；2026-11-11「过期积压页里不能有未到期的任务」）', () => {
   const at = (d: string) => new Date(`${d}T12:00:00`);
-  it('过期 5 段在前，没到期的最后一段叫「还没到期」，都是 overdue 这一类，能按 kind:key 记折叠', () => {
+  it('只有过期的 5 段，没有「还没到期」那段，都是 overdue 这一类，能按 kind:key 记折叠', () => {
     const od = [t({ scheduled_date: '2026-11-10' }), t({ scheduled_date: '2024-01-01' })];
-    const up = [t({ scheduled_date: '2026-11-11' }), t({ scheduled_date: '2026-10-01', end_date: '2026-12-01' })];
-    const s = backlogSections(od, up, at('2026-11-11'), '2026-11-11');
-    expect(s.map((x) => x.key)).toEqual(['yesterday', 'older', 'upcoming']);
-    expect(s.map((x) => x.label)).toEqual(['昨天', '超过一年', '还没到期']);
+    const s = backlogSections(od, at('2026-11-11'), '2026-11-11');
+    expect(s.map((x) => x.key)).toEqual(['yesterday', 'older']);
+    expect(s.map((x) => x.label)).toEqual(['昨天', '超过一年']);
     expect(s.every((x) => x.kind === 'overdue')).toBe(true);
-    expect(s[2]?.tasks).toEqual(up);
     expect(sectionCollapsed(toggleSectionCollapsed([], s[1]!), s[1]!)).toBe(true);
     expect(toggleSectionCollapsed([], s[1]!)).toEqual(['overdue:older']);
   });
-  it('没有没到期的就没有最后一段；全空返回空', () => {
-    expect(backlogSections([t({ scheduled_date: '2026-11-05' })], [], at('2026-11-11'), '2026-11-11').map((x) => x.key)).toEqual(['week']);
-    expect(backlogSections([], [], at('2026-11-11'), '2026-11-11')).toEqual([]);
+  it('5 段的顺序和名字：昨天 / 过去 7 天 / 过去一个月 / 过去一年 / 超过一年；全空返回空', () => {
+    const od = ['2026-11-10', '2026-11-04', '2026-10-12', '2025-11-11', '2025-11-10'].map((d) => t({ scheduled_date: d }));
+    const s = backlogSections(od, at('2026-11-11'), '2026-11-11');
+    expect(s.map((x) => x.label)).toEqual(['昨天', '过去 7 天', '过去一个月', '过去一年', '超过一年']);
+    expect(backlogSections([], at('2026-11-11'), '2026-11-11')).toEqual([]);
   });
 });

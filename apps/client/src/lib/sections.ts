@@ -117,21 +117,19 @@ export function sectionOverdue<T extends Task>(tasks: readonly T[], now: Date, d
 }
 
 /**
- * 过期积压页的全部分段（Rei 2026-11-10「过期积压不显示分区按钮，只有按日期分区这一种模式」）：过期的 5 段在前，
- * 还没到期的（今天和以后、日期段还没过完的）放最后一段「还没到期」（原叫「接下来」）。空段不出现。
- * 两组都由调用方先排好：过期的最近过期在上，没到期的按到期日从近到远。
+ * 过期积压页的全部分段（Rei 2026-11-10「过期积压不显示分区按钮，只有按日期分区这一种模式」）：只有过期的 5 段。
+ * Rei 2026-11-11「过期积压页里不能有未到期的任务」：原来最后一段「还没到期」（更早叫「接下来」）去掉了，没到期的不进这一页。
+ * 调用方先排好（core overdueBacklogTasks：最近过期在上）。空段不出现。
  */
-export function backlogSections<T extends Task>(overdue: readonly T[], upcoming: readonly T[], now: Date, deviceToday: DateKey): ListSection<T>[] {
-  const out: ListSection<T>[] = sectionOverdue(overdue, now, deviceToday).map((s) => ({ key: s.key, label: s.label, kind: 'overdue' as const, tasks: s.tasks }));
-  if (upcoming.length) out.push({ key: 'upcoming', label: tr('还没到期'), kind: 'overdue', tasks: [...upcoming] });
-  return out;
+export function backlogSections<T extends Task>(overdue: readonly T[], now: Date, deviceToday: DateKey): ListSection<T>[] {
+  return sectionOverdue(overdue, now, deviceToday).map((s) => ({ key: s.key, label: s.label, kind: 'overdue' as const, tasks: s.tasks }));
 }
 
 export interface ListSection<T> {
   /** 分区的 key：心情 id / 项目 id / 目标日期段 / 过期段；「没有」的那段是 'none'。折叠状态按它记。 */
   key: string;
   label: string;
-  /** overdue = 过期积压页的固定分段（过期天数 5 段 + 还没到期），不是能选的分区方式。 */
+  /** overdue = 过期积压页的固定分段（过期天数 5 段），不是能选的分区方式。 */
   kind: Exclude<SectionBy, 'none'> | 'overdue';
   /** 按项目时是那个项目（画图标）。 */
   group?: Group;

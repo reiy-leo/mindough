@@ -777,9 +777,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   // 侧栏「过期积压」（2026-11-10 由「积压」改名）（原「可做」，Rei 2026-11-04；待母语者看）
   "过期积压": "Terlambat",
   "已过期": "Terlambat",
-  "定了日期的都做完了": "Semua yang bertanggal sudah selesai",
-  "{n} 件定了日期还没做完": "{n} tugas bertanggal belum selesai",
-  "{n} 件定了日期还没做完，{m} 件已过期": "{n} tugas bertanggal belum selesai, {m} terlambat",
   "计划": "Rencana",
   // 侧栏「计划 → 时间轴」（原名「列表」，Rei 2026-11-02 改名；译法待母语者看）
   "列表": "Daftar",
@@ -1722,7 +1719,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "地址也换成这个": "Ganti alamat juga",
   "用这个位置": "Pakai lokasi ini",
   "超过一年": "Lebih dari setahun lalu",
-  "还没到期": "Belum jatuh tempo",
   "导航|日历": "Kalender",
   "设置分区|日历": "Kalender",
   "日历": "Kalender",
@@ -1762,6 +1758,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "节假日、日历订阅": "Hari libur, langganan",
   "同步成功，{n} 个事件": "Tersinkron: {n} acara",
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Tersinkron: {n} acara (terlalu banyak, hanya yang awal disimpan)",
+  "{n} 件已过期": "{n} terlambat",
+  "没有过期的任务": "Tidak ada yang terlambat",
 };
 
 export const DATA: Record<string, string> = {
