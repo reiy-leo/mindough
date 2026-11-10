@@ -575,7 +575,14 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   const mUid = useId();
   // 读屏：编辑器指向浮层和选中的那条
   useEffect(() => {
-    const dom = handle.current?.view().dom;
+    if (!mention) return;
+    // 编辑器的 view 可能还没挂上（第一次渲染）：取不到就算了，开浮层时会再来
+    let dom: HTMLElement | null = null;
+    try {
+      dom = handle.current?.view().dom ?? null;
+    } catch {
+      dom = null;
+    }
     if (!dom) return;
     if (mOpen && choices.length) {
       dom.setAttribute('aria-controls', `${mUid}-list`);
