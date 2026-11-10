@@ -311,11 +311,12 @@ function useCommitted(stored: string, save: (v: string) => void) {
 }
 
 /** 编辑页底部的说明：能不能删、为什么。 */
-function dangerNote(archived: boolean, block: TypeDeleteBlock | null): string {
+function dangerNote(archived: boolean, block: TypeDeleteBlock | null, empty: boolean): string {
   if (block === null) return archived ? tr('已归档。这个资料库是空的，也可以删掉。') : tr('这个资料库是空的，可以删掉。不想删就归档：新建任务时选不到它。');
-  if (block === 'builtin' && !archived) return tr('内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
   if (archived) return tr('已归档：新建任务时选不到它，用过它的任务和资料照常显示。');
-  return tr('有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
+  // 有内容的先说有内容（内置的也一样）；空的内置库才说「内置资料库不能删」
+  if (!empty) return tr('有内容的资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
+  return tr('内置资料库不能删。不再用了就归档：新建任务时选不到它，用过它的任务和资料照常显示。');
 }
 
 function TypeEditor({ type, onLeave }: { type: TaskType; onLeave: () => void }) {
@@ -393,7 +394,7 @@ function TypeEditor({ type, onLeave }: { type: TaskType; onLeave: () => void }) 
 
       <div className="type-danger">
         <span className="foot-note">
-          {dangerNote(archived, block)}
+          {dangerNote(archived, block, store.isTypeEmpty(type.id))}
         </span>
         <span className="grow" />
         {block === null && (
