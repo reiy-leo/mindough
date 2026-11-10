@@ -24,16 +24,17 @@ describe('侧边栏里的项目（Rei 2026-10-28）', () => {
     expect(store.isGroupInSidebar(g.id)).toBe(false);
   });
 
-  it('顺序跟项目页（store.list）一样，不按打开的先后', async () => {
+  it('老数据（只有 group.sidebar、没排过）顺序跟项目页一样；新放进来的排最后（Rei 2026-11-10）', async () => {
     const { store } = await open();
     const a = mk(store, 'A');
     const b = mk(store, 'B');
     const c = mk(store, 'C');
-    store.setGroupInSidebar(c.id, true);
-    store.setGroupInSidebar(a.id, true);
+    store.setPref(GROUP_SIDEBAR_PREF, [c.id, a.id]);
     const order = store.list('group').map((g) => g.id).filter((id) => id === a.id || id === c.id);
     expect(store.sidebarGroups().map((g) => g.id)).toEqual(order);
     expect(store.sidebarGroups().map((g) => g.id)).not.toContain(b.id);
+    store.setGroupInSidebar(b.id, true);
+    expect(store.sidebarGroups().map((g) => g.id)).toEqual([...order, b.id]);
   });
 
   it('取消显示；重复设同一个值不写；不改项目行', async () => {

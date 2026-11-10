@@ -29,11 +29,10 @@ describe('侧边栏里的资料库（Rei 2026-10-26）', () => {
     expect(store.isLibraryInSidebar(T.movie)).toBe(false);
   });
 
-  it('显示的库按资料库顺序排，不按打开的先后；人物库也能放', async () => {
+  it('老数据（没拖过、没排序偏好）显示的库按资料库顺序排，不按打开的先后；人物库也能放', async () => {
     const { store } = await open();
-    store.setLibraryInSidebar(T.game, true);
-    store.setLibraryInSidebar(T.movie, true);
-    store.setLibraryInSidebar(T.person, true);
+    // 2026-11-10 起放进来的按先后排（新放进来的最后，见 sidebar-order.test.ts）；这里模拟升级前写下的偏好
+    store.setPref(LIBRARY_SIDEBAR_PREF, [T.game, T.movie, T.person]);
     const order = store.orderedTypes().map((t) => t.id);
     const ids = store.sidebarLibraries().map((t) => t.id);
     expect(ids.sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(store.sidebarLibraries().map((t) => t.id));

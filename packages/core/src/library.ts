@@ -417,7 +417,7 @@ export function placeholderArt(name: string): { initials: string; from: string; 
  * 存成同步偏好 `library.sidebar`（类型 id 列表），不加列、不改类型行：
  * - 改类型行会让内置资料库变成「用户改过」，以后内置升级就不覆盖它了（同 type_order 的理由）；
  * - 旧客户端只认已知列，改一下类型名就会把新列冲掉；偏好行它们原样留着、不碰。
- * 侧边栏里的顺序跟资料库顺序走（orderedTypes），不看列表里的先后；归档的不出现，但 id 留着，取消归档后回来。
+ * 侧边栏里的顺序：没拖过跟资料库顺序走（orderedTypes），拖过按 LIBRARY_SIDEBAR_ORDER_PREF；不看这条列表里的先后；归档的不出现，但 id 留着，取消归档后回来。
  */
 export const LIBRARY_SIDEBAR_PREF = 'library.sidebar';
 
@@ -438,7 +438,66 @@ export function withSidebarLibrary(ids: readonly string[], id: string, on: boole
 /**
  * 放进侧边栏的项目（Rei 2026-10-28「项目和资料库一样，项目也可以显示在侧边栏」）。
  * 跟资料库一样存成同步偏好 `group.sidebar`（项目 id 列表），不加列、不改项目行（旧客户端改项目名不会把它冲掉）。
- * 侧边栏里的顺序跟项目页一样（store.list('group') 的顺序），不看列表里的先后；删掉的项目不出现。
- * 项目没有归档，结束日期过了也照常显示（项目页也照常列着）。id 列表的读写复用 sidebarLibraryIds / withSidebarLibrary。
+ * 侧边栏里的顺序：没拖过跟项目页一样（store.list('group') 的顺序），拖过按 GROUP_SIDEBAR_ORDER_PREF；不看这条列表里的先后；删掉的项目不出现。
+ * 归档的项目不显示，取消归档后回来；结束日期过了也照常显示（项目页也照常列着）。id 列表的读写复用 sidebarLibraryIds / withSidebarLibrary。
  */
 export const GROUP_SIDEBAR_PREF = 'group.sidebar';
+
+// ───────────── 侧边栏里置顶项的顺序 ─────────────
+
+/**
+ * 侧边栏里置顶的项目 / 资料库可以拖动排序（Rei 2026-11-10「侧边栏"在侧边栏展示"的项目列表可以拖拽调整顺序」）。
+ * 顺序另存一条同步偏好（id 列表），不加列、不改项目行 / 类型行，没有迁移：
+ * - `group.sidebar` / `library.sidebar` 老客户端也会写（开关时整条覆盖），顺序要是塞在那条里，老客户端照项目页顺序显示、
+ *   开关一下还会把列表重排；另起一条它们根本不认识，原样留着。
+ * - 没拖过（没有这条偏好）就跟以前一样：项目按项目页顺序、资料库按资料库顺序，升级后侧栏不会突然变样。
+ * - 排过以后：在顺序里的按顺序排，不在的（新放进侧边栏的）按放进来的先后接在最后。
+ * - 放进侧边栏时要是还没排过、侧边栏里已经有别的，先把眼下的顺序记下来（store.freezeSidebarOrder），
+ *   所以新放进来的总排最后，原来几个的位置不动。老客户端放进来的也排最后（按 pinned 的先后）。
+ * - 放进侧边栏、取消放进侧边栏时把它从顺序里拿掉，所以新放进来的（哪怕以前放过）总排在最后。
+ * 同一条偏好各设备一行，整条 LWW：两台同时拖，后拖的那台赢。
+ */
+export const GROUP_SIDEBAR_ORDER_PREF = 'group.sidebar_order';
+export const LIBRARY_SIDEBAR_ORDER_PREF = 'library.sidebar_order';
+
+/**
+ * 按排序偏好排：在顺序里的按顺序；不在的接在后面，按放进侧边栏的先后（pinned 就是 group.sidebar / library.sidebar，
+ * 新放进来的总追加在末尾，老客户端也这样写），所以新放进来的排最后。没排过（顺序为空）就原样返回，跟以前一样。
+ */
+export function orderBySidebar<T extends { id: string }>(items: readonly T[], order: unknown, pinned: readonly string[] = []): T[] {
+  const ids = sidebarLibraryIds(order);
+  if (!ids.length) return [...items];
+  const pos = new Map(ids.map((id, i) => [id, i] as const));
+  const ranked = items.filter((x) => pos.has(x.id)).sort((a, b) => pos.get(a.id)! - pos.get(b.id)!);
+  const pinPos = (id: string) => {
+    const i = pinned.indexOf(id);
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  const tail = items.filter((x) => !pos.has(x.id)).map((x, i) => ({ x, i })).sort((a, b) => pinPos(a.x.id) - pinPos(b.x.id) || a.i - b.i).map((e) => e.x);
+  return [...ranked, ...tail];
+}
+
+/**
+ * 拖完写回的顺序：看得见的按新顺序，原来顺序里看不见的（归档了的项目等）接在后面留着，取消归档后还在原来那一带。
+ * 坏值、重复的去掉。
+ */
+export function nextSidebarOrder(visible: readonly string[], prev: unknown): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of [...visible, ...sidebarLibraryIds(prev)]) {
+    if (typeof id !== 'string' || !id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/** 把 ids 里的 id 挪到 to（挪完以后它所在的下标），返回新列表；id 不在、to 越界都夹住。 */
+export function moveInList(ids: readonly string[], id: string, to: number): string[] {
+  const from = ids.indexOf(id);
+  if (from < 0) return [...ids];
+  const rest = ids.filter((x) => x !== id);
+  const at = Math.max(0, Math.min(rest.length, to));
+  rest.splice(at, 0, id);
+  return rest;
+}

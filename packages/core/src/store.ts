@@ -23,6 +23,10 @@ import {
   hasLibrary,
   LIBRARY_SIDEBAR_PREF,
   GROUP_SIDEBAR_PREF,
+  GROUP_SIDEBAR_ORDER_PREF,
+  LIBRARY_SIDEBAR_ORDER_PREF,
+  orderBySidebar,
+  nextSidebarOrder,
   sidebarLibraryIds,
   withSidebarLibrary,
   isPersonLibrary,
@@ -2677,7 +2681,13 @@ export class Store {
   /** 放进侧边栏的资料库：按资料库顺序，不含归档的、没有资料库的（见 library.ts LIBRARY_SIDEBAR_PREF）。 */
   sidebarLibraries(): TableMap['task_type'][] {
     const ids = sidebarLibraryIds(this.pref(LIBRARY_SIDEBAR_PREF));
-    return this.orderedTypes().filter((t) => hasLibrary(t) && ids.includes(t.id));
+    return orderBySidebar(this.orderedTypes().filter((t) => hasLibrary(t) && ids.includes(t.id)), this.pref(LIBRARY_SIDEBAR_ORDER_PREF), ids);
+  }
+
+  /** 侧边栏里拖完资料库：ids 是侧边栏里看得见的新顺序（同步偏好 library.sidebar_order，见 library.ts）。 */
+  reorderSidebarLibraries(ids: readonly string[]): void {
+    const on = new Set(sidebarLibraryIds(this.pref(LIBRARY_SIDEBAR_PREF)));
+    this.setPref(LIBRARY_SIDEBAR_ORDER_PREF, nextSidebarOrder(ids.filter((id) => on.has(id)), this.pref(LIBRARY_SIDEBAR_ORDER_PREF)).filter((id) => on.has(id)));
   }
 
   /** 这个资料库在不在侧边栏（归档的也照偏好回答，侧边栏里只是不显示）。 */
@@ -2689,13 +2699,35 @@ export class Store {
   setLibraryInSidebar(id: string, on: boolean): void {
     const ids = sidebarLibraryIds(this.pref(LIBRARY_SIDEBAR_PREF));
     if (ids.includes(id) === on) return;
+    if (on) this.freezeSidebarOrder(LIBRARY_SIDEBAR_ORDER_PREF, this.orderedTypes().map((t) => t.id).filter((x) => ids.includes(x)));
     this.setPref(LIBRARY_SIDEBAR_PREF, withSidebarLibrary(ids, id, on));
+    this.dropFromSidebarOrder(LIBRARY_SIDEBAR_ORDER_PREF, id);
   }
 
-  /** 放进侧边栏的项目：顺序跟项目页一样，删掉的、归档了的不出现（见 library.ts GROUP_SIDEBAR_PREF；归档的取消归档后回来）。 */
+  /** 放进 / 拿出侧边栏时从排序偏好里去掉它：新放进来的排最后（以前放过、排过也一样）。 */
+  private dropFromSidebarOrder(key: string, id: string): void {
+    const order = sidebarLibraryIds(this.pref(key));
+    if (order.includes(id)) this.setPref(key, order.filter((x) => x !== id));
+  }
+
+  /**
+   * 还没排过、侧边栏里已经有别的置顶项时，先把眼下的顺序（项目页 / 资料库顺序）记成排序偏好，
+   * 这样新放进来的接在最后，原来的几个位置不动（Rei 2026-11-10：新置顶的排最后）。
+   */
+  private freezeSidebarOrder(key: string, current: string[]): void {
+    if (current.length && !sidebarLibraryIds(this.pref(key)).length) this.setPref(key, current);
+  }
+
+  /** 放进侧边栏的项目：没排过跟项目页一样，排过按 group.sidebar_order（新放进来的排最后），删掉的、归档了的不出现（见 library.ts GROUP_SIDEBAR_PREF；归档的取消归档后回来）。 */
   sidebarGroups(): TableMap['group'][] {
     const ids = sidebarLibraryIds(this.pref(GROUP_SIDEBAR_PREF));
-    return this.list('group').filter((g) => ids.includes(g.id) && !isGroupArchived(g));
+    return orderBySidebar(this.list('group').filter((g) => ids.includes(g.id) && !isGroupArchived(g)), this.pref(GROUP_SIDEBAR_ORDER_PREF), ids);
+  }
+
+  /** 侧边栏里拖完项目：ids 是侧边栏里看得见的新顺序（同步偏好 group.sidebar_order，见 library.ts）。归档着的置顶项目留在顺序后面。 */
+  reorderSidebarGroups(ids: readonly string[]): void {
+    const on = new Set(sidebarLibraryIds(this.pref(GROUP_SIDEBAR_PREF)));
+    this.setPref(GROUP_SIDEBAR_ORDER_PREF, nextSidebarOrder(ids.filter((id) => on.has(id)), this.pref(GROUP_SIDEBAR_ORDER_PREF)).filter((id) => on.has(id)));
   }
 
   /** 这个项目在不在侧边栏。 */
@@ -2707,7 +2739,9 @@ export class Store {
   setGroupInSidebar(id: string, on: boolean): void {
     const ids = sidebarLibraryIds(this.pref(GROUP_SIDEBAR_PREF));
     if (ids.includes(id) === on) return;
+    if (on) this.freezeSidebarOrder(GROUP_SIDEBAR_ORDER_PREF, this.list('group').map((g) => g.id).filter((x) => ids.includes(x)));
     this.setPref(GROUP_SIDEBAR_PREF, withSidebarLibrary(ids, id, on));
+    this.dropFromSidebarOrder(GROUP_SIDEBAR_ORDER_PREF, id);
   }
 
   /** 编辑器列表里上移 / 下移一位。 */
