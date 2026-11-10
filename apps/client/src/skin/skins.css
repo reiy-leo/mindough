@@ -1285,6 +1285,7 @@
 }
 [data-skin='material'] .page-detail {
   --pane-page-bg: var(--bg);
+  --page-head-h: 64px;
 }
 [data-skin='material'] .page-detail .pane-head {
   height: 64px;

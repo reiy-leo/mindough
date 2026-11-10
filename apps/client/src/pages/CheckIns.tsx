@@ -191,7 +191,7 @@ export function CheckInsPage() {
     <div className="page checkin-page">
       {/* 页头去掉（Rei 2026-11-10 08:27「打卡页 去掉标题和下方统计信息」「按今天、按类型btn group放到左边」）：
           一行工具栏，左边「按今天 / 按类型」（所有 / 已归档视图里换成「回到今天」），右边新建和「显示哪些打卡」。
-          手机上标题在顶栏（App 的 HEADERLESS_PAGES） */}
+          手机上标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES） */}
       {/* 没有可见标题，读屏还是要有页面名（同等待安排、过期积压） */}
       <h1 className="sr-only">{view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}</h1>
       {/* 工具栏和顶部活动图固定在顶上，只有下面的分区滚（Rei 2026-11-11「打卡页只滚动下面的 sections」）；滚动条藏起来（App 的 HIDE_SCROLLBAR_PAGES） */}

@@ -257,6 +257,13 @@
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
   background-repeat: no-repeat;
 }
+/* 手机整页详情：正文那层有自己的不透明底（app.css .page-detail .pane-body，安卓放大镜变黑），会盖住上面这条淡色的下半截，
+   这里在正文层上接着画同一条渐变，往上挪「状态栏 + 顶栏」那么高，接缝对得上（顶栏高 Apple / WinUI 52、Material 64，见 skins.css）。 */
+:root[data-color-level='vivid'][style*='--detail-tint'] .page-detail .pane-body {
+  background-image: linear-gradient(to bottom, color-mix(in srgb, var(--detail-tint) 16%, transparent), color-mix(in srgb, var(--detail-tint) 0%, transparent) 120px);
+  background-repeat: no-repeat;
+  background-position: 0 calc(-1 * (env(safe-area-inset-top) + var(--page-head-h, 52px)));
+}
 /* 打卡进度环：打卡自己的图标颜色（第一个类型的颜色，没有就用资料库色；TaskRow / 打卡页行上挂 --ci-color） */
 :root[data-color-level='vivid'] .ci-ring .ring-fill {
   stroke: var(--ci-color, var(--accent));

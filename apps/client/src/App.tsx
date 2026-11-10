@@ -56,6 +56,7 @@ const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) =>
 import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
 import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
+import { mobileTopbar } from './lib/mobile-topbar';
 interface NavItem {
   page: Route['page'];
   label: string;
@@ -184,8 +185,6 @@ function navSections(store: Store): NavSection[] {
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。 */
 const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown', 'done'];
-/** 中间列不放页头的页面（Rei 2026-10-26；打卡页 2026-11-10 去掉页头）：手机上标题显示在顶栏。 */
-const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin'];
 const COLLAPSED_KEY = 'mindough:nav_collapsed';
 
 function useCollapsed() {
@@ -575,14 +574,22 @@ export function App() {
   } else {
     const tabs = mobileTabItems(NAV);
     const moreActive = !tabs.some(isActive);
+    const topbar = mobileTopbar(route.page);
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
-        <div className={`topbar${HEADERLESS_PAGES.includes(route.page) ? ' is-titled' : ''}`}>
-          <span className="topbar-title">{current?.label ?? appName()}</span>
-          <RacButton className="icon-btn" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
-            <Search size={20} />
-          </RacButton>
-        </div>
+        {/* 顶栏只在我的一天放搜索（Rei 2026-11-11）；有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
+        {topbar === 'none' ? (
+          <div className="topbar-inset" aria-hidden />
+        ) : (
+          <div className="topbar">
+            <span className="topbar-title">{current?.label ?? appName()}</span>
+            {topbar === 'search' && (
+              <RacButton className="icon-btn" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
+                <Search size={20} />
+              </RacButton>
+            )}
+          </div>
+        )}
         <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
           <MovedBanner />
           <LoginErrorBanner />

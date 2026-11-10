@@ -322,11 +322,11 @@ button {
   flex: 1;
   font-weight: 600;
   font-size: 17px;
-  opacity: 0;
 }
-/* 没有页头的页面（我的一天、待安排、可做，Rei 2026-10-26）：手机上标题放在顶栏 */
-.topbar.is-titled .topbar-title {
-  opacity: 1;
+/* 有自己页头的页没有顶栏（Rei 2026-11-11「只有我的一天保留这个搜索」，见 lib/mobile-topbar）：只留状态栏那一截，网页版高 0 */
+.topbar-inset {
+  flex: none;
+  height: env(safe-area-inset-top);
 }
 .tabbar {
   position: fixed;
@@ -3240,7 +3240,6 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   background: var(--pane-page-bg, var(--bg));
   padding-top: env(safe-area-inset-top);
   animation: page-push 0.26s var(--ease);
-  will-change: transform;
 }
 @keyframes page-push {
   from {
@@ -3291,6 +3290,12 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 }
 .page-detail .pane-body {
   padding: var(--space-1) var(--space-4) var(--space-8);
+  /* 正文这层自己画不透明底（Rei 2026-11-11 录屏：安卓拖选区手柄、系统放大镜出来时，顶栏以下整块变黑，松手恢复）。
+     这层是滚动容器，安卓 Chromium 给它单独一个合成层；底色透明、靠下面 .page-detail 透上来时，放大镜那几帧这层被画成黑底，
+     黑字跟着看不见，只剩彩色的字和边框。自己有底色就不靠下层。另外上面 .page-detail 去掉了常驻的 will-change: transform
+     （推入动画照旧，手势滑回用的行内 transform 照旧），少一层没必要的合成层。
+     彩色档位的顶部淡色（color-level.css 画在 .pane-detail 上）被这层盖住的那段，在 color-level.css 里接着画。 */
+  background-color: var(--pane-page-bg, var(--bg));
 }
 .page-detail .pane-foot {
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
