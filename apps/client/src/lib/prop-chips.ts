@@ -147,3 +147,16 @@ export function addMenuSections(t: PropTask, counts: PropCounts = {}, canAttach 
   const items = addMenuItems(t, counts, canAttach);
   return ([1, 2, 3] as const).map((n) => items.filter((id) => PROP_SECTION[id] === n)).filter((g) => g.length > 0);
 }
+
+/** 新建任务面板（TaskComposer）的胶囊：属性加「相关任务」（新建时才有，算其他属性）。 */
+export type ComposerChipId = PropId | 'related';
+
+/**
+ * 新建面板的胶囊顺序（Rei 2026-11-11 04:27「也按任务详情『+』菜单」）：同一份 PROP_ORDER，
+ * 相关任务排在第 3 组最后。新建面板没有「+」菜单，胶囊不画分隔线（同详情的胶囊行）；
+ * 完成方式、重复在新建面板是下面两段（怎么算完成、多久一次），不是胶囊。
+ */
+export function composerChipOrder(ids: readonly ComposerChipId[]): ComposerChipId[] {
+  const rank = (id: ComposerChipId) => (id === 'related' ? PROP_ORDER.length : PROP_ORDER.indexOf(id));
+  return [...ids].sort((a, b) => rank(a) - rank(b));
+}

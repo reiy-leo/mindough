@@ -1,5 +1,5 @@
 import { installStrictGuard, useStrictSync } from './lib/strict';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
 import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
@@ -245,13 +245,14 @@ function NavLink({ item, active, badge, onOpen, compact, rail }: { item: NavItem
   );
 }
 
-/** 放进侧边栏的库 / 项目：缩进一点挂在「资料库」/「项目」下面；右键 / 长按能「取消在侧边栏显示」。 */
+/** 放进侧边栏的库 / 项目：缩进一点挂在「资料库」/「项目」下面；列表里行右边 ··· 开菜单（2026-11-11），图标样式 / 图标栏右键。 */
 function PinnedLink({ item, active, compact, rail }: { item: NavItem; active: boolean; compact?: boolean; rail?: boolean }) {
   const store = useStore();
   const g = item.groupId ? store.get('group', item.groupId) : null;
   // 列表样式：项目菜单从行右边的 ··· 进，不再右键 / 长按（Rei 2026-11-11 02:56）；图标样式、960 图标栏没地方放 ···，照旧右键 / 长按
   if (g) return compact || rail ? <PinnedGroupLink item={item} active={active} group={g} compact={compact} /> : <PinnedGroupRow item={item} active={active} group={g} />;
-  return <PinnedLibraryLink item={item} active={active} />;
+  // 资料库那一串同样（Rei 2026-11-11 04:27）：列表里行右边 ···，960 图标栏照旧右键
+  return rail ? <PinnedLibraryLink item={item} active={active} /> : <PinnedLibraryRow item={item} active={active} />;
 }
 
 /**
@@ -262,8 +263,55 @@ function PinnedLink({ item, active, compact, rail }: { item: NavItem; active: bo
  */
 function PinnedGroupRow({ item, active, group }: { item: NavItem; active: boolean; group: Group }) {
   const store = useStore();
-  const reorder = usePinnedReorder(group.id);
   const actions = useProjectActions(store, group);
+  return (
+    <PinnedNavRow item={item} active={active} reorderId={group.id} items={actions.items} icon={<GroupIcon group={group} size={18} />}>
+      {actions.dialogs}
+    </PinnedNavRow>
+  );
+}
+
+/**
+ * 放进侧边栏的资料库，列表样式（Rei 2026-11-11 04:27，照置顶项目做）：行右边 ··· 开原来那个菜单（取消在侧边栏显示），
+ * 不再右键 / 长按出菜单；长按只拖动排序。960 图标栏照旧右键（PinnedLibraryLink）。
+ */
+function PinnedLibraryRow({ item, active }: { item: NavItem; active: boolean }) {
+  const store = useStore();
+  const Icon = item.icon;
+  const t = item.libraryId ? store.get('task_type', item.libraryId) : null;
+  const action = t ? librarySidebarAction(store, t) : null;
+  const colorLevel = useColorLevel();
+  return (
+    <PinnedNavRow
+      item={item}
+      active={active}
+      reorderId={item.libraryId}
+      items={action ? [action] : []}
+      icon={<Icon size={18} />}
+      iconStyle={vividVar(colorLevel, t?.color)}
+    />
+  );
+}
+
+/** 侧栏置顶项目 / 资料库的一行（列表样式）：外层 div 挂拖动排序，里面链接 + 右边 ···。 */
+function PinnedNavRow({
+  item,
+  active,
+  reorderId,
+  items,
+  icon,
+  iconStyle,
+  children,
+}: {
+  item: NavItem;
+  active: boolean;
+  reorderId: string | undefined;
+  items: MenuAction[];
+  icon: ReactNode;
+  iconStyle?: CSSProperties | undefined;
+  children?: ReactNode;
+}) {
+  const reorder = usePinnedReorder(reorderId);
   return (
     <div className="nav-item-split nav-pinned-row" {...reorder.props}>
       <a
@@ -274,13 +322,13 @@ function PinnedGroupRow({ item, active, group }: { item: NavItem; active: boolea
         aria-current={active ? 'page' : undefined}
         title={item.label}
       >
-        <span className="nav-icon">
-          <GroupIcon group={group} size={18} />
+        <span className="nav-icon" style={iconStyle}>
+          {icon}
         </span>
         <span className="nav-label">{item.label}</span>
       </a>
-      <RowMoreMenu label={tr('「{name}」的更多操作', { name: item.label })} items={actions.items} className="nav-item-more" />
-      {actions.dialogs}
+      {items.length > 0 && <RowMoreMenu label={tr('「{name}」的更多操作', { name: item.label })} items={items} className="nav-item-more" />}
+      {children}
     </div>
   );
 }
@@ -329,6 +377,7 @@ function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; acti
   );
 }
 
+/** 放进侧边栏的资料库，960 图标栏：没地方放 ···，照旧右键出「取消在侧边栏显示」。 */
 function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean }) {
   const store = useStore();
   const menu = useContextMenuAt({ longPress: false });
@@ -504,14 +553,31 @@ function MoreLink({ item: n, menu }: { item: NavItem; menu?: boolean }) {
   const store = useStore();
   const g = n.groupId ? store.get('group', n.groupId) : null;
   if (g) return <MoreGroupRow item={n} group={g} />;
+  if (n.libraryId) return <MoreLibraryRow item={n} />;
   return <MoreLinkPlain item={n} {...(menu ? { menu } : {})} />;
 }
 
 /** 「更多」页放进侧栏的项目，列表样式：行右边常显 ···，点开项目菜单（Rei 2026-11-11 02:56）；长按只拖动排序，拿起没挪松开什么也不做。 */
 function MoreGroupRow({ item: n, group: g }: { item: NavItem; group: Group }) {
   const store = useStore();
-  const reorder = usePinnedReorder(g.id);
   const actions = useProjectActions(store, g);
+  return (
+    <MorePinnedRow item={n} reorderId={g.id} items={actions.items}>
+      {actions.dialogs}
+    </MorePinnedRow>
+  );
+}
+
+/** 「更多」页放进侧栏的资料库：同项目，行右边常显 ··· 开原来那个菜单（取消在侧边栏显示，Rei 2026-11-11 04:27）；长按只拖动排序。 */
+function MoreLibraryRow({ item: n }: { item: NavItem }) {
+  const store = useStore();
+  const t = n.libraryId ? store.get('task_type', n.libraryId) : null;
+  const action = t ? librarySidebarAction(store, t) : null;
+  return <MorePinnedRow item={n} reorderId={n.libraryId} items={action ? [action] : []} />;
+}
+
+function MorePinnedRow({ item: n, reorderId, items, children }: { item: NavItem; reorderId: string | undefined; items: MenuAction[]; children?: ReactNode }) {
+  const reorder = usePinnedReorder(reorderId);
   const Icon = n.icon;
   return (
     <div className="more-item more-item-split more-item-sub" {...reorder.props}>
@@ -522,8 +588,8 @@ function MoreGroupRow({ item: n, group: g }: { item: NavItem; group: Group }) {
         <span className="grow">{n.label}</span>
         <ChevronRight size={16} className="muted" />
       </a>
-      <RowMoreMenu label={tr('「{name}」的更多操作', { name: n.label })} items={actions.items} className="more-item-more" />
-      {actions.dialogs}
+      {items.length > 0 && <RowMoreMenu label={tr('「{name}」的更多操作', { name: n.label })} items={items} className="more-item-more" />}
+      {children}
     </div>
   );
 }

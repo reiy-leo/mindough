@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROP_ORDER, addMenuItems, addMenuSections, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask , canHaveMood} from './prop-chips';
+import { PROP_ORDER, addMenuItems, addMenuSections, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask , canHaveMood, composerChipOrder} from './prop-chips';
 
 const base: PropTask = {
   completion_mode: 'once',
@@ -139,5 +139,15 @@ describe('「+」菜单分三组（Rei 2026-11-11）', () => {
   it('分组拼起来就是 addMenuItems', () => {
     const task = t({ scheduled_date: '2026-10-16' });
     expect(addMenuSections(task, {}, true).flat()).toEqual(addMenuItems(task, {}, true));
+  });
+});
+
+describe('新建面板胶囊顺序（Rei 2026-11-11 04:27）', () => {
+  it('照「+」菜单：日期、提醒 ｜ 资料、类型 ｜ 心情、项目、相关任务', () => {
+    expect(composerChipOrder(['category', 'refs', 'date', 'remind', 'group', 'mood', 'related'])).toEqual(['date', 'remind', 'refs', 'category', 'mood', 'group', 'related']);
+  });
+  it('跟 PROP_ORDER 同一份顺序，相关任务在最后', () => {
+    const all = [...PROP_ORDER, 'related' as const].reverse();
+    expect(composerChipOrder(all)).toEqual([...PROP_ORDER, 'related']);
   });
 });

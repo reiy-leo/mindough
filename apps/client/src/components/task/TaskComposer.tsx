@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Smile, Sparkles, Tag, X } from 'lucide-react';
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
-import { canHaveMood } from '../../lib/prop-chips';
+import { canHaveMood, composerChipOrder, type ComposerChipId } from '../../lib/prop-chips';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
 import { itemTaskBody, moodLabel, newCountConfig, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
@@ -296,6 +296,120 @@ function Composer() {
   const refCount = d.refs.length;
   const firstRef = groups[0]?.entries[0];
 
+  // 胶囊顺序同任务详情「+」菜单（Rei 2026-11-11 04:27，lib/prop-chips composerChipOrder）
+  const chips: Partial<Record<ComposerChipId, ReactNode>> = {
+    category: (
+      <PopoverPanel label={trc('分类', '类型')} className="is-wide is-sheet cat-select-pop" trigger={<PropChip icon={<Tag size={14} />} label={trc('分类', '类型')} {...(cats.length ? { value: <CategoryLabels cats={cats} />, color: cats[0]!.color } : {})} />}>
+        <CategoryList store={store} value={d.categoryIds} onChange={(ids) => set({ categoryIds: ids })} />
+      </PopoverPanel>
+    ),
+    refs: (
+      <PopoverPanel
+        label={tr('资料')}
+        className="is-wide is-sheet"
+        trigger={<PropChip icon={<Library size={14} />} label={tr('资料')} {...(firstRef ? { value: refCount > 1 ? `${firstRef.name} +${refCount - 1}` : firstRef.name } : {})} />}
+      >
+        <RefPicker store={store} selected={new Set(d.refs.map((r) => r.id))} defaultLibrary={defaultLib?.id ?? null} onToggle={toggleRef} onCreatedOnline={(id) => onlineCreated.current.push(id)} />
+      </PopoverPanel>
+    ),
+    date: (
+      <PopoverPanel
+        label={tr('日期')}
+        className="is-sheet"
+        trigger={
+          <PropChip
+            icon={<CalendarDays size={14} />}
+            label={tr('日期')}
+            {...(d.date ? { value: d.endDate ? formatTaskDateRange(d.date, d.endDate, { mode: dateMode, today, timeZone: d.timeZone }) : formatTaskDate(d.date, { mode: dateMode, today, timeZone: d.timeZone }) } : {})}
+          />
+        }
+      >
+        {(close) => (
+          <DatePanel
+            value={d.date}
+            end={d.endDate}
+            today={today}
+            timeZone={d.timeZone}
+            onTimeZoneChange={(tz) => set({ timeZone: tz })}
+            onChange={(v) => {
+              set({ date: v, endDate: null });
+              close();
+            }}
+            onRangeChange={(start, end, done) => {
+              const r = normalizeRange(start, end);
+              set({ date: r.start, endDate: r.end });
+              if (done) close();
+            }}
+          />
+        )}
+      </PopoverPanel>
+    ),
+    remind: remindable && (
+      <PopoverPanel label={tr('提醒')} trigger={<PropChip icon={<Bell size={14} />} label={tr('提醒')} {...(d.remindTime ? { value: formatTaskTime(d.remindTime, { mode: dateMode, date: d.date, timeZone: d.timeZone }) } : {})} />}>
+        {(close) => (
+          <RemindPanel
+            value={d.remindTime}
+            task={{ recurrence: d.recurrence, completion_mode: d.completion_mode, target_value: d.target_value }}
+            onChange={(v) => {
+              set({ remindTime: v });
+              close();
+            }}
+          />
+        )}
+      </PopoverPanel>
+    ),
+    group: (
+      <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: <><GroupIcon group={group} size={16} /> {group.name}</> } : {})} />}>
+        {(close) => (
+          <GroupList
+            store={store}
+            value={d.groupId}
+            onChange={(id) => {
+              set({ groupId: id });
+              close();
+            }}
+          />
+        )}
+      </PopoverPanel>
+    ),
+    mood: canHaveMood({ recurrence: d.recurrence, completion_mode: d.completion_mode }) && (
+      <PopoverPanel label={tr('心情')} trigger={<PropChip icon={d.mood ? <MoodIcon mood={d.mood} size={16} /> : <Smile size={14} />} label={tr('心情')} {...(d.mood ? { value: moodLabel(d.mood) } : {})} />}>
+        {(close) => (
+          <div className="pop-section">
+            <MoodGrid
+              value={d.mood}
+              onPick={(m) => {
+                set({ mood: m });
+                close();
+              }}
+            />
+          </div>
+        )}
+      </PopoverPanel>
+    ),
+    related: (
+      <PopoverPanel
+        label={tr('相关任务')}
+        trigger={
+          <PropChip
+            icon={<Link2 size={14} />}
+            label={tr('相关任务')}
+            {...(relatedTasks.length ? { value: relatedTasks.length === 1 ? tr('「{titleOf}」', { titleOf: titleOf(store, relatedTasks[0]!) }) : tr('{length} 件相关', { length: relatedTasks.length }) } : {})}
+          />
+        }
+      >
+        <TaskSearch
+          store={store}
+          exclude={new Set(req.after ? [req.after] : [])}
+          selected={new Set(d.related)}
+          label={tr('搜索相关的任务')}
+          onPick={(id) => set({ related: d.related.includes(id) ? d.related.filter((x) => x !== id) : [...d.related, id] })}
+        />
+        <p className="pop-note">{tr('只是有关系，不分先后。')}</p>
+      </PopoverPanel>
+    ),
+  };
+
   return (
     <Sheet
       isOpen
@@ -342,106 +456,7 @@ function Composer() {
         />
 
         <div className="prop-chips" role="group" aria-label={tr('更多属性')}>
-          <PopoverPanel label={trc('分类', '类型')} className="is-wide is-sheet cat-select-pop" trigger={<PropChip icon={<Tag size={14} />} label={trc('分类', '类型')} {...(cats.length ? { value: <CategoryLabels cats={cats} />, color: cats[0]!.color } : {})} />}>
-            <CategoryList store={store} value={d.categoryIds} onChange={(ids) => set({ categoryIds: ids })} />
-          </PopoverPanel>
-          <PopoverPanel
-            label={tr('资料')}
-            className="is-wide is-sheet"
-            trigger={<PropChip icon={<Library size={14} />} label={tr('资料')} {...(firstRef ? { value: refCount > 1 ? `${firstRef.name} +${refCount - 1}` : firstRef.name } : {})} />}
-          >
-            <RefPicker store={store} selected={new Set(d.refs.map((r) => r.id))} defaultLibrary={defaultLib?.id ?? null} onToggle={toggleRef} onCreatedOnline={(id) => onlineCreated.current.push(id)} />
-          </PopoverPanel>
-          <PopoverPanel
-            label={tr('日期')}
-            className="is-sheet"
-            trigger={
-              <PropChip
-                icon={<CalendarDays size={14} />}
-                label={tr('日期')}
-                {...(d.date ? { value: d.endDate ? formatTaskDateRange(d.date, d.endDate, { mode: dateMode, today, timeZone: d.timeZone }) : formatTaskDate(d.date, { mode: dateMode, today, timeZone: d.timeZone }) } : {})}
-              />
-            }
-          >
-            {(close) => (
-              <DatePanel
-                value={d.date}
-                end={d.endDate}
-                today={today}
-                timeZone={d.timeZone}
-                onTimeZoneChange={(tz) => set({ timeZone: tz })}
-                onChange={(v) => {
-                  set({ date: v, endDate: null });
-                  close();
-                }}
-                onRangeChange={(start, end, done) => {
-                  const r = normalizeRange(start, end);
-                  set({ date: r.start, endDate: r.end });
-                  if (done) close();
-                }}
-              />
-            )}
-          </PopoverPanel>
-          {remindable && (
-            <PopoverPanel label={tr('提醒')} trigger={<PropChip icon={<Bell size={14} />} label={tr('提醒')} {...(d.remindTime ? { value: formatTaskTime(d.remindTime, { mode: dateMode, date: d.date, timeZone: d.timeZone }) } : {})} />}>
-              {(close) => (
-                <RemindPanel
-                  value={d.remindTime}
-                  task={{ recurrence: d.recurrence, completion_mode: d.completion_mode, target_value: d.target_value }}
-                  onChange={(v) => {
-                    set({ remindTime: v });
-                    close();
-                  }}
-                />
-              )}
-            </PopoverPanel>
-          )}
-          <PopoverPanel label={trc('属性', '项目')} trigger={<PropChip icon={<Shapes size={14} />} label={trc('属性', '项目')} {...(group ? { value: <><GroupIcon group={group} size={16} /> {group.name}</> } : {})} />}>
-            {(close) => (
-              <GroupList
-                store={store}
-                value={d.groupId}
-                onChange={(id) => {
-                  set({ groupId: id });
-                  close();
-                }}
-              />
-            )}
-          </PopoverPanel>
-          {canHaveMood({ recurrence: d.recurrence, completion_mode: d.completion_mode }) && (
-            <PopoverPanel label={tr('心情')} trigger={<PropChip icon={d.mood ? <MoodIcon mood={d.mood} size={16} /> : <Smile size={14} />} label={tr('心情')} {...(d.mood ? { value: moodLabel(d.mood) } : {})} />}>
-              {(close) => (
-                <div className="pop-section">
-                  <MoodGrid
-                    value={d.mood}
-                    onPick={(m) => {
-                      set({ mood: m });
-                      close();
-                    }}
-                  />
-                </div>
-              )}
-            </PopoverPanel>
-          )}
-          <PopoverPanel
-            label={tr('相关任务')}
-            trigger={
-              <PropChip
-                icon={<Link2 size={14} />}
-                label={tr('相关任务')}
-                {...(relatedTasks.length ? { value: relatedTasks.length === 1 ? tr('「{titleOf}」', { titleOf: titleOf(store, relatedTasks[0]!) }) : tr('{length} 件相关', { length: relatedTasks.length }) } : {})}
-              />
-            }
-          >
-            <TaskSearch
-              store={store}
-              exclude={new Set(req.after ? [req.after] : [])}
-              selected={new Set(d.related)}
-              label={tr('搜索相关的任务')}
-              onPick={(id) => set({ related: d.related.includes(id) ? d.related.filter((x) => x !== id) : [...d.related, id] })}
-            />
-            <p className="pop-note">{tr('只是有关系，不分先后。')}</p>
-          </PopoverPanel>
+          {composerChipOrder(Object.keys(chips) as ComposerChipId[]).map((id) => (chips[id] ? <Fragment key={id}>{chips[id]}</Fragment> : null))}
         </div>
 
         {groups.length > 0 && <RefList store={store} groups={groups} onRemove={(e) => toggleRef({ kind: e.kind, id: e.id }, false)} />}
