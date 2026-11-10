@@ -45,6 +45,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用
   attachments.ts        附件（Rei 2026-10-17）：文件类型（10 种）、大小显示、文件名安全化 / 改名保留扩展名 / 导出去重、50 MB 上限；写入在 Store（attachmentsOf / addAttachment / setAttachmentFile / renameAttachment / removeAttachment / restoreAttachment / ensureJournal）
   lunar/                农历（Rei 2026-10-17）：data.ts（1900–2100 表，scripts/gen-lunar-data.mjs 生成，别手改）、lunar.ts（公历 ⇄ 农历、节气、节日、格子小字）、names.ts（月名日名节气节日，i18n 白名单）、ics.ts（订阅日历解析）、subscription.ts（默认源、偏好 lunar.*、什么时候同步、状态文案）
+  calendar/             日历（Rei 2026-11-10，docs/CALENDAR.md）：views.ts（周 / 月 / 年 / 多日 / 多周的范围、翻页、排道 layoutRow）、ics-events.ts（日历订阅的完整事件解析：时间、时区、RRULE、EXDATE、RECURRENCE-ID）、subs.ts（订阅颜色、该不该拉、状态文案、只开节假日时的格子规则 holidayCell）
   date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、Agenda 分组 agendaBuckets
   date-grid.ts          日期面板的月历格子（Rei 2026-11-01 方案 A）：公历 / 农历月都排 42 格（含闰月）、翻页 stepView、键盘翻页落点 shiftFocus、点格子规则 clickDay、拖选 dragRange
   timezone.ts           任务时区（Rei 2026-10-25）：task.time_zone（IANA，空 = 跟着设备）、常用 / 全部时区、那天的偏移（夏令时）、taskToday / isTaskOverdue / timeZoneBadge；中文城市名在 timezone-names.ts
@@ -69,7 +70,9 @@ apps/client/src/
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
   components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
-  lib/lunar.ts          农历订阅：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DateGrid 的 LunarMark（DatePanel 也导出），日期标题用 components/LunarLine，设置在 components/LunarSettings；样式 styles/lunar.css
+  lib/calendar-subs.ts  日历订阅（同步表 calendar_sub）：经 Worker 代拉、事件存本机、到点刷新（useCalendarSubScheduler 挂在 App）、日历页用 useCalendarEvents；设置在 components/CalendarSubs.tsx，样式 styles/calendar.css
+  lib/lunar.ts          节假日订阅（原「农历订阅」）：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DateGrid 的 LunarMark（DatePanel 也导出），日期标题用 components/LunarLine，设置在 components/CalendarSettings（设置 → 日历）；样式 styles/lunar.css
+  pages/Calendar.tsx    日历页（侧栏「计划 → 日历」，路由 id 还是 agenda，地址 #/calendar）
   pages/Journal.tsx     日记页（docs/JOURNAL.md）
   pages/Library.tsx     资料库页与资料详情（人物库沿用 pages/People.tsx 的人物详情）
   components/ pages/    业务组件与页面（不写死平台样式）
@@ -132,6 +135,7 @@ docs/                   PLAN.md、PRODUCT.md、COPY.md（界面文案）、EXPOR
 - 日期段（PLAN「日期段」）：结束日是 `task.end_date`，写入都走 Store（`createTask` / `updateTask` 会按 `normalizeRange` 收拾，别自己绕过）；要「到期」那天用 core `taskEndDate`（过期、任务链、项目页到期排序都是它），显示整段用 `formatDateRange` / `TaskDateText`，别自己拼「 – 」。提醒仍按开始日。
 - 任务时区（PLAN「任务时区」）：判断任务的「今天」、过期都用 core `taskToday` / `isTaskOverdue`（空时区 = 设备），列表 / 详情日期用 `components/TaskDateText`（带时区小字）；提醒按任务时区换算在 `upcomingReminders` 里，别另算。
 - 打卡卡片的活动图（PLAN「打卡卡片的活动图收进圆点」）：行内不再放活动图，左上角圆点（`TipButton` + `isExpanded`）切换卡片下面整行的 `Heatmap fit`；展开了哪几张只存本机 `settings.habitHeatmapOpen`，读写用 `lib/habit-heatmap.ts`（`isHeatmapOpen` / `toggleHeatmapOpen`）。整行宽度算格子用 `fitHeatmap`，别在组件里另算。
+- 日历与节假日（PLAN「日历」，Rei 2026-11-10）：节假日显示（本机 `holidays`，默认开）和农历（`chineseLunar`，默认关）是两个开关；日期格子、日期标题要显示休 / 班都经 `useLunar(store)`，看 `.any` 决定画不画、`.show` 才画农历，别自己读设置。日历订阅事件只读、不进任务表、不进同步表；订阅列表写入用 `store.insert / update / remove('calendar_sub', …)`。
 - 农历（PLAN「农历」）：日期都存公历，农历只在显示和选择时换算（core `lunar/`，本地查表，别用 `Intl` 的 chinese 历——ICU 有几年初一差一天）；格子小字都走 `useLunar(store).day(d)`（订阅的节日名优先、休 / 班角标），不要自己拼；每年农历重复是 `lunarYearly`（RRULE `RSCALE=CHINESE`）。农历界面显不显示一律用 `useLunarUi()`（本机设置 `chineseLunar` 开着 且 core `isChineseLocale()`，Rei 2026-10-25），新加农历 UI 也要经它；隐藏时 `describeRecurrence(r, { lunar: false, today })`。
 - 滴答清单导入（docs/IMPORT-DIDA.md）：解析、拉取、映射都在 core `dida/`，客户端只做界面；两种来源都先变成 `DidaRow`，再走 `planDida` / `applyDida`，别另写一套写入。任务 id 用滴答清单的 taskId 算（`didaTaskId`），重复导入不出重复任务就靠它，别改算法。令牌只存本机（`lib/dida.ts`），不进同步表、不发给云端库；Worker 代理只转发白名单路径。改菜单栏文字时，要同时改 `menu.rs` 的 `MenuLabels` 和 `lib/app-menu.ts`。
 - 外链：在 Tauri 里都走 `lib/external.ts`（全局拦截 + `openExternal`），交给系统浏览器打开；不要自己 `window.open` 或另装 opener 调用。

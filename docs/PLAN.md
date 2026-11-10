@@ -1849,3 +1849,15 @@ Rei 2026-11-09 定：资料库里「餐厅」和「目的地」（内置类型 t
   - 高德控制台 JS Key 的域名白名单（Rei 来配）：app.mindough.rei8t.dev、mindough.rei8t.dev、localhost（macOS / iOS / Linux App 的 tauri://localhost 和本地开发）、tauri.localhost（Windows / Android App）。
   - Mac / 手机 App 要下个 alpha 才有新的 CSP；原生 WebView 里的地图没真机验过。
   - 没做：按当前位置定位、在地图上看所有餐厅、路线。
+
+### 日历：侧栏时间轴换成日历、节假日和农历拆开、日历订阅 ✅（2026-11-10）
+
+Rei 2026-11-10 19:45：「侧边栏时间轴换成"日历"；视图 dropdown 有周、月、年、多日（2-14天可选）、多周（1-6周可选）；默认显示法定节假日；设置中新建一个日历 tab，把农历挪过来，添加一个日历订阅功能。」方案、待确认项见 [CALENDAR.md](CALENDAR.md)。
+
+- 页面：`pages/Calendar.tsx`（删了 `pages/Agenda.tsx`）。路由 id 还叫 `agenda`，`href` 写 `#/calendar`，`#/agenda` 照样认；深链加 `view/calendar`。视图的范围、翻页、排道都在 core `calendar/views.ts`（`calRange`、`stepCalAnchor`、`layoutRow`、`yearMonths`），视图存本机 `settings.calendarView`（`normalizeCalView`）。
+- 节假日：不另做内置数据，沿用节假日订阅（原「农历订阅」，`lunar/subscription.ts`、`lib/lunar.ts`）。本机设置 `holidays`（默认开）和 `chineseLunar`（默认关）拆开（Rei 19:53 定）：`useLunar()` 多给 `holidays`、`any`；只开节假日时 `day()` 走 core `holidayCell`（只给休 / 班和放假的节日名）。订阅只要两个开关有一个开着就自动拉。日期面板、日期标题也跟着显示休 / 班。
+- 设置：新的一项 `calendar`（`components/CalendarSettings.tsx`，原 `LunarSettings.tsx`）：节假日（开关 + 节假日订阅）、农历开关（只在中文界面）、日历订阅（`components/CalendarSubs.tsx`）。设置 → 任务里的农历去掉了。偏好 key `lunar.sub_url` / `lunar.sub_freq` 没改。
+- 日历订阅：同步表 `calendar_sub`（迁移 v22，name / url / color / sort / created_at，整行 LWW）；云端只存整行 JSON，同步部分不用改；老客户端不认这张表，不显示。事件、同步状态、「这台设备看不看」只存本机（`lib/calendar-subs.ts`，localStorage 一条订阅一个 key），展开今天前 1 年到后 2 年、最多 5000 个；6 小时没成功就自动拉，失败隔 1 小时。解析是 core `calendar/ics-events.ts`（复用 `lunar/ics.ts` 的折行，没加依赖）：全天 / 带时间、DTEND / DURATION、Z / IANA TZID / 常见 Windows 时区名 / 浮动时间、RRULE 日周月年 + INTERVAL / COUNT / UNTIL / BYDAY（含第几个星期几）/ BYMONTHDAY / BYMONTH、EXDATE、RECURRENCE-ID、取消的不要。
+- Worker `/api/calendar/ics`：重定向改成自己跟（最多 3 跳，每跳重查地址，跳到内网 400），上限 5 MB 边读边数（413），每 IP 每分钟 30 次、fresh=1 6 次（429，实例内计数），主机名再拒 `.localhost` / `.lan` / `.home.arpa` / 纯数字和十六进制主机。
+- 没做：拖动改日期、小时刻度的日程视图、订阅事件转任务。
+
