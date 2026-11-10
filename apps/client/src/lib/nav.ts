@@ -71,3 +71,26 @@ export function activeGroupEntry(route: Route, pinnedIds: readonly string[]): st
 
 /** 项目图标（emoji，或 "lucide:名字"）→ 图标名，交给 typeIcon 画。空的给 📁。逻辑在 core（group.ts）。 */
 export { groupIconName } from '@mindough/core';
+
+// ───────────── 手机底部标签栏（Rei 2026-11-10） ─────────────
+
+/**
+ * 手机底部标签栏的固定几项，按这个顺序排，最后再放「更多」（Rei 2026-11-10 11:44「安卓端 tabbar默认显示：我的一天、待安排、打卡、日记、更多」）。
+ * 以前是 我的一天 · 等待安排 · 打卡 · 时间轴 · 更多；时间轴挪进「更多」，日记从「更多」挪出来。
+ * 标签栏不能自定义，所有手机布局（安卓、iOS、窄屏网页）共用这一份，不分平台。
+ * 不在这里的入口都在「更多」页，按侧边栏的分组和顺序列。
+ */
+export const MOBILE_TABS = ['myday', 'backlog', 'checkin', 'journal'] as const satisfies readonly Route['page'][];
+
+/** 是不是标签栏上的入口（「更多」页用它把这几项去掉）。 */
+export function isMobileTab(page: Route['page']): boolean {
+  return (MOBILE_TABS as readonly string[]).includes(page);
+}
+
+/** 从侧边栏入口里挑出标签栏那几项，按 MOBILE_TABS 的顺序（不跟侧边栏顺序走）。放进侧边栏的库 / 项目（带 key）不算。 */
+export function mobileTabItems<T extends { page: Route['page']; key?: string }>(items: readonly T[]): T[] {
+  return MOBILE_TABS.flatMap((page) => {
+    const it = items.find((n) => n.page === page && !n.key);
+    return it ? [it] : [];
+  });
+}

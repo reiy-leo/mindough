@@ -82,3 +82,21 @@ describe('侧边栏「计划」一节里的项目（Rei 2026-10-28）', () => {
     expect(groupIconName(null)).toBe('📁');
   });
 });
+
+describe('手机底部标签栏（Rei 2026-11-10）', () => {
+  it('我的一天、等待安排、打卡、日记，按这个顺序，不跟侧边栏顺序', async () => {
+    const { MOBILE_TABS, mobileTabItems, isMobileTab } = await import('./nav');
+    expect([...MOBILE_TABS]).toEqual(['myday', 'backlog', 'checkin', 'journal']);
+    const sidebar = [
+      { page: 'myday' }, { page: 'backlog' }, { page: 'doable' },
+      { page: 'agenda' }, { page: 'groups' }, { page: 'group', key: 'group:g1' },
+      { page: 'checkin' }, { page: 'countdown' }, { page: 'journal' },
+      { page: 'library' }, { page: 'library', key: 'lib:x' }, { page: 'types' }, { page: 'done' },
+    ] as const;
+    expect(mobileTabItems(sidebar).map((n) => n.page)).toEqual(['myday', 'backlog', 'checkin', 'journal']);
+    expect(mobileTabItems([...sidebar].reverse()).map((n) => n.page)).toEqual(['myday', 'backlog', 'checkin', 'journal']);
+    expect(isMobileTab('agenda')).toBe(false);
+    expect(isMobileTab('doable')).toBe(false);
+    expect(isMobileTab('journal')).toBe(true);
+  });
+});

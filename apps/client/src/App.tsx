@@ -17,7 +17,7 @@ import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
 import { LibraryItemPage, LibraryPage } from './pages/Library';
 import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough/core';
-import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, planEntries } from './lib/nav';
+import { activeGroupEntry, activeLibraryEntry, groupIconName, isMobileTab, libraryRoute, manageEntries, mobileTabItems, planEntries } from './lib/nav';
 import { typeIcon } from './lib/icons';
 import { librarySidebarAction } from './lib/library-sidebar';
 import { useColorLevel, useDetailTint, vividVar } from './lib/color-level';
@@ -72,7 +72,7 @@ interface NavItem {
 
 /**
  * 导航分区（Rei 2026-10-16：「侧边栏分一下section，太乱了」）：
- * 今天（要动手的）· 计划（怎么安排）· 持续（天天记、慢慢攒的）· 管理（资料库、放进侧边栏的库、类型）；设置固定在底部。手机标签栏按同样的顺序，其余放进「更多」并分同样的组。
+ * 今天（要动手的）· 计划（怎么安排）· 持续（天天记、慢慢攒的）· 管理（资料库、放进侧边栏的库、类型）；设置固定在底部。手机标签栏是固定几项（lib/nav.ts MOBILE_TABS），其余放进「更多」并分同样的组。
  * 「管理」（Rei 2026-10-26 18:02「主窗口侧边栏的“资料”section，更改成“管理”，任务入口删掉，添加一个“类型”入口」）：原来叫「资料」；
  *   小节 id 还是 library（本机记的收起状态不丢）。小节里本来没有「任务」入口，只加了「类型」。
  * 「已完成」（Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」）：排在「类型」下面，完成和关闭的任务按结束时间列出（pages/Done.tsx）。
@@ -111,7 +111,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { page: 'checkin', get label() { return trc('导航', '打卡'); }, icon: CalendarCheck2, match: ['checkin'] },
       { page: 'countdown', get label() { return tr('倒数日'); }, icon: Hourglass, match: ['countdown'] },
-      // 日记（Rei 2026-10-17）：手机不进标签栏，在「更多」里
+      // 日记：手机标签栏第四项（Rei 2026-11-10；以前在「更多」里）
       { page: 'journal', get label() { return tr('日记'); }, icon: NotebookPen, match: ['journal'] },
     ],
   },
@@ -179,7 +179,6 @@ function navSections(store: Store): NavSection[] {
   });
 }
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
-const MOBILE_TABS: Route['page'][] = ['myday', 'backlog', 'checkin', 'agenda'];
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。 */
 const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'groups', 'group', 'doable', 'checkin', 'countdown', 'done'];
 /** 中间列不放页头的页面（Rei 2026-10-26；打卡页 2026-11-10 去掉页头）：手机上标题显示在顶栏。 */
@@ -349,7 +348,7 @@ function Page({ route }: { route: Route }) {
 function MorePage() {
   const store = useStore();
   const sections = [
-    ...navSections(store).map((sec) => ({ id: sec.id, title: sec.title, items: sec.items.filter((n) => !MOBILE_TABS.includes(n.page)) })),
+    ...navSections(store).map((sec) => ({ id: sec.id, title: sec.title, items: sec.items.filter((n) => n.key || !isMobileTab(n.page)) })),
     { id: 'settings', title: '', items: [SETTINGS] },
   ].filter((sec) => sec.items.length > 0);
   return (
@@ -538,7 +537,7 @@ export function App() {
       </div>
     );
   } else {
-    const tabs = NAV.filter((n) => MOBILE_TABS.includes(n.page));
+    const tabs = mobileTabItems(NAV);
     const moreActive = !tabs.some(isActive);
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
