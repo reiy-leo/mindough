@@ -2,7 +2,7 @@
  * 设置 → 日历 →「日历订阅」（Rei 2026-11-10，docs/CALENDAR.md 第五节）：添加只读 ICS 链接，起名、选颜色；
  * 每条能改名、换颜色、这台设备看不看、立即刷新、删除。列表跟账户同步（calendar_sub 表），事件只存本机（lib/calendar-subs）。
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { RadioGroup, Radio } from 'react-aria-components';
 import { calSubStatusText, nextSubColor, normalizeCalendarUrl, normalizeSubColor, SUB_COLORS, syncedAgo, type CalendarSub, type SubColor } from '@mindough/core';
@@ -55,6 +55,8 @@ function SubRow({ sub }: { sub: CalendarSub }) {
   const { states, hidden, syncing } = useCalendarSubState();
   const now = useNow(30_000);
   const [name, setName] = useState(sub.name);
+  // 别处改了名字（取到日历自己的名字、另一台设备同步过来）跟着换
+  useEffect(() => setName(sub.name), [sub.name]);
   const [confirm, setConfirm] = useState(false);
   const st = states[sub.id]?.url === sub.url ? states[sub.id]! : null;
   const busy = syncing.includes(sub.id);

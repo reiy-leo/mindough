@@ -287,7 +287,7 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
         const lanes = shown.reduce((m, x) => Math.max(m, x.lane + 1), 0);
         const shownPerDay = row.map((_, c) => shown.filter((x) => c >= x.col && c < x.col + x.span).length);
         return (
-          <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: `auto repeat(${maxLanes + 2}, auto)`, ['--lanes' as string]: lanes } as CSSProperties}>
+          <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: `auto repeat(${maxLanes + 2}, auto) 1fr`, ['--lanes' as string]: lanes } as CSSProperties}>
             {row.map((d, c) => (
               <div key={`bg-${d}`} className={`cal-cell-bg${d === p.today ? ' is-today' : ''}`} style={{ gridColumn: c + 1, gridRow: '1 / -1' }} aria-hidden />
             ))}

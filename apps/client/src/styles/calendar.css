@@ -406,8 +406,10 @@ html[data-layout='mobile'] .cal-year {
   background: var(--accent);
   color: var(--accent-contrast);
 }
-.cal-mini-lunar {
+.cal-mini-cell {
   position: relative;
+}
+.cal-mini-lunar {
   max-width: 100%;
   overflow: hidden;
   font-size: 9.5px;
@@ -416,8 +418,8 @@ html[data-layout='mobile'] .cal-year {
   white-space: nowrap;
 }
 .cal-mini-lunar .lunar-badge {
-  top: -24px;
-  right: -6px;
+  top: 2px;
+  right: 3px;
 }
 .cal-mini-dots {
   display: flex;
