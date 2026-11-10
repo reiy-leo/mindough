@@ -42,6 +42,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     card_color: 'text?',
     pinned_at: 'text?',
     mood: 'text?',
+    lib_via: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -85,6 +86,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     height: 'int?',
     created_at: 'text',
   },
+  group_library: { type_id: 'text', group_id: 'text', created_at: 'text' },
 };
 
 /** SQL 标识符加引号（"group" 是关键字）。 */
@@ -368,6 +370,20 @@ ALTER TABLE "task" ADD COLUMN "mood" TEXT;
     name: '项目的「默认日期：今天」（group.default_date_today）',
     sql: `
 ALTER TABLE "group" ADD COLUMN "default_date_today" INTEGER NOT NULL DEFAULT 0;
+`,
+  },
+  {
+    // Rei 2026-11-10：项目关联资料库，库里的任务自动进项目（project-libraries.ts）。
+    // group_library 一个库一行（id 由库 id 算）；task.lib_via 记任务是因为哪个库进的项目（空 = 手动放的，老行都是空）。
+    version: 21,
+    name: '项目关联资料库（group_library、task.lib_via）',
+    sql: `
+CREATE TABLE IF NOT EXISTS "group_library" (
+  "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,
+  "type_id" TEXT NOT NULL, "group_id" TEXT NOT NULL, "created_at" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "group_library_group" ON "group_library" ("group_id");
+ALTER TABLE "task" ADD COLUMN "lib_via" TEXT;
 `,
   },
 ];

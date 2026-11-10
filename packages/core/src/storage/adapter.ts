@@ -65,6 +65,7 @@ export function emptySnapshot(): Snapshot {
     journal_entry: [],
     journal_post: [],
     attachment: [],
+    group_library: [],
   };
 }
 

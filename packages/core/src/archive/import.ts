@@ -230,6 +230,8 @@ const content = (r: BaseRow) => {
   delete (rest as { base_at?: unknown }).base_at;
   // 任务的 refs_mirror 也是同步用的记号（多类型与多资料，task-refs.ts）
   delete (rest as { refs_mirror?: unknown }).refs_mirror;
+  // 任务的 lib_via（项目关联资料库的记号）同理，文件里不写
+  delete (rest as { lib_via?: unknown }).lib_via;
   return stableJson(rest);
 };
 

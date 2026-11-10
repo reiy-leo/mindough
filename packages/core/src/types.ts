@@ -182,6 +182,12 @@ export interface Task extends BaseRow {
    * 只给普通任务（不重复、不是倒数日）；不进日记的心情河流。老客户端不认这一列，拉到的行没有它就当没记。SQLite 迁移 v19。
    */
   mood?: string | null;
+  /**
+   * 这件任务为什么在现在的项目里（Rei 2026-11-10 项目关联资料库，见 project-libraries.ts）：
+   * 资料库 id = 那个库关联了这个项目、自动放进来的（取消关联时移出）；'!' = 用户手动挪出过，资料库不再自动挪；空 = 手动放的或无关。
+   * 老客户端不认这一列，推上来的行没有它：项目没变就沿用本机的值，项目变了按手动挪动算（见 Store.applyRemote）。SQLite 迁移 v21。
+   */
+  lib_via?: string | null;
   sort: number;
   created_at: Timestamp;
 }
@@ -374,6 +380,17 @@ export interface LibraryItem extends BaseRow {
   merged_into?: string | null;
 }
 
+/**
+ * 项目关联的资料库（Rei 2026-11-10，见 project-libraries.ts）：一个库一行，id = groupLibraryId(type_id)，
+ * 所以一个库只能关联一个项目；改关联 = 改 group_id，取消 = 墓碑。项目删了这行不生效。SQLite 迁移 v21。
+ * 老客户端不认这张表，拉到的行直接忽略。
+ */
+export interface GroupLibrary extends BaseRow {
+  type_id: string;
+  group_id: string;
+  created_at: Timestamp;
+}
+
 export interface TaskPerson extends BaseRow {
   task_id: string;
   person_id: string;
@@ -510,6 +527,7 @@ export interface TableMap {
   journal_entry: JournalEntry;
   journal_post: JournalPost;
   attachment: Attachment;
+  group_library: GroupLibrary;
 }
 
 export type TableName = keyof TableMap;
@@ -533,6 +551,7 @@ export const TABLES: readonly TableName[] = [
   'journal_entry',
   'journal_post',
   'attachment',
+  'group_library',
 ];
 
 /** 写入时调用方提供的部分：id / updated_at / deleted 由存储层补齐。 */

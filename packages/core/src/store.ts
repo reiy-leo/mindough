@@ -53,6 +53,8 @@ import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost 
 import { groupIconFromPicker, isGroupArchived, normalizeGroupName, type GroupRemovalResult, type GroupRemovalUndo } from './group';
 import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './journal-feed';
 import { renamedFileName, safeFileName, sortAttachments } from './attachments';
+import { LIB_OPT_OUT, groupLibraryId, manualVia, placeTask, type LibLinkTarget, type LinkOf } from './project-libraries';
+import type { GroupLibrary } from './types';
 export interface StoreOptions {
   deviceId?: string;
   now?: () => Date;
@@ -130,6 +132,16 @@ function dedupeRows(rows: Array<{ table: TableName; row: BaseRow }>) {
   return [...m.values()];
 }
 
+/** 改了这些表，项目关联资料库可能要挪任务。 */
+const LIB_TABLES = new Set<TableName>(['task', 'task_item', 'task_person', 'group_library', 'group', 'task_type', 'library_item', 'person']);
+
+type LibScope = Set<string> | 'all';
+function mergeScope(a: LibScope | null, b: LibScope): LibScope {
+  if (!a) return b;
+  if (a === 'all' || b === 'all') return 'all';
+  return new Set([...a, ...b]);
+}
+
 export class Store {
   private tables: Tables;
   private listeners = new Set<() => void>();
@@ -140,6 +152,11 @@ export class Store {
   private relatedCache: { version: number; value: Map<string, string[]> } | null = null;
   private edgeCache: { version: number; accepted: Edge[]; conflicts: ConflictEdge[] } | null = null;
   private localWriteListeners = new Set<(changes: readonly Change[]) => void>();
+  /** 项目关联资料库：打开完成后才在本机写入时整理；整理自己写的时候不再触发；batch 里攒着；拉下来的行等拉完再整理。 */
+  private libsReady = false;
+  private libSettling = false;
+  private libPending: LibScope | null = null;
+  private libsRemoteDirty = false;
   readonly clock: HlcClock;
   readonly now: () => Date;
 
@@ -181,6 +198,8 @@ export class Store {
         if (t === 'task' && (row as Task).end_date === undefined) (row as Task).end_date = null;
         // v12 之前没有 refs_mirror（多类型与多资料）：同上；null = 当成旧客户端写的，打开时把单值补进多值
         if (t === 'task' && (row as Task).refs_mirror === undefined) (row as Task).refs_mirror = null;
+        // v21 之前没有 lib_via（项目关联资料库）：同上，空 = 手动放的
+        if (t === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
         // v9 之前没有 count_config（空 = 步长 1）：同上
         if (t === 'task' && !isPlainObject((row as Task).count_config)) (row as Task).count_config = {};
         // v5 之前没有 merged_into：同上
@@ -203,6 +222,8 @@ export class Store {
     store.backfillRefs();
     store.migrateTitleLines();
     store.adoptJournalEntries([...store.tables.journal_entry.values()]);
+    // 打开时的整理写入不触发项目关联资料库的整理（本机数据可能是同步到一半的样子）；之后本机写入才触发
+    store.libsReady = true;
     await store.flush();
     return store;
   }
@@ -325,12 +346,17 @@ export class Store {
     if (this.strictDone && violatesStrict(changes, (id) => isStrictLocked(true, this.tables.task.get(id)))) throw new StrictModeError();
     // 日记的条目发了就不能改（Rei 2026-10-28）：只许打墓碑、撤销删除
     for (const c of changes) if (c.table === 'journal_post') this.assertPostUnchanged(c.row as JournalPost);
+    // 写之前的任务（看用户是不是手动改了项目，项目关联资料库用）
+    const prevTasks = new Map<string, Task | undefined>();
+    if (!this.libSettling) for (const c of changes) if (c.table === 'task' && !prevTasks.has(c.row.id)) prevTasks.set(c.row.id, this.tables.task.get(c.row.id));
     const stampOne = (c: { table: TableName; row: BaseRow }): Change => {
       const row = { ...c.row, updated_at: this.clock.tick() };
       // 类型：旧客户端只认 checkin_category_id，写任务时抄一份过去
       if (c.table === 'task' && (row as Task).category_id !== undefined) (row as Task).checkin_category_id = (row as Task).category_id;
       // 多类型与多资料：任务行总带着单值的签名（见 task-refs.ts）
       if (c.table === 'task') (row as Task).refs_mirror = refsMirrorOf(row as Task);
+      // 项目关联资料库：任务行总带着 lib_via（空也写上），老客户端推上来的行没有这个键，靠它认出来
+      if (c.table === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
       // 资料 / 人物总带着 merged_into（没合并过 = null），和重开后读回的样子一致
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
       (this.tables[c.table] as Map<string, BaseRow>).set(row.id, row);
@@ -340,6 +366,11 @@ export class Store {
     // 单值和多值对齐（双写）：写了单值的补进多值，多值变了的把第一个抄回单值
     const extra = this.syncRefs(stamped);
     if (extra.length) stamped = dedupeRows([...stamped, ...extra.map(stampOne)]) as Change[];
+    // 用户手动改了任务的项目：记下是交回资料库管、还是手动挪出（见 project-libraries.ts manualVia）
+    if (prevTasks.size) {
+      const via = this.manualLibViaRows(stamped, prevTasks);
+      if (via.length) stamped = dedupeRows([...stamped, ...via.map(stampOne)]) as Change[];
+    }
     if (this.batchBuffer) {
       this.batchBuffer.push(...stamped);
       this._version++;
@@ -347,6 +378,14 @@ export class Store {
     // 本机写了旧表（导入旧格式的日记）、给旧日记加了附件：同样转成条目
     const entries = this.touchedEntries(stamped);
     if (entries.length) this.adoptJournalEntries(entries);
+    // 项目关联资料库：挂上 / 去掉资料、改了关联、项目删了等，跟着把任务挪进挪出
+    if (this.libsReady && !this.libSettling) {
+      const scope = this.libScope(stamped);
+      if (scope) {
+        if (this.batchBuffer) this.libPending = mergeScope(this.libPending, scope);
+        else this.settleProjectLibraries(scope === 'all' ? undefined : scope);
+      }
+    }
   }
 
   /** 把 fn 里的所有写入合并成一次通知 + 一次落盘（导入、演示数据用）。 */
@@ -354,8 +393,14 @@ export class Store {
     if (this.batchBuffer) return fn();
     this.batchBuffer = [];
     try {
-      return fn();
+      const out = fn();
+      // 这一批里攒下的项目关联资料库整理，在提交前一起做（写入还进这一批）
+      const pending = this.libPending;
+      this.libPending = null;
+      if (pending) this.settleProjectLibraries(pending === 'all' ? undefined : pending);
+      return out;
     } finally {
+      this.libPending = null;
       const buf = this.batchBuffer;
       this.batchBuffer = null;
       if (buf.length) this.commit(buf);
@@ -427,6 +472,12 @@ export class Store {
         // 心情（v19）同理：老客户端的行当没记
         if (t.mood === undefined) t.mood = null;
         if (!isPlainObject(t.count_config)) t.count_config = {};
+        // 老客户端推上来的任务没有 lib_via（v21）：项目没变就沿用本机的；项目变了按手动挪动算（各设备算的一样，不进 outbox）
+        if (t.lib_via === undefined) {
+          const old = cur as Task | undefined;
+          if (old && !old.deleted && (old.group_id ?? null) !== (t.group_id ?? null)) t.lib_via = manualVia(this.liveGroupId(t.group_id), this.taskLibIds(t, true), this.libLinkOf());
+          else t.lib_via = old?.lib_via ?? null;
+        }
       }
       if (c.table === 'attachment') {
         const a = row as Attachment;
@@ -448,6 +499,8 @@ export class Store {
       applied.push({ table: c.table, row } as Change);
     }
     if (!applied.length) return 0;
+    // 项目关联资料库：拉完一轮再整理（Store.settleAfterSync，同步引擎在拉完以后调），别在拉到一半时挪任务
+    if (applied.some((c) => LIB_TABLES.has(c.table))) this.libsRemoteDirty = true;
     // 旧客户端改了单值（任务行没有签名或对不上）：补进多值，只加不删；同样不进 outbox（各设备各补一遍结果一样）
     const legacy: Change[] = [];
     for (const c of applied) if (c.table === 'task' && !c.row.deleted) legacy.push(...this.legacyLinks(c.row as Task));
@@ -1493,6 +1546,192 @@ export class Store {
     this.write(rows);
   }
 
+  // ───────────── 项目关联资料库（Rei 2026-11-10，project-libraries.ts） ─────────────
+
+  /** 资料库 → 它现在关联的项目（只算生效的：关联行没删、库和项目都还在）。 */
+  libLinkOf(): LinkOf {
+    const m = new Map<string, LibLinkTarget>();
+    for (const l of this.tables.group_library.values()) {
+      if (l.deleted) continue;
+      const g = this.get('group', l.group_id);
+      if (!g || !this.get('task_type', l.type_id)) continue;
+      m.set(l.type_id, { groupId: g.id, archived: isGroupArchived(g) });
+    }
+    return (typeId) => m.get(typeId);
+  }
+
+  /** 这个资料库关联着哪个项目（没关联、项目删了 = undefined）。 */
+  libraryGroupId(typeId: string): string | undefined {
+    return this.libLinkOf()(typeId)?.groupId;
+  }
+
+  /** 项目关联的资料库 id（按资料库顺序）。 */
+  groupLibraryIds(groupId: string): string[] {
+    const linkOf = this.libLinkOf();
+    return this.orderedTypes()
+      .filter((t) => linkOf(t.id)?.groupId === groupId)
+      .map((t) => t.id);
+  }
+
+  /** 项目还在就返回它的 id，删了 / 空 = null。 */
+  private liveGroupId(id: string | null | undefined): string | null {
+    return id && this.get('group', id) ? id : null;
+  }
+
+  private personLibId(): string | undefined {
+    return this.list('task_type').find((x) => isPersonLibrary(x))?.id;
+  }
+
+  /**
+   * 任务在哪些资料库里：挂的资料所在的库（按资料顺序、去重），关联了人就再加人物库（排最后）。
+   * fresh = 不用版本缓存（write 里表刚改过、版本还没变）。
+   */
+  taskLibIds(task: Pick<Task, 'id' | 'library_item_id'>, fresh = false): string[] {
+    const links = fresh ? this.refIndexFresh(task.id).items : (this.refIndex().items.get(task.id) ?? []);
+    const raw = links.length ? links.map((l) => l.item_id) : task.library_item_id ? [task.library_item_id] : [];
+    const out: string[] = [];
+    for (const id of raw) {
+      const item = this.get('library_item', this.resolveItemId(id) ?? id);
+      if (item && !out.includes(item.type_id)) out.push(item.type_id);
+    }
+    const personLib = this.personLibId();
+    if (personLib && !out.includes(personLib)) {
+      for (const p of this.tables.task_person.values())
+        if (!p.deleted && p.task_id === task.id && this.get('person', this.resolvePersonId(p.person_id) ?? p.person_id)) {
+          out.push(personLib);
+          break;
+        }
+    }
+    return out;
+  }
+
+  /** 资料库里的任务（没删的；完成、关闭、归档的也算）。 */
+  libraryTasks(typeId: string): Task[] {
+    return this.tasks().filter((t) => this.taskLibIds(t).includes(typeId));
+  }
+
+  /**
+   * 设项目关联的资料库（保存项目时调，整组）：
+   * - 新关联的库：库里所有的任务都挪进来（原来在别的项目里的也挪；以前手动挪出去过的也算），记下是因为哪个库进来的；
+   *   这个库原来关联着别的项目的，改关联过来（因它进那个项目的任务一起过来）。
+   * - 去掉的库：因为它进来的任务移出项目（到无项目，不回原来的项目）；手动放进来的不动。
+   * 严格模式下锁住的（完成 / 关闭的）任务不动。返回挪了几件任务。
+   */
+  setGroupLibraries(groupId: string, typeIds: readonly string[]): number {
+    const g = this.get('group', groupId);
+    if (!g) return 0;
+    const want = [...new Set(typeIds)].filter((id) => hasLibrary(this.get('task_type', id)));
+    const linkOf = this.libLinkOf();
+    const now = this.now().toISOString();
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const l of this.tables.group_library.values())
+      if (!l.deleted && l.group_id === groupId && !want.includes(l.type_id)) rows.push({ table: 'group_library', row: { ...l, deleted: true } });
+    const fresh: string[] = [];
+    for (const typeId of want) {
+      if (linkOf(typeId)?.groupId === groupId) continue;
+      fresh.push(typeId);
+      const id = groupLibraryId(typeId);
+      const cur = this.tables.group_library.get(id);
+      rows.push({ table: 'group_library', row: { ...(cur ?? { created_at: now }), id, type_id: typeId, group_id: groupId, deleted: false, updated_at: '' } as unknown as BaseRow });
+    }
+    if (!rows.length) return 0;
+    let moved = 0;
+    this.batch(() => {
+      this.libSettling = true;
+      try {
+        const taskRows: Array<{ table: TableName; row: BaseRow }> = [];
+        if (fresh.length)
+          for (const t of this.list('task')) {
+            if (this.isLocked(t)) continue;
+            const lib = this.taskLibIds(t).find((l) => fresh.includes(l));
+            if (!lib || (t.group_id === groupId && t.lib_via === lib)) continue;
+            taskRows.push({ table: 'task', row: { ...t, group_id: groupId, lib_via: lib } as BaseRow });
+            if (t.group_id !== groupId) moved++;
+          }
+        this.write([...rows, ...taskRows]);
+      } finally {
+        this.libSettling = false;
+      }
+      moved += this.settleProjectLibraries();
+    });
+    return moved;
+  }
+
+  /** 新关联这些资料库，会有几件任务挪进这个项目（新建 / 编辑面板的提示用；groupId 空 = 新建）。 */
+  libraryJoinCount(groupId: string | null, typeIds: readonly string[]): number {
+    const linkOf = this.libLinkOf();
+    const fresh = typeIds.filter((id) => !groupId || linkOf(id)?.groupId !== groupId);
+    if (!fresh.length) return 0;
+    let n = 0;
+    for (const t of this.list('task')) {
+      if (this.isLocked(t) || (groupId && t.group_id === groupId)) continue;
+      if (this.taskLibIds(t).some((l) => fresh.includes(l))) n++;
+    }
+    return n;
+  }
+
+  /**
+   * 按关联规则把任务挪到该在的项目（project-libraries.ts placeTask）。taskIds 空 = 全部任务。
+   * 本机写入后自动调（只看这批碰到的任务，改了关联 / 项目时看全部）；同步拉完一轮后由 settleAfterSync 调。返回挪了几件。
+   */
+  settleProjectLibraries(taskIds?: Iterable<string>): number {
+    const linkOf = this.libLinkOf();
+    const alive = (id: string) => !!this.get('group', id);
+    const ids = taskIds ? [...taskIds] : null;
+    const tasks = ids ? ids.map((id) => this.get('task', id)).filter((t): t is Task => !!t) : this.list('task');
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const t of tasks) {
+      if (this.isLocked(t)) continue;
+      const libs = this.taskLibIds(t);
+      if (!libs.length && (!t.lib_via || t.lib_via === LIB_OPT_OUT)) continue;
+      const next = placeTask({ group_id: t.group_id, lib_via: t.lib_via ?? null }, libs, linkOf, alive);
+      if (next) rows.push({ table: 'task', row: { ...t, group_id: next.group_id, lib_via: next.lib_via } as BaseRow });
+    }
+    if (!rows.length) return 0;
+    this.libSettling = true;
+    try {
+      this.write(rows);
+    } finally {
+      this.libSettling = false;
+    }
+    return rows.length;
+  }
+
+  /** 同步拉完一轮后调：这轮拉到了相关的行就整理一遍全部任务（别的设备、老客户端改的）。 */
+  settleAfterSync(): number {
+    if (!this.libsRemoteDirty) return 0;
+    this.libsRemoteDirty = false;
+    return this.settleProjectLibraries();
+  }
+
+  /** 这批写入要整理哪些任务；null = 不用整理。 */
+  private libScope(stamped: readonly Change[]): LibScope | null {
+    let ids: Set<string> | null = null;
+    for (const c of stamped) {
+      if (c.table === 'group_library' || c.table === 'group' || c.table === 'task_type') return 'all';
+      const id = c.table === 'task' ? c.row.id : c.table === 'task_item' || c.table === 'task_person' ? (c.row as TaskItem).task_id : null;
+      if (id) (ids ??= new Set()).add(id);
+    }
+    return ids;
+  }
+
+  /** 这批里用户手动改了项目的任务（lib_via 没跟着写）：补写 lib_via。 */
+  private manualLibViaRows(stamped: readonly Change[], prev: Map<string, Task | undefined>): Array<{ table: TableName; row: BaseRow }> {
+    const out: Array<{ table: TableName; row: BaseRow }> = [];
+    let linkOf: LinkOf | null = null;
+    for (const c of stamped) {
+      if (c.table !== 'task' || !prev.has(c.row.id)) continue;
+      const before = prev.get(c.row.id);
+      const t = c.row as Task;
+      if (!before || before.deleted || t.deleted) continue;
+      if ((before.group_id ?? null) === (t.group_id ?? null) || (t.lib_via ?? null) !== (before.lib_via ?? null)) continue;
+      linkOf ??= this.libLinkOf();
+      const via = manualVia(this.liveGroupId(t.group_id), this.taskLibIds(t, true), linkOf);
+      if (via !== (t.lib_via ?? null)) out.push({ table: 'task', row: { ...t, lib_via: via } as BaseRow });
+    }
+    return out;
+  }
+
   setStatus(id: string, status: TaskStatus): CompleteResult {
     const before = this.list('task');
     const edges = this.edges();
@@ -2327,7 +2566,8 @@ export class Store {
     const block = this.typeDeleteBlock(typeId);
     if (block) throw new TypeDeleteError(block);
     const cur = this.tables.task_type.get(typeId)!;
-    this.write([{ table: 'task_type', row: { ...cur, deleted: true } as BaseRow }]);
+    const link = this.tables.group_library.get(groupLibraryId(typeId));
+    this.write([{ table: 'task_type', row: { ...cur, deleted: true } as BaseRow }, ...(link && !link.deleted ? [{ table: 'group_library' as TableName, row: { ...link, deleted: true } as BaseRow }] : [])]);
     const order = this.pref(TYPE_ORDER_PREF);
     const ids = Array.isArray(order) ? (order as unknown[]).filter((x): x is string => typeof x === 'string') : [];
     if (ids.includes(typeId)) this.setPref(TYPE_ORDER_PREF, ids.filter((x) => x !== typeId));

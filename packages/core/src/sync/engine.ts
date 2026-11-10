@@ -220,6 +220,8 @@ export class SyncEngine {
     else await this.pushPending(prevHeld);
     await this.store.adapter.setMeta(this.key(HELD_META), JSON.stringify([...this.held]));
     await this.pullFrom(Number((await this.store.adapter.getMeta(this.key('cursor'))) ?? 0));
+    // 项目关联资料库：拉完了再按关联把任务挪到该在的项目（拉到一半时数据不全，别挪）。挪了的是本机写入，照常进 outbox 排推送
+    this.store.settleAfterSync();
     await this.store.flush();
   }
 
