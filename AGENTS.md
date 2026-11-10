@@ -37,6 +37,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   count.ts              计数的步长和快捷按钮（Rei 2026-10-26）：单位 → 默认步长、task.count_config 读写、手输「1200 / +330」解析
   heatmap.ts myday.ts   热力图网格与档位、我的一天（昨天没做完、建议）
   done-list.ts          已完成页（Rei 2026-11-08）：完成 / 关闭的任务按结束时间排、按本机日期分段、段标题
+  project-libraries.ts  项目关联资料库（Rei 2026-11-10）：group_library 一库一行、task.lib_via 记因哪个库进的项目；placeTask / manualVia 纯规则，写入在 Store.setGroupLibraries / settleProjectLibraries，同步拉完由 SyncEngine 调 settleAfterSync
   preview.ts search.ts  无标题任务的预览、全局搜索（⌘F / Ctrl+F）
   library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色
   typedef.ts            类型编辑器（界面叫资料库编辑器）的纯逻辑：字段增改排序隐藏、删字段留墓碑（key 不变、值保留）、类型顺序（同步偏好 type_order）；归档存 hidden 列（Store.archiveType）；只有空的自定义资料库能删（typeDeleteBlock / Store.deleteType 打墓碑，Rei 2026-11-10），有内容的、内置的只能归档
