@@ -7,12 +7,14 @@
  * - 桌面悬停出现小 ×，点了清除回默认（胶囊消失，提示里可撤销）；触屏没有 ×，在选择器里选「无」那一项；
  * - 键盘：Tab 到胶囊，Enter / 空格打开，Backspace / Delete 清除；
  * - 行尾「+」：菜单列出没设的属性，选一项直接打开它的选择器；全都设了「+」隐藏；一个都没设时是「+ 添加属性」。
- * - 菜单最后一项「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
+ * - 菜单里的「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
+ * - 菜单分三组、组间分隔线（Rei 2026-11-11）：日期、完成方式、重复、提醒 ｜ 资料、类型 ｜ 心情、附件、项目、卡片颜色（lib/prop-chips PROP_SECTION）；
+ *   胶囊行按同一个 PROP_ORDER 排，不画分隔。
  * 资料行和任务字段（进度、看到哪…）不在这里，仍在原来的属性卡片里。
  */
 import { useLocked } from '../../lib/strict';
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
+import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover, Separator } from 'react-aria-components';
 import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
@@ -36,7 +38,7 @@ import { useUi } from '../../lib/ui';
 import { useLunarUi } from '../../lib/lunar';
 import { dataLabel, tr, trc } from '../../lib/i18n';
 import { typeIcon } from '../../lib/icons';
-import { addMenuItems, clearPatch, setProps, type AddMenuId, type PropId } from '../../lib/prop-chips';
+import { addMenuSections, clearPatch, setProps, type AddMenuId, type PropId } from '../../lib/prop-chips';
 import { CategoryList } from '../CategoryPicker';
 import { RefPicker } from '../library/RefPicker';
 import { CompletionChoice, CompletionSentence, GroupList, MODE_ICON, RepeatEditor, modeDefaults } from './pickers';
@@ -113,7 +115,8 @@ export function PropChips({
   const refGroups = store.taskRefs(task.id);
   const counts = { categories: cats.length, refs: refGroups.reduce((n, g) => n + g.entries.length, 0) };
   const shown = setProps(task, counts);
-  const addItems = addMenuItems(task, counts, !!onAttach);
+  const addSections = addMenuSections(task, counts, !!onAttach);
+  const addItems = addSections.flat();
   const patch = (p: Partial<Task>) => store.updateTask(task.id, p);
   const group = store.get('group', task.group_id);
   const cat = cats[0];
@@ -333,15 +336,18 @@ export function PropChips({
                 window.setTimeout(() => openFor(id, 'add', addRef.current), 0);
               }}
             >
-              {addItems.map((id) => {
-                const label = id === 'attachment' ? trc('属性', '附件') : propLabel(id);
-                return (
-                  <MenuItem key={id} id={id} className="menu-item" textValue={label}>
-                    {id === 'attachment' ? <Paperclip size={16} /> : addIcon(id, task)}
-                    <span>{label}</span>
-                  </MenuItem>
-                );
-              })}
+              {addSections.flatMap((ids, n) => [
+                ...(n > 0 ? [<Separator key={`sep-${n}`} className="menu-sep" />] : []),
+                ...ids.map((id) => {
+                  const label = id === 'attachment' ? trc('属性', '附件') : propLabel(id);
+                  return (
+                    <MenuItem key={id} id={id} className="menu-item" textValue={label}>
+                      {id === 'attachment' ? <Paperclip size={16} /> : addIcon(id, task)}
+                      <span>{label}</span>
+                    </MenuItem>
+                  );
+                }),
+              ])}
             </Menu>
           </Popover>
         </MenuTrigger>

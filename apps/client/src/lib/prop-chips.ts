@@ -18,8 +18,25 @@ import { canRemind, cardColorOf, type Task } from '@mindough/core';
 
 export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind' | 'group' | 'mood' | 'color';
 
-/** 固定顺序：先说「是什么、和什么有关、怎么算完成」，再说「什么时候」，最后「放哪」。 */
-export const PROP_ORDER: readonly PropId[] = ['category', 'refs', 'mode', 'date', 'repeat', 'remind', 'group', 'mood', 'color'];
+/**
+ * 固定顺序（Rei 2026-11-11 重排）：胶囊行和「+」菜单都按这个排。
+ * ① 日期、完成方式、重复、提醒；② 资料、类型；③ 心情和其他属性（项目、卡片颜色）。
+ */
+export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'refs', 'category', 'mood', 'group', 'color'];
+
+/** 「+」菜单里每项属于第几组（组和组之间画分隔线）。附件在第 3 组，紧跟心情。 */
+export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
+  date: 1,
+  mode: 1,
+  repeat: 1,
+  remind: 1,
+  refs: 2,
+  category: 2,
+  mood: 3,
+  attachment: 3,
+  group: 3,
+  color: 3,
+};
 
 export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurrence' | 'category_id' | 'remind_time' | 'group_id' | 'target_date' | 'card_color'> & { mood?: string | null };
 
@@ -112,11 +129,21 @@ export type AddMenuId = PropId | 'attachment';
 
 /**
  * 「+」菜单要列的项（Rei 2026-10-25「附件也收到这个下拉列表，但附件可以添加多个，添加后下拉列表中还要显示」）：
- * 没设的属性按固定顺序，能加附件时「附件」放在最后，而且一直在（加过附件也还在）。
+ * 没设的属性按固定顺序；能加附件时「附件」一直在（加过附件也还在），
+ * 2026-11-11 起排在第 3 组心情后面（Rei「心情、附件和其他属性」），没有心情时就是第 3 组第一项。
  * 菜单是空的时「+」隐藏。
  */
 export function addMenuItems(t: PropTask, counts: PropCounts = {}, canAttach = false): AddMenuId[] {
   const items: AddMenuId[] = unsetProps(t, counts);
-  if (canAttach) items.push('attachment');
+  if (canAttach) {
+    const i = items.findIndex((id) => PROP_SECTION[id] === 3 && id !== 'mood');
+    items.splice(i < 0 ? items.length : i, 0, 'attachment');
+  }
   return items;
+}
+
+/** 「+」菜单分成几组（空组不出），组间画分隔线（Rei 2026-11-11）。 */
+export function addMenuSections(t: PropTask, counts: PropCounts = {}, canAttach = false): AddMenuId[][] {
+  const items = addMenuItems(t, counts, canAttach);
+  return ([1, 2, 3] as const).map((n) => items.filter((id) => PROP_SECTION[id] === n)).filter((g) => g.length > 0);
 }
