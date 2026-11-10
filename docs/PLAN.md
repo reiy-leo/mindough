@@ -1806,3 +1806,15 @@ Rei 2026-11-10 11:34：「任务编辑器、日记编辑器中可以用@选择�
 - 新文案 2 条（浮层读屏「提到一件任务」、⌘? 浮层一行「打 @ 提到一件任务，点它就打开那件任务。」），9 种语言（7 种待母语者看）。「已结束」「没有找到」「找不到这件任务」「倒数日」「还有 N 天」沿用旧词条。
 - 测试：core `task-mention.test.ts` 18 项（地址、范围、过滤排序、光标前的 @）；client `mention.test.ts` 21 项（往返、改名、删了、组字、Esc、插入、第一行、复制、只读渲染）。
 
+
+### 侧栏置顶的项目、资料库能拖动排序 ✅（2026-11-10）
+Rei 2026-11-10 11:45：「侧边栏"在侧边栏展示"的项目列表可以拖拽调整顺序」。资料库放进侧栏的那一串同样好做，一起做了。
+
+- **存哪**：另起两条同步偏好 `group.sidebar_order`、`library.sidebar_order`（id 列表），不加列、不改项目行和类型行，没有迁移。没塞进原来的 `group.sidebar` / `library.sidebar`：老客户端开关侧栏时会整条重写那一条，还照项目页顺序显示；新的这条它们不认识，原样留着。core `library.ts` `orderBySidebar` / `nextSidebarOrder` / `moveInList`，`Store.reorderSidebarGroups` / `reorderSidebarLibraries`。
+- **排序规则**：没有排序偏好时跟以前一样（项目按项目页、资料库按资料库顺序），升级后侧栏不变样。有了以后，在顺序里的按顺序，不在的接在后面，按放进侧边栏的先后（`group.sidebar` 本来就是追加写的，老客户端也是）。放进侧边栏时：还没排过、侧栏里已经有别的，先把眼下的顺序记成排序偏好（`freezeSidebarOrder`），所以新放进来的总排最后；放进来、拿出去时都把它从顺序里删掉，取消再放回也排最后。拖的时候写看得见的新顺序，归档着的置顶项目留在后面，取消归档回到原来那一带。没在侧栏里的 id 写不进去。
+- **同步**：偏好一行整条 LWW，两台同时拖，后拖的赢。Worker 不用改。
+- **手势（`lib/nav-reorder.ts`）**：没用 React Aria 的 `useDragAndDrop`——侧栏项是链接，套 GridList 要重做键盘、读屏和跳转；手机要「长按拿起、挪就拖、不挪松手出菜单」，和现有长按菜单合在一起，RAC 做不到。鼠标 / 触控笔按住挪 4px 开始拖，拖过的那次 click 在捕获阶段吃掉，不跳转；只有一个时不拖。手指按住 450ms 拿起（按下以后滚过或刚滚完不拿起，同 `lib/long-press`），拿起前挪 > 10px 算滑页面；拿起后 touchmove 一律 preventDefault，页面不滚，挪 6px 开始拖，没挪就松手调 `onLiftRelease`。侧栏的置顶项把 `useContextMenuAt` 的长按关掉（`longPress: false`），长按由拖动接管，拿起没挪松手再用新加的 `menu.open` 开同一个菜单；鼠标右键照旧。手指发的 contextmenu 一律 preventDefault。`<a>` 加 `draggable={false}`，不触发浏览器自带的拖链接。
+- **动画**：全部直接改 DOM style，拖动时 React 不重渲染。被拖那行 `translateY` 跟手，加 `.is-reorder-dragging`（底色 `--surface` 垫一层 `--bg`，WinUI 半透明面不透字；阴影 `--shadow-pop`；圆角沿用行本身）；中线越过别人的中线就换位，别的行 `transform` 150ms 让一格；落点插一个 `.nav-drop-slot`（`--accent-soft` 底 + 强调色虚线，圆角抄行的），放在容器最后，不打断 `.more-item + .more-item`。松手滑进占位格再写顺序，写完在 `useLayoutEffect` 里清 transform（绘制前，不闪）。拖到滚动区上下 36px 内自己滚。Esc 取消放回。减少动态效果时占位格不过渡。三皮肤各用自己的 `--nav-radius`、`--accent-soft`、`--shadow-pop`，样子跟着皮肤走。
+- **键盘**：置顶项上 ⌥↑ / ⌥↓ 上移下移一位，`aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`，换完把焦点放回它身上。没做读屏播报。
+- **用在哪**：宽屏侧栏（含中等宽度图标栏）`components/NavReorderScope.tsx` 包每一节，`PinnedGroupLink` / `PinnedLibraryLink` 用 `usePinnedReorder`；手机「更多」页 `MoreLink` 同样。没有新文案。
+- **测试**：core `sidebar-order.test.ts`（纯函数、升级不变样、新放进来排最后、归档留位、老客户端开关、两台同步后拖的赢、资料库），`group-sidebar` / `library-sidebar` 改成按新规则；client `nav-reorder.test.ts`（换位、让位、占位格、键盘）。截图 `work/d1110g/so.mjs`（LightVela `~/so-tool`）：三皮肤亮色宽屏 1366 鼠标拖 + 手机 390 CDP 触摸长按拖。
