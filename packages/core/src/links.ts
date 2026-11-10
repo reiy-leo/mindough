@@ -61,7 +61,43 @@ export const SITES: Record<string, SiteDef> = {
     parse: (input) => isbnOf(input),
     url: (id) => `https://openlibrary.org/isbn/${id}`,
   },
+  // 高德地图的地点编号（POI id，B 开头 10 位），显示成高德的地点详情页（电脑、手机都能开）。Rei 2026-11-09
+  amap: {
+    get label() { return tr('高德地图'); },
+    get placeholder() { return tr('B0FFKKRXAZ，或粘贴高德链接'); },
+    get hint() { return tr('高德地点编号是 B 开头的 10 位字母数字'); },
+    parse: (input) => amapPoiIdOf(input),
+    url: (id) => `https://uri.amap.com/poidetail?poiid=${id}&src=mindough`,
+  },
 };
+
+/** 高德地点编号（POI id）：B 开头 10 位大写字母数字。 */
+const AMAP_POI = /^B[0-9A-Z]{9}$/;
+
+/**
+ * 认高德地点编号：直接写的编号，或高德链接里的（?p=B0…,…、poiid=B0…、/place/B0…）。
+ * 分享短链（surl.amap.com/…）这里认不出（要请求一下才知道），返回 null，交给在线找。
+ */
+export function amapPoiIdOf(input: string): string | null {
+  const s = clean(input);
+  if (!s) return null;
+  if (AMAP_POI.test(s.toUpperCase()) && /^[bB]/.test(s)) return s.toUpperCase();
+  if (!/amap\.com|autonavi\.com/i.test(s)) return null;
+  let t = s;
+  try {
+    t = decodeURIComponent(s);
+  } catch {
+    /* 编码坏了：按原样找 */
+  }
+  const m = /[?&](?:p|poiid|id)=(B[0-9A-Z]{9})(?=$|[,&#\s])/.exec(t) ?? /\/(?:place|detail|poi)\/(B[0-9A-Z]{9})(?=$|[/?#\s])/.exec(t);
+  return m ? m[1]! : null;
+}
+
+/** 高德分享短链（surl.amap.com/xxxx）：从一段分享文字里找出来（「【高德地图】海底捞… https://surl.amap.com/55ev0xmT6PL」）。 */
+export function amapShareUrlOf(input: string): string | null {
+  const m = /https?:\/\/surl\.amap\.com\/[0-9A-Za-z]{4,20}/.exec(clean(input));
+  return m ? m[0].replace(/^http:/i, 'https:') : null;
+}
 
 /** ISBN-10 / 13 的校验位对不对（已去掉连字符、空格，X 大写）。 */
 function isbnChecksum(s: string): boolean {

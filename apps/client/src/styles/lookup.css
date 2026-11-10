@@ -327,3 +327,64 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+
+/* 在地图上选点（Rei 2026-11-10，components/library/MapPicker.tsx） */
+.map-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.map-picker-head {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+.map-picker-stage {
+  position: relative;
+  height: min(52vh, 420px);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.map-picker-canvas {
+  position: absolute;
+  inset: 0;
+}
+.map-picker-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.map-picker-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--accent);
+}
+.map-picker-text {
+  min-width: 0;
+  flex: 1;
+}
+.map-picker-addr {
+  color: var(--text);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.map-picker-sub {
+  color: var(--text-3);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+html[data-layout='mobile'] .map-picker-stage {
+  height: 56vh;
+}
+.map-picker-replace {
+  grid-template-columns: 18px auto 1fr;
+}

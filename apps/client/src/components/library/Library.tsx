@@ -5,7 +5,7 @@
 import { imeBusy, useImeField } from '../../lib/ime';
 import { useEffect, useId, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Check, ImagePlus, Plus, Search, Sparkles } from 'lucide-react';
+import { Check, ImagePlus, MapPinned, Plus, Search, Sparkles } from 'lucide-react';
 import {
   extraItemFieldsOf,
   findLookupTwin,
@@ -15,6 +15,8 @@ import {
   libraryCopy,
   linkChips,
   lookupKindOf,
+  isPlaceKind,
+  applyMapPick,
   placeholderArt,
   searchLibrary,
   type FieldValue,
@@ -30,6 +32,7 @@ import { FieldInput } from '../task/pickers';
 import { LinkChips } from './LinkFields';
 import { NoteField } from './NoteField';
 import { AutofillPanel, OnlineOptions, SourceNote } from './Lookup';
+import { MapPicker } from './MapPicker';
 import { useLookupAvailable, useOnlineSearch } from '../../lib/lookup';
 
 import { dataLabel, tr } from '../../lib/i18n';
@@ -399,8 +402,11 @@ export function ItemSheet({
   // 没登录 / 没网时按钮照样在，只是灰掉并说明原因（Rei 2026-10-28：不能一声不吐）
   const canLookup = !!lookupKindOf(type);
   const [filling, setFilling] = useState(false);
+  // 地图选点：餐厅、目的地（高德，Rei 2026-11-10）
+  const canMap = isPlaceKind(lookupKindOf(type)) && type.fields.some((f) => f.key === 'location' && !f.removed);
+  const [mapping, setMapping] = useState(false);
   const save = () => {
-    if (!ok || filling) return;
+    if (!ok || filling || mapping) return;
     const id = saveDraft(store, type, d, itemId);
     onSaved?.(id);
     onClose();
@@ -418,8 +424,16 @@ export function ItemSheet({
         }
       }}
       footer={
-        filling ? undefined : (
+        filling || mapping ? undefined : (
         <>
+          {canMap && (
+            <span title={lookupOn ? undefined : tr('登录后才能在线找，到设置里登录')}>
+              <Button variant="quiet" className="item-autofill item-map" isDisabled={!lookupOn} onPress={() => setMapping(true)}>
+                <MapPinned size={15} aria-hidden />
+                {tr('在地图上选点')}
+              </Button>
+            </span>
+          )}
           {canLookup && (
             <span title={lookupOn ? undefined : tr('登录后才能在线找，到设置里登录')}>
               <Button variant="quiet" className="item-autofill" isDisabled={!lookupOn} onPress={() => setFilling(true)}>
@@ -439,7 +453,17 @@ export function ItemSheet({
         )
       }
     >
-      {filling ? (
+      {mapping ? (
+        <MapPicker
+          location={typeof d.fields.location === 'string' ? d.fields.location : null}
+          address={typeof d.fields.address === 'string' ? d.fields.address : ''}
+          onCancel={() => setMapping(false)}
+          onPick={(pick, replace) => {
+            setD({ ...d, fields: applyMapPick(d.fields, pick, replace) });
+            setMapping(false);
+          }}
+        />
+      ) : filling ? (
         <AutofillPanel
           store={store}
           type={type}

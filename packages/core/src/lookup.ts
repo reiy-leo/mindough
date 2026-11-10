@@ -1,7 +1,7 @@
 /**
- * 在线补全资料（M4）：按名字或编号从 TMDB / 豆瓣 / 豆瓣读书 / Open Library / Steam / IGDB 找到资料，填进资料库。
+ * 在线补全资料（M4）：按名字或编号从 TMDB / 豆瓣 / 豆瓣读书 / Open Library / Steam / IGDB 找到资料，餐厅、目的地从高德地图找（Rei 2026-11-09，只接高德），填进资料库。
  * 查询在 Worker 上（apps/server/src/lookup/，GET /api/lookup/search、/api/lookup/item），这里只放纯逻辑：
- * - 哪些类型能在线找（影视 / 书籍 / 游戏这三种内置类型；按类型 id，用户改过名也认）；
+ * - 哪些类型能在线找（影视 / 书籍 / 游戏 / 餐厅 / 目的地这五种内置类型；按类型 id，用户改过名也认）；
  * - Worker 返回的结果形状（与 apps/server/src/lookup/types.ts 一致，两处一起改）；
  * - 资料的来源：存在 library_item.fields 的保留键 `_source`（「tmdb:movie/550」），不加列，界面上显示「资料来自 TMDB」；
  * - 自动补全的逐项计划：哪些字段会填、哪些已经有值（默认只填空缺，勾选才覆盖）；
@@ -11,14 +11,15 @@
  */
 import { BUILTIN_TYPE_IDS } from './seed/builtin-types';
 import { fieldText } from './preview';
-import { isbnOf, linksOf, normalizeUrl, siteIdOf } from './links';
+import { amapPoiIdOf, amapShareUrlOf, isbnOf, linksOf, normalizeUrl, siteIdOf } from './links';
 import { normalizeName } from './library';
 import { stripEpisode } from './episode';
 import { tr } from './i18n';
 import type { FieldDef, FieldValue, LibraryItem, LinkValue, TaskType } from './types';
 
-export type LookupKind = 'movie' | 'book' | 'game';
-export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb';
+/** restaurant / place：餐厅、目的地（高德）。 */
+export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place';
+export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb' | 'amap';
 
 /** Worker 返回的一条结果。fields 的 key 是内置类型的字段 key（year、kind、imdb、author…）。 */
 export interface LookupResult {
@@ -37,7 +38,8 @@ export interface LookupResult {
   url: string;
 }
 
-export type LookupSourceState = 'ok' | 'unconfigured' | 'blocked' | 'error';
+/** limited：配额或每秒请求数超了（高德 10003 / 10004 / 10019…），过一会儿或明天再试。 */
+export type LookupSourceState = 'ok' | 'unconfigured' | 'blocked' | 'limited' | 'error';
 
 export interface LookupSourceStatus {
   source: LookupSource;
@@ -69,6 +71,7 @@ export const LOOKUP_SOURCES: Record<LookupSource, LookupSourceDef> = {
   openlibrary: { label: 'Open Library', home: 'https://openlibrary.org', kinds: ['book'], covers: false, url: (id) => `https://openlibrary.org/${/M$/.test(id) ? 'books' : 'works'}/${id}` },
   steam: { label: 'Steam', home: 'https://store.steampowered.com', kinds: ['game'], covers: true, url: (id) => `https://store.steampowered.com/app/${id}/` },
   igdb: { label: 'IGDB', home: 'https://www.igdb.com', kinds: ['game'], covers: true, url: (id) => `https://www.igdb.com/games/${id}` },
+  amap: { get label() { return tr('高德地图'); }, home: 'https://www.amap.com', kinds: ['restaurant', 'place'], covers: true, url: (id) => `https://uri.amap.com/poidetail?poiid=${id}&src=mindough` },
 };
 
 /**
@@ -81,15 +84,20 @@ export function lookupCover(r: Pick<LookupResult, 'source' | 'image' | 'thumb'>)
 }
 
 /** 各种类型在界面上列出的来源（「从 TMDB 找」）：豆瓣是尽力而为，不写在标题里。 */
-export const PRIMARY_SOURCE: Record<LookupKind, LookupSource> = { movie: 'tmdb', book: 'openlibrary', game: 'steam' };
+export const PRIMARY_SOURCE: Record<LookupKind, LookupSource> = { movie: 'tmdb', book: 'openlibrary', game: 'steam', restaurant: 'amap', place: 'amap' };
+
+/** 地点类（餐厅、目的地）：结果来自高德，都是中文，界面语言不影响。 */
+export const isPlaceKind = (k: LookupKind | null | undefined): k is 'restaurant' | 'place' => k === 'restaurant' || k === 'place';
 
 const KIND_BY_TYPE: Record<string, LookupKind> = {
   [BUILTIN_TYPE_IDS.movie]: 'movie',
   [BUILTIN_TYPE_IDS.book]: 'book',
   [BUILTIN_TYPE_IDS.game]: 'game',
+  [BUILTIN_TYPE_IDS.restaurant]: 'restaurant',
+  [BUILTIN_TYPE_IDS.travel]: 'place',
 };
 
-/** 这个类型能不能在线找：只认内置的影视 / 书籍 / 游戏（字段 key 是对得上的）。 */
+/** 这个类型能不能在线找：只认内置的影视 / 书籍 / 游戏 / 餐厅 / 目的地（字段 key 是对得上的）。 */
 export function lookupKindOf(type: Pick<TaskType, 'id'> | null | undefined): LookupKind | null {
   return (type && KIND_BY_TYPE[type.id]) ?? null;
 }
@@ -133,6 +141,7 @@ export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id
   const imdb = siteIdOf('imdb', r.fields.imdb);
   const douban = siteIdOf('douban', r.fields.douban);
   const isbn = siteIdOf('isbn', r.fields.isbn);
+  const amap = siteIdOf('amap', r.fields.amap);
   const name = normalizeName(r.name);
   let byName: string | null = null;
   for (const it of items) {
@@ -141,6 +150,7 @@ export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id
     if (imdb && siteIdOf('imdb', it.fields.imdb) === imdb) return it.id;
     if (douban && siteIdOf('douban', it.fields.douban) === douban) return it.id;
     if (isbn && siteIdOf('isbn', it.fields.isbn) === isbn) return it.id;
+    if (amap && siteIdOf('amap', it.fields.amap) === amap) return it.id;
     if (byName || !name || normalizeName(it.name) !== name || typeof it.fields[SOURCE_KEY] === 'string') continue;
     const y = typeof it.fields.year === 'number' ? it.fields.year : null;
     if (y === null || !r.year || y === r.year) byName = it.id;
@@ -156,18 +166,29 @@ export type LookupMedia = 'movie' | 'tv';
  * 按什么去找：影视先认已填的 IMDb、再豆瓣编号，书认 ISBN（精确，取那一版），都没有就按名字搜
  * （去掉季标记、知道是电影还是剧集就只搜那一种；书按名字得到的是作品，只有作品级的字段）。
  */
-export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'doubanbook' | 'isbn'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
+export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'doubanbook' | 'isbn' | 'amap'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
 
 /**
  * 输入框里的字 → 拿去在线找的样子（真实数据试跑：带「第三季」的剧名在 TMDB 一部都搜不到，Rei 2026-10-16）：
  * - 粘贴的是 IMDb / 豆瓣编号或链接：按编号直接取；
  * - 书（kind = 'book'）：输入或粘贴的是 ISBN-10 / 13（可带连字符、空格）或 openlibrary.org/isbn/ 链接：按 ISBN 取那一版（Rei 2026-10-17）；
  *   粘贴的是豆瓣读书链接（book.douban.com/subject/<id>/）：按编号取那一本（Rei 2026-11-09）；
+ * - 餐厅、目的地（Rei 2026-11-09）：粘贴高德地点编号（B0FFKKRXAZ）、带编号的高德链接，或分享文字里的 surl.amap.com 短链：
+ *   按编号直接取（短链交给 Worker 解）；别的就按原文搜，不去季标记；
  * - 去掉季 / 集标记（第二季、Season 2、S03、S02E03…，复用 episode.ts），带季标记的就是剧集。
  */
 export function lookupSearchText(text: string, kind?: LookupKind | null): LookupQuery | null {
   const raw = text.trim();
   if (!raw) return null;
+  if (isPlaceKind(kind)) {
+    const poi = amapPoiIdOf(raw);
+    if (poi) return { by: 'id', source: 'amap', id: poi };
+    const share = amapShareUrlOf(raw);
+    if (share) return { by: 'id', source: 'amap', id: share };
+    // 高德的其他链接（搜索页、路线）认不出地点：不拿网址当名字搜
+    if (/^https?:\/\/\S*amap\.com\//i.test(raw)) return null;
+    return { by: 'name', q: raw.slice(0, 100) };
+  }
   if (kind === 'book') {
     const isbn = isbnOf(raw);
     if (isbn) return { by: 'id', source: 'isbn', id: isbn };
@@ -205,6 +226,11 @@ export function lookupQueryOf(type: Pick<TaskType, 'id' | 'fields'>, draft: { na
     if (imdb) return { by: 'id', source: 'imdb', id: imdb };
     const douban = doubanDef ? siteIdOf('douban', draft.fields[doubanDef.key]) : null;
     if (douban) return { by: 'id', source: 'douban', id: douban };
+  }
+  if (isPlaceKind(kind)) {
+    const amapDef = type.fields.find((f) => f.kind === 'site_id' && f.site === 'amap');
+    const poi = amapDef ? siteIdOf('amap', draft.fields[amapDef.key]) : null;
+    if (poi) return { by: 'id', source: 'amap', id: poi };
   }
   if (kind === 'book') {
     const isbnDef = type.fields.find((f) => f.kind === 'site_id' && f.site === 'isbn');
@@ -319,4 +345,38 @@ export function itemOfLookup(type: Pick<TaskType, 'fields'>, r: LookupResult): {
   }
   fields[SOURCE_KEY] = sourceRef(r);
   return { name: r.name, fields };
+}
+
+// ───────────── 地图选点（餐厅、目的地，Rei 2026-11-10） ─────────────
+
+/** 「121.487590,31.238251」→ { lng, lat }；格式不对、超出范围返回 null。 */
+export function parseLngLat(v: FieldValue | undefined): { lng: number; lat: number } | null {
+  if (typeof v !== 'string') return null;
+  const m = /^\s*(-?\d{1,3}(?:\.\d+)?)\s*[,，]\s*(-?\d{1,2}(?:\.\d+)?)\s*$/.exec(v);
+  if (!m) return null;
+  const lng = Number(m[1]);
+  const lat = Number(m[2]);
+  if (Math.abs(lng) > 180 || Math.abs(lat) > 90) return null;
+  return { lng, lat };
+}
+
+export const formatLngLat = (lng: number, lat: number) => `${lng.toFixed(6)},${lat.toFixed(6)}`;
+
+export interface MapPick {
+  lng: number;
+  lat: number;
+  /** 逆地理给的地址、城市 / 区（取不到就空）。 */
+  address?: string;
+  city?: string;
+}
+
+/**
+ * 地图上选好的点 → 资料字段：经纬度总是换成选的点；地址、城市 / 区只在 replaceAddress 时换（默认：原来空着才填）。
+ * 资料原来的高德地点编号不动（选点只是挪了挪针，还是那家店）。
+ */
+export function applyMapPick(fields: Record<string, FieldValue>, pick: MapPick, replaceAddress = false): Record<string, FieldValue> {
+  const out: Record<string, FieldValue> = { ...fields, location: formatLngLat(pick.lng, pick.lat) };
+  if (pick.address && (replaceAddress || isEmpty(fields.address))) out.address = pick.address;
+  if (pick.city && (replaceAddress || isEmpty(fields.city))) out.city = pick.city;
+  return out;
 }

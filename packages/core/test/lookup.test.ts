@@ -36,11 +36,12 @@ const dune: LookupResult = {
 const item = (p: Partial<LibraryItem>): LibraryItem => ({ id: 'i1', updated_at: 'x', deleted: false, type_id: T.movie, name: '', image: null, fields: {}, note_md: '', created_at: '2026-01-01T00:00:00Z', ...p });
 
 describe('在线补全：类型与来源', () => {
-  it('只有内置影视 / 书 / 游戏能在线找', () => {
+  it('只有内置影视 / 书 / 游戏 / 餐厅 / 目的地能在线找', () => {
     expect(lookupKindOf(movie)).toBe('movie');
     expect(lookupKindOf(book)).toBe('book');
     expect(lookupKindOf(game)).toBe('game');
-    expect(lookupKindOf(type(T.restaurant))).toBeNull();
+    expect(lookupKindOf(type(T.restaurant))).toBe('restaurant'); // 2026-11-09 起餐厅、目的地接高德
+    expect(lookupKindOf(type(T.meal))).toBeNull();
     expect(lookupKindOf({ id: 'custom' })).toBeNull();
     expect(lookupKindOf(null)).toBeNull();
   });

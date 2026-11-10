@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://app.mindough.rei8t.dev https://mindough.rei8t.dev ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval' blob: https://webapi.amap.com https://*.amap.com https://app.mindough.rei8t.dev; worker-src 'self' blob:; connect-src 'self' https://app.mindough.rei8t.dev https://mindough.rei8t.dev https://*.amap.com https://*.autonavi.com ipc: http://ipc.localhost"
     }
   },
   "bundle": {

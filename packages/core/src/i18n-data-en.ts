@@ -123,4 +123,13 @@ export const DATA_EN: Record<string, string> = {
   '芒果 TV': 'Mango TV',
   维基百科: 'Wikipedia',
   小黑盒: 'Xiaoheihe',
+  "城市 / 区": "City / District",
+  "经纬度": "Coordinates",
+  "121.4876,31.2383（经度,纬度）": "121.4876,31.2383 (longitude,latitude)",
+  "电话": "Phone",
+  "类别": "Category",
+  "评分": "Rating",
+  "人均": "Per Person",
+  "营业时间": "Hours",
+  "高德地图": "Amap",
 };

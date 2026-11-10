@@ -26,9 +26,22 @@ export const BUILTIN_TYPE_IDS = {
  * 打开时，存着的内置类型若仍是更早的内置版本（用户没改过），自动换成新定义；用户改过的（真实 HLC）不动。
  * r1 = 资料库（2026-10-15）；r2 = 影视去掉「平台」、加 IMDb / 豆瓣 / 更多链接，游戏「平台」改多选、加更多链接，购物「价格」改金额 + 币种，「看到哪」认 S02E03 / 第二季第三集（2026-10-15）；
  * r3 = 书籍加出版社、出版年份、ISBN（按 ISBN 在线取那一版，Rei 2026-10-17）；
- * r4 = 「项目」类型归档：和侧栏的「项目」（组）重名、容易混（Rei 2026-10-28「删掉这个项目库吧」；类型不能删，只能归档，老任务照常）。
+ * r4 = 「项目」类型归档：和侧栏的「项目」（组）重名、容易混（Rei 2026-10-28「删掉这个项目库吧」；类型不能删，只能归档，老任务照常）；
+ * r5 = 餐厅、目的地接高德（Rei 2026-11-09）：加城市 / 区、经纬度、电话、类别、评分、营业时间、高德地图（POI id），餐厅另加人均；目的地加地址。
  */
-export const BUILTIN_TYPES_REVISION = '0000000000000-0004-builtin';
+export const BUILTIN_TYPES_REVISION = '0000000000000-0005-builtin';
+
+/** 餐厅、目的地共用的地点字段（高德搜地点、地图选点补进来；都是资料字段）。 */
+const placeFields = (opts: { cost: boolean }): FieldDef[] => [
+  { key: 'city', label: '城市 / 区', kind: 'text' },
+  { key: 'location', label: '经纬度', kind: 'text', placeholder: '121.4876,31.2383（经度,纬度）' },
+  { key: 'phone', label: '电话', kind: 'text' },
+  { key: 'category', label: '类别', kind: 'text' },
+  { key: 'rating', label: '评分', kind: 'number' },
+  ...(opts.cost ? [{ key: 'cost', label: '人均', kind: 'money' } as FieldDef] : []),
+  { key: 'hours', label: '营业时间', kind: 'text' },
+  { key: 'amap', label: '高德地图', kind: 'site_id', site: 'amap' },
+];
 
 /** 游戏平台的选项（多选；界面文案见 docs/COPY.md）。 */
 export const GAME_PLATFORMS = [
@@ -169,6 +182,8 @@ export const BUILTIN_TASK_TYPES: TaskType[] = [
     fields: [
       { key: 'destination', label: '目的地', kind: 'text', primary: true },
       { key: 'photo', label: '照片', kind: 'image', media: true },
+      { key: 'address', label: '地址', kind: 'text' },
+      ...placeFields({ cost: false }),
       { key: 'depart', label: '出发日期', kind: 'date', scope: 'task' },
       { key: 'return', label: '返回日期', kind: 'date', scope: 'task' },
     ],
@@ -205,6 +220,7 @@ export const BUILTIN_TASK_TYPES: TaskType[] = [
       { key: 'name', label: '店名', kind: 'text', primary: true },
       { key: 'photo', label: '照片', kind: 'image', media: true },
       { key: 'address', label: '地址', kind: 'text' },
+      ...placeFields({ cost: true }),
       { key: 'link', label: '链接', kind: 'link' },
     ],
     body_template: '## 想吃什么\n\n\n## 评价\n',

@@ -3,11 +3,13 @@
  * - 选中一条在线结果：先用搜索结果马上建好资料，再在后台补详情（IMDb 编号等）和封面（Worker 拉进 R2，存 asset 引用，不热链）；
  * - 自动补全：先取结果，逐项给人看，确认后才填（图片也是这时才拉）；
  * - 书的封面：Open Library 的结果不填图、不拉图（Rei 2026-10-17，core 的 lookupCover）；豆瓣读书的带封面，同影视海报拉进 R2（Rei 2026-11-09）。
+ * - 餐厅、目的地只问高德（Rei 2026-11-09）：搜的时候带上次选的城市（本机记着，优先、不限定）；照片同样拉进 R2。
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   findLookupTwin,
   getLocale,
+  isPlaceKind,
   itemOfLookup,
   lookupCover,
   lookupSearchText,
@@ -66,15 +68,41 @@ async function getJson<T>(path: string, signal?: AbortSignal, fetcher: typeof fe
   return body;
 }
 
-/** media：只要电影 / 只要剧集（影视）；alt：别的叫法，TMDB 按 q 没搜到时补搜。 */
-export function searchOnline(kind: LookupKind, q: string, signal?: AbortSignal, fetcher?: typeof fetch, opts: { media?: LookupMedia; alt?: string[] } = {}): Promise<LookupSearchResponse> {
-  const extra = `${opts.media && kind === 'movie' ? `&media=${opts.media}` : ''}${(opts.alt ?? []).map((a) => `&alt=${encodeURIComponent(a)}`).join('')}`;
+// ───── 高德：上次选的城市（本机，不同步；下次搜的时候优先这个城市，不限定） ─────
+const CITY_KEY = 'mindough:amap-city';
+
+export function lastLookupCity(): string | null {
+  try {
+    return localStorage.getItem(CITY_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** 选中一条高德结果时记下它的城市（结果 fields._city，「上海市」）。 */
+export function rememberLookupCity(r: Pick<LookupResult, 'source' | 'fields'>): void {
+  const city = r.source === 'amap' && typeof r.fields._city === 'string' ? r.fields._city.trim() : '';
+  if (!city) return;
+  try {
+    localStorage.setItem(CITY_KEY, city.slice(0, 40));
+  } catch {
+    /* 存不了就算了 */
+  }
+}
+
+/** media：只要电影 / 只要剧集（影视）；alt：别的叫法，TMDB 按 q 没搜到时补搜；city：高德优先这个城市（默认上次选的）。 */
+export function searchOnline(kind: LookupKind, q: string, signal?: AbortSignal, fetcher?: typeof fetch, opts: { media?: LookupMedia; alt?: string[]; city?: string | null } = {}): Promise<LookupSearchResponse> {
+  const city = isPlaceKind(kind) ? (opts.city === undefined ? lastLookupCity() : opts.city) : null;
+  const extra = `${opts.media && kind === 'movie' ? `&media=${opts.media}` : ''}${(opts.alt ?? []).map((a) => `&alt=${encodeURIComponent(a)}`).join('')}${city ? `&city=${encodeURIComponent(city)}` : ''}`;
   return getJson(`/api/lookup/search?kind=${kind}&q=${encodeURIComponent(q)}&lang=${lang()}${extra}`, signal, fetcher);
 }
 
-/** source 可以是 imdb（按 IMDb 编号经 TMDB 取）、isbn（按 ISBN 取那一版：中文界面先豆瓣读书，再 Open Library）。 */
-export function fetchLookupItem(source: LookupSource | 'imdb' | 'isbn', id: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<LookupResult> {
-  return getJson(`/api/lookup/item?source=${source}&id=${encodeURIComponent(id)}&lang=${lang()}`, signal, fetcher);
+/**
+ * source 可以是 imdb（按 IMDb 编号经 TMDB 取）、isbn（按 ISBN 取那一版：中文界面先豆瓣读书，再 Open Library）、
+ * amap（id 是高德 POI id 或分享短链；kind 说是餐厅还是目的地，餐厅才带人均）。
+ */
+export function fetchLookupItem(source: LookupSource | 'imdb' | 'isbn', id: string, signal?: AbortSignal, fetcher?: typeof fetch, kind?: LookupKind | null): Promise<LookupResult> {
+  return getJson(`/api/lookup/item?source=${source}&id=${encodeURIComponent(id)}&lang=${lang()}${source === 'amap' && kind ? `&kind=${kind}` : ''}`, signal, fetcher);
 }
 
 /**
@@ -111,6 +139,7 @@ const isEmpty = (v: FieldValue | undefined) => v === null || v === undefined || 
  * 选中一条在线结果：马上建资料（或用库里已有的同一条），返回资料 id 与是不是新建的；详情与封面在后台补，只补空缺。
  */
 export function createItemFromLookup(store: Store, type: TaskType, r: LookupResult, deps: { fetchItem?: typeof fetchLookupItem; importImage?: typeof importLookupImage } = {}): { id: string; created: boolean } {
+  rememberLookupCity(r);
   const twin = findLookupTwin(store.list('library_item'), type.id, r);
   if (twin) {
     // 库里已有（比如同名）：用它，只补空缺
@@ -128,7 +157,8 @@ async function enrich(store: Store, type: TaskType, id: string, r: LookupResult,
   const importImage = deps.importImage ?? importLookupImage;
   let full = r;
   try {
-    full = await fetchItem(r.source, r.sourceId);
+    // 高德的搜索结果已经是全的（show_fields=business,photos），不再取一遍省配额
+    if (r.source !== 'amap') full = await fetchItem(r.source, r.sourceId);
   } catch {
     /* 详情拿不到就用搜索结果 */
   }
@@ -187,13 +217,15 @@ export function useOnlineSearch(kind: LookupKind | null, text: string, delay = 3
     setState((s) => ({ ...s, status: 'loading' }));
     const run = (): Promise<LookupSearchResponse> => {
       if (q.by === 'name') return searchOnline(kind, q.q, ctrl.signal, undefined, q.media ? { media: q.media } : {});
-      if (q.source === 'isbn' || q.source === 'doubanbook' ? kind !== 'book' : kind !== 'movie') return searchOnline(kind, text.trim(), ctrl.signal);
+      const fits = q.source === 'amap' ? isPlaceKind(kind) : q.source === 'isbn' || q.source === 'doubanbook' ? kind === 'book' : kind === 'movie';
+      if (!fits) return searchOnline(kind, text.trim(), ctrl.signal);
       const source: LookupSource = q.source === 'imdb' ? 'tmdb' : q.source === 'isbn' ? 'openlibrary' : q.source;
-      return fetchLookupItem(q.source, q.id, ctrl.signal).then(
+      return fetchLookupItem(q.source, q.id, ctrl.signal, undefined, kind).then(
         (r) => ({ results: [r], sources: [{ source, status: 'ok' as const }] }),
         (e: unknown) => {
           if (e instanceof LookupHttpError && e.status === 404) return { results: [], sources: [{ source, status: 'ok' as const }] };
           if (e instanceof LookupHttpError && e.state === 'unconfigured') return { results: [], sources: [{ source, status: 'unconfigured' as const, code: e.status }] };
+          if (e instanceof LookupHttpError && e.state === 'limited') return { results: [], sources: [{ source, status: 'limited' as const, code: e.status }] };
           throw e;
         },
       );

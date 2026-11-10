@@ -10,6 +10,8 @@ import {
   PRIMARY_SOURCE,
   applyAutofill,
   fieldText,
+  getLocale,
+  isPlaceKind,
   linksOf,
   lookupCover,
   lookupKindOf,
@@ -25,7 +27,7 @@ import {
   type Store,
   type TaskType,
 } from '@mindough/core';
-import { LookupHttpError, fetchLookupItem, importLookupImage, searchOnline, type OnlineSearchState } from '../../lib/lookup';
+import { LookupHttpError, fetchLookupItem, importLookupImage, rememberLookupCity, searchOnline, type OnlineSearchState } from '../../lib/lookup';
 import { statusZh } from '../../lib/account';
 import { imageUrl } from '../../lib/view';
 import { Button } from '../../ui/primitives';
@@ -99,14 +101,18 @@ export function OnlineOptions({
   if (state.status === 'idle') return null;
   const unconfigured = state.sources.find((s) => s.status === 'unconfigured');
   const failed = state.sources.filter((s) => s.status === 'error' || s.status === 'blocked');
+  const limited = state.sources.find((s) => s.status === 'limited');
   const notes: ReactNode[] = [];
   if (state.status === 'unavailable') notes.push(state.reason === 'offline' ? tr('现在没联网，联网后才能在线找') : tr('登录后才能在线找，到设置里登录'));
   if (state.status === 'loading' && results.length === 0) notes.push(tr('正在找…'));
   if (state.status === 'error') notes.push(tr('暂时找不到（{status}）', { status: statusText(state.error?.status) || tr('连不上') }));
   if (unconfigured) notes.push(tr('{source} 还没配置', { source: sourceLabel(unconfigured.source) }));
+  if (limited) notes.push(tr('{source} 查询次数超了，过一会儿再试（{status}）', { source: sourceLabel(limited.source), status: statusText(limited.code) }));
+  // 高德只有中文结果（Rei 2026-11-09：餐厅、目的地所有语言都用高德）
+  if (isPlaceKind(kind) && results.length > 0 && getLocale() !== 'zh') notes.push(tr('高德地图只有中文结果'));
   // 豆瓣是尽力而为：别的来源有结果时不提它
   for (const f of failed) if (results.length === 0 && f.source !== 'douban') notes.push(tr('{source} 暂时连不上（{status}）', { source: sourceLabel(f.source), status: statusText(f.code) }));
-  if (state.status === 'done' && results.length === 0 && !unconfigured && failed.length === 0) notes.push(tr('在线也没有找到'));
+  if (state.status === 'done' && results.length === 0 && !unconfigured && !limited && failed.length === 0) notes.push(tr('在线也没有找到'));
   return (
     <>
       <li role="presentation" className="lib-picker-group lib-online-head">
@@ -178,6 +184,7 @@ type Phase =
 function errorText(e: unknown, source?: string): string {
   if (e instanceof LookupHttpError) {
     if (e.state === 'unconfigured') return tr('{source} 还没配置', { source: source ?? 'TMDB' });
+    if (e.state === 'limited') return tr('{source} 查询次数超了，过一会儿再试（{status}）', { source: source ?? '', status: statusText(e.status) });
     if (e.status === 404) return tr('{source} 上没有找到这一条', { source: source ?? '' }).trim();
     return tr('暂时找不到（{status}）', { status: statusText(e.status) || tr('连不上') });
   }
@@ -195,14 +202,15 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
   const [phase, setPhase] = useState<Phase>({ at: 'loading' });
   const [busy, setBusy] = useState(false);
   const ctrl = useRef<AbortController | null>(null);
-  const emptyHint = kind === 'book' ? tr('先填书名，或者 ISBN') : tr('先填名字，或者 IMDb / 豆瓣编号');
+  const emptyHint = kind === 'book' ? tr('先填书名，或者 ISBN') : isPlaceKind(kind) ? tr('先填名字，或者粘贴高德地图链接') : tr('先填名字，或者 IMDb / 豆瓣编号');
 
   const review = async (r: LookupResult, fromPick: LookupResult[] | null) => {
     setPhase({ at: 'loading' });
     let full = r;
     try {
       ctrl.current = new AbortController();
-      full = await fetchLookupItem(r.source, r.sourceId, ctrl.current.signal);
+      // 高德的搜索结果已经是全的，不再取一遍
+      if (r.source !== 'amap') full = await fetchLookupItem(r.source, r.sourceId, ctrl.current.signal);
     } catch (e) {
       if (ctrl.current?.signal.aborted) return;
       /* 详情拿不到：用搜索结果 */
@@ -216,7 +224,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
     const c = new AbortController();
     ctrl.current = c;
     const byName = async (raw: string, note?: string) => {
-      const nq = lookupQueryOf(type, { name: raw, fields: { ...draft.fields, imdb: null, douban: null, isbn: null } });
+      const nq = lookupQueryOf(type, { name: raw, fields: { ...draft.fields, imdb: null, douban: null, isbn: null, amap: null } });
       const name = nq?.by === 'name' ? nq.q : '';
       if (nq?.by === 'id') return setPhase({ at: 'message', text: note ?? emptyHint });
       if (!name) return setPhase({ at: 'message', text: note ?? emptyHint });
@@ -235,7 +243,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
       if (!q) return setPhase({ at: 'message', text: emptyHint });
       if (q.by === 'id') {
         try {
-          const r = await fetchLookupItem(q.source, q.id, c.signal);
+          const r = await fetchLookupItem(q.source, q.id, c.signal, undefined, kind);
           if (c.signal.aborted) return;
           const rows = planAutofill(type, draft, r);
           setPhase({ at: 'review', result: r, rows, chosen: new Set(rows.filter((x) => x.apply).map((x) => x.key)), fromPick: null });
@@ -257,6 +265,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
     let asset: string | null = null;
     if (imgRow && phase.chosen.has(imgRow.key) && typeof imgRow.next === 'string') asset = await importLookupImage(store, imgRow.next, artShape(type));
     setBusy(false);
+    rememberLookupCity(phase.result);
     onApply(applyAutofill(draft, phase.rows, phase.chosen, phase.result, asset));
   };
 
