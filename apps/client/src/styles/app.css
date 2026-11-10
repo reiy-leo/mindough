@@ -79,6 +79,34 @@ textarea,
   user-select: text;
   -webkit-touch-callout: default;
 }
+/* 选中文字的底色（Rei 2026-11-10「安卓端 任务编辑器中，选择标题和内容时背景会变成黑色」）：不写的话用浏览器默认色，
+   Chromium 在暗色（color-scheme: dark）下默认是深青灰底、选中的字变成黑色，在安卓 WebView 里看着就是一块黑。
+   这里每个皮肤亮暗各给一个强调色的半透明浅底，只写底色、不写 color，选中的字保持原来的颜色。
+   直接写颜色，不用 var() 和 color-mix：有的 Chromium 版本 ::selection 里取不到自定义属性，老 WebView 不认 color-mix。
+   色彩档位「素净」也用这个颜色（选区是系统级提示，不跟着去色）。编辑器的节点选中（.ProseMirror-hideselection）照旧透明。 */
+::selection {
+  background-color: rgba(0, 122, 255, 0.22);
+}
+[data-skin='apple'][data-theme='dark'] ::selection {
+  background-color: rgba(10, 132, 255, 0.42);
+}
+[data-skin='winui'] ::selection {
+  background-color: rgba(0, 95, 184, 0.2);
+}
+[data-skin='winui'][data-theme='dark'] ::selection {
+  background-color: rgba(96, 205, 255, 0.3);
+}
+[data-skin='material'] ::selection {
+  background-color: rgba(103, 80, 164, 0.22);
+}
+[data-skin='material'][data-theme='dark'] ::selection {
+  background-color: rgba(208, 188, 255, 0.3);
+}
+/* 上面几条比 Tiptap 自带的 .ProseMirror-hideselection *::selection 更具体，这里压回去：选中图片等节点时不画文字选区 */
+html .ProseMirror.ProseMirror-hideselection ::selection,
+html .ProseMirror.ProseMirror-hideselection::selection {
+  background-color: transparent;
+}
 a {
   color: inherit;
   text-decoration: none;
