@@ -190,6 +190,8 @@ export function CheckInsPage() {
       {/* 页头去掉（Rei 2026-11-10 08:27「打卡页 去掉标题和下方统计信息」「按今天、按类型btn group放到左边」）：
           一行工具栏，左边「按今天 / 按类型」（所有 / 已归档视图里换成「回到今天」），右边新建和「显示哪些打卡」。
           手机上标题在顶栏（App 的 HEADERLESS_PAGES） */}
+      {/* 没有可见标题，读屏还是要有页面名（同等待安排、过期积压） */}
+      <h1 className="sr-only">{view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}</h1>
       <div className="filter-row checkin-toolbar">
         {view !== 'today' ? (
           <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
