@@ -87,6 +87,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   group_library: { type_id: 'text', group_id: 'text', created_at: 'text' },
+  calendar_sub: { name: 'text', url: 'text', color: 'text', sort: 'real', created_at: 'text' },
 };
 
 /** SQL 标识符加引号（"group" 是关键字）。 */
@@ -384,6 +385,17 @@ CREATE TABLE IF NOT EXISTS "group_library" (
 );
 CREATE INDEX IF NOT EXISTS "group_library_group" ON "group_library" ("group_id");
 ALTER TABLE "task" ADD COLUMN "lib_via" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-10：日历订阅（docs/CALENDAR.md）。一条订阅一行；拉到的事件只存本机。老客户端不认识这张表，拉到了也不显示。
+    version: 22,
+    name: '日历订阅（calendar_sub）',
+    sql: `
+CREATE TABLE IF NOT EXISTS "calendar_sub" (
+  "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,
+  "name" TEXT NOT NULL, "url" TEXT NOT NULL, "color" TEXT NOT NULL, "sort" REAL NOT NULL DEFAULT 0, "created_at" TEXT NOT NULL
+);
 `,
   },
 ];

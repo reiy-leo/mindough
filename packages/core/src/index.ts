@@ -26,6 +26,7 @@ export * from './journal';
 export * from './journal-feed';
 export * from './mood-river';
 export * from './lunar/index';
+export * from './calendar/index';
 export * from './attachments';
 export * from './attachment-cache';
 export * from './library';

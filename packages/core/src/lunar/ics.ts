@@ -20,7 +20,8 @@ const MAX_SPAN = 60;
 const MAX_REPEAT = 60;
 export const MAX_SUB_EVENTS = 20_000;
 
-function unfold(text: string): string[] {
+/** 折行展开（日历订阅 calendar/ics-events.ts 也用）。 */
+export function unfoldIcs(text: string): string[] {
   return text.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n');
 }
 
@@ -109,7 +110,7 @@ export function parseIcs(text: string): { name: string | null; events: SubEvent[
   const out: SubEvent[] = [];
   let name: string | null = null;
   let cur: Raw | null = null;
-  for (const line of unfold(text)) {
+  for (const line of unfoldIcs(text)) {
     const i = line.indexOf(':');
     if (i < 0) continue;
     const head = line.slice(0, i);

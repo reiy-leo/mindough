@@ -391,6 +391,19 @@ export interface GroupLibrary extends BaseRow {
   created_at: Timestamp;
 }
 
+/**
+ * 日历订阅（Rei 2026-11-10，docs/CALENDAR.md）：用户自己加的只读 ICS 链接，一条一行，跟着账户同步（整行 LWW）。
+ * 拉到的事件只存本机，不进同步表。
+ */
+export interface CalendarSub extends BaseRow {
+  name: string;
+  url: string;
+  /** 颜色 id（calendar/subs.ts 的 SUB_COLORS）。 */
+  color: string;
+  sort: number;
+  created_at: Timestamp;
+}
+
 export interface TaskPerson extends BaseRow {
   task_id: string;
   person_id: string;
@@ -528,6 +541,7 @@ export interface TableMap {
   journal_post: JournalPost;
   attachment: Attachment;
   group_library: GroupLibrary;
+  calendar_sub: CalendarSub;
 }
 
 export type TableName = keyof TableMap;
@@ -552,6 +566,7 @@ export const TABLES: readonly TableName[] = [
   'journal_post',
   'attachment',
   'group_library',
+  'calendar_sub',
 ];
 
 /** 写入时调用方提供的部分：id / updated_at / deleted 由存储层补齐。 */
