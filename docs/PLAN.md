@@ -1792,3 +1792,17 @@ Rei 2026-11-10：项目新建 / 编辑窗口（ProjectSheet）加「资料库」
 - 导出导入：Markdown 导出不带关联和 `lib_via`（导入比较内容时也不算 `lib_via`），导回来的项目没有关联，要重新勾。
 - 测试：core `test/project-libraries.test.ts` 19 项（纯函数、关联 / 新加 / 去资料 / 人物库 / 取消关联 / 改关联 / 手动挪出与挪回 / 重新关联 / 严格模式 / 解散与撤销 / 归档 / 删空库 / 老客户端行 / SQLite 读回 / 两台设备同步与同时关联）。文案 7 条 9 种语言（7 种待母语者看）。
 
+### 正文里 @ 提到任务 ✅（2026-11-10）
+Rei 2026-11-10 11:34：「任务编辑器、日记编辑器中可以用@选择任务，日记中可@任务和倒数日」。
+
+- **存法**：提及就是一条 markdown 链接 `[标题](mindough://task/<id>)`，地址用 DEEPLINKS 里现成的任务深链。没另造语法（`@[标题](id)` 之类），因为老客户端、导出的文件、别的编辑器都会把它当乱码；普通链接谁都认，老客户端在桌面 App 里点了交给系统，按理会经深链打开那件任务（没实测）。core `task-mention.ts`：`mentionHref` / `mentionIdOf`（只认 `mindough://task/<uuid>`，带参数、别的 host 不算）。
+- **编辑器**：新节点 `taskMention`（`components/editor/mention.ts`，行内 atom，属性 id、label）。读入时 remark 插件 `remarkTaskMentions` 把这种链接换成节点（跟在 app-links、inline-links 后面）；写出时写回链接，方括号里换成这件任务现在的标题，找不到就用 label。打开时 canon 按同一套写法算，所以只看不改不写回；改了别的字才顺手刷新标题。节点不能带链接、行内代码 mark（会写成链接套链接）。
+- **显示**：`lib/task-mention.ts` 一份「来源」（App 用 `useMentionSource` 挂上 Store 和 `ui.openEditor`），编辑器的节点视图和只读 `Markdown` 都用 `paintMention` 画胶囊，store 一变就重画（签名没变不动 DOM）。只读渲染里链接换成 `<a href="#/task/<id>" data-task-mention>`，点了在 `Markdown.tsx` 就地 `openEditor`，不跳页。
+- **打 @**：`mentionExtension`（优先级 1900，低于 ime-guard、高于纯文字标题和行为扩展）在插件视图的 update 里看光标前的字（core `mentionQueryAt`），`view.composing` 时跳过，所以组字时浮层不弹、不筛，上屏后再算；↑ ↓、回车 / Tab、Esc 在 handleKeyDown 里交给 MdEditor。Esc 记下这个 @ 的位置，光标还在它后面就不再弹。候选用 core `mentionCandidates`（标题走 `taskTextMatches(title, '', q)`，和挑任务、⌘F 同一套拼音匹配，只是不搜正文）。
+- **浮层放哪**：放在编辑器里面，`position: fixed`，不放 body。放 body 的话，新建面板（React Aria Modal）会把点浮层当成「点了外面」把自己关掉。外层有 transform 时 fixed 相对那一层，所以先放到 0,0 量出原点再减。手机按 visualViewport 算，下面放不下就放到 @ 上面。手指按在浮层上时编辑器失焦也不收浮层，选完把焦点还给编辑器。
+- **第一行**：任务第一行只能是纯文字（title.ts）。第一行选候选插标题文字；`literalOf` 遇到有 `leafText` 的行内节点（胶囊）变成它显示的字，所以拖到第一行、删掉第一行让带胶囊的段落顶上来，也都变成文字。老数据第一行是提及：打开时显示成文字，不写回；core `firstLine` 本来就把链接取文字，列表标题不受影响。
+- **复制、搜索**：剪贴板只写纯文字，胶囊给现在的标题（`leafText`）。⌘F、挑任务按正文的纯文字搜，搜得到方括号里存的标题；没做按 id 反查现在的标题。
+- **没做**：不自动建相关任务（task_link）；不做「被谁提到了」的反向列表；不提到打卡、资料、人物、项目。
+- 新文案 2 条（浮层读屏「提到一件任务」、⌘? 浮层一行「打 @ 提到一件任务，点它就打开那件任务。」），9 种语言（7 种待母语者看）。「已结束」「没有找到」「找不到这件任务」「倒数日」「还有 N 天」沿用旧词条。
+- 测试：core `task-mention.test.ts` 18 项（地址、范围、过滤排序、光标前的 @）；client `mention.test.ts` 21 项（往返、改名、删了、组字、Esc、插入、第一行、复制、只读渲染）。
+
