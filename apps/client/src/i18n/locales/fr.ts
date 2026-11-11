@@ -6,6 +6,10 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 重复的倒数日（Rei 2026-11-12，待母语者看）──
+  "只这一次": "Juste cette fois",
+  "循环倒数": "Compte à rebours récurrent",
+  "过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。": "Une fois le jour passé, il passe au suivant ; chaque occurrence passée reste un compte à rebours à part, lié avant lui.",
   // ── 详情顶栏心情按钮（Rei 2026-11-08，待母语者看）──
   "设置心情": "Choisir l’humeur",
   "本周": "Cette semaine",

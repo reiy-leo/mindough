@@ -1495,4 +1495,8 @@ export const EN: Record<string, EnValue> = {
   "卡片": "Cards",
   "到期日期": "Due Date",
   "添加日期": "Date Added",
+  // ── 重复的倒数日（Rei 2026-11-12）──
+  "只这一次": "Just this once",
+  "循环倒数": "Repeat countdown",
+  "过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。": "After the day passes, it moves to the next one. Each past one stays as its own countdown, linked before it.",
 };

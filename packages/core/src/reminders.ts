@@ -14,7 +14,7 @@
  * id 稳定：同一次提醒（任务 + 种类 + 那天 / 那段计时）每次算出来的 id 一样，客户端用它去重、记「已响过」、稍后再提醒。
  */
 import { addDays, toDateKey } from './dates';
-import { foldTimer, formatDuration, periodKeyForTask, progressOn } from './checkin';
+import { foldTimer, formatDuration, habitRule, periodKeyForTask, progressOn } from './checkin';
 import { isDueOn, parseRecurrence } from './recurrence';
 import { isFinished, type CheckIn, type DateKey, type Task } from './types';
 import { tr } from './i18n';
@@ -139,7 +139,8 @@ export function upcomingReminders(tasks: readonly Task[], checkIns: readonly Che
     const lastDay = dateKeyIn(to, tz);
     const events = byTask.get(t.id) ?? [];
     const time = normalizeRemindTime(t.remind_time);
-    const rec = parseRecurrence(t.recurrence);
+    // 重复的倒数日（Rei 2026-11-12）不是打卡，下面按倒数日提醒
+    const rec = habitRule(t);
 
     // 计时到点：正在走、有目标、还没到
     if (t.completion_mode === 'timer' && t.target_value && t.target_value > 0) {
@@ -166,6 +167,15 @@ export function upcomingReminders(tasks: readonly Task[], checkIns: readonly Che
       continue;
     }
 
+    // 重复的倒数日：目标日（当前那次）之后、窗口里的下几次也提醒（过了目标日会滚到下一次，这里先算上，滚之前也不漏）
+    const cdRule = t.completion_mode === 'countdown' && t.target_date ? parseRecurrence(t.recurrence) : null;
+    if (cdRule && t.target_date) {
+      const start = t.target_date > firstDay ? t.target_date : firstDay;
+      const days = new Set<DateKey>(t.target_date >= firstDay && t.target_date <= lastDay ? [t.target_date] : []);
+      for (let day = start; day <= lastDay; day = addDays(day, 1)) if (isDueOn(cdRule, day)) days.add(day);
+      for (const day of days) push({ id: reminderId(t.id, 'countdown', day), taskId: t.id, kind: 'countdown', at: wallTimeToEpoch(day, time, tz), date: day });
+      continue;
+    }
     const day = t.completion_mode === 'countdown' ? t.target_date : t.scheduled_date;
     if (!day || day < firstDay || day > lastDay) continue;
     const kind: ReminderKind = t.completion_mode === 'countdown' ? 'countdown' : 'due';

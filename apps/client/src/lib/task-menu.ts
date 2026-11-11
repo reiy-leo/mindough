@@ -31,7 +31,8 @@ function dayGroup<T extends string>(inDay: boolean, pinned: boolean): { id: T; l
 
 export function detailMenu(task: Pick<Task, 'status' | 'recurrence' | 'completion_mode' | 'archived_at' | 'pinned_at'>, inDay: boolean): DetailMenuEntry[] {
   const finished = isFinished(task.status);
-  const recurring = !!task.recurrence;
+  // 重复的倒数日（Rei 2026-11-12）不是打卡：还是「关闭」，没有归档
+  const recurring = !!task.recurrence && task.completion_mode !== 'countdown';
   const out: DetailMenuEntry[] = dayGroup<DetailMenuId>(inDay, !!task.pinned_at);
   const status: DetailMenuEntry[] = [];
   if (recurring && !finished && task.archived_at) {

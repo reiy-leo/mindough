@@ -3,7 +3,7 @@
  * 多端合并时两台设备各点一次 +1，就是两条事件，不会丢。
  */
 import { diffDays, toDateKey } from './dates';
-import { ONCE_PERIOD, isDueOn, parseRecurrence, periodKeyFor, computeStreak, type Streak } from './recurrence';
+import { ONCE_PERIOD, isDueOn, parseRecurrence, periodKeyFor, computeStreak, type Recurrence, type Streak } from './recurrence';
 import { isFinished, type CheckIn, type CheckInKind, type CompletionMode, type DateKey, type Task } from './types';
 
 import { tr } from './i18n';
@@ -166,9 +166,23 @@ export function groupByPeriod(events: readonly CheckIn[]): Map<string, CheckIn[]
   return m;
 }
 
+/**
+ * 打卡用的重复规则：倒数日设了重复（Rei 2026-11-12，见 countdown-repeat.ts）不算打卡，返回 null；
+ * 打卡页、补打卡、今天要打卡、连续次数、周期键都看它，别直接拿 parseRecurrence(task.recurrence) 判断是不是打卡。
+ */
+export function habitRule(task: Pick<Task, 'recurrence'> & { completion_mode?: CompletionMode }): Recurrence | null {
+  if (task.completion_mode === 'countdown') return null;
+  return parseRecurrence(task.recurrence);
+}
+
+/** 是打卡（重复、不是倒数日）吗。 */
+export function isHabit(task: Pick<Task, 'recurrence'> & { completion_mode?: CompletionMode }): boolean {
+  return !!task.recurrence && task.completion_mode !== 'countdown';
+}
+
 /** 任务在 date 所在周期的进度。 */
 export function progressOn(task: ProgressTask, allEvents: readonly CheckIn[], date: DateKey, now: Date): Progress {
-  const key = periodKeyFor(parseRecurrence(task.recurrence), date);
+  const key = periodKeyFor(habitRule(task), date);
   return computeProgress(task, allEvents.filter((e) => !e.deleted && e.period_key === key), now);
 }
 
@@ -182,7 +196,7 @@ export function metPeriods(task: ProgressTask, allEvents: readonly CheckIn[], no
 export type StreakTask = ProgressTask & Pick<Task, 'created_at'>;
 
 export function taskStreak(task: StreakTask, events: readonly CheckIn[], now: Date): Streak | null {
-  const r = parseRecurrence(task.recurrence);
+  const r = habitRule(task);
   if (!r) return null;
   const since = toDateKey(new Date(task.created_at));
   return computeStreak(r, metPeriods(task, events, now), toDateKey(now), since);
@@ -194,7 +208,7 @@ export function taskStreak(task: StreakTask, events: readonly CheckIn[], now: Da
  * 别的原样。
  */
 export function checkInMode(task: Pick<Task, 'completion_mode' | 'target_value' | 'recurrence'>): CompletionMode {
-  if (task.completion_mode === 'count' && task.recurrence && (task.target_value ?? 1) < 2) return 'once';
+  if (task.completion_mode === 'count' && isHabit(task) && (task.target_value ?? 1) < 2) return 'once';
   return task.completion_mode;
 }
 
@@ -209,17 +223,17 @@ function endOfDue(t: Pick<Task, 'status' | 'done_at' | 'archived_at'>): DateKey 
   return ends.length ? ends.sort()[0]! : null;
 }
 
-export function dueToday(task: Pick<Task, 'recurrence' | 'deleted' | 'status' | 'created_at' | 'archived_at'>, date: DateKey): boolean {
-  // 已结束（完成 / 关闭）、归档了的重复任务不再要打卡
+export function dueToday(task: Pick<Task, 'recurrence' | 'deleted' | 'status' | 'created_at' | 'archived_at'> & { completion_mode?: CompletionMode }, date: DateKey): boolean {
+  // 已结束（完成 / 关闭）、归档了的重复任务不再要打卡；重复的倒数日不是打卡
   if (task.deleted || isFinished(task.status) || task.archived_at) return false;
-  const r = parseRecurrence(task.recurrence);
+  const r = habitRule(task);
   if (!r) return false;
   if (toDateKey(new Date(task.created_at)) > date) return false;
   return isDueOn(r, date);
 }
 
-export function periodKeyForTask(task: Pick<Task, 'recurrence'>, date: DateKey): string {
-  return periodKeyFor(parseRecurrence(task.recurrence), date);
+export function periodKeyForTask(task: Pick<Task, 'recurrence'> & { completion_mode?: CompletionMode }, date: DateKey): string {
+  return periodKeyFor(habitRule(task), date);
 }
 
 export { ONCE_PERIOD };
@@ -248,7 +262,7 @@ export interface RatioIndex {
 }
 
 export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly CheckIn[], now: Date): RatioIndex {
-  const recurring = tasks.filter((t) => !t.deleted && parseRecurrence(t.recurrence));
+  const recurring = tasks.filter((t) => !t.deleted && habitRule(t));
   const byTask = new Map<string, Map<string, CheckIn[]>>();
   for (const c of checkIns) {
     if (c.deleted) continue;
@@ -265,7 +279,7 @@ export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly Check
       t.id,
       {
         task: t,
-        rule: parseRecurrence(t.recurrence),
+        rule: habitRule(t),
         since: toDateKey(new Date(t.created_at)),
         until: endOfDue(t),
       },

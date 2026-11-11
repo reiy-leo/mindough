@@ -3470,6 +3470,20 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   align-items: center;
   gap: 4px 8px;
 }
+/* 重复的倒数日（Rei 2026-11-12）：日期后、列表行标题后一个小重复图标，颜色跟着卡片字色淡一点 */
+.countdown-repeat {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+.countdown-row .countdown-repeat {
+  color: var(--text-3);
+  margin-inline-start: 4px;
+}
+.repeat-cd-note {
+  margin: 6px 0 0;
+}
 .editor-grid-wide {
   grid-column: 1 / -1;
 }

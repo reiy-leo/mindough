@@ -124,7 +124,8 @@ export function CalendarPage() {
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
     for (const t of active) {
-      if (isFinished(t.status) || t.recurrence) continue;
+      // 重复的倒数日（Rei 2026-11-12）只画当前那次（target_date），过去的几次各是一条记录
+      if (isFinished(t.status) || (t.recurrence && t.completion_mode !== 'countdown')) continue;
       if (t.completion_mode === 'countdown') {
         if (t.target_date) out.push({ kind: 'task', role: 'countdown', id: t.id, start: t.target_date, end: t.target_date, task: t });
       } else if (t.scheduled_date) out.push({ kind: 'task', role: 'task', id: t.id, start: t.scheduled_date, end: taskEndDate(t) ?? t.scheduled_date, task: t });

@@ -13,6 +13,7 @@ import { overdueBacklogTasks } from './overdue-backlog';
 import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
+import { countdownRecordDepId, countdownRecordId, bodyFirstLine, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
@@ -1326,6 +1327,11 @@ export class Store {
    */
   createTask(input: NewTaskInput = {}, opts: { joinMyDay?: boolean } = {}): Task {
     const now = this.now();
+    // 重复的倒数日（Rei 2026-11-12）：规则落到目标日上，目标日是过去的就换成规则的下一次（countdown-repeat.ts）
+    if (input.completion_mode === 'countdown' && input.recurrence && input.target_date) {
+      const today = taskToday({ time_zone: input.time_zone ?? null }, now, toDateKey(now));
+      input = { ...input, ...normalizeCountdownRepeat({ completion_mode: 'countdown', recurrence: input.recurrence, target_date: null }, { target_date: input.target_date }, today) };
+    }
     const type = this.get('task_type', input.type_id ?? null);
     const group = this.get('group', input.group_id ?? null);
     // 组的默认类型归档了：不生效，退回普通
@@ -1377,6 +1383,11 @@ export class Store {
       const end = 'end_date' in patch ? (patch.end_date ?? null) : (cur?.end_date ?? null);
       patch = { ...patch, ...normalizeRangeFields(start, end) };
     }
+    // 重复的倒数日（Rei 2026-11-12）：改了目标日，规则跟着落到那天；改了规则或选了过去的日子，目标日换成规则的下一次
+    if ('target_date' in patch || 'recurrence' in patch || 'completion_mode' in patch) {
+      const cur = this.tables.task.get(id);
+      if (cur) patch = { ...patch, ...normalizeCountdownRepeat(cur, patch, taskToday(cur, this.now(), toDateKey(this.now()))) };
+    }
     // 用户把日期改成不是今天：从今天的我的一天移出（Rei 2026-11-08）。墓碑让自动加当天不再加回来。
     // 只在这里（本机写入）判断；同步拉下来的走 applyRemote，不经过这里，别的设备不会再移一次。
     const before = this.tables.task.get(id);
@@ -1408,6 +1419,62 @@ export class Store {
     if (!covers(task) || (before && covers(before))) return;
     if (this.isInMyDay(task.id, deviceToday)) return;
     this.addToMyDay(task.id, deviceToday);
+  }
+
+  /**
+   * 重复的倒数日过了目标日就滚到下一次（Rei 2026-11-12 03:21，countdown-repeat.ts）：
+   * 每过去一次生成一条不重复的倒数日记录（确定 id，已经有这一行——包括删掉的墓碑——就不再写），连成它的前置。
+   * 不滚：删了的、完成 / 关闭的、归档的、归档项目里的。严格模式开着时只滚目标日，不生成记录。
+   * 客户端在打开时、换天时、数据变了（含同步拉下来）以后调；没有要滚的什么都不写。返回滚了几件。
+   */
+  rollRecurringCountdowns(): number {
+    const now = this.now();
+    const deviceToday = toDateKey(now);
+    const plans: Array<{ task: Task; past: DateKey[]; next: DateKey }> = [];
+    for (const t of this.tables.task.values()) {
+      if (t.deleted || t.completion_mode !== 'countdown' || !t.recurrence || !t.target_date) continue;
+      if (isFinished(t.status) || t.archived_at || this.inArchivedGroup(t)) continue;
+      const plan = planCountdownRoll(t, taskToday(t, now, deviceToday));
+      if (plan) plans.push({ task: t, ...plan });
+    }
+    if (!plans.length) return 0;
+    this.batch(() => {
+      for (const { task, past, next } of plans) {
+        if (!this.strictDone) for (const date of past) this.writeCountdownRecord(task, date);
+        this.update('task', task.id, { target_date: next });
+      }
+    });
+    return plans.length;
+  }
+
+  /** 写一条那次的记录和它到重复倒数日的前后关系（两行都是确定 id；已经有了就不动）。 */
+  private writeCountdownRecord(task: Task, date: DateKey): void {
+    const id = countdownRecordId(task.id, date);
+    if (!this.tables.task.has(id)) {
+      this.createTask(
+        {
+          id,
+          body_md: bodyFirstLine(task.body_md),
+          status: '完成',
+          done_at: recordDoneAt(date),
+          group_id: task.group_id,
+          type_id: task.type_id,
+          completion_mode: 'countdown',
+          target_date: date,
+          recurrence: null,
+          category_id: task.category_id,
+          time_zone: task.time_zone,
+          card_color: task.card_color ?? null,
+        },
+        { joinMyDay: false },
+      );
+      const cats = this.categoryIdsOfTask(task.id);
+      if (cats.length) this.setTaskCategories(id, cats);
+    }
+    const depId = countdownRecordDepId(task.id, date);
+    if (!this.tables.dependency.has(depId) && this.tables.task.get(id) && !this.tables.task.get(id)!.deleted) {
+      this.insert('dependency', { id: depId, pred_id: id, succ_id: task.id, type: 'FS', lag: 0 });
+    }
   }
 
   /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。 */

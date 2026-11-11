@@ -10,6 +10,7 @@ import {
   isMoodId,
   moodLabel,
   MOOD_IDS,
+  habitRule,
   parseRecurrence,
   taskStreak,
   toDateKey,
@@ -56,7 +57,8 @@ export function CheckInsPage() {
   // 原来是按钮组，2026-11-12 Rei 00:48 换成下拉，同时加「按心情」（按打卡任务自己的心情分组，同「按类型」的列法）
   const [arrange, setArrange] = useState<Arrange>('today');
   // 归档了的（Rei 2026-11-02「打卡任务可以归档」）不在主列表里，放在最下面折叠的「已归档」一节
-  const liveRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
+  // 重复的倒数日（Rei 2026-11-12）不是打卡，不进打卡页
+  const liveRecurring = tasks.filter((t) => habitRule(t) && !isFinished(t.status));
   const allRecurring = liveRecurring.filter((t) => !t.archived_at);
   const allArchived = liveRecurring.filter((t) => !!t.archived_at).sort((a, b) => (b.archived_at! < a.archived_at! ? -1 : 1));
   // 页头下拉（Rei 2026-11-09 01:59「右侧显示一个dropdown图标按钮，1. 显示所有的活着的打卡任务，2. 显示已经归档的打卡任务」）：

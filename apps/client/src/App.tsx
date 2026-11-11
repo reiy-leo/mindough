@@ -47,6 +47,7 @@ import { MovedBanner } from './components/MovedBanner';
 import { ReminderHost } from './components/ReminderHost';
 import { useLunarSubScheduler } from './lib/lunar';
 import { useCalendarSubScheduler } from './lib/calendar-subs';
+import { useCountdownRoll } from './lib/countdown-roll';
 import { useAutoMyDay } from './lib/myday-auto';
 import { MenuAt, OverflowMenu, useContextMenuAt, type MenuAction } from './ui/primitives';
 import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
@@ -786,6 +787,8 @@ export function App() {
   useEffect(() => void sweepBlankTasks(store, ui.editingId), [store, ui.editingId]);
   // 严格模式（Rei 2026-11-08）：开关告诉 Store；漏网的写入被拦时给提示
   useStrictSync(store);
+  // 重复的倒数日过了目标日滚到下一次（Rei 2026-11-12 03:21，lib/countdown-roll）；放在严格模式同步后面
+  useCountdownRoll(store);
   // 多彩档（色彩设置，Rei 2026-11-09）：详情栏顶部的项目 / 类型淡色
   useDetailTint(store, ui.editingId);
   useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);

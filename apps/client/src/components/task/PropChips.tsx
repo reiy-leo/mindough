@@ -227,7 +227,7 @@ export function PropChips({
       case 'repeat':
         return (
           <div className="pop-section">
-            <RepeatEditor value={task.recurrence} today={today} onChange={(r) => patch({ recurrence: r })} />
+            <RepeatEditor value={task.recurrence} today={today} countdownAnchor={task.completion_mode === 'countdown' ? (task.target_date ?? null) : undefined} onChange={(r) => patch({ recurrence: r })} />
           </div>
         );
       case 'category':

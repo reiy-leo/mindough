@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, t
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
 import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
-import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
+import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useIsEditing, useUiStable } from '../lib/ui';
 import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
@@ -98,13 +98,15 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const locked = useLocked(task);
   const closed = task.status === '关闭';
   // 勾选完成的打卡（Rei 2026-11-09 01:30）：行首是勾选圆圈，勾上 = 今天打卡，再点撤销
-  const tick = !!task.recurrence && checkInMode(task) === 'once' && !closed && task.status !== '完成';
+  const tick = isHabit(task) && checkInMode(task) === 'once' && !closed && task.status !== '完成';
   const done = !closed && (doneOverride ?? (tick ? !!store.progress(task.id, today)?.met : task.status === '完成'));
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
   const pinned = !!task.pinned_at;
   const inDay = pinned || store.isInMyDay(task.id, today);
   const state = v.derived?.state;
   const rec = parseRecurrence(task.recurrence);
+  // 打卡（重复的倒数日不算，Rei 2026-11-12）：行首重复图标、补打卡按钮只给打卡
+  const habit = isHabit(task);
   const TypeIcon = typeIcon(v.type?.icon);
   const cats = store.categoriesOfTask(task);
   const items = store.itemsOfTask(task);
@@ -187,7 +189,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       )}
       {isCheckInRow ? (
         <span className="row-lead" aria-hidden>
-          {rec ? <Repeat size={17} /> : <TypeIcon size={18} style={{ color: v.type?.color }} />}
+          {habit ? <Repeat size={17} /> : <TypeIcon size={18} style={{ color: v.type?.color }} />}
         </span>
       ) : (
         <Checkbox
@@ -304,9 +306,9 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       <AvatarStack store={store} people={v.people.filter((p) => !(v.mediaIsAvatar && v.data.person === p.id))} />
       {/* 补打卡（Rei 2026-11-09 01:52）：能补的时候在打卡控件前面出一个按钮（勾选完成的重复打卡也出），在我的一天里是按下的样子。
           两个包在一起（Rei 2026-11-09 03:43「打卡进度和补打卡图标都放在右侧。如果宽度窄，则上下结构」）；05:19 起始终并排（「始终左右结构」），补打卡在左、进度在右 */}
-      {showCheckIn && (!!rec || isCheckInRow) && (
+      {showCheckIn && (habit || isCheckInRow) && (
         <span className="row-checkin">
-          {!!rec && <MakeupButton store={store} task={task} />}
+          {habit && <MakeupButton store={store} task={task} />}
           {isCheckInRow && <CheckInControl store={store} task={task} compact />}
         </span>
       )}

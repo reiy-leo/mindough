@@ -1,7 +1,8 @@
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator } from 'react-aria-components';
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight } from 'lucide-react';
-import { cardColorOf, formatDateZh, formatTaskDate, toDateKey, weekStartsOn, type Task } from '@mindough/core';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight, Repeat } from 'lucide-react';
+import { cardColorOf, describeRecurrence, formatDateZh, formatTaskDate, parseRecurrence, toDateKey, weekStartsOn, type Task } from '@mindough/core';
+import { useLunarUi } from '../lib/lunar';
 import { useDateDisplay } from '../lib/date-display';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -58,6 +59,19 @@ function ColorPopover({ task, anchor, onClose }: { task: Task; anchor: RefObject
   );
 }
 
+/** 重复的倒数日（Rei 2026-11-12）：日期后面一个小的重复图标，悬停 / 读屏是规则（「每年11月12日」）。 */
+function RepeatMark({ task, today }: { task: Task; today: string }) {
+  const lunarUi = useLunarUi();
+  const r = parseRecurrence(task.recurrence);
+  if (!r) return null;
+  const s = describeRecurrence(r, { lunar: lunarUi, today });
+  return (
+    <span className="countdown-repeat" title={s} role="img" aria-label={s}>
+      <Repeat size={12} aria-hidden />
+    </span>
+  );
+}
+
 function DaysText({ n }: { n: number }) {
   return <>{n === 0 ? <b>{tr('今天')}</b> : n > 0 ? trx('还有 {n} 天', { n: <b>{n}</b> }, { count: n }, { wrap: 'countdown-affix' }) : trx('已过 {n} 天', { n: <b>{-n}</b> }, { count: -n }, { wrap: 'countdown-affix' })}</>;
 }
@@ -99,6 +113,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
         </span>
         <span className="countdown-date">
           {dateMode === 'auto' ? formatDateZh(t.target_date!) : formatTaskDate(t.target_date!, { mode: dateMode, today })}
+          <RepeatMark task={t} today={today} />
           {c && <CategoryLabels cats={store.categoriesOfTask(t)} size={12} />}
         </span>
       </RacButton>
@@ -139,6 +154,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
         <span className={`countdown-dot${dot ? '' : ' is-none'}`} style={dot ? ({ '--cd-dot': dot } as CSSProperties) : undefined} aria-hidden />
         {type && type.layout !== 'text' && <Icon size={14} className="countdown-row-icon" style={{ color: type.color }} aria-hidden />}
         <span className="row-title countdown-row-title">{titleOf(store, t)}</span>
+        <RepeatMark task={t} today={toDateKey(new Date())} />
         <span className="countdown-row-days">
           <DaysText n={n} />
         </span>

@@ -30,7 +30,7 @@ import {
   type Task,
   type TaskType,
 } from '@mindough/core';
-import { CheckInMetError, checkInMode, plainTitleMarkdown, shownFields } from '@mindough/core';
+import { CheckInMetError, checkInMode, isHabit, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
 import { RefList, RefPicker } from '../library/RefPicker';
@@ -289,7 +289,7 @@ function useActions(store: Store, task: Task, done: () => void) {
   const now = useNow(running ? 1000 : 30_000);
   const today = toDateKey(now);
   const p = store.progress(task.id, today);
-  const recurring = !!task.recurrence;
+  const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   const record = (kind: Parameters<Store['checkIn']>[1], amount = 0) => {
     const prev = task.status;
     let r: ReturnType<Store['checkIn']>;
@@ -348,7 +348,7 @@ function useActions(store: Store, task: Task, done: () => void) {
 function Progress({ store, task, today, onCountInput }: { store: Store; task: Task; today: string; onCountInput?: (delta: number, how: 'add' | 'set') => void }) {
   const dateMode = useDateDisplay();
   const p = store.progress(task.id, today);
-  const recurring = !!task.recurrence;
+  const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   if (!p || (task.completion_mode === 'once' && !recurring)) return null;
   const streak = recurring ? (taskStreak(task, store.checkInsOf(task.id), store.now())?.current ?? 0) : 0;
   let main: ReactNode = null;
@@ -404,7 +404,7 @@ function Progress({ store, task, today, onCountInput }: { store: Store; task: Ta
  */
 function CompletionPill({ store, task, today, primary, secondary, addCount, counting }: { store: Store; task: Task; today: string; primary: Act | null; secondary: Act | null; addCount: ReturnType<typeof useCountAdd>; counting: boolean }) {
   const p = store.progress(task.id, today);
-  const recurring = !!task.recurrence;
+  const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   if (!p || (task.completion_mode === 'once' && !recurring)) return null;
   let text = '';
   switch (task.completion_mode) {
@@ -850,7 +850,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
   const inDay = !!task.pinned_at || store.isInMyDay(task.id, today);
   const finished = isFinished(task.status);
-  const recurring = !!task.recurrence;
+  const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   const derived = store.derived().get(task.id);
   const mediaKey = type?.fields.find((f) => f.media)?.key;
   const media = typed && mediaKey ? imageUrl(store, task.type_data[mediaKey]) : null;
@@ -870,7 +870,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
         <CircleSlash size={12} />
         <span className="status-badge-text">{tr('已关闭')}</span></span>
     );
-  else if (task.recurrence && task.archived_at)
+  else if (isHabit(task) && task.archived_at)
     badge = (
       <span className="status-badge is-closed">
         <Archive size={12} />

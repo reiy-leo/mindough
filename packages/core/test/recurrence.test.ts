@@ -103,7 +103,8 @@ describe('每年农历（RSCALE=CHINESE）', () => {
     expect(parseRecurrence(formatRecurrence(r))).toEqual(r);
     expect(parseRecurrence('FREQ=YEARLY;RSCALE=CHINESE;BYMONTH=8;BYMONTHDAY=15')).toEqual({ kind: 'lunarYearly', month: 8, day: 15, leap: false });
     expect(parseRecurrence('FREQ=YEARLY;RSCALE=CHINESE;BYMONTH=13;BYMONTHDAY=1')).toBeNull();
-    expect(parseRecurrence('FREQ=YEARLY;BYMONTH=8;BYMONTHDAY=15')).toBeNull();
+    // 没有 RSCALE 的是公历每年（2026-11-12 加的，重复的倒数日用）
+    expect(parseRecurrence('FREQ=YEARLY;BYMONTH=8;BYMONTHDAY=15')).toEqual({ kind: 'yearly', month: 8, day: 15 });
     expect(describeRecurrence({ kind: 'lunarYearly', month: 8, day: 15, leap: false })).toBe('每年农历八月十五');
   });
   it('中秋：2025-10-06、2026-09-25', () => {

@@ -15,6 +15,11 @@ describe('任务详情「…」菜单（关闭挪进菜单，Rei 2026-10-17）',
     expect(ids(detailMenu({ status: '进行中', recurrence: null, completion_mode: 'timer' }, true))).toBe('myday pin |done close |delete');
     expect(detailMenu({ status: '待办', recurrence: null, completion_mode: 'count' }, true)[0]!.label).toBe('移出我的一天');
   });
+  it('重复的倒数日不是打卡（Rei 2026-11-12）：照倒数日，直接标为完成 · 关闭，没有归档', () => {
+    const m = detailMenu({ status: '待办', recurrence: 'FREQ=YEARLY;BYMONTH=11;BYMONTHDAY=12', completion_mode: 'countdown' }, false);
+    expect(ids(m)).toBe('myday pin |done close |delete');
+    expect(m.find((e) => e.id === 'close')!.label).toBe('关闭');
+  });
   it('定期打卡：关闭叫「不再打卡」，后面是「归档」，没有直接标为完成', () => {
     const m = detailMenu({ status: '待办', recurrence: 'FREQ=DAILY', completion_mode: 'timer' }, false);
     expect(ids(m)).toBe('myday pin |close archive |delete');

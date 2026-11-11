@@ -5,7 +5,7 @@ import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import { canHaveMood, composerChipOrder, type ComposerChipId } from '../../lib/prop-chips';
 import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
-import { itemTaskBody, moodLabel, newCountConfig, shownFields } from '@mindough/core';
+import { itemTaskBody, moodLabel, newCountConfig, normalizeCountdownRepeat, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
@@ -234,7 +234,8 @@ function Composer() {
 
   const submit = () => {
     if (!canAdd) return;
-    const recurring = !!d.recurrence;
+    // 重复的倒数日（Rei 2026-11-12）不是打卡
+    const recurring = !!d.recurrence && d.completion_mode !== 'countdown';
     let typeData = d.typeData;
     if (epDef && bodyEp) typeData = { ...typeData, [epDef.key]: bodyEp.value };
     // 有库的：任务只留任务字段（资料字段在资料上）；旧式没库的类型照旧整份存
@@ -469,12 +470,12 @@ function Composer() {
         <section className="composer-section">
           <h3 className="composer-label">{tr('怎么算完成')}</h3>
           <CompletionChoice locked={d.modeLocked} recurring={!!d.recurrence} value={d.completion_mode} onChange={(m) => set({ ...modeDefaults(m, d), modeTouched: true })} />
-          <CompletionSentence value={d} today={today} onChange={(p) => set(p)} />
+          <CompletionSentence value={d} today={today} onChange={(p) => set({ ...p, ...normalizeCountdownRepeat(d, p, today) })} />
         </section>
 
         <section className="composer-section">
           <h3 className="composer-label">{tr('多久一次')}</h3>
-          <RepeatEditor value={d.recurrence} today={today} onChange={(r) => set({ recurrence: r })} />
+          <RepeatEditor value={d.recurrence} today={today} countdownAnchor={d.completion_mode === 'countdown' ? d.target_date : undefined} onChange={(r) => set({ recurrence: r, ...normalizeCountdownRepeat(d, { recurrence: r }, today) })} />
         </section>
       </div>
     </Sheet>

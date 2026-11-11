@@ -34,6 +34,7 @@ import {
   durationMs,
   durationParts,
   formatRecurrence,
+  describeRecurrence,
   formatTaskDate,
   multiValuesOf,
   normalizeEpisodeInput,
@@ -259,6 +260,7 @@ export function modeDefaults(mode: CompletionMode, cur: CompletionValue): Partia
 const WEEK = () => weekOrder();
 type Freq = Recurrence['kind'];
 const FREQ: Array<{ id: Freq; label: string }> = [
+  { id: 'yearly', get label() { return tr('每年'); } },
   { id: 'daily', get label() { return tr('每天'); } },
   { id: 'weekly', get label() { return tr('每周'); } },
   { id: 'monthly', get label() { return tr('每月'); } },
@@ -267,6 +269,7 @@ const FREQ: Array<{ id: Freq; label: string }> = [
 ];
 
 function defaultRule(kind: Freq, today: DateKey): string {
+  if (kind === 'yearly') return formatRecurrence({ kind: 'yearly', month: Number(today.slice(5, 7)), day: Number(today.slice(8)) });
   if (kind === 'daily') return formatRecurrence({ kind: 'daily' });
   if (kind === 'weekly') return formatRecurrence({ kind: 'weekly', weekdays: [weekday(today)] });
   if (kind === 'monthly') return formatRecurrence({ kind: 'monthly', day: Number(today.slice(8)) });
@@ -289,13 +292,25 @@ function nextLunarText(r: Extract<Recurrence, { kind: 'lunarYearly' }>, today: D
   return d ? formatDate(d, { year: true }) : '—';
 }
 
-/** 重复：只做一次 / 定期打卡 → 每天、每周几、每月几号、每隔几天。 */
-export function RepeatEditor({ value, onChange, today, children }: { value: string | null; onChange: (rule: string | null) => void; today: DateKey; children?: ReactNode }) {
+/**
+ * 重复：只做一次 / 定期打卡 → 每天、每周几、每月几号、每隔几天。
+ * countdownAnchor（重复的倒数日，Rei 2026-11-12）：给了就是倒数日，两项叫「只这一次 / 循环倒数」；
+ * 频率 每年（公历，默认）/ 每年农历 / 每月 / 每周 / 每隔几天，没有每天；默认规则按目标日（没选目标日按今天）算。
+ * 公历「每年」只给倒数日：日子跟着目标日走（改目标日时规则跟着改，Store.updateTask），不用另选月日。
+ */
+export function RepeatEditor({ value, onChange, today, children, countdownAnchor }: { value: string | null; onChange: (rule: string | null) => void; today: DateKey; children?: ReactNode; countdownAnchor?: DateKey | null }) {
   const r = parseRecurrence(value);
+  const countdown = countdownAnchor !== undefined;
+  const anchor = countdownAnchor ?? today;
   // 农历界面隐藏（没开「中国农历」或不是中文界面，Rei 2026-10-25）：不给「每年农历」这个选项；
   // 已经是每年农历的任务照常按农历重复，这里只显示「每年」+ 下一次的公历日期，不显示农历月日
   const lunarUi = useLunarUi();
-  const freqs = FREQ.filter((f) => f.id !== 'lunarYearly' || lunarUi || r?.kind === 'lunarYearly');
+  const freqs = FREQ.filter((f) => {
+    if (f.id === 'lunarYearly') return lunarUi || r?.kind === 'lunarYearly';
+    if (f.id === 'yearly') return countdown || r?.kind === 'yearly';
+    if (f.id === 'daily') return !countdown || r?.kind === 'daily';
+    return true;
+  });
   return (
     <div className="repeat">
       <RadioGroup
@@ -303,12 +318,12 @@ export function RepeatEditor({ value, onChange, today, children }: { value: stri
         orientation="horizontal"
         className="choice-pills"
         value={r ? 'repeat' : 'once'}
-        onChange={(v) => onChange(v === 'once' ? null : defaultRule('daily', today))}
+        onChange={(v) => onChange(v === 'once' ? null : countdown ? defaultRule('yearly', anchor) : defaultRule('daily', today))}
       >
         <Radio value="once" className="choice-pill">
-          {tr('只做一次')}</Radio>
+          {countdown ? tr('只这一次') : tr('只做一次')}</Radio>
         <Radio value="repeat" className="choice-pill">
-          {tr('定期打卡')}</Radio>
+          {countdown ? tr('循环倒数') : tr('定期打卡')}</Radio>
       </RadioGroup>
       {r && (
         <div className="repeat-body">
@@ -320,7 +335,7 @@ export function RepeatEditor({ value, onChange, today, children }: { value: stri
             selectedKeys={[r.kind]}
             onSelectionChange={(keys) => {
               const k = [...keys][0];
-              if (k !== undefined && k !== r.kind) onChange(defaultRule(k as Freq, today));
+              if (k !== undefined && k !== r.kind) onChange(defaultRule(k as Freq, countdown ? anchor : today));
             }}
           >
             {freqs.map((f) => (
@@ -382,11 +397,17 @@ export function RepeatEditor({ value, onChange, today, children }: { value: stri
               </span>
             </div>
           )}
+          {r.kind === 'yearly' && (
+            <div className="sentence">
+              <span className="sentence-note">{describeRecurrence(r)}</span>
+            </div>
+          )}
           {r.kind === 'every' && (
             <div className="sentence">
               {trx('每 {days} 天一次，从今天算起', { days: <InlineNumber label={tr('间隔天数')} value={r.days} min={2} width={2} onChange={(v) => v >= 2 && onChange(formatRecurrence({ kind: 'every', days: Math.round(v), anchor: r.anchor }))} /> }, { count: r.days }, { wrap: '' })}
             </div>
           )}
+          {countdown && <p className="sentence-note repeat-cd-note">{tr('过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。')}</p>}
           {children}
         </div>
       )}

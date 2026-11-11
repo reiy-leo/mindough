@@ -6,6 +6,8 @@
  *   每月几号    FREQ=MONTHLY;BYMONTHDAY=15   （小月自动取月末）
  *   每年农历    FREQ=YEARLY;RSCALE=CHINESE;BYMONTH=8;BYMONTHDAY=15   （RFC 7529；闰月写 6L）
  *               闰月：那年有同一个闰月就在闰月，没有就按非闰的同一个月；三十碰上小月取廿九（lunarYearlyDate）
+ *   每年        FREQ=YEARLY;BYMONTH=11;BYMONTHDAY=12   （公历；2 月 29 日平年取 28 日。Rei 2026-11-12 重复的倒数日要的；
+ *               老客户端不认没有 RSCALE 的 YEARLY，当不重复，看到的是普通倒数日）
  * 周期：每次“应打卡日”开启一个周期，持续到下一次应打卡日前一天；周期键 = 该应打卡日的日期键。
  */
 import { addDays, daysInMonth, diffDays, formatDate, parseDateKey, weekday, weekdayShort } from './dates';
@@ -20,7 +22,9 @@ export type Recurrence =
   | { kind: 'weekly'; weekdays: number[] }
   | { kind: 'monthly'; day: number }
   /** 每年农历 month 月 day 日（leap = 闰月）。 */
-  | { kind: 'lunarYearly'; month: number; day: number; leap: boolean };
+  | { kind: 'lunarYearly'; month: number; day: number; leap: boolean }
+  /** 每年公历 month 月 day 日（2 月 29 日平年取 28 日）。 */
+  | { kind: 'yearly'; month: number; day: number };
 
 export const ONCE_PERIOD = 'once';
 
@@ -41,6 +45,8 @@ export function formatRecurrence(r: Recurrence): string {
       return `FREQ=MONTHLY;BYMONTHDAY=${r.day}`;
     case 'lunarYearly':
       return `FREQ=YEARLY;RSCALE=CHINESE;BYMONTH=${r.month}${r.leap ? 'L' : ''};BYMONTHDAY=${r.day}`;
+    case 'yearly':
+      return `FREQ=YEARLY;BYMONTH=${r.month};BYMONTHDAY=${r.day}`;
   }
 }
 
@@ -79,12 +85,23 @@ export function parseRecurrence(rule: string | null | undefined): Recurrence | n
     const month = Number(bm[1]);
     return month >= 1 && month <= 12 && day >= 1 && day <= 30 ? { kind: 'lunarYearly', month, day, leap: bm[2] === 'L' } : null;
   }
+  if (freq === 'YEARLY' && !parts.has('RSCALE')) {
+    const month = Number(parts.get('BYMONTH'));
+    const day = Number(parts.get('BYMONTHDAY'));
+    return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(2000, month) ? { kind: 'yearly', month, day } : null;
+  }
   return null;
 }
 
 /** 农历 year 年这条规则落在哪天（不是农历规则 / 范围外 null）。 */
 function lunarOccurrence(r: Extract<Recurrence, { kind: 'lunarYearly' }>, year: number): DateKey | null {
   return lunarYearlyDate(year, r.month, r.day, r.leap);
+}
+
+/** 每年公历规则在 year 年落在哪天（2 月 29 日平年取 28 日）。 */
+function yearlyOccurrence(r: Extract<Recurrence, { kind: 'yearly' }>, year: number): DateKey {
+  const d = Math.min(r.day, daysInMonth(year, r.month));
+  return `${String(year).padStart(4, '0')}-${String(r.month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 /** 每年农历规则从 today（含）起的下一次落在哪天（公历）；范围外 null。 */
@@ -122,6 +139,8 @@ export function describeRecurrence(r: Recurrence | null, opts: { lunar?: boolean
       const next = opts.today ? nextLunarYearly(r, opts.today) : null;
       return next ? tr('每年 · 下次 {date}', { date: formatDate(next, { weekday: false, year: true }) }) : tr('每年');
     }
+    case 'yearly':
+      return tr('每年{date}', { date: formatDate(yearlyOccurrence(r, 2000), { weekday: false }) });
   }
 }
 
@@ -144,6 +163,8 @@ export function isDueOn(r: Recurrence, date: DateKey): boolean {
       const l = solarToLunar(date);
       return !!l && lunarOccurrence(r, l.year) === date;
     }
+    case 'yearly':
+      return yearlyOccurrence(r, parseDateKey(date).y) === date;
   }
 }
 
@@ -161,6 +182,11 @@ export function periodStart(r: Recurrence, date: DateKey): DateKey | null {
     if (cur && cur <= date) return cur;
     return lunarOccurrence(r, l.year - 1);
   }
+  if (r.kind === 'yearly') {
+    const y = parseDateKey(date).y;
+    const cur = yearlyOccurrence(r, y);
+    return cur <= date ? cur : yearlyOccurrence(r, y - 1);
+  }
   for (let i = 0; i < 32; i++) {
     const k = addDays(date, -i);
     if (isDueOn(r, k)) return k;
@@ -172,6 +198,46 @@ export function periodStart(r: Recurrence, date: DateKey): DateKey | null {
 export function periodKeyFor(r: Recurrence | null, date: DateKey): string {
   if (!r) return ONCE_PERIOD;
   return periodStart(r, date) ?? date;
+}
+
+/** from（含）起最近的一次；找不到（农历超出 1900–2100，或两年内都没有）null。 */
+export function nextOccurrence(r: Recurrence, from: DateKey): DateKey | null {
+  if (r.kind === 'lunarYearly') return nextLunarYearly(r, from);
+  if (r.kind === 'yearly') {
+    const y = parseDateKey(from).y;
+    const cur = yearlyOccurrence(r, y);
+    return cur >= from ? cur : yearlyOccurrence(r, y + 1);
+  }
+  for (let i = 0, k = from; i < 800; i++, k = addDays(k, 1)) if (isDueOn(r, k)) return k;
+  return null;
+}
+
+/**
+ * 让规则落在 date 这天（重复的倒数日改了目标日，Rei 2026-11-12）：
+ * 每年 / 每年农历换成这天的（农历）月日；每月换成这天几号；每周只选了一天的换成这天星期几，选了几天的把这天加上；
+ * 每隔几天从这天算起；每天不用改。规则本来就落在这天时原样返回。
+ */
+export function alignRecurrence(r: Recurrence, date: DateKey): Recurrence {
+  if (isDueOn(r, date)) return r;
+  const { m, d } = parseDateKey(date);
+  switch (r.kind) {
+    case 'daily':
+      return r;
+    case 'every':
+      return { ...r, anchor: date };
+    case 'weekly': {
+      const wd = weekday(date);
+      return { kind: 'weekly', weekdays: r.weekdays.length > 1 ? [...r.weekdays, wd] : [wd] };
+    }
+    case 'monthly':
+      return { kind: 'monthly', day: d };
+    case 'yearly':
+      return { kind: 'yearly', month: m, day: d };
+    case 'lunarYearly': {
+      const l = solarToLunar(date);
+      return l ? { kind: 'lunarYearly', month: l.month, day: l.day, leap: l.leap } : r;
+    }
+  }
 }
 
 /** [from, to] 内所有应打卡日。 */

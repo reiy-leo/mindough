@@ -14,7 +14,7 @@ const QUICK = ['09:00', '12:00', '18:00', '21:00'];
 
 /** 什么时候会响（说给人听）。 */
 export function remindHint(t: Pick<Task, 'recurrence' | 'completion_mode' | 'target_value'>): string {
-  if (t.recurrence) return tr('每个要打卡的日子，这个时间提醒你；那天已经打过卡就不提醒。');
+  if (t.recurrence && t.completion_mode !== 'countdown') return tr('每个要打卡的日子，这个时间提醒你；那天已经打过卡就不提醒。');
   if (t.completion_mode === 'countdown') return tr('目标日那天，这个时间提醒你。');
   return tr('那天这个时间提醒你。');
 }

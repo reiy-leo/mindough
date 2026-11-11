@@ -2,7 +2,7 @@
  * 我的一天：按本机日期的清单。零点后自动换一天；没做完的不顺延，放进“昨天没做完”。
  */
 import { addDays, toDateKey } from './dates';
-import { dueToday, progressOn } from './checkin';
+import { dueToday, isHabit, progressOn } from './checkin';
 import type { DerivedStatus } from './dag';
 import { inArchivedGroup, isGroupArchived } from './group';
 import { isFinished, type CheckIn, type DateKey, type Group, type MyDayEntry, type Task } from './types';
@@ -24,7 +24,7 @@ export function entriesFor(entries: readonly MyDayEntry[], date: DateKey): MyDay
 /** 任务在 date 那天是否算“做完”：已结束（完成 / 关闭），或打卡任务当天周期达标。 */
 export function isDoneOn(task: Task, checkIns: readonly CheckIn[], date: DateKey, now: Date): boolean {
   if (isFinished(task.status)) return true;
-  if (task.recurrence) {
+  if (isHabit(task)) {
     return progressOn(task, checkIns.filter((c) => c.task_id === task.id), date, now).met;
   }
   return false;
@@ -239,9 +239,9 @@ export function yesterdayUnfinished(
     // 置顶的今天本来就在（Rei 2026-11-08），不用带回
     if (!t || t.deleted || t.archived_at || t.pinned_at) continue;
     // 补打卡还在补的（Rei 2026-11-09 01:52）今天由 makeupDayItems 带着，不用再列进「昨天没做完」
-    if (t.recurrence && makeupNode(t, checkIns, today, now) && makeupNode(t, checkIns, yesterday, now) === makeupNode(t, checkIns, today, now)) continue;
+    if (isHabit(t) && makeupNode(t, checkIns, today, now) && makeupNode(t, checkIns, yesterday, now) === makeupNode(t, checkIns, today, now)) continue;
     // 重复任务看的是昨天那个周期；普通任务看现在的状态
-    if (t.recurrence ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
+    if (isHabit(t) ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
   }
   return out;
 }
