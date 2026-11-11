@@ -33,6 +33,7 @@
 | 怎么算完成 | 完成方式（新建面板里） | 新建面板的小标题；详情里（「+」菜单、胶囊读屏名）仍叫「完成方式」 |
 | 多久一次 | 重复（新建面板里） | 新建面板的小标题；详情里（「+」菜单、胶囊读屏名）叫「重复」 |
 | 只做一次 / 定期打卡 | 不重复 / 重复 | 定期打卡下：每天、每周、每月、每隔几天 |
+| 只这一次 / 循环倒数 | 不重复 / 重复 / 定期打卡 | 倒数日的「多久一次」（Rei 2026-11-12）：频率 每年（公历，默认，日子跟着目标日）/ 每年农历 / 每月 / 每周 / 每隔几天，没有每天；下面一行说明「过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。」；胶囊值写规则（「每年11月12日」）；倒数日卡片、列表行日期后一个小重复图标，悬停 / 读屏是规则 |
 | 关系 | 前后关系（作分区标题时） | 详情里的分区标题，下面分「先做完这些」「做完后解锁」「相关任务」；只显示有内容的组，都没有时整个分区不显示（不写空状态） |
 | 前后关系 | 依赖、依赖（FS：完成 → 开始） | 先做完 / 做完后解锁这种有先后的关系（说明、提示里用） |
 | 先做完这些 | 前置（完成后才能开始这个） | 列出前置任务 |
@@ -240,6 +241,7 @@
 | 勾选完成 / 计时 / 计数 / 倒数日 | Checkbox / Timer / Count / Countdown | |
 | 每次加 / 快捷按钮 / 撤销上一次 | Add / Quick buttons / Undo Last | 计数（Rei 2026-10-26）；提示 Added 250 mL / Set to 1200 mL，读屏 Click to type a number |
 | 只做一次 / 定期打卡 | Once / Repeating | |
+| 只这一次 / 循环倒数 | Just this once / Repeat countdown | 倒数日的重复（2026-11-12）；说明 After the day passes, it moves to the next one. Each past one stays as its own countdown, linked before it. |
 | 昨天没做完 · 带回今天 · 建议 | Left from Yesterday · Bring to Today · Suggestions | |
 | 严格模式 | Strict Mode | 设置 → 任务的开关（2026-11-08）；说明 Completed or closed tasks can’t be changed, only reopened or deleted. Applies to this device only.；被拦时提示 Strict mode is on: completed or closed tasks can’t be changed |
 | 显示建议 / 隐藏建议 | Show Suggestions / Hide Suggestions | 设置开关和建议那段「…」菜单（Title Case，2026-11-01）；菜单读屏 Suggestion Actions |

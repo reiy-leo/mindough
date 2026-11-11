@@ -2121,3 +2121,13 @@ Rei 2026-11-12 01:26：项目页切到看板很卡，看板里点任务弹详情
 - 设备时区记一秒（core `deviceTimeZone`、`date-display` 里的 `deviceZone`）：以前每行都 new 一个 `Intl.DateTimeFormat`。
 - 详情浮层高度跟着内容走（Rei 2026-11-12 02:08）：见 PRODUCT 项目页「看板 / 日历的详情浮层」。`.modal-detail` 改成 `height: auto`、`max-height: min(86vh, 900px)`，正文区 `flex: 0 1 auto`；`DetailModal` 的 `useSmoothRecenter` 用 ResizeObserver 看外框高度，一变就让外框从原位置平移到新的居中位置（FLIP 160ms），高度本身当帧到位（做高度动画的话正文会短暂比内容矮，闪滚动条、光标被拉着滚）。入场动画期间、「减少动态效果」时不平移。手机布局的详情是整页，不走浮层，不变。
 - 测试：`ProjectBoard.test.tsx` 选中改成订阅、加分批一项；`Calendar.test.tsx` 的 ui 假对象补上新导出。没有迁移，Worker 没改，没有新文案。
+
+### 重复的倒数日 ✅（2026-11-12）
+Rei 2026-11-12 03:21：「倒数日如果是重复任务，过了日期就生成一个过期任务，作为这个重复任务的前置任务」。以前倒数日设了重复也只看 target_date，过了只显示「已过 N 天」。规则见 PRODUCT「重复的倒数日」。
+- core `countdown-repeat.ts`：`planCountdownRoll`（过去的几次 + 下一次）、`normalizeCountdownRepeat`（改目标日 / 规则时一起收拾，`Store.createTask` / `updateTask` 调）、`countdownRecordId` / `countdownRecordDepId`（FNV 算的确定 id，和 taskLinkId 同一种写法）。`Store.rollRecurringCountdowns()` 写记录（`createTask` + 类型 + 前后关系，已有这一行——含墓碑——就不写）并把 target_date 换成下一次，整批一次提交；客户端 `lib/countdown-roll.ts` 挂在 App 上，打开、换天、数据变了（含同步拉下来）都看一遍，没东西要滚时不写。
+- 记录的状态定成「完成」：不然重复倒数日会一直「还在等 N 件事」（前置没完成就被阻塞）。代价是记录会进已完成页那天。
+- 打卡判断换成 `habitRule` / `isHabit`（checkin.ts）：倒数日的重复不算打卡。周期键、今天要打卡、连续次数、活动图、我的一天「昨天没做完」、提醒、打卡页、详情底栏 / 进度、行首重复图标、补打卡、「…」菜单都改用它；日历让重复的倒数日照常画在目标日。
+- 加了公历「每年」规则（`FREQ=YEARLY;BYMONTH;BYMONTHDAY`，2 月 29 日平年取 28 日）：生日、纪念日要用。界面上只给倒数日（日子跟着目标日，不用另选月日）；core 的打卡逻辑也认它。老客户端不认没有 RSCALE 的 YEARLY，当不重复。
+- 没有迁移（不加列），Worker 没改。新文案 3 条（只这一次 / 循环倒数 / 说明），九种语言，外语待母语者看。
+- 待 Rei 确认：记录用「完成」而不是「待办」；严格模式下不生成记录但照样换目标日；归档项目里的不滚（取消归档后补上）；选过去的日子直接跳到下一次、不补记录；一次最多补 400 条；公历每年只给倒数日。
+
