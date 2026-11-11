@@ -3726,6 +3726,60 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 .cat-head-group {
   min-width: 160px;
 }
+/* 选分组的可搜索下拉（components/CategoryGroupCombo，Rei 2026-11-12）：输入框 + 右端箭头；列表项右边打勾，最后一项「新建分组“xxx”」前面是加号 */
+.cat-head-group {
+  width: 220px;
+  max-width: 100%;
+}
+.group-combo-wrap .input-adornment .icon-btn {
+  width: 28px;
+  height: 28px;
+  color: var(--text-2);
+}
+.group-combo-popover {
+  min-width: var(--trigger-width);
+  max-width: min(320px, calc(100vw - 24px));
+}
+.group-combo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.group-combo-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.group-combo-mark {
+  flex: none;
+  display: inline-flex;
+  width: 15px;
+  color: var(--accent);
+}
+.group-combo-item[data-selected] {
+  font-weight: 600;
+}
+.group-combo-item.is-create {
+  color: var(--accent);
+}
+.group-combo-item.is-create svg {
+  flex: none;
+}
+/* 类型页页头右边「列表 / 图标」下拉（Rei 2026-11-12 从 ··· 改成下拉）：同打卡页 .checkin-arrange-btn，安静按钮写当前那项 + 向下箭头，展开时同悬停底色 */
+.btn.view-dropdown-btn {
+  flex: none;
+  gap: 4px;
+  padding-inline: 10px 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+.btn.view-dropdown-btn[aria-expanded='true'] {
+  background: var(--surface-hover);
+}
+.btn.view-dropdown-btn svg {
+  flex: none;
+  color: var(--text-2);
+}
 .cat-head-hint,
 .cat-head-note {
   margin: 0;

@@ -42,7 +42,7 @@ import {
 } from './library';
 import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
 import { BUILTIN_CATEGORIES } from './seed/builtin-checkin-categories';
-import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, categoryGroupOf, categoryGroupOverrides, categoryLastUsed, categoryStateOf, frequentCategoryIds, orderPickerCategories, withCategoryGroup, withCategoryState, type CategoryGroup, type CategoryState } from './category-prefs';
+import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
 import { CategoryDeleteError, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
@@ -2419,19 +2419,64 @@ export class Store {
     return prev;
   }
 
-  /** 自己改过的大类。 */
-  categoryGroupOverrides(): Map<string, CategoryGroup> {
-    return categoryGroupOverrides(this.pref(CATEGORY_GROUP_PREF));
+  /**
+   * 每个类型改过的分组（没改过的不在里面，按默认组）：内置组来自偏好 category.groups，
+   * 自建组来自 category.custom_group_of（只认还在的自建组，优先于前者）。
+   */
+  categoryGroupOverrides(): Map<string, CategoryGroupId> {
+    const m: Map<string, CategoryGroupId> = categoryGroupOverrides(this.pref(CATEGORY_GROUP_PREF));
+    const alive = new Set(this.customCategoryGroups().map((g) => g.id));
+    for (const [id, gid] of customGroupAssignments(this.pref(CUSTOM_GROUP_OF_PREF))) if (alive.has(gid)) m.set(id, gid);
+    return m;
   }
 
-  /** 类型在哪个大类（内置的默认见 seed，自定义的默认「其他」）。 */
-  categoryGroup(id: string): CategoryGroup {
+  /** 类型在哪个分组（内置的默认见 seed，自定义的默认「其他」）。 */
+  categoryGroup(id: string): CategoryGroupId {
     return categoryGroupOf(id, this.categoryGroupOverrides());
   }
 
-  /** 换大类（同步偏好 category.groups）。 */
-  setCategoryGroup(id: string, group: CategoryGroup): void {
-    this.setPref(CATEGORY_GROUP_PREF, withCategoryGroup(this.pref(CATEGORY_GROUP_PREF), id, group));
+  /** 换分组：内置组存偏好 category.groups，自建组存 category.custom_group_of（两边只留一处）。 */
+  setCategoryGroup(id: string, group: CategoryGroupId): void {
+    if (isCategoryGroup(group)) {
+      this.setPref(CATEGORY_GROUP_PREF, withCategoryGroup(this.pref(CATEGORY_GROUP_PREF), id, group));
+      const cur = this.pref(CUSTOM_GROUP_OF_PREF);
+      if (customGroupAssignments(cur).has(id)) this.setPref(CUSTOM_GROUP_OF_PREF, withCustomGroupAssignment(cur, id, null));
+      return;
+    }
+    if (!this.customCategoryGroups().some((g) => g.id === group)) return;
+    this.setPref(CUSTOM_GROUP_OF_PREF, withCustomGroupAssignment(this.pref(CUSTOM_GROUP_OF_PREF), id, group));
+  }
+
+  /** 自己建的分组，按建的先后（每组一行偏好 category.custom_group.<组 id>）。 */
+  customCategoryGroups(): CustomCategoryGroup[] {
+    return customCategoryGroups(this.list('pref'));
+  }
+
+  /** 全部分组的 id，按显示顺序：内置前五组、自建组、「其他」。 */
+  categoryGroupIds(): CategoryGroupId[] {
+    return categoryGroupOrder(this.customCategoryGroups());
+  }
+
+  /** 自建分组的名字（内置组、不认识的 id 返回 undefined，界面自己翻译内置组）。 */
+  customCategoryGroupName(gid: string): string | undefined {
+    return this.customCategoryGroups().find((g) => g.id === gid)?.name;
+  }
+
+  /**
+   * 新建分组，返回组 id。名字和已有分组（内置组中文名、自建组）一样时不新建，返回那一组的 id；名字空返回 null。
+   * 界面要先按当前语言的名字判断同名（groupCreateName），这里只兜底。
+   */
+  createCategoryGroup(name: string): CategoryGroupId | null {
+    const n = name.normalize('NFKC').trim().replace(/\s+/g, ' ');
+    if (!n) return null;
+    const key = normGroupName(n);
+    const builtin = CATEGORY_GROUPS.find((g) => normGroupName(CATEGORY_GROUP_ZH[g]) === key);
+    if (builtin) return builtin;
+    const same = this.customCategoryGroups().find((g) => normGroupName(g.name) === key);
+    if (same) return same.id;
+    const gid = CUSTOM_GROUP_ID_PREFIX + uuidv7();
+    this.setPref(CUSTOM_GROUP_PREF_PREFIX + gid, n);
+    return gid;
   }
 
   /** 类型上移 / 下移一位（含不显示的一起排）；只改 sort，id 不变。 */

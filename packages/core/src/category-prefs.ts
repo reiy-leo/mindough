@@ -1,7 +1,12 @@
 /**
  * 类型编辑改版（docs/CATEGORY-EDITOR.md 方案 C，Rei 2026-10-28「按方案C执行」）的纯逻辑：
- * - 大类（分组）：内置 27 个的默认组写在 seed/builtin-checkin-categories.ts；自己改过的存同步偏好 `category.groups`；
+ * - 分组（原叫「大类」，Rei 2026-11-12 改名；代码里还叫 group）：内置 6 组（身体、生活、学习和工作、爱好、人、其他）是固定 id，
+ *   内置 27 个类型的默认组写在 seed/builtin-checkin-categories.ts；改到内置组的存同步偏好 `category.groups`；
  *   自定义类型默认进「其他」。组只为了好找，不影响别处怎么用类型。
+ * - 自己新建的分组（Rei 2026-11-12）：一组一行偏好 `category.custom_group.<组 id>`，值是名字（组 id = "cg-" + UUIDv7，按建的先后排）；
+ *   类型放进自建组记在另一个偏好 `category.custom_group_of`（"<类型 id>=<组 id>" 列表）。
+ *   不往 `category.groups` 里写自建组：旧客户端读它时丢掉不认识的组、改组时整列重写，会把自建组的记录冲掉；分开存，旧客户端只会把这些类型显示在原来的内置组里。
+ *   一组一行（不放进一个列表）是为了两台设备同时新建分组时不互相覆盖（偏好按行 LWW）。没有加表、加列，不用迁移。
  * - 三档：常用 / 普通 / 不显示。「常用」存同步偏好 `category.frequent`（id 列表）；「不显示」沿用 category.hidden 列。
  * - 选择器顺序（代替手动排序，Rei 2026-10-28 定）：常用的在前，其余按最近用过排（最近用过的在前），没用过的按默认组顺序接后面。
  *   「最近用过」从任务和打卡记录推出来，不另存。
@@ -15,17 +20,106 @@ import { POLYPHONE } from './pinyin-polyphone';
 import { BUILTIN_CATEGORY_GROUPS, DEFAULT_FREQUENT_CHECKIN_CATEGORY_KEYS, BUILTIN_CATEGORY_IDS } from './seed/builtin-checkin-categories';
 import type { Category } from './types';
 
-/** 大类，按显示顺序。界面名字：身体、生活、学习和工作、爱好、人、其他。 */
+/** 内置分组，按显示顺序。界面名字：身体、生活、学习和工作、爱好、人、其他。 */
 export const CATEGORY_GROUPS = ['body', 'life', 'study', 'hobby', 'people', 'other'] as const;
 export type CategoryGroup = (typeof CATEGORY_GROUPS)[number];
+/** 分组 id：内置组（CategoryGroup）或自建组（"cg-…"）。 */
+export type CategoryGroupId = string;
 export const isCategoryGroup = (v: unknown): v is CategoryGroup => typeof v === 'string' && (CATEGORY_GROUPS as readonly string[]).includes(v);
+/** 内置分组的中文名（界面上的名字走 client 的词典，这里给去重、拼音搜索用）。 */
+export const CATEGORY_GROUP_ZH: Record<CategoryGroup, string> = { body: '身体', life: '生活', study: '学习和工作', hobby: '爱好', people: '人', other: '其他' };
+
+/** 自建分组一组一行偏好的 key 前缀：`category.custom_group.<组 id>`，值是名字。 */
+export const CUSTOM_GROUP_PREF_PREFIX = 'category.custom_group.';
+/** 类型放进了哪个自建分组（同步偏好）：每项 "<类型 id>=<组 id>"。 */
+export const CUSTOM_GROUP_OF_PREF = 'category.custom_group_of';
+/** 自建分组的 id 前缀。 */
+export const CUSTOM_GROUP_ID_PREFIX = 'cg-';
+export const isCustomGroupId = (v: unknown): v is string => typeof v === 'string' && v.startsWith(CUSTOM_GROUP_ID_PREFIX) && v.length > CUSTOM_GROUP_ID_PREFIX.length && !v.includes('=');
+
+/** 一个自建分组。 */
+export interface CustomCategoryGroup {
+  id: string;
+  name: string;
+}
+
+/** 偏好行 → 自建分组（删掉的、名字空的丢掉），按 id 排（UUIDv7，等于建的先后）。 */
+export function customCategoryGroups(prefs: readonly { key: string; value: unknown; deleted?: boolean }[]): CustomCategoryGroup[] {
+  const out: CustomCategoryGroup[] = [];
+  for (const p of prefs) {
+    if (p.deleted || !p.key.startsWith(CUSTOM_GROUP_PREF_PREFIX)) continue;
+    const id = p.key.slice(CUSTOM_GROUP_PREF_PREFIX.length);
+    const name = typeof p.value === 'string' ? p.value.trim() : '';
+    if (isCustomGroupId(id) && name) out.push({ id, name });
+  }
+  return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** 偏好值 → { 类型 id: 自建组 id }（坏项丢掉，同一个类型后写的算）。 */
+export function customGroupAssignments(value: unknown): Map<string, string> {
+  const m = new Map<string, string>();
+  if (!Array.isArray(value)) return m;
+  for (const x of value) {
+    if (typeof x !== 'string') continue;
+    const i = x.lastIndexOf('=');
+    if (i <= 0) continue;
+    const g = x.slice(i + 1);
+    if (isCustomGroupId(g)) m.set(x.slice(0, i), g);
+  }
+  return m;
+}
+
+/** 把一个类型放进自建组（gid）或拿出来（null），返回新的偏好值。 */
+export function withCustomGroupAssignment(value: unknown, id: string, gid: string | null): string[] {
+  const m = customGroupAssignments(value);
+  m.delete(id);
+  if (gid) m.set(id, gid);
+  return [...m.entries()].map(([k, g]) => `${k}=${g}`);
+}
+
+/** 显示顺序：内置前五组，自建组按建的先后，「其他」最后。 */
+export function categoryGroupOrder(custom: readonly Pick<CustomCategoryGroup, 'id'>[]): CategoryGroupId[] {
+  return [...CATEGORY_GROUPS.filter((g) => g !== 'other'), ...custom.map((g) => g.id), 'other'];
+}
+
+/** 分组名字统一成好比较的样子（去两头空白、全半角统一、不分大小写）。 */
+export function normGroupName(s: string): string {
+  return s.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** 选分组的下拉里的一项：id 和能对上搜索的名字（第一个是界面上显示的名字）。 */
+export interface GroupOption {
+  id: CategoryGroupId;
+  names: readonly string[];
+}
+
+/**
+ * 按搜索词过滤分组（名字、拼音首字母、全拼都能搜，规则同类型搜索 categoryMatches）。
+ * 空搜索词原样返回；有搜索词时开头对上的在前、包含的其次、拼音对上的最后，同一档保持原来的顺序。
+ */
+export function filterGroupOptions<O extends GroupOption>(options: readonly O[], query: string): O[] {
+  if (!query.trim()) return [...options];
+  return options
+    .map((o, i) => ({ o, i }))
+    .filter(({ o }) => categoryMatches(o.names, query))
+    .sort((a, b) => categoryMatchRank(a.o.names, query) - categoryMatchRank(b.o.names, query) || a.i - b.i)
+    .map(({ o }) => o);
+}
+
+/** 搜不到同名分组时可以新建的名字（去两头空白）；空的、和哪个分组的任一名字一样时返回 null。 */
+export function groupCreateName(options: readonly GroupOption[], query: string): string | null {
+  const name = query.normalize('NFKC').trim().replace(/\s+/g, ' ');
+  if (!name) return null;
+  const n = normGroupName(name);
+  return options.some((o) => o.names.some((x) => x && normGroupName(x) === n)) ? null : name;
+}
 
 /** 三档。 */
 export type CategoryState = 'frequent' | 'normal' | 'hidden';
 
 /** 「常用」类型 id 列表（同步偏好）。 */
 export const CATEGORY_FREQUENT_PREF = 'category.frequent';
-/** 自己改过的大类（同步偏好）：每项 "<类型 id>=<组>"。偏好值不支持对象，所以存成字符串列表。 */
+/** 改到内置组的分组（同步偏好）：每项 "<类型 id>=<组>"。偏好值不支持对象，所以存成字符串列表。 */
 export const CATEGORY_GROUP_PREF = 'category.groups';
 
 /** 偏好值 → id 列表（坏值丢掉，去重，保持先后）。 */
@@ -61,8 +155,8 @@ export function defaultCategoryGroup(id: string): CategoryGroup {
   return BUILTIN_CATEGORY_GROUPS[id] ?? 'other';
 }
 
-/** 一个类型在哪个组。 */
-export function categoryGroupOf(id: string, overrides: ReadonlyMap<string, CategoryGroup>): CategoryGroup {
+/** 一个类型在哪个组。overrides 可以带自建组（Store.categoryGroupOverrides 合好的）。 */
+export function categoryGroupOf(id: string, overrides: ReadonlyMap<string, CategoryGroupId>): CategoryGroupId {
   return overrides.get(id) ?? defaultCategoryGroup(id);
 }
 
@@ -99,10 +193,16 @@ export function categoryLastUsed(
   return out;
 }
 
+/** 组的先后：内置组按 CATEGORY_GROUPS，自建组排在「其他」前面。 */
+function groupRank(g: CategoryGroupId): number {
+  const i = (CATEGORY_GROUPS as readonly string[]).indexOf(g);
+  return i >= 0 ? i : CATEGORY_GROUPS.length - 1.5;
+}
+
 /** 组的先后（没用过的类型按它排）：组顺序，组里按 sort。 */
-function defaultRank<C extends Pick<Category, 'id' | 'sort' | 'name'>>(overrides: ReadonlyMap<string, CategoryGroup>) {
+function defaultRank<C extends Pick<Category, 'id' | 'sort' | 'name'>>(overrides: ReadonlyMap<string, CategoryGroupId>) {
   return (a: C, b: C) =>
-    CATEGORY_GROUPS.indexOf(categoryGroupOf(a.id, overrides)) - CATEGORY_GROUPS.indexOf(categoryGroupOf(b.id, overrides)) ||
+    groupRank(categoryGroupOf(a.id, overrides)) - groupRank(categoryGroupOf(b.id, overrides)) ||
     a.sort - b.sort ||
     (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
@@ -117,7 +217,7 @@ export function orderPickerCategories<C extends Pick<Category, 'id' | 'sort' | '
   visible: readonly C[],
   frequent: readonly string[],
   lastUsed: ReadonlyMap<string, string>,
-  overrides: ReadonlyMap<string, CategoryGroup> = new Map(),
+  overrides: ReadonlyMap<string, CategoryGroupId> = new Map(),
 ): C[] {
   const byId = new Map(visible.map((c) => [c.id, c]));
   const out: C[] = [];

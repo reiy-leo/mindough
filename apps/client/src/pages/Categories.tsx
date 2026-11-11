@@ -2,28 +2,29 @@
  * 类型页（侧栏「管理 → 类型」，#/types，深链 view/types）。方案 C（docs/CATEGORY-EDITOR.md，Rei 2026-10-28「按方案C执行」）：
  * 先找到，再改；顺序不用手排。类型只在这一页管（Rei 2026-10-28「去掉设置中的入口」）。
  *
- * - 宽屏左右两栏：左边是 CategoryList（搜索 + 按大类分组），右边是选中类型的详情（#/types/<id>）。
+ * - 宽屏左右两栏：左边是 CategoryList（搜索 + 按分组排），右边是选中类型的详情（#/types/<id>）。
  * - 窄屏先列表，点一行整页推进详情，顶上「全部类型」返回。
- * - 详情：图标块（点开换颜色和图标）+ 直接改的名字；常用 / 普通 / 不显示三档；大类；下面是用到它的任务和项目。
- * - 页头右边 ···「显示为：列表 / 图标」（Rei 2026-11-11 08:33）：所有大类一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
+ * - 详情：图标块（点开换颜色和图标）+ 直接改的名字；常用 / 普通 / 不显示三档；分组（可搜索的下拉，能新建分组，components/CategoryGroupCombo；原叫「大类」，Rei 2026-11-12 改名）；下面是用到它的任务和项目。
+ * - 页头右边「列表 ⌄ / 图标 ⌄」下拉（Rei 2026-11-11 08:33 加，原是 ···；2026-11-12 改成下拉，样子同打卡页「排列方式」）：所有分组一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
  * - 键盘：⌘F 或直接打字聚焦搜索；⌘1 / ⌘2 / ⌘3 把高亮或打开的那个切成常用 / 普通 / 不显示。改动马上保存，改档能撤销。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button as RacButton, Input, TextField } from 'react-aria-components';
 import { ChevronLeft, Tags } from 'lucide-react';
-import { CATEGORY_GROUPS, isFinished, type Category, type CategoryState } from '@mindough/core';
+import { isFinished, type Category, type CategoryState } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { useSettings } from '../lib/settings';
-import { Empty, PopoverPanel, Section, Segmented, Select } from '../ui/primitives';
+import { Empty, PopoverPanel, Section, Segmented } from '../ui/primitives';
 import { PageHeader } from '../components/PageHeader';
 import { TaskRow } from '../components/TaskRow';
-import { CategoryTile, CategoryList, categoryGroupLabel, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
+import { CategoryTile, CategoryList, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
 import { IconStylePicker } from '../components/IconStylePicker';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { imeBusy, typingKey } from '../lib/ime';
-import { DisplayStyleMenu } from '../components/PinnedStyleMenu';
+import { ViewStyleDropdown } from '../components/ViewStyleDropdown';
+import { CategoryGroupCombo } from '../components/CategoryGroupCombo';
 import { useCategoryViewStyle } from '../lib/category-view';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
@@ -88,7 +89,7 @@ export function CategoriesPage({ id }: { id?: string }) {
       <PageHeader
         title={trc('分类', '类型')}
         icon={<Tags size={22} />}
-        actions={<DisplayStyleMenu label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
+        actions={<ViewStyleDropdown label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
         subtitle={
           hidden
             ? tr('{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。', { n: all.length, u: used, h: hidden })
@@ -105,7 +106,7 @@ export function CategoriesPage({ id }: { id?: string }) {
   );
 }
 
-/** 详情：头部（图标块 + 名字）、三档、大类、用到它的任务和项目。 */
+/** 详情：头部（图标块 + 名字）、三档、分组、用到它的任务和项目。 */
 function CategoryDetail({ c }: { c: Category }) {
   return (
     <div className="types-uses-body">
@@ -163,13 +164,7 @@ function CategoryHead({ c }: { c: Category }) {
           <span className="field-label">{tr('显示方式')}</span>
           <Segmented label={tr('显示方式')} value={state} onChange={(s) => setState(c.id, s)} options={STATES.map((s) => ({ id: s, label: categoryStateLabel(s) }))} />
         </div>
-        <Select
-          className="cat-head-group"
-          label={tr('大类')}
-          value={group}
-          onChange={(g) => setGroup(c.id, g as (typeof CATEGORY_GROUPS)[number])}
-          options={CATEGORY_GROUPS.map((g) => ({ id: g, label: categoryGroupLabel(g) }))}
-        />
+        <CategoryGroupCombo className="cat-head-group" value={group} onChange={(g) => setGroup(c.id, g)} />
       </div>
       <p className="foot-note cat-head-hint">
         {state === 'hidden'

@@ -3,7 +3,7 @@
  * 设置里不再有类型（Rei 2026-10-28「去掉设置中的入口」）。
  *
  * - 顶上搜索框：打开就聚焦；名字、英文名、拼音首字母都能搜；↑↓ 选、回车打开；没有同名的时最后一行「新建“xxx”」。
- * - 不搜时按大类分组（身体、生活、学习和工作、爱好、人、其他），组能折叠；「不显示」的沉到最底下一组，变灰。
+ * - 不搜时按分组排（身体、生活、学习和工作、爱好、人、自己建的分组、其他；原叫「大类」，Rei 2026-11-12 改名），组能折叠；「不显示」的沉到最底下一组，变灰。
  * - 每行只有彩色图标块、名字、用了几次，没有按钮。顺序不用手排（Rei 2026-10-28 定：用「常用 + 最近用过」代替手动排序）。
  * - 手机上左滑一行出「常用」「不显示」。
  * - 显示为图标（Rei 2026-11-11 08:33，view='icons'）：每组排成图标格子，名字在图标下面、最多两行；点、回车、↑↓、读屏名和列表一样；
@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
-import { CATEGORY_GROUPS, categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroup, type CategoryState, type Store } from '@mindough/core';
+import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroupId, type CategoryState, type Store } from '@mindough/core';
 import { IconTile, iconTileGlyphSize } from './IconTile';
 import { pinnedTileSize } from '../lib/pinned-tile';
 import { categoryNames } from './CategoryPicker';
@@ -34,21 +34,23 @@ export function categoryUsage(store: Store): Map<string, number> {
   return m;
 }
 
-/** 大类的名字。 */
-export function categoryGroupLabel(g: CategoryGroup): string {
+/** 分组的名字：内置组走词典，自己建的读 store（给了 store 才认得；认不得的按「其他」）。 */
+export function categoryGroupLabel(g: CategoryGroupId, store?: Pick<Store, 'customCategoryGroupName'>): string {
+  const custom = store?.customCategoryGroupName(g);
+  if (custom) return custom;
   switch (g) {
     case 'body':
-      return trc('类型大类', '身体');
+      return trc('类型分组', '身体');
     case 'life':
-      return trc('类型大类', '生活');
+      return trc('类型分组', '生活');
     case 'study':
-      return trc('类型大类', '学习和工作');
+      return trc('类型分组', '学习和工作');
     case 'hobby':
-      return trc('类型大类', '爱好');
+      return trc('类型分组', '爱好');
     case 'people':
-      return trc('类型大类', '人');
+      return trc('类型分组', '人');
     default:
-      return trc('类型大类', '其他');
+      return trc('类型分组', '其他');
   }
 }
 
@@ -76,13 +78,13 @@ export function useCategoryActions() {
       state === 'frequent' ? tr('已把「{name}」设成常用', { name }) : state === 'hidden' ? tr('已把「{name}」设成不显示', { name }) : tr('已把「{name}」设成普通', { name });
     ui.toast({ message, actions: [{ label: tr('撤销'), onPress: () => store.setCategoryState(id, prev) }] }, 5000);
   };
-  const setGroup = (id: string, group: CategoryGroup) => {
+  const setGroup = (id: string, group: CategoryGroupId) => {
     const c = store.category(id);
     if (!c) return;
     const prev = store.categoryGroup(id);
     if (prev === group) return;
     store.setCategoryGroup(id, group);
-    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: dataLabel(c.name), group: categoryGroupLabel(group) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] }, 5000);
+    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: dataLabel(c.name), group: categoryGroupLabel(group, store) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] }, 5000);
   };
   return { setState, setGroup };
 }
@@ -128,19 +130,20 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
   }, [all, term, store]);
   const exact = term ? all.find((c) => categoryNames(c).some((n) => normCategoryName(n) === normCategoryName(term))) : undefined;
 
-  // 分组：大类按顺序，组里常用的在前、再按原来的顺序；不显示的单独一组在最后
+  // 分组按顺序（内置前五组、自己建的、其他），组里常用的在前、再按原来的顺序；没类型的组不出；不显示的单独一组在最后
+  const groupIds = store.categoryGroupIds();
   const sections = useMemo(() => {
     const out: { key: string; label: string; items: Category[] }[] = [];
     const vis = all.filter((c) => !c.hidden);
-    for (const g of CATEGORY_GROUPS) {
+    for (const g of groupIds) {
       const items = vis.filter((c) => categoryGroupOf(c.id, overrides) === g);
       items.sort((a, b) => Number(frequent.includes(b.id)) - Number(frequent.includes(a.id)));
-      if (items.length) out.push({ key: g, label: categoryGroupLabel(g), items });
+      if (items.length) out.push({ key: g, label: categoryGroupLabel(g, store), items });
     }
     const hidden = all.filter((c) => c.hidden);
     if (hidden.length) out.push({ key: 'hidden', label: trc('类型档', '不显示'), items: hidden });
     return out;
-  }, [all, overrides, frequent]);
+  }, [all, overrides, frequent, groupIds, store]);
 
   const rows: Row[] = matches
     ? [...matches.map((c) => ({ kind: 'cat' as const, c })), ...(exact ? [] : [{ kind: 'create' as const, name: term }])]

@@ -15,7 +15,7 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type K
 import { Button as RacButton } from 'react-aria-components';
 import { Check, ChevronDown, Plus, Search, X } from 'lucide-react';
 import { PopoverPanel } from '../ui/primitives';
-import { CATEGORY_GROUPS, categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, normCategoryName, type Category, type Store } from '@mindough/core';
+import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, normCategoryName, type Category, type Store } from '@mindough/core';
 import { typeIcon } from '../lib/icons';
 import { navigate } from '../lib/router';
 import { dataLabel, tr, trc } from '../lib/i18n';
@@ -115,9 +115,10 @@ export function CategoryList({
     const out: Section[] = [];
     if (top.length) out.push({ key: 'frequent', label: trc('类型档', '常用'), rows: top.map((c) => ({ kind: 'cat', c })) });
     if (recent.length) out.push({ key: 'recent', label: tr('最近用过'), rows: recent.map((c) => ({ kind: 'cat', c })) });
-    for (const g of CATEGORY_GROUPS) {
+    // 分组顺序同类型页：内置前五组、自己建的分组、其他
+    for (const g of store.categoryGroupIds()) {
       const items = all.filter((c) => !used.has(c.id) && categoryGroupOf(c.id, overrides) === g);
-      if (items.length) out.push({ key: g, label: categoryGroupLabel(g), rows: items.map((c) => ({ kind: 'cat', c })) });
+      if (items.length) out.push({ key: g, label: categoryGroupLabel(g, store), rows: items.map((c) => ({ kind: 'cat', c })) });
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
