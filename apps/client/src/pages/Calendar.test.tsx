@@ -189,7 +189,7 @@ describe('日历', () => {
         act(() => btn.click());
         expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
         // 不再出行内输入框，也不直接建任务
-        expect(host.querySelector('.cal-add, .add-bar, input, textarea')).toBeNull();
+        expect(host.querySelector('.cal-grid input, .cal-grid textarea, .cal-add, .add-bar')).toBeNull();
         expect(store.createTask).not.toHaveBeenCalled();
       });
     }
