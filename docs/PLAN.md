@@ -2036,3 +2036,11 @@ Rei 2026-11-12 01:10「去掉页头和搜索」，并问顶部空白是不是给
 - `styles/journal.css`：新变量 `--jf-top`（默认 `--space-3` 12px），`.jf-side`、`.jf-main-inner` 的上内边距用它；删 `.jf-side-head` 样式。
 - `skin/skins.css`：`.platform-macos-overlay .app-desktop .journal-page.jf { padding-top: 0; --jf-top: var(--space-2) }`。以前通用的 `.page { padding-top: 8px }` 压过日记页的 `padding: 0`，右栏多 8px、分隔线也到不了顶。现在 10px 拖动条 + 8px = 18px，同其他页。
 - 没加文案，没有迁移，Worker 没改。截图 `work/d1112-journalhdr/jh.mjs`（三皮肤 × 宽屏 1366 / 宽屏模拟 Mac 壳 / 手机 390，修前修后量离顶距离）。
+
+### 日历：条目去掉圆圈、每件自己的底色、今天 / 选中日调浅 ✅（2026-11-12）
+Rei 2026-11-12 01:15，规则见 [CALENDAR.md](CALENDAR.md) 第十二节。
+- 新 `lib/cal-item-color.ts`：`calItemHex`（项目 → 类型 → 默认蓝，素净档灰）、`calItemColors`（倒数日卡片色优先；其余走 `chipColors` 混成实色 + 黑白字）。
+- `pages/Calendar.tsx` 的 `ItemButton`：去掉 `.cal-item-dot`，挂 `--item-bg` / `--item-fg` / `--item-border`。
+- `styles/calendar.css`：任务实色底，倒数日描边 + 粗字，选中改 2px 强调色外圈；今天列改成强调色 5% / 8% 的伪元素；手机选中日浅强调底；全天事件底色和倒数日去掉 color-mix。
+- 测试：`lib/cal-item-color.test.ts` 3 项，`pages/Calendar.test.tsx` 加 1 项。没有迁移，Worker 没改，没有新文案。
+
