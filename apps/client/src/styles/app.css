@@ -3853,17 +3853,12 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 .checkin-toolbar .checkin-arrange-btn .countdown-dir-icon {
   margin-inline-start: -1px;
 }
-/* 列表视图（Rei 2026-11-12）：一行一个，行首卡片颜色小圆点、类型小图标、标题，右边天数；同任务列表的行高、悬停、选中 */
-.countdown-row {
-  padding: 0;
-}
+/* 列表视图（Rei 2026-11-12）：一行一个，行首卡片颜色小圆点、类型小图标、标题，右边天数；外层就是 .task-row（行高、内边距、悬停、选中同任务列表），里面整块是按钮 */
 .countdown-row-main.row-main {
   flex-direction: row;
   align-items: center;
+  align-self: stretch;
   gap: var(--space-2);
-  min-height: var(--row-h);
-  padding: 3px var(--space-3);
-  border-radius: 0;
   color: inherit;
 }
 .countdown-row-main[data-focus-visible] {
@@ -3899,6 +3894,7 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 }
 .countdown-row-days b {
   font-size: 17px;
+  line-height: 1.2;
   font-weight: 600;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
