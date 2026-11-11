@@ -59,24 +59,29 @@ export function TaskThumb({ media, layout, isAvatar, color, icon, name, hasItem 
  * 拖动把手那一格（Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色」）。
  * 置顶的放红色图钉：给了 dragLabel（待安排、看板）图钉本身还是拖动按钮，照样能拖；没给（我的一天，置顶的固定在最上）只是图标，不能拖。
  * 没置顶的照旧是把手；不能拖又没置顶的留同宽占位，行和别的对齐。
+ * 图钉和把手一样大（Rei 2026-11-11 08:16 / 08:17「没对齐」「大小也要一致」）：两个图形本身宽高比不同，按画出来的高度配平——
+ * 图钉 12（墨迹 7×10）、把手 15（墨迹 5×10），都是 10px 高；格子都是 18 宽、去掉按钮自带的左右内边距，两者在同一列。
+ * 图钉头重脚轻，几何居中看着偏上，CSS 往下挪 0.65px，墨迹重心和勾选圈中线对齐（.drag-handle.is-pin svg / .row-pin svg）。
  */
+export const LEAD_PIN_SIZE = 12;
+export const LEAD_GRIP_SIZE = 15;
 export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: string }) {
   if (pinned && dragLabel)
     return (
       <RacButton slot="drag" className="drag-handle is-pin" aria-label={`${tr('已置顶')} · ${dragLabel}`}>
-        <Pin size={14} aria-hidden />
+        <Pin size={LEAD_PIN_SIZE} aria-hidden />
       </RacButton>
     );
   if (pinned)
     return (
       <HoverTip className="drag-handle is-pin" tip={tr('已置顶')}>
-        <Pin size={14} aria-hidden />
+        <Pin size={LEAD_PIN_SIZE} aria-hidden />
       </HoverTip>
     );
   if (!dragLabel) return <span className="drag-handle is-placeholder" aria-hidden />;
   return (
     <RacButton slot="drag" className="drag-handle" aria-label={dragLabel}>
-      <GripVertical size={14} />
+      <GripVertical size={LEAD_GRIP_SIZE} />
     </RacButton>
   );
 }
@@ -176,7 +181,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           这里不放；别的列表没有把手，放在行左边的留白里，不挤动圆圈 */}
       {pinned && !pinInLead && (
         <HoverTip className="row-pin row-pin-gutter" tip={tr('已置顶')}>
-          <Pin size={12} aria-hidden />
+          <Pin size={LEAD_PIN_SIZE} aria-hidden />
         </HoverTip>
       )}
       {isCheckInRow ? (

@@ -787,9 +787,12 @@ button {
 .drag-handle {
   display: inline-grid;
   place-items: center;
+  box-sizing: border-box;
   width: 18px;
   height: 32px;
   margin-left: 4px;
+  /* 按钮自带 1px 6px 内边距，图标被挤到格子右边 4px，和不是按钮的图钉（我的一天）错开一列（Rei 2026-11-11） */
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--text-3);
@@ -934,6 +937,11 @@ button {
 .drag-handle.is-pin {
   color: var(--danger);
   opacity: 1;
+}
+/* 图钉头重脚轻：几何居中时墨迹重心比勾选圈中线高约 0.65px，看着偏上（Rei 2026-11-11 08:16），往下挪回去 */
+.drag-handle.is-pin svg,
+.row-pin svg {
+  transform: translateY(0.65px);
 }
 span.drag-handle.is-pin {
   cursor: default;
