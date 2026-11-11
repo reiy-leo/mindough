@@ -2029,3 +2029,10 @@ Rei 2026-11-12 00:56：项目列表页（侧栏「项目」进的总览页，不
 - 样式 `styles/project.css`：删掉 `.page-header:has(.groups-new)`，加 `.groups-toolbar` / `.groups-filter`。
 - 副标题「把相关的任务放在一起」没人用了，留在词典里没删（同「不限时间」）。没有新文案、没迁移，Worker 没改。
 - 测试：`lib/mobile-topbar.test.ts` 改成 groups 只有标题。截图脚本 `work/d1112-projhdr/ph.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390，Apple 亮、WinUI / Material 暗）：没页头、读屏 h1、按钮和胶囊同一行居中且在最右、悬停提示、手机顶栏标题；胶囊复制多份后筛选区横滑、按钮不挪、页面不横向溢出；点按钮出「新建项目」面板；删光项目后只剩按钮、靠右、能新建。
+
+### 日记：去掉页头、搜索按钮和顶部空白 ✅（2026-11-12）
+Rei 2026-11-12 01:10「去掉页头和搜索」，并问顶部空白是不是给 titlebar 留的。来源和规则见 [JOURNAL.md](JOURNAL.md)「2026-11-12」一节。
+- `pages/Journal.tsx`：宽屏删 `.jf-side-head`（`h1.page-title` + 搜索 `icon-btn`），手机删 `PageHeader`，两处都换成 `<h1 className="sr-only">日记</h1>`。`Search` 图标、`PageHeader` 不再引入。`mobileTopbar('journal')` 本来就是 `none`，不改。
+- `styles/journal.css`：新变量 `--jf-top`（默认 `--space-3` 12px），`.jf-side`、`.jf-main-inner` 的上内边距用它；删 `.jf-side-head` 样式。
+- `skin/skins.css`：`.platform-macos-overlay .app-desktop .journal-page.jf { padding-top: 0; --jf-top: var(--space-2) }`。以前通用的 `.page { padding-top: 8px }` 压过日记页的 `padding: 0`，右栏多 8px、分隔线也到不了顶。现在 10px 拖动条 + 8px = 18px，同其他页。
+- 没加文案，没有迁移，Worker 没改。截图 `work/d1112-journalhdr/jh.mjs`（三皮肤 × 宽屏 1366 / 宽屏模拟 Mac 壳 / 手机 390，修前修后量离顶距离）。
