@@ -15,9 +15,11 @@ const STYLE_LABEL: Record<PinnedStyle, () => string> = {
 };
 const STYLE_ICON = { list: List, icons: LayoutGrid } as const;
 
-export function PinnedStyleMenu({ className }: { className?: string }) {
-  const [style, setStyle] = usePinnedGroupStyle();
-  const label = tr('项目显示方式');
+/**
+ * 「显示为：列表 / 图标」单选菜单，按钮是一个小的 ···。侧栏项目（PinnedStyleMenu）和类型页（Rei 2026-11-11 08:33）共用，文案「列表」「图标」也共用。
+ * label 是按钮的读屏名 / 悬停提示，也是菜单的名字。
+ */
+export function DisplayStyleMenu({ label, value, onChange, className }: { label: string; value: PinnedStyle; onChange: (v: PinnedStyle) => void; className?: string }) {
   return (
     <MenuTrigger>
       <Tip content={label}>
@@ -30,10 +32,10 @@ export function PinnedStyleMenu({ className }: { className?: string }) {
           <MenuSection
             selectionMode="single"
             disallowEmptySelection
-            selectedKeys={[style]}
+            selectedKeys={[value]}
             onSelectionChange={(keys) => {
               const k = [...keys][0];
-              if (k === 'list' || k === 'icons') setStyle(k);
+              if (k === 'list' || k === 'icons') onChange(k);
             }}
           >
             <Header className="menu-header">{tr('显示为')}</Header>
@@ -58,4 +60,9 @@ export function PinnedStyleMenu({ className }: { className?: string }) {
       </Popover>
     </MenuTrigger>
   );
+}
+
+export function PinnedStyleMenu({ className }: { className?: string }) {
+  const [style, setStyle] = usePinnedGroupStyle();
+  return <DisplayStyleMenu label={tr('项目显示方式')} value={style} onChange={setStyle} className={className} />;
 }

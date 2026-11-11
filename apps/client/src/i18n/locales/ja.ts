@@ -1765,6 +1765,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "特别篇": "特別編",
   "{n} 集": "{n}話",
   "已把「{title}」改到{date}": "「{title}」を{date}に移動しました",
+  "类型显示方式": "カテゴリの表示",
 };
 
 export const DATA: Record<string, string> = {

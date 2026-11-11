@@ -4528,3 +4528,74 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .more-list .more-pinned-grid .nav-drop-slot {
   border-radius: var(--radius-ctl);
 }
+
+/* 类型页「显示为：图标」（Rei 2026-11-11 08:33）：每个大类下排成图标格子，名字在图标下面，最多两行（同资料库卡片 .lib-tile-name 的做法）；
+   按可用宽度自动排几列、放不下折行，不左右滚。点按 / 键盘高亮 / 选中和列表行同一套颜色。 */
+.cat-match-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 2px 0;
+}
+.cat-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 4px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  text-align: center;
+}
+.cat-cell:hover {
+  background: var(--surface-hover);
+}
+@media (hover: none) {
+  .cat-cell:hover:not(.is-selected) {
+    background: transparent;
+  }
+}
+.cat-cell.is-active {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.cat-cell.is-selected {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+.cat-cell-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+}
+.cat-cell.is-hidden .cat-cell-name {
+  color: var(--text-3);
+}
+.cat-cell.is-hidden .icon-tile {
+  opacity: 0.45;
+}
+.cat-cell.cat-item-create .cat-cell-name {
+  color: var(--accent);
+}
+.cat-section-head + .cat-grid {
+  margin-top: 2px;
+}

@@ -5,6 +5,7 @@
  * - 宽屏左右两栏：左边是 CategoryList（搜索 + 按大类分组），右边是选中类型的详情（#/types/<id>）。
  * - 窄屏先列表，点一行整页推进详情，顶上「全部类型」返回。
  * - 详情：图标块（点开换颜色和图标）+ 直接改的名字；常用 / 普通 / 不显示三档；大类；下面是用到它的任务和项目。
+ * - 页头右边 ···「显示为：列表 / 图标」（Rei 2026-11-11 08:33）：所有大类一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
  * - 键盘：⌘F 或直接打字聚焦搜索；⌘1 / ⌘2 / ⌘3 把高亮或打开的那个切成常用 / 普通 / 不显示。改动马上保存，改档能撤销。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,6 +23,8 @@ import { IconStylePicker } from '../components/IconStylePicker';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { imeBusy, typingKey } from '../lib/ime';
+import { DisplayStyleMenu } from '../components/PinnedStyleMenu';
+import { useCategoryViewStyle } from '../lib/category-view';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
 
@@ -37,6 +40,7 @@ export function CategoriesPage({ id }: { id?: string }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState<string | null>(null);
   const { setState } = useCategoryActions();
+  const [view, setView] = useCategoryViewStyle();
   const target = active ?? selected?.id ?? null;
 
   // 键盘：⌘F / 直接打字 → 类型搜索框；⌘1/2/3 → 三档。
@@ -84,6 +88,7 @@ export function CategoriesPage({ id }: { id?: string }) {
       <PageHeader
         title={trc('分类', '类型')}
         icon={<Tags size={22} />}
+        actions={<DisplayStyleMenu label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
         subtitle={
           hidden
             ? tr('{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。', { n: all.length, u: used, h: hidden })
@@ -92,7 +97,7 @@ export function CategoriesPage({ id }: { id?: string }) {
       />
       <div className="types-layout">
         <div className="types-list">
-          <CategoryList selectedId={selected?.id ?? null} onOpen={open} onActive={setActive} mobile={mobile} searchRef={searchRef} />
+          <CategoryList selectedId={selected?.id ?? null} onOpen={open} onActive={setActive} mobile={mobile} searchRef={searchRef} view={view} />
         </div>
         {!mobile && <div className="types-uses">{selected ? <CategoryDetail c={selected} /> : <Empty icon={<Tags size={28} />} title={tr('点一个类型，看挂了它的任务和项目')} />}</div>}
       </div>

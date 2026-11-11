@@ -6,6 +6,8 @@
  * - 不搜时按大类分组（身体、生活、学习和工作、爱好、人、其他），组能折叠；「不显示」的沉到最底下一组，变灰。
  * - 每行只有彩色图标块、名字、用了几次，没有按钮。顺序不用手排（Rei 2026-10-28 定：用「常用 + 最近用过」代替手动排序）。
  * - 手机上左滑一行出「常用」「不显示」。
+ * - 显示为图标（Rei 2026-11-11 08:33，view='icons'）：每组排成图标格子，名字在图标下面、最多两行；点、回车、↑↓、读屏名和列表一样；
+ *   格子里不左滑（改档去详情页）。搜索结果也排成格子。
  * 类型不能删：不想看到就设成不显示（挂着的任务照常显示）。
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
@@ -95,9 +97,12 @@ export interface CategoryListProps {
   /** 手机：左滑出按钮、不自动聚焦搜索框。 */
   mobile?: boolean;
   searchRef?: RefObject<HTMLInputElement | null>;
+  /** 显示为：列表（默认）/ 图标格子。 */
+  view?: 'list' | 'icons';
 }
 
-export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }: CategoryListProps) {
+export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, view = 'list' }: CategoryListProps) {
+  const icons = view === 'icons';
   const store = useStore();
   const ui = useUi();
   const { setState } = useCategoryActions();
@@ -187,7 +192,21 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
       return n;
     });
 
-  const row = (c: Category) => (
+  const row = (c: Category) =>
+    icons ? (
+      <CategoryCell
+        key={c.id}
+        c={c}
+        count={counts.get(c.id) ?? 0}
+        hidden={!!c.hidden}
+        selected={selectedId === c.id}
+        active={active === c.id}
+        onPress={() => {
+          setActive(c.id);
+          onOpen(c.id);
+        }}
+      />
+    ) : (
     <CategoryRow
       key={c.id}
       c={c}
@@ -207,7 +226,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
         setState(c.id, s);
       }}
     />
-  );
+    );
 
   return (
     <div className="cat-list">
@@ -226,9 +245,9 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
       </SearchField>
       {/* 搜索框不动，下面的行和说明一起滚（类型页上它是唯一会滚的地方，Rei 2026-11-03） */}
       <div className="cat-list-scroll">
-      <div className="cat-list-rows" id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
+      <div className={`cat-list-rows${icons ? ' is-icons' : ''}`} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
         {matches ? (
-          <>
+          <div className={icons ? 'cat-grid' : 'cat-match-rows'}>
             {matches.map(row)}
             {!exact && (
               <div
@@ -236,16 +255,16 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
                 data-row="create"
                 role="option"
                 aria-selected={active === 'create'}
-                className={`cat-item cat-item-create${active === 'create' ? ' is-active' : ''}`}
+                className={icons ? `cat-cell cat-item-create${active === 'create' ? ' is-active' : ''}` : `cat-item cat-item-create${active === 'create' ? ' is-active' : ''}`}
                 onClick={() => create(term)}
               >
-                <span className="icon-tile icon-tile-add" aria-hidden>
-                  <Plus size={16} />
+                <span className="icon-tile icon-tile-add" aria-hidden style={icons ? ({ '--tile-size': `${CELL_TILE}px` } as CSSProperties) : undefined}>
+                  <Plus size={icons ? 20 : 16} />
                 </span>
-                <span className="cat-item-name">{tr('新建“{q}”', { q: term })}</span>
+                <span className={icons ? 'cat-cell-name' : 'cat-item-name'}>{tr('新建“{q}”', { q: term })}</span>
               </div>
             )}
-          </>
+          </div>
         ) : (
           sections.map((s) => (
             <div key={s.key} className={`cat-section${s.key === 'hidden' ? ' is-hidden-group' : ''}`} role="group" aria-label={s.label}>
@@ -254,13 +273,16 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef }
                 <span className="cat-section-label">{s.label}</span>
                 <span className="cat-section-count">{s.items.length}</span>
               </RacButton>
-              {!collapsed.has(s.key) && <div className="cat-section-rows">{s.items.map(row)}</div>}
+              {!collapsed.has(s.key) && <div className={icons ? 'cat-grid' : 'cat-section-rows'}>{s.items.map(row)}</div>}
             </div>
           ))
         )}
       </div>
       <p className="foot-note cat-list-note">
-        {mobile ? tr('左滑一行可以设成常用或不显示。类型不能删，不想看到就设成不显示。') : tr('↑↓ 选，回车打开；{mod}1、{mod}2、{mod}3 切常用、普通、不显示。类型不能删。', { mod: modKey() })}
+        {mobile
+          ? icons
+            ? tr('类型不能删，不想看到就设成不显示；已经挂着的任务和项目照常显示。')
+            : tr('左滑一行可以设成常用或不显示。类型不能删，不想看到就设成不显示。') : tr('↑↓ 选，回车打开；{mod}1、{mod}2、{mod}3 切常用、普通、不显示。类型不能删。', { mod: modKey() })}
       </p>
       </div>
     </div>
@@ -273,6 +295,33 @@ export function modKey(): string {
 }
 
 const SWIPE_W = 168;
+/** 图标格子里图标块的边长。 */
+const CELL_TILE = 40;
+
+/**
+ * 图标格子里的一个类型（显示为图标时）：彩色图标块（IconTile 原样）+ 下面的名字，名字最多两行、超出省略号，title 给全名。
+ * 读屏名、点按、键盘高亮和列表的行一样；「常用」不出小标签（格子太窄），不显示的变淡。
+ */
+function CategoryCell({ c, count, hidden, selected, active, onPress }: { c: Category; count: number; hidden: boolean; selected: boolean; active: boolean; onPress: () => void }) {
+  const name = dataLabel(c.name);
+  const label = count ? tr('{name}，用了 {n} 次', { name, n: count }) : name;
+  return (
+    <div
+      id={`cat-row-${c.id}`}
+      data-row={c.id}
+      role="option"
+      aria-selected={selected || active}
+      aria-label={label}
+      title={name}
+      tabIndex={-1}
+      className={`cat-cell${hidden ? ' is-hidden' : ''}${selected ? ' is-selected' : ''}${active ? ' is-active' : ''}`}
+      onClick={onPress}
+    >
+      <CategoryTile c={c} size={CELL_TILE} />
+      <span className="cat-cell-name">{name}</span>
+    </div>
+  );
+}
 
 function CategoryRow({
   c,

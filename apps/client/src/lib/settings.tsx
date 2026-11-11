@@ -79,6 +79,11 @@ export interface Settings {
    * 只记在本机，不同步。入口是侧栏「项目」那行和手机「更多」页「项目」那行右边的 ···（components/PinnedStyleMenu）。读写经 lib/pinned-style。
    */
   pinnedGroupStyle: 'list' | 'icons';
+  /**
+   * 类型页（侧栏「管理 → 类型」）每个大类下的类型怎么显示（Rei 2026-11-11 08:33）：列表 list（默认）/ 图标 icons（图标格子，名字在图标下）。
+   * 只记在本机，不同步；所有分组一起切。入口是类型页页头右边的 ···（components/PinnedStyleMenu 的 DisplayStyleMenu）。读写经 lib/category-view。
+   */
+  categoryViewStyle: 'list' | 'icons';
 }
 
 export type ColorLevel = 'plain' | 'standard' | 'vivid';
@@ -88,7 +93,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', categoryViewStyle: 'list' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {
