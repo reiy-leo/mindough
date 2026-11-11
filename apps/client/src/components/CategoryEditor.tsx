@@ -10,7 +10,7 @@
  *   格子里不左滑（改档去详情页）。搜索结果也排成格子。
  * 类型不能删：不想看到就设成不显示（挂着的任务照常显示）。
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
 import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroupId, type CategoryState, type Store } from '@mindough/core';
@@ -102,9 +102,11 @@ export interface CategoryListProps {
   searchRef?: RefObject<HTMLInputElement | null>;
   /** 显示为：列表（默认）/ 图标格子。 */
   view?: 'list' | 'icons';
+  /** 搜索框右边同一行放的控件（类型页的「显示为」下拉，Rei 2026-11-12 类型页去掉页头）。 */
+  searchAside?: ReactNode;
 }
 
-export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, view = 'list' }: CategoryListProps) {
+export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, view = 'list', searchAside }: CategoryListProps) {
   const icons = view === 'icons';
   const store = useStore();
   const ui = useUi();
@@ -235,21 +237,32 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
     />
     );
 
+  const search = (
+    <SearchField aria-label={tr('搜索类型')} value={q} onChange={setQ} className="cat-search cat-list-search" autoFocus={!mobile}>
+      <Search size={14} aria-hidden className="cat-search-icon" />
+      <Input
+        ref={searchRef}
+        className="input"
+        placeholder={tr('搜类型，或者输入名字新建')}
+        role="combobox"
+        aria-expanded
+        aria-controls="cat-list-rows"
+        aria-activedescendant={active ? `cat-row-${active}` : undefined}
+        onKeyDown={onSearchKey}
+      />
+    </SearchField>
+  );
+
   return (
     <div className="cat-list">
-      <SearchField aria-label={tr('搜索类型')} value={q} onChange={setQ} className="cat-search cat-list-search" autoFocus={!mobile}>
-        <Search size={14} aria-hidden className="cat-search-icon" />
-        <Input
-          ref={searchRef}
-          className="input"
-          placeholder={tr('搜类型，或者输入名字新建')}
-          role="combobox"
-          aria-expanded
-          aria-controls="cat-list-rows"
-          aria-activedescendant={active ? `cat-row-${active}` : undefined}
-          onKeyDown={onSearchKey}
-        />
-      </SearchField>
+      {searchAside ? (
+        <div className="cat-list-search-row">
+          {search}
+          {searchAside}
+        </div>
+      ) : (
+        search
+      )}
       {/* 搜索框不动，下面的行和说明一起滚（类型页上它是唯一会滚的地方，Rei 2026-11-03） */}
       <div className="cat-list-scroll">
       <div className={`cat-list-rows${icons ? ' is-icons' : ''}${icons && mobile ? ' is-touch' : ''}`} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>

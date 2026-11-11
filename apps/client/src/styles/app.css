@@ -4740,18 +4740,19 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .cat-section-head + .cat-grid {
   margin-top: 2px;
 }
-/* 类型页页头：副标题长，手机上「···」别被挤到下一行，钉在标题右边 */
-.types-page > .page-header {
-  flex-wrap: nowrap;
-  align-items: flex-start;
-}
-.types-page > .page-header .page-heading,
-.types-page > .page-header .page-heading > div {
+/* 类型页没有页头（Rei 2026-11-12 02:14）：「列表 ⌄」下拉放在搜索框右边同一行，搜索框占满剩下的宽度 */
+.cat-list-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
 }
-.types-page > .page-header .page-actions {
+.cat-list-search-row > .cat-list-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cat-list-search-row > .view-dropdown-btn {
   flex: none;
-  margin-top: 4px;
 }
 
 /* 搜索页（Rei 2026-11-12「搜索改成单独的一页」，pages/Search.tsx）：顶上固定一个搜索框，下面列结果，行样式同 ⌘F 浮层（.palette-*）。 */

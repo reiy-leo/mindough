@@ -246,8 +246,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "没有叫“{q}”的类型，可以在「管理类型…」里添加。": "Tidak ada kategori “{q}”. Kamu bisa menambahkannya di “Kelola kategori…”.",
   "管理类型…": "Kelola kategori…",
   "全部类型": "Semua kategori",
-  "{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。": "Total {n}, dipakai {u}, disembunyikan {h}. Dipakai bersama oleh kebiasaan, hitung mundur, proyek, dan semua tugas.",
-  "{n} 个，用到 {u} 个。打卡、倒数日、项目和所有任务共用。": "Total {n}, dipakai {u}. Dipakai bersama oleh kebiasaan, hitung mundur, proyek, dan semua tugas.",
   "点一个类型，看挂了它的任务和项目": "Pilih kategori untuk melihat tugas dan proyeknya",
   "找不到这个类型": "Kategori tidak ditemukan",
   "不显示": "Disembunyikan",

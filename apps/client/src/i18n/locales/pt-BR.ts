@@ -246,8 +246,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "没有叫“{q}”的类型，可以在「管理类型…」里添加。": "Nenhuma categoria “{q}”. Você pode adicioná-la em “Gerenciar categorias…”.",
   "管理类型…": "Gerenciar categorias…",
   "全部类型": "Todas as categorias",
-  "{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。": "{n} no total, {u} em uso, {h} ocultas. Usadas por hábitos, contagens regressivas, projetos e todas as tarefas.",
-  "{n} 个，用到 {u} 个。打卡、倒数日、项目和所有任务共用。": "{n} no total, {u} em uso. Usadas por hábitos, contagens regressivas, projetos e todas as tarefas.",
   "点一个类型，看挂了它的任务和项目": "Escolha uma categoria para ver as tarefas e projetos",
   "找不到这个类型": "Categoria não encontrada",
   "不显示": "Oculta",

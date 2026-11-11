@@ -5,7 +5,8 @@
  * - 宽屏左右两栏：左边是 CategoryList（搜索 + 按分组排），右边是选中类型的详情（#/types/<id>）。
  * - 窄屏先列表，点一行整页推进详情，顶上「全部类型」返回。
  * - 详情：图标块（点开换颜色和图标）+ 直接改的名字；常用 / 普通 / 不显示三档；分组（可搜索的下拉，能新建分组，components/CategoryGroupCombo；原叫「大类」，Rei 2026-11-12 改名）；下面是用到它的任务和项目。
- * - 页头右边「列表 ⌄ / 图标 ⌄」下拉（Rei 2026-11-11 08:33 加，原是 ···；2026-11-12 改成下拉，样子同打卡页「排列方式」）：所有分组一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
+ * - 没有页头（Rei 2026-11-12 02:14）：读屏留 h1，手机顶栏只有标题。
+ * - 搜索框右边「列表 ⌄ / 图标 ⌄」下拉（Rei 2026-11-11 08:33 加在页头，原是 ···；2026-11-12 改成下拉，样子同打卡页「排列方式」；同天页头去掉后挪到搜索框这一行）：所有分组一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
  * - 键盘：⌘F 或直接打字聚焦搜索；⌘1 / ⌘2 / ⌘3 把高亮或打开的那个切成常用 / 普通 / 不显示。改动马上保存，改档能撤销。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,9 +17,8 @@ import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { useSettings } from '../lib/settings';
 import { Empty, PopoverPanel, Section, Segmented } from '../ui/primitives';
-import { PageHeader } from '../components/PageHeader';
 import { TaskRow } from '../components/TaskRow';
-import { CategoryTile, CategoryList, categoryStateLabel, categoryUsage, useCategoryActions } from '../components/CategoryEditor';
+import { CategoryTile, CategoryList, categoryStateLabel, useCategoryActions } from '../components/CategoryEditor';
 import { IconStylePicker } from '../components/IconStylePicker';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { GroupIcon } from '../components/project/GroupIcon';
@@ -33,9 +33,6 @@ export function CategoriesPage({ id }: { id?: string }) {
   const store = useStore();
   const { layout } = useSettings();
   const mobile = layout === 'mobile';
-  const all = store.categories(true);
-  const hidden = all.filter((c) => c.hidden).length;
-  const used = categoryUsage(store).size;
   const selected = store.category(id ?? null);
   const open = useCallback((cid: string) => navigate({ page: 'types', id: cid }), []);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -86,19 +83,21 @@ export function CategoriesPage({ id }: { id?: string }) {
     );
   return (
     <div className={`page types-page is-fill${selected ? ' has-selection' : ''}`}>
-      <PageHeader
-        title={trc('分类', '类型')}
-        icon={<Tags size={22} />}
-        actions={<ViewStyleDropdown label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
-        subtitle={
-          hidden
-            ? tr('{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。', { n: all.length, u: used, h: hidden })
-            : tr('{n} 个，用到 {u} 个。打卡、倒数日、项目和所有任务共用。', { n: all.length, u: used })
-        }
-      />
+      {/* 页头去掉（Rei 2026-11-12 02:14「类型页去掉页头」）：原来页头是图标、标题「类型」、副标题（几个、用到几个）和右边「列表 ⌄」下拉，没有别的按钮；
+          下拉挪到搜索框右边同一行（宽屏、手机都一样），标题和副标题不再显示，新建照旧在搜索框里打名字。
+          读屏还是要有页面名；手机上标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES），同项目列表、倒数日、日历页 */}
+      <h1 className="sr-only">{trc('分类', '类型')}</h1>
       <div className="types-layout">
         <div className="types-list">
-          <CategoryList selectedId={selected?.id ?? null} onOpen={open} onActive={setActive} mobile={mobile} searchRef={searchRef} view={view} />
+          <CategoryList
+            selectedId={selected?.id ?? null}
+            onOpen={open}
+            onActive={setActive}
+            mobile={mobile}
+            searchRef={searchRef}
+            view={view}
+            searchAside={<ViewStyleDropdown label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
+          />
         </div>
         {!mobile && <div className="types-uses">{selected ? <CategoryDetail c={selected} /> : <Empty icon={<Tags size={28} />} title={tr('点一个类型，看挂了它的任务和项目')} />}</div>}
       </div>

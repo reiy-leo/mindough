@@ -204,8 +204,6 @@ export const EN: Record<string, EnValue> = {
   "没有叫“{q}”的类型，可以在「管理类型…」里添加。": "No category called “{q}”. You can add it in “Manage categories…”.",
   "管理类型…": "Manage categories…",
   "全部类型": "All categories",
-  "{n} 个，用到 {u} 个，{h} 个不显示。打卡、倒数日、项目和所有任务共用。": "{n} in total, {u} in use, {h} hidden. Shared by habits, countdowns, projects and all tasks.",
-  "{n} 个，用到 {u} 个。打卡、倒数日、项目和所有任务共用。": "{n} in total, {u} in use. Shared by habits, countdowns, projects and all tasks.",
   "点一个类型，看挂了它的任务和项目": "Pick a category to see its tasks and projects",
   "找不到这个类型": "Category not found",
   "不显示": "Hidden",
