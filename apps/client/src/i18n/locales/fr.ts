@@ -1214,7 +1214,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "添加任务到今天": "Ajouter une tâche à aujourd’hui",
   "想到什么先记下，按回车添加到等待安排": "Notez-le, Retour pour l’ajouter à Réception",
   "添加任务到等待安排": "Ajouter une tâche à Réception",
-  "现在想做什么？按回车添加到等待安排": "Que faire maintenant ? Retour pour ajouter à Réception",
   "今天要做什么？按回车添加": "Au programme aujourd’hui ? Retour pour ajouter",
   "今天的任务": "Tâches du jour",
   "今天还是空的": "Rien ici pour l’instant",

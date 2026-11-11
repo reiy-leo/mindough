@@ -2087,6 +2087,7 @@ Rei 2026-11-12 01:22 三条：显示方式（列表 / 图标）改成下拉，�
   - 我的一天（`pages/MyDay.tsx`）：手机布局不画 `.myday-head`（大号日期 + 农历 + 排序 / 分区），换成读屏 `h1`「我的一天 · 11月12日 周四」；`DaySortMenu`、`SectionMenu` 用 `lib/topbar-slot.tsx` 的 `TopbarActions`（`createPortal` 到 App 顶栏的 `#topbar-actions`）放到顶栏右边，状态还在页面里。按钮 36px，样式 `styles/app.css` `.topbar-actions`、`.topbar .list-tools`。宽屏照旧。
   - 等待安排、过期积压：页面里本来就没有可见页头（2026-10-26 去掉的，只有读屏 `h1` 和件数小字），顶栏只有标题，这次没改代码。
   - 手机上不再显示今天的日期和农历；要的话可以放回顶栏标题旁边做小字，待 Rei 定。
+- **再追加：过期积压页去掉添加框**（Rei 2026-11-12 02:03，电脑和手机都去掉；规则是过期积压不应有新的 / 未来的任务）：`pages/Doable.tsx` 不再用 `QuickAddBar`，读屏 `h1` 和「N 件已过期」小字放进 `StickyHead`（页加 `has-sticky-head`，`.doable-head .list-meta` 去掉原来贴添加框的负边距），照旧固定在顶上。快捷键 N 在这页本来就不是聚焦添加框，而是开新建面板（`App.tsx` `newTaskDefaults` 对 doable 给空默认值），建出来没日期、进等待安排，不会进这页，所以保留不改。占位「现在想做什么？按回车添加到等待安排」没地方用了，九种语言词典里删掉；「添加任务到等待安排」等待安排页还在用。其他页的添加框不动。
 
 
 ### Apple 皮肤新建加号、资料库页去掉页头 ✅（2026-11-12）

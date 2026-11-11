@@ -1214,7 +1214,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "添加任务到今天": "Añade una tarea a hoy",
   "想到什么先记下，按回车添加到等待安排": "Apúntalo y pulsa Intro para añadirlo a Entrada",
   "添加任务到等待安排": "Añade una tarea a Entrada",
-  "现在想做什么？按回车添加到等待安排": "¿Qué quieres hacer ahora? Pulsa Intro para añadir a Entrada",
   "今天要做什么？按回车添加": "¿Qué toca hoy? Pulsa Intro para añadir",
   "今天的任务": "Tareas de hoy",
   "今天还是空的": "Aún no hay nada",

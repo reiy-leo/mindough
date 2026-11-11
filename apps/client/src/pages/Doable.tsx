@@ -2,7 +2,7 @@ import { toDateKey, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { Empty } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
-import { QuickAddBar } from '../components/QuickAddBar';
+import { StickyHead } from '../components/StickyHead';
 import { SectionedList } from '../components/SectionedList';
 import { useListView } from '../lib/list-views';
 import { backlogSections } from '../lib/sections';
@@ -36,19 +36,15 @@ export function DoablePage() {
     </div>
   );
   return (
-    <div className="page">
-      {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，新建的进待安排（没日期） */}
-      <QuickAddBar
-        placeholder={tr('现在想做什么？按回车添加到等待安排')}
-        label={tr('添加任务到等待安排')}
-        create={(body) => store.createTask({ body_md: body }).id}
-        meta={
-          <div className="list-meta">
-            <h1 className="sr-only">{tr('过期积压')}</h1>
-            {overdue.length > 0 && <span className="list-meta-text">{tr('{n} 件已过期', { n: overdue.length })}</span>}
-          </div>
-        }
-      />
+    <div className="page has-sticky-head">
+      {/* 没有添加框（Rei 2026-11-12 02:03：过期积压不应有新的 / 未来的任务，电脑和手机都去掉）；新建走 N（新建面板，建好进等待安排）或别的页。
+          也不放页头（2026-10-26 起中间列不放、2026-11-12 01:56 手机也不放）：读屏 h1 + 件数小字固定在顶上，同资料库 / 已完成页的 StickyHead */}
+      <StickyHead className="doable-head">
+        <div className="list-meta">
+          <h1 className="sr-only">{tr('过期积压')}</h1>
+          {overdue.length > 0 && <span className="list-meta-text">{tr('{n} 件已过期', { n: overdue.length })}</span>}
+        </div>
+      </StickyHead>
       {overdue.length === 0 && <Empty title={tr('没有过期的任务')} />}
       <SectionedList
         sections={backlogSections(overdue, now, today)}

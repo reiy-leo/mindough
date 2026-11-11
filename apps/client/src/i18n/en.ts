@@ -895,7 +895,6 @@ export const EN: Record<string, EnValue> = {
   添加任务到今天: 'Add a task to today',
   '想到什么先记下，按回车添加到等待安排': 'Jot it down, press Return to add to Inbox',
   '添加任务到等待安排': 'Add a task to Inbox',
-  '现在想做什么？按回车添加到等待安排': 'What can you do now? Press Return to add to Inbox',
   '今天要做什么？按回车添加': 'What’s on today? Press Return to add',
   今天的任务: 'Today’s tasks',
   今天还是空的: 'Nothing Here Yet',
