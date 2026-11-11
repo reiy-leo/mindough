@@ -20,21 +20,22 @@ export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind'
 
 /**
  * 固定顺序（Rei 2026-11-11 重排）：胶囊行和「+」菜单都按这个排。
- * ① 日期、完成方式、重复、提醒；② 资料、类型；③ 心情和其他属性（项目、卡片颜色）。
+ * ① 日期、完成方式、重复、提醒；② 项目、资料、类型；③ 心情和其他属性（卡片颜色）。
+ * 项目 2026-11-12 从第 3 组挪进资料那组、放第一个（Rei「项目移到资料那一组」；这组原来没别的排序规则，就按这里的顺序）。
  */
-export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'refs', 'category', 'mood', 'group', 'color'];
+export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'group', 'refs', 'category', 'mood', 'color'];
 
-/** 「+」菜单里每项属于第几组（组和组之间画分隔线）。附件在第 3 组，紧跟心情。 */
+/** 「+」菜单里每项属于第几组（组和组之间画分隔线）。项目在第 2 组第一个；附件在第 3 组，紧跟心情。 */
 export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
   date: 1,
   mode: 1,
   repeat: 1,
   remind: 1,
+  group: 2,
   refs: 2,
   category: 2,
   mood: 3,
   attachment: 3,
-  group: 3,
   color: 3,
 };
 
@@ -153,7 +154,7 @@ export type ComposerChipId = PropId | 'related';
 
 /**
  * 新建面板的胶囊顺序（Rei 2026-11-11 04:27「也按任务详情『+』菜单」）：同一份 PROP_ORDER，
- * 相关任务排在第 3 组最后。新建面板没有「+」菜单，胶囊不画分隔线（同详情的胶囊行）；
+ * 所以 2026-11-12 项目跟着挪到资料前面；相关任务排在第 3 组最后。新建面板没有「+」菜单，胶囊不画分隔线（同详情的胶囊行）；
  * 完成方式、重复在新建面板是下面两段（怎么算完成、多久一次），不是胶囊。
  */
 export function composerChipOrder(ids: readonly ComposerChipId[]): ComposerChipId[] {

@@ -28,9 +28,9 @@ describe('属性胶囊：默认值判定（Rei 2026-10-25 方案 A）', () => {
     expect(isPropSet('date', t({ scheduled_date: '2026-10-16' }))).toBe(true);
     expect(isPropSet('group', t({ group_id: 'g1' }))).toBe(true);
   });
-  it('胶囊按固定顺序（2026-11-11）：日期、完成方式、提醒、类型、组；资料不是胶囊', () => {
+  it('胶囊按固定顺序（2026-11-12）：日期、完成方式、提醒、项目、类型；资料不是胶囊', () => {
     const task = t({ group_id: 'g', scheduled_date: '2026-10-16', remind_time: '09:00', completion_mode: 'count' });
-    expect(setProps(task, { categories: 2, refs: 3 })).toEqual(['date', 'mode', 'remind', 'category', 'group']);
+    expect(setProps(task, { categories: 2, refs: 3 })).toEqual(['date', 'mode', 'remind', 'group', 'category']);
   });
   it('重复任务：没有日期', () => {
     const task = t({ recurrence: 'FREQ=DAILY', category_id: 'c1' });
@@ -42,10 +42,10 @@ describe('属性胶囊：默认值判定（Rei 2026-10-25 方案 A）', () => {
 
 describe('「+」菜单：列出没设的属性', () => {
   it('什么都没设：没日期时不能提醒，所以不列提醒', () => {
-    expect(unsetProps(t())).toEqual(['date', 'mode', 'repeat', 'refs', 'category', 'mood', 'group']);
+    expect(unsetProps(t())).toEqual(['date', 'mode', 'repeat', 'group', 'refs', 'category', 'mood']);
   });
   it('有日期就能加提醒', () => {
-    expect(unsetProps(t({ scheduled_date: '2026-10-16' }))).toEqual(['mode', 'repeat', 'remind', 'refs', 'category', 'mood', 'group']);
+    expect(unsetProps(t({ scheduled_date: '2026-10-16' }))).toEqual(['mode', 'repeat', 'remind', 'group', 'refs', 'category', 'mood']);
   });
   it('挂了资料：菜单里不再有「资料」（详情里资料下面有自己的「添加资料」）', () => {
     expect(unsetProps(t(), { refs: 1 })).not.toContain('refs');
@@ -80,8 +80,8 @@ describe('清除回默认', () => {
 });
 
 describe('「+」菜单里的附件（Rei 2026-10-25）', () => {
-  it('能加附件时「附件」排在最后', () => {
-    expect(addMenuItems(t(), {}, true)).toEqual(['date', 'mode', 'repeat', 'refs', 'category', 'mood', 'attachment', 'group']);
+  it('能加附件时「附件」排在心情后面', () => {
+    expect(addMenuItems(t(), {}, true)).toEqual(['date', 'mode', 'repeat', 'group', 'refs', 'category', 'mood', 'attachment']);
     expect(addMenuItems(t(), {}, false)).toEqual(unsetProps(t()));
   });
   it('属性都设了，菜单里还剩「附件」，「+」不藏', () => {
@@ -120,21 +120,34 @@ describe('心情（Rei 2026-11-08）', () => {
 });
 
 describe('「+」菜单分三组（Rei 2026-11-11）', () => {
-  it('日期、完成方式、重复、提醒 ｜ 资料、类型 ｜ 心情、附件、项目', () => {
+  it('日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、附件（项目 2026-11-12 挪进资料那组、放第一个）', () => {
     expect(addMenuSections(t({ scheduled_date: '2026-10-16' }), {}, true)).toEqual([
       ['mode', 'repeat', 'remind'],
-      ['refs', 'category'],
-      ['mood', 'attachment', 'group'],
+      ['group', 'refs', 'category'],
+      ['mood', 'attachment'],
+    ]);
+  });
+  it('项目设过就不在菜单里，资料那组只剩资料、类型', () => {
+    expect(addMenuSections(t({ scheduled_date: '2026-10-16', group_id: 'g' }), {}, true)[1]).toEqual(['refs', 'category']);
+  });
+  it('资料、类型都挂了，资料那组只剩项目', () => {
+    expect(addMenuSections(t({ scheduled_date: '2026-10-16', category_id: 'c' }), { refs: 1 }, true)).toEqual([
+      ['mode', 'repeat', 'remind'],
+      ['group'],
+      ['mood', 'attachment'],
     ]);
   });
   it('没有日期这一项（重复任务）就跳过它，空组不出', () => {
     const rec = t({ recurrence: 'FREQ=DAILY', category_id: 'c', group_id: 'g' });
     expect(addMenuSections(rec, { refs: 1 }, true)).toEqual([['remind'], ['attachment']]);
+    const rec2 = t({ recurrence: 'FREQ=DAILY' });
+    expect(addMenuSections(rec2, {}, true)).toEqual([['remind'], ['group', 'refs', 'category'], ['attachment']]);
     expect(addMenuSections(rec, { refs: 1 }, false)).toEqual([['remind']]);
   });
-  it('倒数日：没有心情，附件排第 3 组第一项，卡片颜色在后', () => {
+  it('倒数日：没有心情，附件排第 3 组第一项，卡片颜色在后；项目在第 2 组', () => {
     const cd = t({ completion_mode: 'countdown', target_date: '2026-12-01' });
-    expect(addMenuSections(cd, {}, true).at(-1)).toEqual(['attachment', 'group', 'color']);
+    expect(addMenuSections(cd, {}, true).at(-1)).toEqual(['attachment', 'color']);
+    expect(addMenuSections(cd, {}, true).at(-2)).toEqual(['group', 'refs', 'category']);
   });
   it('分组拼起来就是 addMenuItems', () => {
     const task = t({ scheduled_date: '2026-10-16' });
@@ -143,8 +156,8 @@ describe('「+」菜单分三组（Rei 2026-11-11）', () => {
 });
 
 describe('新建面板胶囊顺序（Rei 2026-11-11 04:27）', () => {
-  it('照「+」菜单：日期、提醒 ｜ 资料、类型 ｜ 心情、项目、相关任务', () => {
-    expect(composerChipOrder(['category', 'refs', 'date', 'remind', 'group', 'mood', 'related'])).toEqual(['date', 'remind', 'refs', 'category', 'mood', 'group', 'related']);
+  it('照「+」菜单：日期、提醒 ｜ 项目、资料、类型 ｜ 心情、相关任务', () => {
+    expect(composerChipOrder(['category', 'refs', 'date', 'remind', 'group', 'mood', 'related'])).toEqual(['date', 'remind', 'group', 'refs', 'category', 'mood', 'related']);
   });
   it('跟 PROP_ORDER 同一份顺序，相关任务在最后', () => {
     const all = [...PROP_ORDER, 'related' as const].reverse();
