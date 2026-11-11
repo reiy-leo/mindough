@@ -2012,3 +2012,12 @@ Rei 2026-11-12 00:47：「我的一天」和项目页的分区里加「按类型
 - **文案**：`trc('列表分区', '按类型')`、`trc('列表分区', '没有类型')` 2 条，9 种语言（英文 By Category / No Category，和 By Mood 一样大写；其余语言和已有的同字，俄语用单数「По категории」）。没加新中文说法。
 - **测试**：`lib/sections.test.ts` 加 2 项（只进第一个类型、不显示的类型成段、没类型最后、不认识的类型算没类型；先后规则），`normalizeListView` / `normalizePrefs` 认 `type`。截图 `work/d1112-bytype/bt.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390 暗：菜单有「按类型」、成段、「没有类型」在最后、段标题有图标块、一件任务只出现一次、没有拖动把手、不横向溢出、刷新记住、多彩档上色、项目页同样）。
 
+### 日历：去掉页头、视图下拉去标签、天数周数加 − + ✅（2026-11-12）
+Rei 2026-11-12 00:54，方案见 [CALENDAR.md](CALENDAR.md) 第十一节。
+- `pages/Calendar.tsx`：去掉 `PageHeader`（原来只有图标和标题，没有按钮），换成 `<h1 className="sr-only">`；新 `CountStepper`（IconButton − / InlineNumber / IconButton +，到边界 `isDisabled`），多日、多周共用。
+- `styles/calendar.css`：`.cal-view-select .field-label` 宽屏、手机都只给读屏；`.cal-step[data-disabled]` 变淡。
+- `lib/mobile-topbar.ts`：`agenda` 进 `HEADERLESS_PAGES`，手机顶栏写「日历」。
+- 新文案「少一天」「多一天」「少一周」「多一周」，9 种语言（外语待母语者看）。
+- 测试：`pages/Calendar.test.tsx` 加 2 项，顺手给 store 假对象补了 `isLocked` / `get` / `updateTask`（拖动改日期以后 5 项一直报错）；`lib/mobile-topbar.test.ts` 改 1 处。截图 `work/d1112-calhdr/ch.mjs`（三皮肤 × 1366 / 390）。
+- 没有迁移，Worker 没改。
+
