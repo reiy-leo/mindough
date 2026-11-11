@@ -4312,11 +4312,11 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   flex-direction: row;
   align-items: center;
   gap: var(--space-3);
-  min-height: 32px;
   padding-bottom: var(--space-2);
 }
 .detail-head-sticky > .back-link {
   flex: none;
+  min-height: 32px; /* 和后来出现的铅笔按钮一样高，免得它出现时这一行变高、下面的内容跳一下 */
   margin: 0 0 0 -4px;
 }
 .sticky-head-title {

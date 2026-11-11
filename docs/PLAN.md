@@ -1954,3 +1954,14 @@ Rei 2026-11-11 06:56「资料库「影视库」里的剧集显示 seasons」。
 - **复现**：本地 chromium / webkit 用当时 main 的构建没复现出截图里那种叠字（名字本来就有两行截断）；按截图的样子把文字框和名字都钉在卡片宽度内，哪种引擎都不会再伸出去。
 - **测试**：client `lib-tile.test.ts` 3 项。截图 `work/d1111-dest/dest.mjs`（LightVela `~/dest-tool`）：每个库加一条长名字（目的地加长中文名 + 地址、无空格英文名），三皮肤 × 宽屏 1280 / 手机 390，目的地另外换成方形、海报版式，检查名字和小字都在卡片内、名字不超过两行、title 是全名、目的地没有小字、餐厅照常显示地址、目的地详情里有地址。
 
+### 资料库和已完成页顶部固定、只滚内容 ✅（2026-11-11）
+Rei 2026-11-11 08:10「资料库页面中只有内容部分滚动，顶部固定」，08:11 追加「已完成页也一样，顶部固定，只滚任务列表部分」。
+
+- **组件**：`components/StickyHead.tsx`。`StickyHead` = `useStuck` 的哨兵 + 一块 `.sticky-head`（sticky top 0、不透明 `var(--bg)` + `--bg-image`、左右多铺一点、`is-stuck` 细线），做法照打卡页 `.checkin-head-sticky`；页面加 `has-sticky-head`，宽屏 / 手机 / macOS 无标题栏的上边距挪进固定块。`useScrolledPast` 用 IntersectionObserver（上边扣 64px）看大标题是不是滚到顶栏下面了。
+- **资料库页**（`pages/Library.tsx` `LibraryPage`，`.lib-head-sticky`）：PageHeader、库标签条、搜索工具条一起固定；卡片网格、空状态、在线结果在下面滚。
+- **资料详情 / 人物详情**（`LibraryItemPage`、`pages/People.tsx` `PersonDetailPage`，`.detail-head-sticky`）：只固定「‹ 返回」一行；大标题滚走后这一行淡入名字（`aria-hidden`，读屏已有 h1）和铅笔按钮（复用「编辑资料」「编辑」，没有新文案）。整块 hero 不固定，是我定的：海报 + 资料表能占半屏以上。
+- **已完成页**（`pages/Done.tsx`）：PageHeader（标题 + 分区按钮）固定。
+- **滚的还是 `.main`**（macOS 无标题栏 `.main-scroll`），没另开滚动层，手指滑、安全区、返回手势照旧；安卓选字变黑那套（手机整页任务详情 `.pane-body-sheet`、不透明底）在任务详情里，这次没碰；固定块底色本身不透明。
+- **滚动条**：`HIDE_SCROLLBAR_PAGES` 加 `library`、`libitem`、`person`（`done` 本来就在）。人物列表页 `people` 没动。
+- 测试：`lib/hide-scrollbar.test.ts` 改列表、加一项（sticky 规则、各页固定块里有什么）。截图脚本 `work/d1111-libscroll/ls.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390 暗 × 四页，量滚动条宽、滚前滚后顶部位置、固定块在上层、底色不透明、内容一开始不被盖、详情页小标题出现）。
+
