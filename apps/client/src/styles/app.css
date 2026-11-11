@@ -951,9 +951,8 @@ span.drag-handle.is-pin {
 }
 .is-done .row-title {
   color: var(--text-3);
-  text-decoration: line-through;
 }
-/* 关闭：已结束但不算完成——不划线，整体变淡，带“关闭”标记 */
+/* 完成、关闭的标题都不划线，只变灰（Rei 2026-11-12「已完成和已关闭的任务不要删除线」）；关闭另带“关闭”标记 */
 .is-closed .row-title {
   color: var(--text-3);
 }
@@ -961,7 +960,7 @@ span.drag-handle.is-pin {
    挂了这几个内置类型的任务，列表里标题变色；同时挂了几个，紧急 > 重要 > 收藏（core titleMarkOf）。
    亮色用深色调、暗色用提亮的版本，每套皮肤 × 亮暗各定一组写死的颜色（不用 color-mix，Chromium 107 不认），
    对这套皮肤的页面底、卡片、悬停、选中底色对比度都 ≥ 4.5:1（算法见 work/d1112-builtinlock/contrast.py）。
-   做完（划线）、关闭的照旧灰色，不再变色：结束了的事不该再抢眼。素净档只有黑白灰：不变色，改成加粗。 */
+   做完、关闭的照旧灰色，不再变色：结束了的事不该再抢眼。素净档只有黑白灰：不变色，改成加粗。 */
 :root[data-skin='apple'] {
   --mark-star: #805300;
   --mark-urgent: #b8141a;
@@ -2314,7 +2313,6 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   padding: 4px 0;
 }
 .dep-item.is-done .dep-title {
-  text-decoration: line-through;
   color: var(--text-3);
 }
 .dep-status {

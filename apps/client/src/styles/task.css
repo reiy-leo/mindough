@@ -2035,8 +2035,6 @@ html[data-layout='mobile'] .date-panel .date-chip {
 .chain-card.is-done .chain-card-title,
 .chain-card.is-closed .chain-card-title {
   color: var(--text-3);
-  text-decoration: line-through;
-  text-decoration-color: var(--border-strong);
 }
 .chain-card-meta {
   display: flex;
