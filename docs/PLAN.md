@@ -2099,3 +2099,14 @@ Rei 2026-11-12 01:31：「新建倒数日」「新建打卡」「资料库中的
 - **文案**：没有新词条（「编辑资料库」「资料库操作」「添加到{name}」都是已有的）。
 - **测试**：`lib/mobile-topbar.test.ts` 改了；tsc、nav / i18n / locales 测试过。自查脚本 `work/d1112-applebtn/ab.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 / 手机 390），截图 `work/shots-d1112-applebtn/before`、`after`。
 - **待 Rei 确认**：① 项目列表页的加号也跟着变成 Apple 无边框样子（四处同一个按钮）；② 资料库「…」放在加号左边，菜单里写「编辑资料库」（沿用原按钮的读屏名）；③ WinUI、Material 的资料库添加从「＋ 添加」文字按钮变成填充加号方块（页头去掉了，跟着项目列表页做）。
+
+### 类型页去掉页头、「显示为」下拉挪到搜索框右边 ✅（2026-11-12）
+Rei 2026-11-12 02:14：类型页去掉页头；「显示为」下拉（列表 / 图标）放到搜索框右边，同一行。照项目列表、倒数日、日历的做法：读屏留 h1，手机顶栏只留标题。
+
+- 原来的页头是图标 + 标题「类型」+ 副标题（「N 个，用到 U 个……共用」）+ 右边「列表 ⌄」下拉。除了这个下拉没有别的控件，新建类型本来就在搜索框里（打名字，最后一行「新建“xxx”」），没有要挪的。
+- `pages/Categories.tsx`：去掉 `PageHeader`，换成 `<h1 className="sr-only">类型</h1>`。`ViewStyleDropdown` 通过 `CategoryList` 新加的 `searchAside` 放进搜索框那行。手机点开一个类型的详情页不变（顶上「全部类型」返回条）。
+- `components/CategoryEditor.tsx`：`CategoryList` 加 `searchAside`；给了就包一层 `.cat-list-search-row`（flex，搜索框占满剩下的宽度，下拉 `flex: none`）；没给的地方（选择器等）照旧。
+- `lib/mobile-topbar.ts`：`HEADERLESS_PAGES` 加 `types`，手机顶栏写「类型」，只有标题。手机详情页顶栏也是「类型」，下面照旧是「全部类型」返回条。
+- 样式 `styles/app.css`：删掉 `.types-page > .page-header` 那几条，加 `.cat-list-search-row`。宽屏、手机同一个布局，不用 color-mix。
+- 副标题两条词条（「{n} 个，用到 {u} 个……」）没人用了，九种语言一起删掉。没有新文案、没迁移，Worker 没改。
+- 测试：`lib/mobile-topbar.test.ts` 加 types；tsc（client、core）、类型页相关单测过。自查脚本 `work/d1112-typehdr/thd.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 / 手机 390）：没页头、读屏 h1 看不见、副标题不显示、手机顶栏只有标题；下拉和搜索框垂直居中对齐、在搜索框右边、在列表卡片里，搜索框宽度够用；菜单两项打勾、切图标再切回；打字后下拉不挪、页面不横向溢出；点开详情正常。截图 `work/shots-d1112-typehdr/`。
