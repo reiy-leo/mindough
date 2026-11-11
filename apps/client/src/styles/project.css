@@ -234,7 +234,23 @@
 .timeline {
   --tl-name-w: 180px;
   --tl-row-h: 36px;
+  /* 时间轴外框和左侧固定「任务」列的不透明底（Rei 2026-11-12：悬停 / 选中时今天红线、任务条从标题列底下透出来）。
+     WinUI 的 --surface 是半透明白（亮 0.72、暗 0.05），Apple / WinUI 的悬停、选中色也是半透明，直接当底会透；
+     这里先垫一层皮肤自己的页面底色（写死，不跟项目淡色走，免得 color-mix 不认时整块变透明），--surface 和悬停 / 选中色一层层叠在上面。 */
+  --tl-base: #ffffff;
   min-width: 0;
+}
+[data-skin='apple'][data-theme='dark'] .timeline {
+  --tl-base: #1c1c1e;
+}
+[data-skin='winui'] .timeline {
+  --tl-base: #f3f3f3;
+}
+[data-skin='winui'][data-theme='dark'] .timeline {
+  --tl-base: #202020;
+}
+[data-skin='material'][data-theme='dark'] .timeline {
+  --tl-base: #141218;
 }
 [data-layout='mobile'] .timeline {
   --tl-name-w: 112px;
@@ -249,11 +265,12 @@
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: linear-gradient(var(--surface), var(--surface)) var(--tl-base);
 }
 .tl-grid {
   position: relative;
   min-width: 100%;
+  isolation: isolate;
 }
 .tl-head {
   display: flex;
@@ -264,14 +281,17 @@
 .tl-name {
   position: sticky;
   left: 0;
-  z-index: 3;
+  /* 盖过网格线、箭头（1）、今天线和任务条（2）；横向滚动时它们从这一列底下滑过去 */
+  z-index: 5;
+  --tl-name-over: transparent;
   flex: none;
   width: var(--tl-name-w);
   height: 100%;
   display: flex;
   align-items: center;
   padding: 0 10px;
-  background: var(--surface);
+  /* 三层：悬停 / 选中色 → --surface → 不透明底；不用 color-mix（安卓 Chromium 107 不认） */
+  background: linear-gradient(var(--tl-name-over), var(--tl-name-over)), linear-gradient(var(--surface), var(--surface)) var(--tl-base);
   border: 0;
   border-right: 1px solid var(--border);
   color: var(--text);
@@ -282,7 +302,7 @@
   outline: none;
 }
 .tl-name[data-hovered] {
-  background: color-mix(in srgb, var(--surface-hover) 100%, var(--surface));
+  --tl-name-over: var(--surface-hover);
 }
 .tl-name[data-focus-visible] {
   box-shadow: inset 0 0 0 2px var(--accent);
@@ -378,7 +398,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 .tl-row.is-selected .tl-name {
-  background: var(--accent-soft);
+  --tl-name-over: var(--accent-soft);
   color: var(--accent-soft-text, var(--accent));
 }
 .tl-bar {
