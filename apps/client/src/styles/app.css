@@ -4637,3 +4637,40 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   flex: none;
   margin-top: 4px;
 }
+
+/* 搜索页（Rei 2026-11-12「搜索改成单独的一页」，pages/Search.tsx）：顶上固定一个搜索框，下面列结果，行样式同 ⌘F 浮层（.palette-*）。 */
+.search-page-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.search-page-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.search-page-input {
+  /* 16px 起，iOS Safari 聚焦时不放大页面 */
+  font-size: 16px;
+  min-height: 40px;
+  padding-left: 36px;
+  padding-right: 36px;
+}
+.search-page-input::-webkit-search-cancel-button {
+  display: none;
+}
+.search-page-clear {
+  position: absolute;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+}
+.search-page-list {
+  padding: 0;
+  overflow: visible;
+}
+[data-layout='mobile'] .search-page-list .palette-item {
+  min-height: 48px;
+}

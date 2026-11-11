@@ -31,6 +31,7 @@ import { SettingsPage } from './pages/Settings';
 import { JournalPage } from './pages/Journal';
 import { CategoriesPage } from './pages/Categories';
 import { DonePage } from './pages/Done';
+import { SearchPage } from './pages/Search';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
 import { useMentionSource } from './lib/task-mention';
@@ -186,6 +187,8 @@ function navSections(store: Store): NavSection[] {
   });
 }
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
+/** 搜索页（Rei 2026-11-12）：手机「更多」页最上面一行进（标签栏是定好的四项 + 更多，不加第五项）；宽屏侧栏顶上照旧是 ⌘F 浮层。 */
+const SEARCH: NavItem = { page: 'search', get label() { return tr('搜索'); }, icon: Search, match: ['search'] };
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。
  *  项目总览页（groups）只有项目卡片，不算（Rei 2026-11-11「项目列表页 不显示任务详情侧边栏」，详情走浮层，见 detailInModal）。 */
 const LIST_PAGES: Route['page'][] = ['myday', 'backlog', 'agenda', 'group', 'doable', 'checkin', 'countdown', 'done'];
@@ -452,12 +455,16 @@ function Page({ route }: { route: Route }) {
       return <DonePage />;
     case 'more':
       return <MorePage />;
+    case 'search':
+      return <SearchPage />;
   }
 }
 
 function MorePage() {
   const store = useStore();
   const sections = [
+    // 搜索放最上面一行，自成一组（Rei 2026-11-12：手机各页不再有搜索按钮）
+    { id: 'search', title: '', items: [SEARCH] },
     ...navSections(store).map((sec) => ({ id: sec.id, title: sec.title, items: sec.items.filter((n) => n.key || !isMobileTab(n.page)) })),
     { id: 'settings', title: '', items: [SETTINGS] },
   ].filter((sec) => sec.items.length > 0);
@@ -467,7 +474,7 @@ function MorePage() {
         <h1 className="page-title">{tr('更多')}</h1>
       </header>
       {sections.map((sec) => (
-        <section key={sec.id} className="more-section" aria-label={sec.title || SETTINGS.label}>
+        <section key={sec.id} className="more-section" aria-label={sec.title || sec.items[0]?.label}>
           {sec.title && <h2 className="more-section-title">{sec.title}</h2>}
           <div className="card more-list">
             <PinnedScope items={sec.items}>
@@ -894,17 +901,12 @@ export function App() {
     const topbar = mobileTopbar(route.page);
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
-        {/* 顶栏只在我的一天放搜索（Rei 2026-11-11）；有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
+        {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在「更多」页进单独的搜索页）；有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
         {topbar === 'none' ? (
           <div className="topbar-inset" aria-hidden />
         ) : (
           <div className="topbar">
             <span className="topbar-title">{current?.label ?? appName()}</span>
-            {topbar === 'search' && (
-              <RacButton className="icon-btn" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
-                <Search size={20} />
-              </RacButton>
-            )}
           </div>
         )}
         <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>

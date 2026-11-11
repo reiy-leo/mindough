@@ -4,15 +4,14 @@ import type { Route } from './router';
 export const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin', 'agenda', 'groups'];
 
 /**
- * 手机顶栏放什么（Rei 2026-11-11 02:09「只有我的一天保留这个搜索，其他页面都不显示」，不要因此留出空行）：
- * - search：我的一天，标题 + 搜索按钮；
- * - title：别的没有页头的页（待安排、可做、打卡、日历、项目列表），只放标题；
- * - none：有自己页头的页，不要顶栏这一行，只留状态栏那一截（网页版是 0 高）。
- * 宽屏的搜索在侧栏顶上，跟这个无关；⌘K / Ctrl K 哪一页都能开搜索。
+ * 手机顶栏放什么：
+ * - title：没有页头的页（我的一天、待安排、可做、打卡、日历、项目列表），只放标题；
+ * - none：有自己页头的页（搜索页的页头是搜索框），不要顶栏这一行，只留状态栏那一截（网页版是 0 高）。
+ * 顶栏不放搜索按钮（Rei 2026-11-12 01:21「手机端任何页面都不显示搜索按钮」；以前 2026-11-11 只在我的一天留着）：
+ * 搜索是单独一页（#/search），从「更多」页最上面一行进。宽屏的搜索在侧栏顶上，跟这个无关；⌘F / Ctrl F 哪一页都能开搜索浮层。
  */
-export type MobileTopbar = 'search' | 'title' | 'none';
+export type MobileTopbar = 'title' | 'none';
 
 export function mobileTopbar(page: Route['page']): MobileTopbar {
-  if (page === 'myday') return 'search';
   return HEADERLESS_PAGES.includes(page) ? 'title' : 'none';
 }

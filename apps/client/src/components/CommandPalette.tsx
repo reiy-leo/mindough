@@ -1,22 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, Input, Modal, ModalOverlay, SearchField, Button as RacButton } from 'react-aria-components';
-import { CornerDownLeft, FileDown, NotebookPen, Plus, Search, Sun, SunDim, UserRound } from 'lucide-react';
-import { TASK_STATUS_LABEL, isFinished, libraryCopy, search, type SearchHit, plainTitleMarkdown } from '@mindough/core';
-import { MoodIcon } from './journal/MoodIcon';
+import { CornerDownLeft, FileDown, NotebookPen, Plus, Search } from 'lucide-react';
+import { plainTitleMarkdown, type SearchHit } from '@mindough/core';
 import { requestJournalCompose } from '../lib/journal-compose';
 import { useStore } from '../store/StoreProvider';
 import { imeBusy, useImeQuery } from '../lib/ime';
 import { useUi } from '../lib/ui';
 import { navigate } from '../lib/router';
-import { toggleMyDay } from '../lib/actions';
 import { viewOf } from '../lib/view';
-import { TaskThumb } from './TaskRow';
-import { Avatar } from './Avatar';
-import { ItemArt, artShape } from './library/Library';
-import { imageUrl } from '../lib/view';
+import { tr } from '../lib/i18n';
+import { SearchHitRow, SearchTaskRow, openSearchHit, useRecentTasks, useSearchHits } from './SearchResults';
 
-import { dataLabel, tr, trc } from '../lib/i18n';
-import { GroupIcon } from './project/GroupIcon';
 /** ⌘K / Ctrl+K 全局搜索：搜正文、类型字段、人物、组；结果直接“加入我的一天”。 */
 export function CommandPalette() {
   const ui = useUi();
@@ -33,16 +27,8 @@ export function CommandPalette() {
     }
   }, [ui.paletteOpen, reset]);
 
-  const hits = useMemo<SearchHit[]>(
-    () =>
-      search(
-        { tasks: store.list('task'), types: store.list('task_type'), people: store.list('person'), groups: store.list('group'), taskPeople: store.list('task_person'), items: store.list('library_item'), journal: store.list('journal_post'), taskItems: store.list('task_item'), taskCategories: store.list('task_category'), categories: store.list('category') },
-        q,
-        20,
-      ),
-    [q, store, store.version], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-  const recent = useMemo(() => (q ? [] : store.tasks().filter((t) => !isFinished(t.status)).slice(-6).reverse()), [q, store, store.version]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hits = useSearchHits(q);
+  const recent = useRecentTasks(q);
 
   const close = () => ui.setPaletteOpen(false);
   // 「写日记」：没输入时排最前；输入像「日记 / journal / 写」时也出来。打开日记页、输入框拿焦点
@@ -69,40 +55,13 @@ export function CommandPalette() {
   };
   const openHit = (h: SearchHit) => {
     close();
-    if (h.kind === 'task') ui.openEditor(h.id);
-    else if (h.kind === 'person') navigate({ page: 'person', id: h.id });
-    else if (h.kind === 'item') navigate({ page: 'libitem', typeId: h.item.type_id, id: h.id });
-    else if (h.kind === 'journal') navigate({ page: 'journal', date: h.post.day });
-    else navigate({ page: 'group', id: h.id });
+    openSearchHit(ui, h);
   };
   const count = offset + (q ? hits.length : recent.length);
 
-  const taskItem = (id: string, title: string, snippet: string, index: number) => {
-    const t = store.get('task', id);
-    if (!t) return null;
-    const v = viewOf(store, t);
-    // 置顶的每天都在我的一天里（Rei 2026-11-08）
-    const inDay = !!store.get('task', id)?.pinned_at || store.isInMyDay(id);
-    return (
-      <li key={id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
-        <RacButton className="palette-main" onPress={() => { close(); ui.openEditor(id); }}>
-          <TaskThumb media={v.media} layout={v.thumbLayout} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} hasItem={v.hasItem} />
-          <span className="palette-text">
-            <span className="palette-title">{title}</span>
-            <span className="palette-snippet">
-              {v.type && v.type.layout !== 'text' ? `${dataLabel(v.type.name)} · ` : ''}
-              {TASK_STATUS_LABEL[t.status]}
-              {snippet ? ` · ${snippet}` : ''}
-            </span>
-          </span>
-        </RacButton>
-        <RacButton className={`btn btn-tonal palette-add${inDay ? ' is-on' : ''}`} onPress={() => toggleMyDay(store, ui, id)} aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')}>
-          {inDay ? <Sun size={15} /> : <SunDim size={15} />}
-          {inDay ? tr('已在今天') : tr('加入我的一天')}
-        </RacButton>
-      </li>
-    );
-  };
+  const taskItem = (id: string, title: string, snippet: string, index: number) => (
+    <SearchTaskRow key={id} id={id} title={title} snippet={snippet} active={index === active} onHover={() => setActive(index)} onOpen={() => { close(); ui.openEditor(id); }} />
+  );
 
   return (
     <ModalOverlay isOpen={ui.paletteOpen} onOpenChange={ui.setPaletteOpen} isDismissable className="overlay overlay-top">
@@ -183,59 +142,7 @@ export function CommandPalette() {
             {recent.map((t, i) => taskItem(t.id, viewOf(store, t).title, '', i + offset))}
             {hits.map((h, i) => {
               const index = i + offset;
-              if (h.kind === 'task') return taskItem(h.id, h.title, h.snippet, index);
-              if (h.kind === 'journal')
-                return (
-                  <li key={h.id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
-                    <RacButton className="palette-main" onPress={() => openHit(h)}>
-                      <span className="thumb thumb-icon">{h.post.mood ? <MoodIcon mood={h.post.mood} size={22} /> : <NotebookPen size={16} />}</span>
-                      <span className="palette-text">
-                        <span className="palette-title">{h.title}</span>
-                        <span className="palette-snippet">
-                          {tr('日记')}
-                          {h.snippet ? ` · ${h.snippet}` : ''}
-                        </span>
-                      </span>
-                    </RacButton>
-                  </li>
-                );
-              if (h.kind === 'item')
-                return (
-                  <li key={h.id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
-                    <RacButton className="palette-main" onPress={() => openHit(h)}>
-                      <ItemArt src={imageUrl(store, h.item.image)} name={h.title} shape={artShape(h.type)} className="palette-art" />
-                      <span className="palette-text">
-                        <span className="palette-title">{h.title}</span>
-                        <span className="palette-snippet">
-                          {h.type ? libraryCopy(h.type).name : tr('资料库')}
-                          {h.snippet ? ` · ${h.snippet}` : ''}
-                        </span>
-                      </span>
-                    </RacButton>
-                    <RacButton
-                      className="btn btn-tonal palette-add"
-                      onPress={() => {
-                        close();
-                        ui.openQuickCreate({ type_id: h.item.type_id, library_item_id: h.id });
-                      }}
-                    >
-                      <Plus size={15} />
-                      {tr('用它新建任务')}</RacButton>
-                  </li>
-                );
-              return (
-                <li key={h.id} className={`palette-item${index === active ? ' is-active' : ''}`} onMouseEnter={() => setActive(index)}>
-                  <RacButton className="palette-main" onPress={() => openHit(h)}>
-                    {h.kind === 'person' ? <Avatar store={store} person={h.person} size={32} /> : h.kind === 'group' ? <GroupIcon group={h.group} size={30} className="thumb-tile" /> : null}
-                    <span className="palette-text">
-                      <span className="palette-title">{h.title}</span>
-                      <span className="palette-snippet">
-                        {h.kind === 'person' ? <><UserRound size={11} /> {tr('人物')}{h.snippet ? ` · ${h.snippet}` : ''}</> : trc('属性', '项目')}
-                      </span>
-                    </span>
-                  </RacButton>
-                </li>
-              );
+              return <SearchHitRow key={h.id} hit={h} active={index === active} onHover={() => setActive(index)} onOpen={() => openHit(h)} beforeCreate={close} />;
             })}
             {q.trim() && hits.length === 0 && <li className="palette-empty">{tr('没找到「{q}」，按回车直接新建', { q })}</li>}
           </ul>

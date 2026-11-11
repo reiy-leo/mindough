@@ -33,6 +33,8 @@ export type Route =
   | { page: 'types'; id?: string }
   /** 已完成（Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」）：完成和关闭的任务，按结束时间从新到旧。#/done，别名 #/completed。 */
   | { page: 'done' }
+  /** 搜索页（Rei 2026-11-12「搜索改成单独的一页」）：手机从「更多」进，#/search；关键词写在 ?q= 上，返回回来还在。电脑照旧 ⌘F 浮层。 */
+  | { page: 'search' }
   | { page: 'more' };
 
 /** hash 里 ? 之前的路径部分（?task= 等参数不算路由）。 */
@@ -80,6 +82,8 @@ export function parseHash(hash: string): Route {
       return { page: 'done' };
     case 'more':
       return { page: 'more' };
+    case 'search':
+      return { page: 'search' };
     default:
       return { page: 'myday' };
   }
@@ -129,6 +133,25 @@ export function hashWithTask(hash: string, id: string | null): string {
   if (id) q.set('task', id);
   else q.delete('task');
   const qs = q.toString();
+  return `#${path}${qs ? `?${qs}` : ''}`;
+}
+
+/** 搜索页的关键词：hash 里的 ?q=（#/search?q=跑步）。 */
+export function searchQueryInHash(hash: string): string {
+  const h = hash.replace(/^#/, '');
+  const qi = h.indexOf('?');
+  return qi >= 0 ? (new URLSearchParams(h.slice(qi + 1)).get('q') ?? '') : '';
+}
+
+/** 当前 hash 换上（或去掉）搜索词，路径和别的参数（?task=）不变。 */
+export function hashWithSearchQuery(hash: string, q: string): string {
+  const h = hash.replace(/^#/, '');
+  const qi = h.indexOf('?');
+  const path = (qi >= 0 ? h.slice(0, qi) : h) || '/search';
+  const params = new URLSearchParams(qi >= 0 ? h.slice(qi + 1) : '');
+  if (q) params.set('q', q);
+  else params.delete('q');
+  const qs = params.toString();
   return `#${path}${qs ? `?${qs}` : ''}`;
 }
 
