@@ -16,7 +16,8 @@ const settings = vi.hoisted(() => ({ value: { calendarView: { kind: 'month', day
 const openEditor = vi.fn();
 const openQuickCreate = vi.fn();
 const setSetting = vi.fn();
-const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
+const createDraftTask = vi.fn((input: { scheduled_date: string }) => ({ id: `draft-${input.scheduled_date}`, body_md: '', ...input }));
+const store = { activeTasks: () => tasks, createTask: vi.fn(), createDraftTask, version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
 vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
 vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, openQuickCreate, editingId: null }), useUiStable: () => ({ openEditor, openQuickCreate, editingId: null }), useIsEditing: () => false }));
@@ -45,8 +46,16 @@ afterEach(() => {
   settings.layout = 'desktop';
   settings.value = { calendarView: { kind: 'month', days: 3, weeks: 2 } };
   openQuickCreate.mockClear();
+  openEditor.mockClear();
+  createDraftTask.mockClear();
   store.createTask.mockClear();
 });
+/** 点了「+」：建了那天的草稿任务、在详情（宽屏浮层 / 手机整页）里打开，没弹新建面板（Rei 2026-11-12 06:52）。 */
+const expectDraft = (date: string) => {
+  expect(createDraftTask).toHaveBeenCalledWith({ body_md: '', scheduled_date: date });
+  expect(openEditor).toHaveBeenLastCalledWith(`draft-${date}`);
+  expect(openQuickCreate).not.toHaveBeenCalled();
+};
 
 const task = (id: string, status: string, extra: Partial<Task> = {}) =>
   ({ id, body_md: id, status, completion_mode: 'once', scheduled_date: today, end_date: null, target_date: null, recurrence: null, deleted: false, archived_at: null, created_at: '2026-01-01T00:00:00.000Z', ...extra }) as unknown as Task;
@@ -178,7 +187,7 @@ describe('日历', () => {
     expect([...host.querySelectorAll('.cal-day-list .cal-item.is-task')].map((el) => el.getAttribute('data-task-id'))).toEqual(['cd', 'open']);
     expect(host.querySelector('.cal-item.is-checkin')).toBeNull();
   });
-  describe('「+」直接弹新建面板，日期预填那一天（Rei 2026-11-12 02:04）', () => {
+  describe('「+」建那天的草稿任务，在详情浮层里打开（Rei 2026-11-12 06:52，替代 02:04 的新建面板）', () => {
     const plus = (d: string) => host.querySelector(`.cal-cell[data-date="${d}"] .cal-cell-add`) as HTMLButtonElement;
     for (const kind of ['week', 'days', 'weeks', 'month'] as const) {
       it(`宽屏${kind}：点格子的「+」`, () => {
@@ -187,14 +196,14 @@ describe('日历', () => {
         const btn = plus(today);
         expect(btn.getAttribute('aria-label')).toMatch(/^添加到/);
         act(() => btn.click());
-        expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
-        // 不再出行内输入框，也不直接建任务
+        expectDraft(today);
+        // 不出行内输入框，也不直接落盘建任务
         expect(host.querySelector('.cal-grid input, .cal-grid textarea, .cal-add, .add-bar')).toBeNull();
         expect(store.createTask).not.toHaveBeenCalled();
       });
     }
 
-    it('键盘：Enter 按「+」也弹面板', () => {
+    it('键盘：Enter 按「+」也一样', () => {
       settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
       act(() => root.render(<CalendarPage />));
       const btn = plus('2026-11-12');
@@ -203,7 +212,7 @@ describe('日历', () => {
         btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
         btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
       });
-      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: '2026-11-12' });
+      expectDraft('2026-11-12');
     });
 
     it('手机月视图：当天列表的「添加」带选中那天', () => {
@@ -212,7 +221,7 @@ describe('日历', () => {
       const add = host.querySelector('.cal-day-add') as HTMLButtonElement;
       expect(add.textContent).toContain('添加');
       act(() => add.click());
-      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
+      expectDraft(today);
       expect(host.querySelector('.cal-add, .add-bar')).toBeNull();
     });
 
@@ -222,18 +231,19 @@ describe('日历', () => {
       act(() => root.render(<CalendarPage />));
       const list = host.querySelectorAll('.cal-day-list')[0]!;
       act(() => (list.querySelector('.cal-day-add') as HTMLElement).click());
-      const d = (openQuickCreate.mock.calls[0]![0] as { scheduled_date: string }).scheduled_date;
+      const d = (createDraftTask.mock.calls[0]![0] as { scheduled_date: string }).scheduled_date;
+      expectDraft(d);
       expect(d).toBe(list.getAttribute('data-drop-date'));
       expect(d).not.toBe(today);
     });
 
-    it('月视图点数字弹出的当天列表：点「添加」先关列表再弹面板', () => {
+    it('月视图点数字弹出的当天列表：点「添加」先关列表再开详情', () => {
       tasks.push(task('a', '待办'));
       act(() => root.render(<CalendarPage />));
       act(() => (host.querySelector(`.cal-cell[data-date="${today}"] .cal-cell-count`) as HTMLElement).click());
       const add = document.querySelector('.cal-day-list .cal-day-add') as HTMLElement;
       act(() => add.click());
-      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
+      expectDraft(today);
       expect(document.querySelector('.cal-day-list .cal-day-add')).toBeNull();
     });
 
