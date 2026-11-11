@@ -15,7 +15,7 @@ const events = vi.hoisted(() => [] as unknown[]);
 const settings = vi.hoisted(() => ({ value: { calendarView: { kind: 'month', days: 3, weeks: 2 } } as Record<string, unknown>, layout: 'desktop' }));
 const openEditor = vi.fn();
 const setSetting = vi.fn();
-const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1 };
+const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
 vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
 vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, editingId: null }) }));
