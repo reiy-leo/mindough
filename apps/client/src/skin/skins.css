@@ -1343,6 +1343,11 @@
 [data-skin='material'] .task-row.is-selected .row-title {
   color: var(--accent-soft-text);
 }
+/* 选中的完成 / 关闭任务标题仍是灰色：2026-11-12 起完成不划线了，选中时再变成强调色字就看不出它已经结束 */
+[data-skin='material'] .task-row.is-selected.is-done .row-title,
+[data-skin='material'] .task-row.is-selected.is-closed .row-title {
+  color: var(--text-3);
+}
 [data-skin='material'] .page-detail {
   --pane-page-bg: var(--bg);
   --page-head-h: 64px;

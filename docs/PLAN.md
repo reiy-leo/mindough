@@ -2171,7 +2171,7 @@ Rei 2026-11-12 03:21：「倒数日如果是重复任务，过了日期就生成
 ### 置顶改成标题加粗；完成、关闭不划线 ✅（2026-11-12）
 Rei 2026-11-12「已完成和已关闭的任务不要删除线」；05:00「置顶的任务在任务列表中不显示前面的 pin icon，而是用粗体显示任务标题」。
 
-- **不划线**：`.is-done .row-title`、详情前后关系 `.dep-item.is-done .dep-title`、任务链卡片 `.chain-card.is-done / .is-closed .chain-card-title` 去掉 `line-through`，灰色（`--text-3`）照旧。日历格子、时间轴横条本来就没划线。没动的：正文清单勾上的项（`editor.css`，那是正文格式）、@ 提到的任务找不到时的胶囊（`.task-mention.is-missing`，不是完成态）。
+- **不划线**：`.is-done .row-title`、详情前后关系 `.dep-item.is-done .dep-title`、任务链卡片 `.chain-card.is-done / .is-closed .chain-card-title` 去掉 `line-through`，灰色（`--text-3`）照旧。Material 选中的行原来把标题改成强调色字，完成 / 关闭的选中时现在也保持灰色（`skin/skins.css`），不然不划线以后选中时看不出已经结束。日历格子、时间轴横条本来就没划线。没动的：正文清单勾上的项（`editor.css`，那是正文格式）、@ 提到的任务找不到时的胶囊（`.task-mention.is-missing`，不是完成态）。
 - **置顶加粗**：`RowLead` 不再放图钉——能拖的那格是普通把手（aria-label「已置顶 · 拖动排序」），不能拖的是同宽占位；没把手的列表行左边留白里的图钉（`.row-pin-gutter`）删了，`TaskRow` 的 `pinInLead` 参数、`LEAD_PIN_SIZE` 一起删。`TaskRow` 和倒数日页的行给标题加 `.is-pinned`（`font-weight: 700`），后面跟一个读屏用的「已置顶」。做完 / 关闭的置顶不加粗（回到 500）。挂了收藏 / 紧急 / 重要的：加粗和颜色叠在一起。
 - **素净档**：收藏 / 紧急 / 重要原来是加粗，和置顶撞了，改成标题下面一道 `--text-2` 灰线（1.5px、离字 3px、不避让字形）：紧急实线、重要虚线、收藏点线。做完 / 关闭的不画线。这条是我定的，待 Rei 确认。
 - **没改的**：侧栏置顶项目 / 资料库的图钉、各菜单里「置顶 / 取消置顶」的图标。
