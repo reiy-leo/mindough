@@ -3,7 +3,7 @@ import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } fro
 import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
 import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
-import { useUi } from '../lib/ui';
+import { useIsEditing, useUiStable } from '../lib/ui';
 import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
 import { rowMenu } from '../lib/task-menu';
@@ -87,7 +87,8 @@ export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: st
 }
 
 export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, pinInLead = false }: TaskRowProps) {
-  const ui = useUi();
+  // 不订阅整个 UI 状态（2026-11-12 看板卡顿）：选中只看自己这件，别的行选中 / 取消时不重渲染
+  const ui = useUiStable();
   const v = viewOf(store, task);
   const today = toDateKey(store.now());
   const lunarUi = useLunarUi();
@@ -114,7 +115,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const isCheckInRow = checkIn && !tick && (task.completion_mode !== 'once' || !!rec);
   const relatedCount = store.relatedTasks(task.id).length;
   // 三列布局：右列正在显示这件
-  const selected = ui.editingId === task.id;
+  const selected = useIsEditing(task.id);
   // 色彩设置（Rei 2026-11-09）：多彩档第二行的项目名、类型名用各自颜色（调到能读），打卡进度环用打卡类型的颜色
   const colorLevel = useColorLevel();
   const { theme } = useSettings();

@@ -6,14 +6,14 @@
 import { History } from 'lucide-react';
 import { formatDate, toDateKey, type Store, type Task } from '@mindough/core';
 import { useNow } from '../store/StoreProvider';
-import { useUi } from '../lib/ui';
+import { useUiStable } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { startMakeup } from '../lib/actions';
 import { TipButton } from '../ui/primitives';
 import { tr } from '../lib/i18n';
 
 export function MakeupButton({ store, task, className }: { store: Store; task: Task; className?: string }) {
-  const ui = useUi();
+  const ui = useUiStable();
   const now = useNow();
   const { settings } = useSettings();
   if (settings.strictMode) return null;

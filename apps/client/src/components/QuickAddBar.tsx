@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Form, TextField } from 'react-aria-components';
 import { WrapInput, stripNewlines } from './WrapInput';
 import { Plus } from 'lucide-react';
-import { useUi } from '../lib/ui';
+import { useUiStable } from '../lib/ui';
 import { useSettings } from '../lib/settings';
 import { afterQuickAdd, quickAdd } from '../lib/quick-add';
 
@@ -34,7 +34,7 @@ export function useStuck() {
 }
 
 export function QuickAddBar({ placeholder, label, create, trailing, meta, head }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode; head?: ReactNode }) {
-  const ui = useUi();
+  const ui = useUiStable();
   const { layout } = useSettings();
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLTextAreaElement>(null);

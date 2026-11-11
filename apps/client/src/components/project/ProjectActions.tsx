@@ -14,7 +14,7 @@ import { IconStylePicker } from '../IconStylePicker';
 import { GroupIcon } from './GroupIcon';
 import { groupSidebarAction } from '../../lib/library-sidebar';
 import { navigate, useRoute } from '../../lib/router';
-import { useUi, type UiCtx } from '../../lib/ui';
+import { useUiStable, type UiCtx } from '../../lib/ui';
 import { tr } from '../../lib/i18n';
 import { imeBusy } from '../../lib/ime';
 
@@ -22,7 +22,7 @@ type Dialog = 'edit' | 'dissolve' | 'delete' | null;
 
 /** 菜单项 + 要挂在页面上的对话框。items 交给 OverflowMenu / MenuAt，dialogs 放在同一个组件里渲染。 */
 export function useProjectActions(store: Store, group: Group): { items: MenuAction[]; dialogs: ReactNode } {
-  const ui = useUi();
+  const ui = useUiStable();
   const route = useRoute();
   const [open, setOpen] = useState<Dialog>(null);
   const count = store.groupTasks(group.id).length;

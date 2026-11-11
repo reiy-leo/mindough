@@ -4291,12 +4291,20 @@ html[data-layout='mobile'] .project-archived-banner .btn {
  * 桌面布局下项目页切到看板时右列不出现（App 换成 components/task/DetailModal），点卡片弹这个。
  * 高度固定，正文长短变化时浮层不跳；里面的 .pane-detail 和右列同一份，正文区自己滚。各皮肤的外框见 skin/skins.css。
  */
+/* 高度跟着内容走（Rei 2026-11-12 02:08）：以前写死 min(86vh, 900px)，内容少时底下一大片空白。
+   现在 height: auto，最高还是 min(86vh, 900px)（.modal 的 max-height），到顶后正文区（.dialog-body overflow-y: auto）自己滚；
+   正文区不再撑满（flex: 0 1 auto = 按内容高、放不下时缩、再滚）。高度变化时居中位置的平移在 DetailModal useSmoothRecenter。
+   只有桌面布局用这个浮层；手机布局的详情是整页（TaskDetail mode="page"），不受影响。 */
 .modal-detail {
   width: min(720px, 100%);
-  height: min(86vh, 900px);
+  height: auto;
+  max-height: min(86vh, 900px);
 }
 .modal-detail .pane-detail {
   flex: 1 1 auto;
+}
+.modal-detail .pane-body {
+  flex: 0 1 auto;
 }
 /* 打卡进度只放进度环（Rei 2026-11-09 01:29），数字在悬停提示里 */
 .ci-ring {

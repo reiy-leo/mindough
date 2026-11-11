@@ -3,7 +3,7 @@ import { CheckInMetError, checkInMode, formatAmount, formatDuration, toDateKey, 
 import { CountQuickButtons, useCountAdd } from './CountControls';
 import { HoverTip } from '../ui/HoverTip';
 import { Button, ProgressRing } from '../ui/primitives';
-import { useUi } from '../lib/ui';
+import { useUiStable } from '../lib/ui';
 import { announceComplete, toggleCheckIn } from '../lib/actions';
 import { Checkbox } from 'react-aria-components';
 import { useNow } from '../store/StoreProvider';
@@ -12,7 +12,7 @@ import { tr } from '../lib/i18n';
 import { trx } from '../lib/trx';
 /** 打卡操作：点一下 / 开始·暂停·结束 / +1 / 倒数日，进度由事件折叠得出。 */
 export function CheckInControl({ store, task, compact }: { store: Store; task: Task; compact?: boolean }) {
-  const ui = useUi();
+  const ui = useUiStable();
   const running = store.progress(task.id)?.running ?? false;
   const now = useNow(running ? 1000 : 30_000);
   const today = toDateKey(now);

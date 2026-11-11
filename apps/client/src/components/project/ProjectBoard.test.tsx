@@ -11,7 +11,13 @@ import type { Store, Task } from '@mindough/core';
 
 const ui = vi.hoisted(() => ({ editingId: null as string | null, openEditor: vi.fn() }));
 const drag = vi.hoisted(() => ({ pressing: false }));
-vi.mock('../../lib/ui', () => ({ useUi: () => ui }));
+// 选中走订阅（useIsEditing，2026-11-12 看板卡顿）：改 ui.editingId 后调 notify()，只有订阅的卡片重渲染
+const editing = vi.hoisted(() => ({ fns: new Set<() => void>(), notify() { for (const f of this.fns) f(); } }));
+vi.mock('../../lib/ui', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const sub = (f: () => void) => (editing.fns.add(f), () => void editing.fns.delete(f));
+  return { useUi: () => ui, useUiStable: () => ui, useIsEditing: (id: string) => useSyncExternalStore(sub, () => ui.editingId === id) };
+});
 vi.mock('../../lib/actions', () => ({ changeStatus: vi.fn() }));
 vi.mock('../../lib/view', () => ({ titleOf: (_s: unknown, t: Task) => t.body_md }));
 vi.mock('../../lib/drag-guard', () => ({ isDragPress: () => drag.pressing, useReorderGuard: () => ({ ref: { current: null }, handlers: {} }) }));
@@ -99,9 +105,59 @@ describe('看板卡片点开详情', () => {
   });
 
   it('选中的卡片带 is-selected', () => {
-    ui.editingId = 'b';
-    act(() => root.render(<ProjectBoard store={store} tasks={[...tasks]} />));
+    act(() => {
+      ui.editingId = 'b';
+      editing.notify();
+    });
     expect(card('b').classList.contains('is-selected')).toBe(true);
     expect(card('a').classList.contains('is-selected')).toBe(false);
+    // 换选中：旧的那张去掉、新的那张加上（不用整个看板重渲染）
+    act(() => {
+      ui.editingId = 'a';
+      editing.notify();
+    });
+    expect(card('a').classList.contains('is-selected')).toBe(true);
+    expect(card('b').classList.contains('is-selected')).toBe(false);
+  });
+});
+
+describe('任务多的列先放一屏、滚到列底附近再补（2026-11-12 看板卡顿）', () => {
+  it('一列 45 件：先出 20 张、列头写 45；哨兵进视口补 15 张、再补到齐，补齐后哨兵去掉', async () => {
+    const ios: { cb: IntersectionObserverCallback; el?: Element }[] = [];
+    const Orig = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class {
+      rec: { cb: IntersectionObserverCallback; el?: Element };
+      constructor(cb: IntersectionObserverCallback) {
+        this.rec = { cb };
+        ios.push(this.rec);
+      }
+      observe(el: Element) {
+        this.rec.el = el;
+      }
+      disconnect() {
+        this.rec.el = undefined;
+      }
+    } as unknown as typeof IntersectionObserver;
+    try {
+      const many = Array.from({ length: 45 }, (_, i) => mk(`m${i}`, '待办'));
+      act(() => root.render(<ProjectBoard store={store} tasks={many} />));
+      const todo = () => host.querySelector('.board-col.is-todo')!;
+      expect(todo().querySelectorAll('.board-card').length).toBe(20);
+      expect(todo().querySelector('.board-col-count')!.textContent).toBe('45');
+      const fire = async () => {
+        const live = ios.filter((r) => r.el);
+        live.forEach((r) => r.cb([{ isIntersecting: true, target: r.el } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
+        await act(async () => {
+          await new Promise((r) => setTimeout(r, 5));
+        });
+      };
+      await fire();
+      expect(todo().querySelectorAll('.board-card').length).toBe(35);
+      await fire();
+      expect(todo().querySelectorAll('.board-card').length).toBe(45);
+      expect(todo().querySelector('.board-more')).toBeNull();
+    } finally {
+      globalThis.IntersectionObserver = Orig;
+    }
   });
 });

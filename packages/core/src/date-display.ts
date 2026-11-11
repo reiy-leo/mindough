@@ -30,12 +30,19 @@ export interface TaskDateOpts {
   locale?: Locale;
 }
 
+/** 设备时区：和 timezone.ts 的 deviceTimeZone 一样记一秒（2026-11-12 看板卡顿，列表每行都问）。 */
+let zoneCache: { at: number; tz: string } | null = null;
 function deviceZone(): string {
+  const now = Date.now();
+  if (zoneCache && now - zoneCache.at < 1000 && now >= zoneCache.at) return zoneCache.tz;
+  let tz: string;
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
-    return 'UTC';
+    tz = 'UTC';
   }
+  zoneCache = { at: now, tz };
+  return tz;
 }
 
 /** 某一天在某时区的偏移：「GMT+8」「GMT-4」「GMT+5:30」「GMT+0」。按那天中午算，夏令时也对。 */

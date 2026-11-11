@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { Dialog, Modal, ModalOverlay } from 'react-aria-components';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { useUi } from '../../lib/ui';
@@ -25,6 +25,8 @@ export function DetailModal() {
   const ui = useUi();
   const store = useStore();
   const task = useSelectedTask();
+  const modalRef = useRef<HTMLDivElement>(null);
+  useSmoothRecenter(modalRef, !!task);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Escape' || e.nativeEvent.isComposing || !isTyping(e.target)) return;
     e.stopPropagation();
@@ -35,7 +37,7 @@ export function DetailModal() {
   };
   return (
     <ModalOverlay isOpen={!!task} onOpenChange={(open) => !open && ui.openEditor(null)} isDismissable className="overlay overlay-detail">
-      <Modal className="modal modal-center modal-detail">
+      <Modal ref={modalRef} className="modal modal-center modal-detail">
         <Dialog className="dialog" aria-label={task ? titleOf(store, task) || tr('任务详情') : tr('任务详情')}>
           <div className="dialog-inner modal-detail-inner" onKeyDown={onKeyDown}>
             <ErrorBoundary resetKey={ui.editingId}>
@@ -46,4 +48,42 @@ export function DetailModal() {
       </Modal>
     </ModalOverlay>
   );
+}
+
+/**
+ * 高度跟着内容走（Rei 2026-11-12 02:08「高度要自适应…内容少时矮，随输入内容慢慢增高，到现在的高度为最大高度」）：
+ * 高度本身是 CSS 的 height: auto + max-height（app.css .modal-detail），内容少就矮，到 min(86vh, 900px) 后正文区自己滚。
+ * 浮层是上下居中的，高一行顶边就往上挪半行；直接跳会一顿一顿的。这里看着外框的高度，一变就让它从原来的位置平移过去（FLIP，160ms），
+ * 高度当帧就到位（不做高度动画：动画过程中正文比内容矮，会闪出滚动条、光标被拉着滚）。只有换行、加删属性时高度才变，打一个字不动。
+ * 刚打开的入场动画（.modal[data-entering] rise）期间不插手；用户开着「减少动态效果」时不平移。
+ */
+function useSmoothRecenter(ref: RefObject<HTMLDivElement | null>, open: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!open || !el || typeof ResizeObserver === 'undefined') return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const openedAt = performance.now();
+    let last = el.getBoundingClientRect().height;
+    let anim: Animation | null = null;
+    const ro = new ResizeObserver(() => {
+      const h = el.getBoundingClientRect().height;
+      const delta = h - last;
+      last = h;
+      if (!delta || reduce || el.hasAttribute('data-entering') || performance.now() - openedAt < 250 || !el.animate) return;
+      // 上一段平移还没走完：从它现在的位置接着走
+      let from = delta / 2;
+      if (anim) {
+        const m = new DOMMatrixReadOnly(getComputedStyle(el).transform === 'none' ? undefined : getComputedStyle(el).transform);
+        from += m.m42;
+        anim.cancel();
+      }
+      anim = el.animate([{ transform: `translateY(${from}px)` }, { transform: 'translateY(0)' }], { duration: 160, easing: 'cubic-bezier(0.2, 0, 0, 1)' });
+      anim.onfinish = () => (anim = null);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      anim?.cancel();
+    };
+  }, [ref, open]);
 }

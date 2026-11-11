@@ -1,5 +1,5 @@
 import { installStrictGuard, useStrictSync } from './lib/strict';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Button as RacButton } from 'react-aria-components';
 import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
@@ -419,7 +419,12 @@ function PinnedLibraryLink({ item, active, compact }: { item: NavItem; active: b
   );
 }
 
-function Page({ route }: { route: Route }) {
+/**
+ * 页面本体不跟着 App 重渲染（2026-11-12 看板卡顿）：App 订阅整个 UI 状态，点开 / 关掉一件任务的详情 App 就重渲染一遍；
+ * 以前页面也跟着整页重来（240 件的看板点一下卡片要 0.5–1 秒）。route 只在换页时换对象（lib/router useRoute），
+ * 页面自己订阅 Store、设置、UI，数据变了照样更新。
+ */
+const Page = memo(function Page({ route }: { route: Route }) {
   switch (route.page) {
     case 'myday':
       return <MyDayPage />;
@@ -459,7 +464,7 @@ function Page({ route }: { route: Route }) {
     case 'search':
       return <SearchPage />;
   }
-}
+});
 
 function MorePage() {
   const store = useStore();

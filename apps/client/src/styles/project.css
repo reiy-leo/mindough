@@ -646,3 +646,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 看板一列没放完时列底下的哨兵（2026-11-12 看板卡顿，ProjectBoard useColumnLimit）：不占地方 */
+.board-more {
+  height: 1px;
+  margin-top: -1px;
+}

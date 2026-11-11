@@ -22,13 +22,23 @@ export function dateKeyInZone(ms: number, tz?: string): DateKey {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
-/** 设备当前时区（取不到时 'UTC'）。 */
+/**
+ * 设备当前时区（取不到时 'UTC'）。
+ * 记一秒（2026-11-12 看板卡顿）：每次都 new 一个 Intl.DateTimeFormat 不便宜，列表每行都要问一遍（240 件的看板光这个就二十多毫秒）；
+ * 一秒内的同一次渲染共用一个结果，换了时区下一秒就跟上。
+ */
+let tzCache: { at: number; tz: string } | null = null;
 export function deviceTimeZone(): string {
+  const now = Date.now();
+  if (tzCache && now - tzCache.at < 1000 && now >= tzCache.at) return tzCache.tz;
+  let tz: string;
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
-    return 'UTC';
+    tz = 'UTC';
   }
+  tzCache = { at: now, tz };
+  return tz;
 }
 
 /** 这个名字是不是这台设备认识的 IANA 时区。 */

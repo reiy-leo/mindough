@@ -19,7 +19,7 @@ const setSetting = vi.fn();
 const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
 vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
-vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, openQuickCreate, editingId: null }) }));
+vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, openQuickCreate, editingId: null }), useUiStable: () => ({ openEditor, openQuickCreate, editingId: null }), useIsEditing: () => false }));
 vi.mock('../lib/lunar', () => ({ useLunar: () => ({ show: false, holidays: false, any: false, day: () => ({ label: null, sub: null }) }) }));
 vi.mock('../lib/calendar-subs', () => ({ useCalendarEvents: () => events }));
 vi.mock('../components/PageHeader', () => ({ PageHeader: () => null }));

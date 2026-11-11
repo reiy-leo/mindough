@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { NewTaskInput } from '@mindough/core';
 import { onLayerEntry } from './back-layers';
 import { hashWithTask, taskInHash } from './router';
@@ -52,6 +52,19 @@ export interface ComposerRequest {
 }
 
 const Ctx = createContext<UiCtx | null>(null);
+
+/**
+ * 不跟着变的 UiCtx（2026-11-12 看板卡顿）：每个字段读的都是最新值，但对象本身永远是同一个，用它的组件不会因为
+ * 选中的任务、提示条、新建面板这些 UI 状态一变就重渲染。列表里每一行（TaskRow）只在点按时用 ui 的方法，用这个；
+ * 要「跟着选中重渲染」的地方用 useIsEditing(id)，只有选中 / 取消选中的那一两行会重渲染。
+ * 以前每行都 useUi()：点一张卡片开详情，整列表几百行全部重渲染（240 件的项目点一下要 0.5–1 秒）。
+ */
+const StableCtx = createContext<UiCtx | null>(null);
+interface EditingSource {
+  get: () => string | null;
+  subscribe: (fn: () => void) => () => void;
+}
+const EditingCtx = createContext<EditingSource | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -122,7 +135,49 @@ export function UiProvider({ children }: { children: ReactNode }) {
     }),
     [toasts, toast, dismiss, editingId, openEditor, closeDetail, quickCreate, paletteOpen, didaImportOpen],
   );
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  const latest = useRef(value);
+  latest.current = value;
+  const [stable] = useState<UiCtx>(() => {
+    const o = {} as UiCtx;
+    for (const k of Object.keys(value) as (keyof UiCtx)[]) Object.defineProperty(o, k, { get: () => latest.current[k], enumerable: true });
+    return o;
+  });
+  // 选中的任务：渲染时记下，提交后通知订阅的行（useIsEditing）
+  const editingRef = useRef(editingId);
+  const listeners = useRef(new Set<() => void>());
+  const [editing] = useState<EditingSource>(() => ({
+    get: () => editingRef.current,
+    subscribe: (fn) => {
+      listeners.current.add(fn);
+      return () => listeners.current.delete(fn);
+    },
+  }));
+  useLayoutEffect(() => {
+    if (editingRef.current === editingId) return;
+    editingRef.current = editingId;
+    for (const fn of [...listeners.current]) fn();
+  }, [editingId]);
+  return (
+    <StableCtx.Provider value={stable}>
+      <EditingCtx.Provider value={editing}>
+        <Ctx.Provider value={value}>{children}</Ctx.Provider>
+      </EditingCtx.Provider>
+    </StableCtx.Provider>
+  );
+}
+
+/** 不随 UI 状态重渲染的 ui（方法照常用、字段读到的是最新值）；见 StableCtx。 */
+export function useUiStable(): UiCtx {
+  const v = useContext(StableCtx);
+  if (!v) throw new Error(tr('UiProvider 缺失'));
+  return v;
+}
+
+const noopSub = () => () => {};
+/** 这件任务是不是选中的（右列 / 浮层正在显示它）；只在它自己选中、取消选中时重渲染。 */
+export function useIsEditing(id: string): boolean {
+  const src = useContext(EditingCtx);
+  return useSyncExternalStore(src ? src.subscribe : noopSub, () => (src ? src.get() === id : false));
 }
 
 /** 不在 UiProvider 里时是 null（编辑器单独用的时候不报错）。 */

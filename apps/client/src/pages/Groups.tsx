@@ -7,7 +7,7 @@ import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, NewButton, OverflowMenu, PopoverPanel, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { ProjectTitle, unarchiveProject, useProjectActions } from '../components/project/ProjectActions';
-import { useUi } from '../lib/ui';
+import { useUiStable } from '../lib/ui';
 import { ProjectSheet } from '../components/project/ProjectSheet';
 import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/CategoryPicker';
 import { TaskRow } from '../components/TaskRow';
@@ -199,7 +199,7 @@ function GroupDetail({
   create: (text: string) => string;
 }) {
   const store = useStore();
-  const ui = useUi();
+  const ui = useUiStable();
   const actions = useProjectActions(store, g);
   const head = useStuck();
   const c = store.category(g.category_id);
