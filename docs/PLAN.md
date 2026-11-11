@@ -1991,3 +1991,13 @@ Rei 2026-11-12 00:37「项目移到资料那一组」。
 - `lib/prop-chips.ts`：`PROP_ORDER` 改成 日期、完成方式、重复、提醒、项目、资料、类型、心情、卡片颜色；`PROP_SECTION` 里项目从第 3 组改到第 2 组。第 2 组原来没有别的排序规则（就是 `PROP_ORDER` 的顺序），项目按要求放第一个。菜单现在是 日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、附件、卡片颜色。附件还是插在第 3 组心情后面（`addMenuItems` 没改）。
 - 共用 `PROP_ORDER` 的地方一起变：详情胶囊行（日期、完成方式、重复、提醒、项目、类型、心情、卡片颜色），新建面板胶囊（`composerChipOrder`：日期、提醒、项目、资料、类型、心情、相关任务）。手机和电脑是同一个 `PropChips` 组件，一起变。没有别处另写这套顺序。
 - 没有新文案、没有迁移，Worker 没改。测试 `lib/prop-chips.test.ts` 改顺序、加 3 项。
+
+### 打卡页排列方式换成下拉，加「按心情」 ✅（2026-11-12）
+Rei 2026-11-12 00:48：打卡页的按钮组换成下拉菜单，选项是按今天、按类型、按心情，当前项打勾。
+- `pages/CheckIns.tsx`：去掉 `Segmented`，换成页内组件 `ArrangeMenu`：React Aria `MenuTrigger` + `Menu selectionMode="single" disallowEmptySelection`，项用通用的 `.menu-item.menu-check`（勾在右边），popover `bottom start`，和「显示哪些打卡」、`SectionMenu` 同一套，三皮肤靠通用 `.menu` 样式。触发器是 `.btn.btn-quiet.checkin-arrange-btn`：当前项名字 + Lucide `ChevronDown`，读屏名「排列方式：{name}」，展开时悬停底色。
+- `arrange` 从 `'today' | 'category'` 扩成加 `'mood'`，仍是页面 state、不记。「按心情」以前打卡页没有，这次照「按类型」的列法补上：`MOOD_IDS` 顺序每种一节 +「没有心情」（`isMoodId` 判断），节内今天要打的在前，标题前 `.section-dot.mood-dot.mood-<id>`（同 `SectionedList` 的按心情分区）。
+- 样式 `styles/app.css` `.checkin-toolbar .checkin-arrange-btn`（替掉原来的 `.checkin-toolbar > .segmented`）。
+- 新文案 1 条「排列方式：{name}」，9 种语言（7 种待母语者看）；「按今天」「按类型」「按心情」「没有心情」「排列方式」共用。没有迁移，Worker 没改。
+- 自查脚本 `work/d1112-ckdrop/cd.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 / 手机 390）。
+- 待 Rei 确认：「按心情」用打卡任务本身的心情（任务详情里设的那个），不是每次打卡记的心情。
+

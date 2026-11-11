@@ -20,7 +20,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "按目标日期": "Par échéance",
   "分区：{name}": "Sections : {name}",
   "排序：{name}": "Tri : {name}",
-  "排列方式：{name}": "Classer par : {name}",
+  "排列方式：{name}": "Classer par : {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Mode strict",
   "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Les tâches terminées ou fermées ne peuvent plus être modifiées, seulement rouvertes ou supprimées. S’applique uniquement à cet appareil.",
