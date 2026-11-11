@@ -30,8 +30,8 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type Muta
 import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
-import { Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
-import { formatNowStamp, mentionNowMatches, type MentionCandidate, type MentionScope } from '@mindough/core';
+import { Calendar, Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
+import { formatDateStamp, formatNowStamp, mentionStampKinds, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
 import { mentionChoices, mentionInfo } from '../../lib/task-mention';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
@@ -40,10 +40,12 @@ import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
 
-/** @ 下拉里的「插入当前时间」那一项（不是任务）。 */
-const NOW_ITEM = { now: true } as const;
-type MentionItem = MentionCandidate | typeof NOW_ITEM;
-const isNowItem = (c: MentionItem): c is typeof NOW_ITEM => c === NOW_ITEM;
+/** @ 下拉里的「插入当前时间」「插入今天日期」（不是任务）。 */
+type StampItem = { stamp: MentionStampKind };
+const STAMP_ITEMS: Record<MentionStampKind, StampItem> = { datetime: { stamp: 'datetime' }, date: { stamp: 'date' } };
+type MentionItem = MentionCandidate | StampItem;
+const isStampItem = (c: MentionItem): c is StampItem => 'stamp' in c;
+const stampText = (k: MentionStampKind) => (k === 'date' ? formatDateStamp() : formatNowStamp());
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
@@ -127,15 +129,19 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     () => (mq && mention ? mentionChoices(mention.scope, mention.selfId, mq.query) : []),
     [mq?.query, mq != null, mention?.scope, mention?.selfId], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  // 「插入当前时间」（Rei 2026-11-12 07:09）：@现在 / @now / @time / @xianzai 时排在最上面，选了换成「2026-11-12 07:09」纯文字
-  const items: MentionItem[] = useMemo(() => (mq && mention && mentionNowMatches(mq.query) ? [NOW_ITEM, ...choices] : choices), [choices, mq?.query]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 「插入当前时间」「插入今天日期」（Rei 2026-11-12 07:09、07:17）：@现在 / @now / @time / @datetime、@date / @日期 / @今天 时排在最上面，
+  // 选了换成「2026-11-12 07:09」/「2026-11-12」纯文字
+  const items: MentionItem[] = useMemo(
+    () => (mq && mention ? [...mentionStampKinds(mq.query).map((k) => STAMP_ITEMS[k]), ...choices] : choices),
+    [choices, mq?.query], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const mRef = useRef({ mq, items, mActive });
   mRef.current = { mq, items, mActive };
   useEffect(() => setMActive(0), [mq?.query, mq?.from]);
   const pickMention = (c: MentionItem) => {
     const cur = mRef.current.mq;
     if (!cur) return;
-    if (isNowItem(c)) handle.current?.insertPlain({ from: cur.from, to: cur.to }, formatNowStamp());
+    if (isStampItem(c)) handle.current?.insertPlain({ from: cur.from, to: cur.to }, stampText(c.stamp));
     else handle.current?.insertMention({ from: cur.from, to: cur.to }, { id: c.id, title: c.title });
     mPointer.current = false;
   };
@@ -676,22 +682,24 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       >
         {items.length ? (
           items.map((c, i) => {
-            if (isNowItem(c))
+            if (isStampItem(c)) {
+              const StampIcon = c.stamp === 'date' ? Calendar : Clock;
               return (
                 <div
-                  key="now"
+                  key={`stamp-${c.stamp}`}
                   id={`${mUid}-opt-${i}`}
                   role="option"
                   aria-selected={i === mActive}
-                  className={`mention-item is-now${i === mActive ? ' is-active' : ''}`}
+                  className={`mention-item is-stamp is-${c.stamp === 'date' ? 'date' : 'now'}${i === mActive ? ' is-active' : ''}`}
                   onMouseMove={() => i !== mActive && setMActive(i)}
                   onClick={() => pickMention(c)}
                 >
-                  <Clock size={14} aria-hidden className="mention-item-icon" />
-                  <span className="grow ellipsis">{tr('插入当前时间')}</span>
-                  <span className="mention-item-meta">{formatNowStamp()}</span>
+                  <StampIcon size={14} aria-hidden className="mention-item-icon" />
+                  <span className="grow ellipsis">{c.stamp === 'date' ? tr('插入今天日期') : tr('插入当前时间')}</span>
+                  <span className="mention-item-meta">{stampText(c.stamp)}</span>
                 </div>
               );
+            }
             const meta = c.ended ? tr('已结束') : c.kind === 'countdown' ? mentionInfo(c.id, '').suffix || tr('倒数日') : '';
             const Icon = c.kind === 'countdown' ? Hourglass : c.ended ? CircleCheck : Circle;
             return (

@@ -1,6 +1,6 @@
 /** 正文里 @ 提及任务（Rei 2026-11-10）：地址、候选范围、过滤和排序、光标前的 @。 */
 import { describe, expect, it } from 'vitest';
-import { formatNowStamp, mentionCandidates, mentionHref, mentionIdOf, mentionKind, mentionNowMatches, mentionQueryAt, mentionable } from '../src/task-mention';
+import { formatDateStamp, formatNowStamp, mentionCandidates, mentionStampKinds, mentionHref, mentionIdOf, mentionKind, mentionNowMatches, mentionQueryAt, mentionable } from '../src/task-mention';
 import { taskTitle } from '../src/preview';
 import { mkTask } from './helpers';
 
@@ -115,10 +115,23 @@ describe('光标前的 @', () => {
 
 describe('@ 插入当前时间', () => {
   it('现在 / now / time / xianzai 能叫出来，开头几个字也行', () => {
-    for (const q of ['现在', 'now', 'NOW', 'time', 'tim', 'xianzai', 'xian', 'xia']) expect(mentionNowMatches(q), q).toBe(true);
+    for (const q of ['现在', 'now', 'NOW', 'time', 'tim', 'xianzai', 'xian', 'xia', 'datetime', 'datet']) expect(mentionNowMatches(q), q).toBe(true);
   });
   it('空、太短、别的词不叫出来', () => {
-    for (const q of ['', ' ', 'n', 'no', 'ti', 'x', 'xi', '现', '现在吧', 'nowx', '时间', '周报']) expect(mentionNowMatches(q), q).toBe(false);
+    for (const q of ['', ' ', 'n', 'no', 'ti', 'x', 'xi', '现', '现在吧', 'nowx', '时间', '周报', '日期', 'riqi']) expect(mentionNowMatches(q), q).toBe(false);
+  });
+  it('@date / 日期 / 今天 / riqi / jintian 叫出「今天日期」', () => {
+    for (const q of ['date', 'DATE', '日期', '今天', 'riqi', 'riq', 'jintian', 'jin']) expect(mentionStampKinds(q), q).toContain('date');
+    for (const q of ['da', '日', '今', 'ri', 'now', '现在', 'datetime', 'datet', 'dates']) expect(mentionStampKinds(q), q).not.toContain('date');
+  });
+  it('两项都对上时：整个词对上的在前', () => {
+    expect(mentionStampKinds('date')).toEqual(['date', 'datetime']);
+    expect(mentionStampKinds('dat')).toEqual(['datetime', 'date']);
+    expect(mentionStampKinds('datetime')).toEqual(['datetime']);
+    expect(mentionStampKinds('now')).toEqual(['datetime']);
+  });
+  it('日期格式 YYYY-MM-DD', () => {
+    expect(formatDateStamp(new Date(2026, 10, 12, 23, 59))).toBe('2026-11-12');
   });
   it('格式 YYYY-MM-DD HH:mm，本机时区、24 小时制', () => {
     expect(formatNowStamp(new Date(2026, 10, 12, 7, 9, 59))).toBe('2026-11-12 07:09');

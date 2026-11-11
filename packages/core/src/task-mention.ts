@@ -95,27 +95,49 @@ export function mentionQueryAt(textBefore: string): { at: number; query: string 
   return { at: m.index + m[1]!.length, query: m[3]! };
 }
 
-// ───────── @ 插入当前时间 ─────────
+// ───────── @ 插入当前时间 / 今天日期 ─────────
 // Rei 2026-11-12 07:09：@ 下拉里加「插入当前时间」，打 @现在、@now、@time、@xianzai 都能出来，排在最上面；
 // 选了把 @ 和后面的字换成本机时区的「2026-11-12 07:09」纯文字（24 小时制），不是胶囊。
+// 07:17 追加：@datetime 也是这一项；@date（日期、今天、riqi、jintian）另一项「插入今天日期」，只插「2026-11-12」。
 
-/** 能叫出「插入当前时间」的词。 */
-export const MENTION_NOW_WORDS = ['现在', 'now', 'time', 'xianzai'] as const; // i18n-ignore 匹配用的原文，不显示
+/** 能叫出各项的词（i18n-ignore：匹配用的原文，不显示）。 */
+export const MENTION_STAMP_WORDS = {
+  datetime: ['现在', 'now', 'time', 'xianzai', 'datetime'], // i18n-ignore 匹配用的原文
+  date: ['date', '日期', '今天', 'riqi', 'jintian'], // i18n-ignore 匹配用的原文
+} as const;
+
+export type MentionStampKind = keyof typeof MENTION_STAMP_WORDS;
 
 /**
- * @ 后面打的字能不能叫出「插入当前时间」：是上面某个词的开头（不分大小写）。
- * 太短的不算，免得按拼音找任务时总冒出来：字母至少 3 个（now、tim、xia），汉字要打全「现在」。
+ * @ 后面打的字能叫出哪几项（按顺序）：是某个词的开头（不分大小写）。
+ * 太短的不算，免得按拼音找任务时总冒出来：字母至少 3 个（now、tim、xia、dat、riq），汉字至少 2 个（打全「现在」「日期」「今天」）。
+ * 两项都对上（@dat、@date）时，整个词对上的在前（@date → 今天日期在前），都只是开头就日期 + 时间在前。
  */
-export function mentionNowMatches(query: string): boolean {
+export function mentionStampKinds(query: string): MentionStampKind[] {
   const q = query.trim().toLowerCase();
-  if (!q) return false;
+  if (!q) return [];
   const latin = /^[a-z]+$/.test(q);
-  if (latin ? q.length < 3 : q.length < 2) return false;
-  return MENTION_NOW_WORDS.some((w) => w.startsWith(q));
+  if (latin ? q.length < 3 : q.length < 2) return [];
+  const hits: { k: MentionStampKind; rank: number; order: number }[] = [];
+  (Object.keys(MENTION_STAMP_WORDS) as MentionStampKind[]).forEach((k, order) => {
+    const words = MENTION_STAMP_WORDS[k] as readonly string[];
+    if (words.includes(q)) hits.push({ k, rank: 0, order });
+    else if (words.some((w) => w.startsWith(q))) hits.push({ k, rank: 1, order });
+  });
+  return hits.sort((a, b) => a.rank - b.rank || a.order - b.order).map((h) => h.k);
+}
+
+/** @ 后面打的字能不能叫出「插入当前时间」。 */
+export const mentionNowMatches = (query: string) => mentionStampKinds(query).includes('datetime');
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** 本机时区的「YYYY-MM-DD」。 */
+export function formatDateStamp(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 /** 本机时区的「YYYY-MM-DD HH:mm」（24 小时制）。 */
 export function formatNowStamp(d: Date = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${formatDateStamp(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
