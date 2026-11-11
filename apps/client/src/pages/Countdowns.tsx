@@ -153,7 +153,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
       >
         <span className={`countdown-dot${dot ? '' : ' is-none'}`} style={dot ? ({ '--cd-dot': dot } as CSSProperties) : undefined} aria-hidden />
         {type && type.layout !== 'text' && <Icon size={14} className="countdown-row-icon" style={{ color: type.color }} aria-hidden />}
-        <span className={`row-title countdown-row-title${store.titleMark(t) ? ` is-mark-${store.titleMark(t)}` : ''}`}>{titleOf(store, t)}</span>
+        <span className={`row-title countdown-row-title${store.titleMark(t) ? ` is-mark-${store.titleMark(t)}` : ''}${store.isPinned(t) ? ' is-pinned' : ''}`}>{titleOf(store, t)}</span>
         <RepeatMark task={t} today={toDateKey(new Date())} />
         <span className="countdown-row-days">
           <DaysText n={n} />

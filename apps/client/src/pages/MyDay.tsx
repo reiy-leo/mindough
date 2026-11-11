@@ -67,13 +67,14 @@ export function MyDayPage() {
       }) : null;
   // 分区 / 按心情排时不能拖，但行左边照样留把手那一格（Rei 2026-11-12 01:19「分区时置顶任务的图钉很挤」）：
   // 以前这里是普通清单，图钉塞进行左边 12px 留白、紧贴勾选圈，圈也比不分区时往左 26px；
-  // 现在和不分区（DayList）同一套 .list-item + RowLead：置顶的图钉在那格，别的行是同宽占位，图钉、圈、标题都和不分区时一样
+  // 现在和不分区（DayList）同一套 .list-item + RowLead：那格是同宽占位，圈、标题都和不分区时一样。
+  // 2026-11-12 05:00 起置顶不放图钉，标题加粗（Rei「置顶的任务在任务列表中不显示前面的 pin icon，而是用粗体显示任务标题」）
   const plainRows = (list: MyDayItem[]) => (
     <div className="task-list">
       {list.map((i) => (
         <div key={i.task.id} className={`list-item${ui.editingId === i.task.id ? ' is-selected' : ''}`}>
           <RowLead pinned={isPinnedEntry(i.entry)} />
-          <TaskRow store={store} task={i.task} pinInLead showMyDay={false} doneOverride={i.done} />
+          <TaskRow store={store} task={i.task} showMyDay={false} doneOverride={i.done} />
         </div>
       ))}
     </div>
@@ -258,12 +259,11 @@ function DayList({ id, section, label, list, all, today }: { id?: string; sectio
     <GridList id={id} ref={reorderGuard.ref} aria-label={label} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list.map((i) => ({ ...i, id: i.task.id }))}>
       {(item) => (
         <GridListItem id={item.id} textValue={titleOf(store, item.task).slice(0, 40) || tr('任务')} className={`list-item${ui.editingId === item.id ? ' is-selected' : ''}`}>
-          {/* 置顶的总在最上面，不能拖（Rei 2026-11-08）；把手那格放红色图钉（Rei 2026-11-09） */}
+          {/* 置顶的总在最上面，不能拖（Rei 2026-11-08）；把手那格留空（2026-11-12 起置顶不放图钉，标题加粗） */}
           <RowLead pinned={isPinnedEntry(item.entry)} dragLabel={isPinnedEntry(item.entry) ? undefined : tr('拖动排序')} />
           <TaskRow
             store={store}
             task={item.task}
-            pinInLead
             showMyDay={false}
             doneOverride={item.done}
             // 行尾不放 ×（Rei 2026-10-25「删除my day中的条目右侧的x按钮」）：移出我的一天用行的右键 / 长按菜单或详情里的太阳

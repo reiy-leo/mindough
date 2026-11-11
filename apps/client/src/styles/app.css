@@ -915,36 +915,18 @@ button {
   white-space: nowrap;
   font-weight: 500;
 }
-/* 置顶的图钉（Rei 2026-11-09 01:03）：放在勾选圆圈前面、拖动把手那格，红色（各皮肤的 --danger，亮暗都有）。
-   有把手的列表（我的一天、待安排、看板）图钉占把手那格（.drag-handle.is-pin）；
-   别的列表没把手，图钉放在行左边 12px 留白里（.row-pin-gutter），圆圈不挪 */
-.row-pin {
-  display: inline-flex;
-  color: var(--danger);
+/* 置顶：标题加粗，不放图钉（Rei 2026-11-12 05:00「置顶的任务在任务列表中不显示前面的 pin icon，而是用粗体显示任务标题」；
+   以前 2026-11-09 起是勾选圈前面的红色图钉）。所有任务行都算（我的一天、待安排、已完成、项目列表 / 看板卡片、类型页、倒数日页的行…）。
+   同时挂了收藏 / 紧急 / 重要：加粗和标题颜色一起有。做完 / 关闭的不加粗（结束了的事不该再抢眼，和不变色一个道理）。 */
+.row-title.is-pinned {
+  font-weight: 700;
+}
+.is-done .row-title.is-pinned,
+.is-closed .row-title.is-pinned {
+  font-weight: 500;
 }
 .task-row {
   position: relative;
-}
-.row-pin-gutter {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--space-3);
-  align-items: center;
-  justify-content: center;
-}
-.drag-handle.is-pin {
-  color: var(--danger);
-  opacity: 1;
-}
-/* 图钉头重脚轻：几何居中时墨迹重心比勾选圈中线高约 0.65px，看着偏上（Rei 2026-11-11 08:16），往下挪回去 */
-.drag-handle.is-pin svg,
-.row-pin svg {
-  transform: translateY(0.65px);
-}
-span.drag-handle.is-pin {
-  cursor: default;
 }
 .drag-handle.is-placeholder {
   pointer-events: none;
@@ -960,7 +942,7 @@ span.drag-handle.is-pin {
    挂了这几个内置类型的任务，列表里标题变色；同时挂了几个，紧急 > 重要 > 收藏（core titleMarkOf）。
    亮色用深色调、暗色用提亮的版本，每套皮肤 × 亮暗各定一组写死的颜色（不用 color-mix，Chromium 107 不认），
    对这套皮肤的页面底、卡片、悬停、选中底色对比度都 ≥ 4.5:1（算法见 work/d1112-builtinlock/contrast.py）。
-   做完、关闭的照旧灰色，不再变色：结束了的事不该再抢眼。素净档只有黑白灰：不变色，改成加粗。 */
+   做完、关闭的照旧灰色，不再变色：结束了的事不该再抢眼。素净档只有黑白灰：不变色，标题下面一道灰线（见下面）。 */
 :root[data-skin='apple'] {
   --mark-star: #805300;
   --mark-urgent: #b8141a;
@@ -996,8 +978,23 @@ span.drag-handle.is-pin {
   --mark-urgent: var(--text);
   --mark-important: var(--text);
 }
+/* 素净档：收藏 / 紧急 / 重要不变色。以前改成加粗，2026-11-12 05:00 置顶改用加粗后会撞，改成标题下面一道灰线：
+   紧急实线、重要虚线、收藏点线（线是 --text-2，粗 1.5px，离字 3px）；置顶的照样加粗，两样能叠。做完 / 关闭的不画线。 */
 :root[data-color-level='plain'] .row-main .row-title[class*='is-mark-'] {
-  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--text-2);
+  text-decoration-skip-ink: none;
+}
+:root[data-color-level='plain'] .row-main .row-title.is-mark-urgent {
+  text-decoration-style: solid;
+}
+:root[data-color-level='plain'] .row-main .row-title.is-mark-important {
+  text-decoration-style: dashed;
+}
+:root[data-color-level='plain'] .row-main .row-title.is-mark-star {
+  text-decoration-style: dotted;
 }
 /* 选择器写到 (0,4,1)：盖过 Material 选中行把标题改成 --accent-soft-text 的 (0,4,0) */
 html[data-skin] .row-main .row-title.is-mark-star {
@@ -1013,6 +1010,7 @@ html[data-skin] .is-done .row-main .row-title[class*='is-mark-'],
 html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   color: var(--text-3);
   font-weight: 500;
+  text-decoration: none;
 }
 .is-closed .thumb {
   opacity: 0.55;

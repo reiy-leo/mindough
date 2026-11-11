@@ -57,7 +57,6 @@ export function BacklogPage() {
               <TaskRow
                 store={store}
                 task={t}
-                pinInLead
                 trailing={
                   <PopoverPanel
                     label={tr('安排日期')}

@@ -35,8 +35,6 @@ export interface TaskRowProps {
   trailing?: ReactNode;
   /** 打卡任务是否显示行内打卡按钮。 */
   showCheckIn?: boolean;
-  /** 置顶的图钉由外面的 RowLead 放在把手那格（我的一天、待安排、看板），行里不再放。 */
-  pinInLead?: boolean;
 }
 
 /**
@@ -56,37 +54,21 @@ export function TaskThumb({ media, layout, isAvatar, color, icon, name, hasItem 
 }
 
 /**
- * 拖动把手那一格（Rei 2026-11-09 01:03「置顶的任务的pin放在circle前面，就是原本drag handle的地方，颜色用红色」）。
- * 置顶的放红色图钉：给了 dragLabel（待安排、看板）图钉本身还是拖动按钮，照样能拖；没给（我的一天，置顶的固定在最上）只是图标，不能拖。
- * 没置顶的照旧是把手；不能拖又没置顶的留同宽占位，行和别的对齐。
- * 图钉和把手一样大（Rei 2026-11-11 08:16 / 08:17「没对齐」「大小也要一致」）：两个图形本身宽高比不同，按画出来的高度配平——
- * 图钉 12（墨迹 7×10）、把手 15（墨迹 5×10），都是 10px 高；格子都是 18 宽、去掉按钮自带的左右内边距，两者在同一列。
- * 图钉头重脚轻，几何居中看着偏上，CSS 往下挪 0.65px，墨迹重心和勾选圈中线对齐（.drag-handle.is-pin svg / .row-pin svg）。
+ * 拖动把手那一格。置顶不再放图钉（Rei 2026-11-12 05:00「置顶的任务在任务列表中不显示前面的 pin icon，而是用粗体显示任务标题」，
+ * 原来 2026-11-09 01:03 起这格放红色图钉）：置顶的标题加粗（TaskRow 的 .row-title.is-pinned），这格和别的行一样——
+ * 能拖（待安排、看板）是把手，读屏多念一句「已置顶」；不能拖（我的一天，置顶的固定在最上）留同宽占位，行和别的对齐。
  */
-export const LEAD_PIN_SIZE = 12;
 export const LEAD_GRIP_SIZE = 15;
 export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: string }) {
-  if (pinned && dragLabel)
-    return (
-      <RacButton slot="drag" className="drag-handle is-pin" aria-label={`${tr('已置顶')} · ${dragLabel}`}>
-        <Pin size={LEAD_PIN_SIZE} aria-hidden />
-      </RacButton>
-    );
-  if (pinned)
-    return (
-      <HoverTip className="drag-handle is-pin" tip={tr('已置顶')}>
-        <Pin size={LEAD_PIN_SIZE} aria-hidden />
-      </HoverTip>
-    );
   if (!dragLabel) return <span className="drag-handle is-placeholder" aria-hidden />;
   return (
-    <RacButton slot="drag" className="drag-handle" aria-label={dragLabel}>
+    <RacButton slot="drag" className="drag-handle" aria-label={pinned ? `${tr('已置顶')} · ${dragLabel}` : dragLabel}>
       <GripVertical size={LEAD_GRIP_SIZE} />
     </RacButton>
   );
 }
 
-export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, pinInLead = false }: TaskRowProps) {
+export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true }: TaskRowProps) {
   // 不订阅整个 UI 状态（2026-11-12 看板卡顿）：选中只看自己这件，别的行选中 / 取消时不重渲染
   const ui = useUiStable();
   const v = viewOf(store, task);
@@ -182,13 +164,6 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       onPointerUpCapture={cancelPress}
       onPointerCancelCapture={cancelPress}
     >
-      {/* 置顶的红色图钉放在勾选圆圈前面（Rei 2026-11-09 01:03）。有拖动把手的列表（我的一天、待安排、看板）由 RowLead 放在把手那格，
-          这里不放；别的列表没有把手，放在行左边的留白里，不挤动圆圈 */}
-      {pinned && !pinInLead && (
-        <HoverTip className="row-pin row-pin-gutter" tip={tr('已置顶')}>
-          <Pin size={LEAD_PIN_SIZE} aria-hidden />
-        </HoverTip>
-      )}
       {isCheckInRow ? (
         <span className="row-lead" aria-hidden>
           {habit ? <Repeat size={17} /> : <TypeIcon size={18} style={{ color: v.type?.color }} />}
@@ -219,9 +194,11 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       >
         {/* 第一行是任务标题 = 正文第一行，挂了资料也一样（Rei 2026-11-03）；资料只在行首显示缩略图 */}
         {/* 挂了收藏 / 紧急 / 重要：标题变暗黄 / 暗红 / 暗蓝（Rei 2026-11-12 04:41；紧急 > 重要 > 收藏，颜色见 styles/app.css .row-title.is-mark-*） */}
-        <span className={`row-title${mark ? ` is-mark-${mark}` : ''}`}>
+        {/* 置顶：标题加粗，不放图钉（Rei 2026-11-12 05:00）；做完 / 关闭的不加粗（styles/app.css .row-title.is-pinned） */}
+        <span className={`row-title${mark ? ` is-mark-${mark}` : ''}${pinned ? ' is-pinned' : ''}`}>
           {v.title}
         </span>
+        {pinned && <span className="sr-only">{tr('已置顶')}</span>}
         <span className="row-meta">
           {/* 类型（Rei 2026-10-28 能挂多个）：克制地写「游戏 +2」——第一个类型，其余类型和资料合成 +N，悬停看全部 */}
           {cats.length > 0 && (
