@@ -17,10 +17,10 @@ export function dayItems(store: Store, now: Date = store.now()): MyDayItem[] {
   const items = myDayItems(visibleDayEntries(store, store.list('my_day')), byId, checkIns, today, now);
   // 这一天表里有过行的（活的、移出留下的墓碑）不再出虚拟行
   const seen = new Set(store.listAll('my_day').filter((e) => e.date === today).map((e) => e.task_id));
-  const virtual = checkInDayItems(tasks, groups, checkIns, today, now, seen);
+  const virtual = checkInDayItems(tasks, groups, checkIns, today, now, seen, store.pinnedAt);
   // 补打卡还在补的（Rei 2026-11-09 01:52，core makeupDayItems）：点补打卡那天是真行，之后每天虚拟行带着，直到补完或到下一个节点
   const byVirtual = new Set(virtual.map((v) => v.task.id));
-  virtual.push(...makeupDayItems(tasks, groups, store.listAll('my_day'), checkIns, today, now, seen).filter((v) => !byVirtual.has(v.task.id)));
+  virtual.push(...makeupDayItems(tasks, groups, store.listAll('my_day'), checkIns, today, now, seen, store.pinnedAt).filter((v) => !byVirtual.has(v.task.id)));
   // 分段时按 done 拆开，所以达标的会落进「已完成」段；未完成的排在手动加的后面
-  return withPinned([...items, ...virtual], pinnedDayItems(tasks, groups, checkIns, today, now));
+  return withPinned([...items, ...virtual], pinnedDayItems(tasks, groups, checkIns, today, now, store.pinnedAt));
 }

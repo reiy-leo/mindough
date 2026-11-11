@@ -35,14 +35,23 @@ export const taskCategoryId = (taskId: string, categoryId: string) => pairId('ta
 /** 任务挂资料那一行的 id。 */
 export const taskItemId = (taskId: string, itemId: string) => pairId('task_item', taskId, itemId);
 
-/** 单值的签名：新客户端写任务时记下，拉到签名对不上的任务就是旧客户端改的。 */
-export function refsMirrorOf(t: Pick<Task, 'category_id' | 'library_item_id'>): string {
-  return `${t.category_id ?? ''}|${t.library_item_id ?? ''}`;
+/**
+ * 单值的签名：新客户端写任务时记下，拉到签名对不上的任务就是旧客户端改的。
+ * 置顶了（pinned_at 有值）的在末尾加 `|P`（2026-11-12 置顶改成类型）：只认 pinned_at 的旧客户端置顶、取消置顶，签名就对不上了，
+ * 新客户端据此给它挂上 / 摘掉「置顶」类型（Store.legacyLinks）。没置顶的签名和以前一样，老数据不会全被当成旧客户端写的。
+ */
+export function refsMirrorOf(t: Pick<Task, 'category_id' | 'library_item_id'> & { pinned_at?: string | null }): string {
+  return `${t.category_id ?? ''}|${t.library_item_id ?? ''}${t.pinned_at ? '|P' : ''}`;
 }
 
 /** 这行任务是不是新客户端写的（单值和签名对得上）。 */
-export function isMirrored(t: Pick<Task, 'category_id' | 'library_item_id' | 'refs_mirror'>): boolean {
+export function isMirrored(t: Pick<Task, 'category_id' | 'library_item_id' | 'refs_mirror'> & { pinned_at?: string | null }): boolean {
   return typeof t.refs_mirror === 'string' && t.refs_mirror === refsMirrorOf(t);
+}
+
+/** 签名里记着「置顶过」吗（上一次新客户端写这行时是置顶的）。 */
+export function mirrorSaysPinned(t: Pick<Task, 'refs_mirror'>): boolean {
+  return typeof t.refs_mirror === 'string' && t.refs_mirror.endsWith('|P');
 }
 
 /** 关联行的公共形状（task_category / task_item）。 */

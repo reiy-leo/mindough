@@ -85,8 +85,8 @@ describe('打开旧数据时合并（localStorage / 内存）', () => {
 
   it('同名并成一个、引用改写、保留图标颜色，数量对', async () => {
     const s = await Store.open(await legacy(), { deviceId: 'dev1' });
-    // 27 内置 + Reading + 家（工作、健身、reading 并掉了）
-    expect(s.categories(true)).toHaveLength(29);
+    // 27 内置 + 置顶（2026-11-12）+ Reading + 家（工作、健身、reading 并掉了）
+    expect(s.categories(true)).toHaveLength(30);
     expect(s.categories(true).filter((c) => normCategoryName(c.name) === '工作')).toHaveLength(1);
     // 项目改指留下的
     expect(s.get('group', 'g-work')!.category_id).toBe(BUILTIN_CATEGORY_IDS.work);
@@ -139,7 +139,7 @@ describe('SQLite 迁移 v11', () => {
       expect(s.get('group', 'g1')!.category_id).toBe(BUILTIN_CATEGORY_IDS.sport);
       expect(s.category('01900000-0000-7000-8000-00000000a5b1')?.id).toBe(BUILTIN_CATEGORY_IDS.sport);
       expect(s.category('pc-home')).toMatchObject({ icon: '', hidden: false, builtin: false, merged_into: null });
-      expect(s.categories(true)).toHaveLength(28);
+      expect(s.categories(true)).toHaveLength(29);
       await s.flush();
       // 重开读回的一样
       const again = await Store.open(new SqlAdapter(d), { deviceId: 'dev1' });

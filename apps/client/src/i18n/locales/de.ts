@@ -223,6 +223,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "搜分组，或者输入名字新建": "Gruppen suchen oder Namen eingeben, um eine neue anzulegen",
   "显示为：{name}": "Anzeigen als: {name}",
   "不显示：选类型时看不到它，已经挂着的任务和项目照常显示。": "Ausgeblendet: erscheint nicht bei der Kategorieauswahl. Aufgaben und Projekte, die sie schon nutzen, zeigen sie weiter an.",
+  "挂了这个类型的任务就是置顶的，每天都在我的一天最上面。设成不显示后，它们都不算置顶，菜单里也不再有「置顶」。": "Aufgaben mit dieser Kategorie sind angeheftet und stehen jeden Tag ganz oben in „Mein Tag“. Blendest du sie aus, gilt keine davon mehr als angeheftet, und „Anheften“ verschwindet aus den Menüs.",
   "常用：选类型时排在最前面。": "Häufig: steht bei der Kategorieauswahl ganz oben.",
   "普通：选类型时按最近用过的先后排。": "Normal: sortiert danach, wann du sie zuletzt genutzt hast.",
   // ── 类型（统一的分类，2026-10-26）──
@@ -1883,6 +1884,7 @@ export const DATA: Record<string, string> = {
   "个人护理": "Selbstfürsorge",
   "维护": "Instandhaltung",
   "观影": "Filme & Serien",
+  "置顶": "Angeheftet",
   "烂番茄": "Rotten Tomatoes",
   "豆瓣": "Douban",
   "B 站": "Bilibili",

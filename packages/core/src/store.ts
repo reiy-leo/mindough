@@ -10,7 +10,7 @@ import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
 import { overdueBacklogTasks } from './overdue-backlog';
-import { AUTO_MY_DAY_HLC, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
+import { AUTO_MY_DAY_HLC, type PinOf, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
 import { countdownRecordDepId, countdownRecordId, bodyFirstLine, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
@@ -42,10 +42,10 @@ import {
   type LibraryEntry,
 } from './library';
 import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
-import { BUILTIN_CATEGORIES } from './seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID } from './seed/builtin-checkin-categories';
 import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
 import { CategoryDeleteError, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
-import { isMirrored, legacyRefPlan, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
+import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
 import { isCardColor } from './card-color';
 import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type CheckInCategory, type DateKey, type CheckInKind, type FieldDef, type FieldValue, type LibraryItem, type NewRow, type Person, type TableMap, type TableName, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskStatus } from './types';
@@ -368,9 +368,12 @@ export class Store {
       (this.tables[c.table] as Map<string, BaseRow>).set(row.id, row);
       return { table: c.table, row } as Change;
     };
+    // 写之前的置顶时间：这批直接改了 pinned_at 的（导入、老代码路径），按它挂上 / 摘掉「置顶」类型（syncRefs）
+    const prevPin = new Map<string, string | null>();
+    for (const c of changes) if (c.table === 'task' && !prevPin.has(c.row.id)) prevPin.set(c.row.id, this.tables.task.get(c.row.id)?.pinned_at ?? null);
     let stamped: Change[] = changes.map(stampOne);
     // 单值和多值对齐（双写）：写了单值的补进多值，多值变了的把第一个抄回单值
-    const extra = this.syncRefs(stamped);
+    const extra = this.syncRefs(stamped, prevPin);
     if (extra.length) stamped = dedupeRows([...stamped, ...extra.map(stampOne)]) as Change[];
     // 用户手动改了任务的项目：记下是交回资料库管、还是手动挪出（见 project-libraries.ts manualVia）
     if (prevTasks.size) {
@@ -922,6 +925,11 @@ export class Store {
     return [...new Set(this.list('task_person').filter((x) => x.task_id === taskId).map((x) => this.resolvePersonId(x.person_id) ?? x.person_id))].filter((id) => !!this.get('person', id));
   }
 
+  /** 任务挂的类型，不含「置顶」（列表行的类型小字、颜色用：置顶有自己的红色图钉，Rei 2026-11-12）。 */
+  categoriesOfTaskNoPin(task: Pick<Task, 'id' | 'category_id'> | string): Category[] {
+    return this.categoriesOfTask(task).filter((c) => c.id !== PIN_CATEGORY_ID);
+  }
+
   /** 挂了这个类型的任务（顺着合并算）。 */
   tasksOfCategory(categoryId: string): Task[] {
     const target = this.resolveCat(categoryId);
@@ -1039,7 +1047,7 @@ export class Store {
    * - 多值的第一个和单值不一样：把第一个抄回单值（library_item_id 的库也写进 type_id）。
    * 返回要再写的行（调用方打时间戳）。
    */
-  private syncRefs(stamped: readonly Change[]): Array<{ table: TableName; row: BaseRow }> {
+  private syncRefs(stamped: readonly Change[], prevPin: ReadonlyMap<string, string | null> = new Map()): Array<{ table: TableName; row: BaseRow }> {
     const touched = new Set<string>();
     const wroteTask = new Set<string>();
     for (const c of stamped) {
@@ -1073,13 +1081,31 @@ export class Store {
           items = [row, ...items];
         }
       }
-      const firstCat = cats.map((l) => this.resolveCat(l.category_id)).find((x): x is string => !!x && !!this.get('category', x)) ?? null;
+      // 置顶 = 挂了「置顶」类型（Rei 2026-11-12）。这批直接改了 pinned_at 的（导入、老代码路径）按 pinned_at 挂 / 摘；
+      // 其余按类型把 pinned_at 写回去（置顶时间是排序键，老客户端也靠它显示置顶）
+      const pinLinkId = taskCategoryId(id, PIN_CATEGORY_ID);
+      const hasPin = cats.some((l) => this.resolveCat(l.category_id) === PIN_CATEGORY_ID);
+      let pinnedAt = t.pinned_at ?? null;
+      if (wroteTask.has(id) && prevPin.has(id) && !!prevPin.get(id) !== !!pinnedAt && hasPin !== !!pinnedAt) {
+        const cur = this.tables.task_category.get(pinLinkId);
+        if (pinnedAt) {
+          const row = { ...(cur ?? { created_at: now }), id: pinLinkId, task_id: id, category_id: PIN_CATEGORY_ID, sort: cats.reduce((m, l) => Math.max(m, l.sort), -1) + 1, deleted: false, updated_at: '' } as TaskCategory;
+          out.push({ table: 'task_category', row });
+          cats = [...cats, row];
+        } else {
+          for (const l of cats) if (this.resolveCat(l.category_id) === PIN_CATEGORY_ID) out.push({ table: 'task_category', row: { ...l, deleted: true } as BaseRow });
+          cats = cats.filter((l) => this.resolveCat(l.category_id) !== PIN_CATEGORY_ID);
+        }
+      } else if (hasPin && !pinnedAt) pinnedAt = now;
+      else if (!hasPin && pinnedAt) pinnedAt = null;
+      // 单值不放「置顶」：它不当任务的主类型（按类型分区、老客户端显示的类型都看单值）
+      const firstCat = cats.map((l) => this.resolveCat(l.category_id)).find((x): x is string => !!x && x !== PIN_CATEGORY_ID && !!this.get('category', x)) ?? null;
       const firstItemId = items.map((l) => this.resolveItemId(l.item_id)).find((x): x is string => !!x) ?? null;
       const firstItem = this.get('library_item', firstItemId);
-      const next: Task = { ...t, category_id: firstCat, library_item_id: firstItemId };
+      const next: Task = { ...t, category_id: firstCat, library_item_id: firstItemId, pinned_at: pinnedAt };
       // 资料所在的库 = 任务的「主库」（版式、任务字段、旧客户端的显示）；一条资料都没有时 type_id 不动（老任务只选了库没选资料）
       if (firstItem) next.type_id = firstItem.type_id;
-      if (next.category_id !== t.category_id || next.library_item_id !== t.library_item_id || next.type_id !== t.type_id || t.refs_mirror !== refsMirrorOf(next)) out.push({ table: 'task', row: next as BaseRow });
+      if (next.category_id !== t.category_id || next.library_item_id !== t.library_item_id || next.type_id !== t.type_id || (next.pinned_at ?? null) !== (t.pinned_at ?? null) || t.refs_mirror !== refsMirrorOf(next)) out.push({ table: 'task', row: next as BaseRow });
     }
     return out;
   }
@@ -1112,6 +1138,7 @@ export class Store {
         out.push({ table: 'task_category', row });
       }
     }
+    out.push(...this.legacyPinLink(t, allCats));
     const ri = t.library_item_id ? (this.resolveItemId(t.library_item_id) ?? t.library_item_id) : null;
     if (ri) {
       const lid = taskItemId(t.id, ri);
@@ -1123,6 +1150,37 @@ export class Store {
       }
     }
     return out;
+  }
+
+  /**
+   * 只认 pinned_at 的客户端（2026-11-12 之前的）写的置顶 → 「置顶」类型（Rei 2026-11-12「有置顶类型就置顶」）：
+   * - pinned_at 有值、没挂「置顶」：挂上，排在最后（老数据迁移也走这里，打开时 backfillRefs 跑一遍）。
+   * - pinned_at 空、签名里记着上次是置顶的（旧客户端取消了置顶）、还挂着：摘掉。
+   * - 这一对的关联行比任务行新（新客户端后来改过）就不动。
+   * 行 id 由任务 + 类型算出、updated_at 用任务行的，几台设备各补一遍得到同一行（同 legacyRefPlan）。改内存，返回要落盘的行。
+   */
+  private legacyPinLink(t: Task, allCats: ReadonlyArray<TaskCategory>): Change[] {
+    const lid = taskCategoryId(t.id, PIN_CATEGORY_ID);
+    const live = allCats.filter((l) => !l.deleted && this.resolveCat(l.category_id) === PIN_CATEGORY_ID);
+    const existing = this.tables.task_category.get(lid);
+    if (existing && existing.updated_at >= t.updated_at) return [];
+    if (t.pinned_at && !live.length) {
+      const sort = allCats.filter((l) => !l.deleted).reduce((m, l) => Math.max(m, l.sort), -1) + 1;
+      const row: TaskCategory = { id: lid, updated_at: t.updated_at, deleted: false, task_id: t.id, category_id: PIN_CATEGORY_ID, sort, created_at: t.created_at };
+      this.tables.task_category.set(lid, row);
+      return [{ table: 'task_category', row }];
+    }
+    if (!t.pinned_at && mirrorSaysPinned(t) && live.length) {
+      const out: Change[] = [];
+      for (const l of live) {
+        if (l.updated_at >= t.updated_at) continue;
+        const row: TaskCategory = { ...l, deleted: true, updated_at: t.updated_at };
+        this.tables.task_category.set(l.id, row);
+        out.push({ table: 'task_category', row });
+      }
+      return out;
+    }
+    return [];
   }
 
   /** 打开时：老数据（v12 之前、旧客户端写的）的单值搬进多值表。不进 outbox。 */
@@ -1412,7 +1470,7 @@ export class Store {
    */
   private joinMyDayOnToday(task: Task, before: Task | null): void {
     if (task.deleted || !task.scheduled_date || task.recurrence) return;
-    if (isFinished(task.status) || task.pinned_at || task.archived_at || this.inArchivedGroup(task)) return;
+    if (isFinished(task.status) || this.pinnedAt(task) || task.archived_at || this.inArchivedGroup(task)) return;
     const now = this.now();
     const deviceToday = toDateKey(now);
     const covers = (t: Task) => !!t.scheduled_date && keepsMyDayAfterDate(t.scheduled_date, t.end_date ?? null, [deviceToday, taskToday(t, now, deviceToday)]);
@@ -1468,7 +1526,8 @@ export class Store {
         },
         { joinMyDay: false },
       );
-      const cats = this.categoryIdsOfTask(task.id);
+      // 「置顶」不抄：那次的记录不该跟着置顶
+      const cats = this.categoryIdsOfTask(task.id).filter((c) => c !== PIN_CATEGORY_ID);
       if (cats.length) this.setTaskCategories(id, cats);
     }
     const depId = countdownRecordDepId(task.id, date);
@@ -1854,16 +1913,49 @@ export class Store {
    */
   pinTask(id: string): Task | undefined {
     const t = this.get('task', id);
-    if (!t || t.pinned_at) return t;
-    return this.updateTask(id, { pinned_at: this.now().toISOString() });
+    if (!t || this.hasPinCategory(t)) return t;
+    // 2026-11-12 起置顶 = 挂上「置顶」类型（排在最后，不当主类型）；pinned_at 由 syncRefs 跟着写成现在
+    this.addTaskCategory(id, PIN_CATEGORY_ID);
+    return this.get('task', id);
   }
 
-  /** 取消置顶：回到普通任务，今天的我的一天里有它的行就照常显示，没有就不显示了。没置顶的不写。 */
+  /** 取消置顶：摘掉「置顶」类型，回到普通任务，今天的我的一天里有它的行就照常显示，没有就不显示了。没置顶的不写。 */
   unpinTask(id: string): Task | undefined {
     const t = this.get('task', id);
-    if (!t || !t.pinned_at) return t;
-    return this.updateTask(id, { pinned_at: null });
+    if (!t || !this.hasPinCategory(t)) return t;
+    this.removeTaskCategory(id, PIN_CATEGORY_ID);
+    return this.get('task', id);
   }
+
+  /** 挂没挂「置顶」类型（不看它是不是设成了不显示）。 */
+  hasPinCategory(task: Pick<Task, 'id' | 'category_id'> | string): boolean {
+    return this.categoryIdsOfTask(task).includes(PIN_CATEGORY_ID);
+  }
+
+  /** 「置顶」类型还管用吗：在、没设成不显示（Rei 2026-11-12：设成不显示 = 没有置顶功能，菜单里也不给「置顶」）。 */
+  pinEnabled(): boolean {
+    const c = this.get('category', PIN_CATEGORY_ID);
+    return !!c && !c.hidden;
+  }
+
+  /**
+   * 任务的置顶时间（排序键，后置顶的在上）；没置顶 = null。
+   * 置顶 = 挂着「置顶」类型、而且这个类型没设成不显示（Rei 2026-11-12 03:46「有置顶类型就置顶。没就不置顶」）。
+   * 时间用 task.pinned_at（挂类型时写）；同步过来只有类型、没有 pinned_at 的，用关联行的时间，再不行用任务的更新时间。
+   * 箭头函数：直接传给 myday.ts 的纯函数当 pinOf。
+   */
+  pinnedAt: PinOf = (task) => {
+    if (!task || task.deleted || !this.pinEnabled()) return null;
+    const link = this.refIndex().cats.get(task.id)?.find((l) => this.resolveCat(l.category_id) === PIN_CATEGORY_ID);
+    if (!link) return null;
+    return task.pinned_at || hlcIso(link.updated_at) || hlcIso(task.updated_at) || task.created_at || new Date(0).toISOString();
+  };
+
+  /** 任务置顶了吗（见 pinnedAt）。 */
+  isPinned = (task: Task | string | null | undefined): boolean => {
+    const t = typeof task === 'string' ? this.get('task', task) : task;
+    return !!t && !!this.pinnedAt(t);
+  };
 
   /** 倒数日卡片的背景色（Rei 2026-11-02）：预设色的名字，null = 默认。名字不认识的当默认存成 null。 */
   setCardColor(id: string, color: string | null): Task | undefined {
@@ -2014,7 +2106,7 @@ export class Store {
     if (!t) return false;
     const gm = new Map(this.list('group').map((g) => [g.id, g]));
     // 补打卡还在补的也是虚拟行（Rei 2026-11-09 01:52，myday.ts makeupDayItems）
-    return isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now());
+    return isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date, this.pinnedAt) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now(), this.pinnedAt);
   }
 
   /** 这件打卡今天能补哪个节点（Rei 2026-11-09 01:52，见 makeup.ts makeupNode）；不能补 null。严格模式不管这里，界面上不给按钮。 */
@@ -2045,7 +2137,7 @@ export class Store {
       else if (!e) {
         const t = this.get('task', tid);
         const gm = new Map(this.list('group').map((g) => [g.id, g]));
-        if (t && (isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now())))
+        if (t && (isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date, this.pinnedAt) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now(), this.pinnedAt)))
           rows.push({ table: 'my_day', row: { id: myDayEntryId(tid, date), updated_at: '', deleted: false, task_id: tid, date, sort: i + 1, added_at: this.now().toISOString() } as BaseRow });
       }
     });
@@ -2058,7 +2150,7 @@ export class Store {
   backlog(today: string = toDateKey(this.now())): Task[] {
     // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
     // 置顶的任务每天都在我的一天里，不进待安排（Rei 2026-11-08）
-    return backlogTasks(this.activeTasks().filter((t) => !t.pinned_at), this.list('my_day'), today);
+    return backlogTasks(this.activeTasks().filter((t) => !this.pinnedAt(t)), this.list('my_day'), today);
   }
 
   /** 过期积压：定了日期、没做完、已经过期的任务，最近过期在上；没到期的不放（见 overdue-backlog.ts，Rei 2026-11-11）。 */
@@ -2919,3 +3011,10 @@ export class Store {
 
 /** 类型顺序的同步偏好 key。 */
 export const TYPE_ORDER_PREF = 'type_order';
+
+/** HLC 时间戳 → ISO 时间（置顶时间兜底用）；不是 HLC（内置行、空串）返回 null。 */
+function hlcIso(hlc: string | null | undefined): string | null {
+  if (!hlc || !/^\d{13}-/.test(hlc)) return null;
+  const ms = parseHlc(hlc).ms;
+  return ms > 0 ? new Date(ms).toISOString() : null;
+}

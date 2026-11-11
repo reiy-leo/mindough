@@ -38,7 +38,7 @@ import { ProjectBoard } from './ProjectBoard';
 
 const mk = (id: string, status: Task['status']): Task => ({ id, body_md: `任务 ${id}`, status, deleted: false, sort: 1, created_at: '2026-11-08T00:00:00.000Z' } as unknown as Task);
 const tasks = [mk('a', '待办'), mk('b', '进行中')];
-const store = { version: 1, get: (_t: string, id: string) => tasks.find((t) => t.id === id) } as unknown as Store;
+const store = { version: 1, get: (_t: string, id: string) => tasks.find((t) => t.id === id), isPinned: () => false } as unknown as Store;
 
 let root: Root;
 let host: HTMLDivElement;

@@ -61,7 +61,15 @@ export function isPinnedEntry(e: Pick<MyDayEntry, 'id'>): boolean {
   return e.id.startsWith(PINNED_ENTRY_PREFIX);
 }
 
-/** 任务置顶了吗（Rei 2026-11-08）。 */
+/**
+ * 任务的置顶时间（置顶的排序键）；没置顶 = null / undefined。
+ * 2026-11-12 起置顶看任务挂没挂内置类型「置顶」（Rei 03:46「有置顶类型就置顶。没就不置顶」），要读类型表，
+ * 所以纯函数都收一个 pinOf：界面和 Store 传 store.pinnedAt；不传时退回 task.pinned_at（测试、老调用）。
+ */
+export type PinOf = (task: Task) => string | null | undefined;
+export const pinnedAtOf: PinOf = (task) => task.pinned_at;
+
+/** 只看 task.pinned_at 的旧判断（Rei 2026-11-08）。界面上判断置顶用 store.isPinned。 */
 export function isPinned(task: { pinned_at?: string | null } | null | undefined): boolean {
   return !!task?.pinned_at;
 }
@@ -80,18 +88,22 @@ export function pinnedDayItems(
   checkIns: readonly CheckIn[],
   date: DateKey,
   now: Date,
+  pinOf: PinOf = pinnedAtOf,
 ): MyDayItem[] {
   const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
-  const out: MyDayItem[] = [];
+  const out: Array<MyDayItem & { pin: string }> = [];
   for (const task of tasks) {
-    if (!task.pinned_at || task.deleted || task.archived_at || inArchivedGroup(task, gm)) continue;
+    const pin = pinOf(task);
+    if (!pin || task.deleted || task.archived_at || inArchivedGroup(task, gm)) continue;
     const done = isDoneOn(task, checkIns, date, now);
     // 只做一次的做完了：只留做完那天
     if (done && !task.recurrence && (!task.done_at || toDateKey(new Date(task.done_at)) !== date)) continue;
-    const entry: MyDayEntry = { id: PINNED_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: -Infinity, added_at: task.pinned_at };
-    out.push({ entry, task, done });
+    const entry: MyDayEntry = { id: PINNED_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: -Infinity, added_at: pin };
+    out.push({ entry, task, done, pin });
   }
-  return out.sort((a, b) => (a.task.pinned_at! > b.task.pinned_at! ? -1 : a.task.pinned_at! < b.task.pinned_at! ? 1 : a.task.id < b.task.id ? -1 : 1));
+  return out
+    .sort((a, b) => (a.pin > b.pin ? -1 : a.pin < b.pin ? 1 : a.task.id < b.task.id ? -1 : 1))
+    .map(({ pin: _pin, ...item }) => item);
 }
 
 /**
@@ -120,8 +132,9 @@ export function isCheckInDayCandidate(
   task: Task,
   groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
   date: DateKey,
+  pinOf: PinOf = pinnedAtOf,
 ): boolean {
-  return !task.deleted && !task.pinned_at && dueToday(task, date) && !inArchivedGroup(task, groups);
+  return !task.deleted && !pinOf(task) && dueToday(task, date) && !inArchivedGroup(task, groups);
 }
 
 /**
@@ -137,11 +150,12 @@ export function checkInDayItems(
   date: DateKey,
   now: Date,
   seen: ReadonlySet<string>,
+  pinOf: PinOf = pinnedAtOf,
 ): MyDayItem[] {
   const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
   const out: MyDayItem[] = [];
   for (const task of tasks) {
-    if (seen.has(task.id) || !isCheckInDayCandidate(task, gm, date)) continue;
+    if (seen.has(task.id) || !isCheckInDayCandidate(task, gm, date, pinOf)) continue;
     const entry: MyDayEntry = { id: CHECKIN_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: Infinity, added_at: `${date}T00:00:00.000Z` };
     out.push({ entry, task, done: isDoneOn(task, checkIns, date, now) });
   }
@@ -154,8 +168,9 @@ export function isVirtualCheckInToday(
   groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
   allEntries: Iterable<Pick<MyDayEntry, 'task_id' | 'date'>>,
   date: DateKey,
+  pinOf: PinOf = pinnedAtOf,
 ): boolean {
-  if (!isCheckInDayCandidate(task, groups, date)) return false;
+  if (!isCheckInDayCandidate(task, groups, date, pinOf)) return false;
   for (const e of allEntries) if (e.task_id === task.id && e.date === date) return false;
   return true;
 }
@@ -174,12 +189,13 @@ export function makeupDayItems(
   date: DateKey,
   now: Date,
   seen: ReadonlySet<string>,
+  pinOf: PinOf = pinnedAtOf,
 ): MyDayItem[] {
   const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
   const list = [...entries];
   const out: MyDayItem[] = [];
   for (const task of tasks) {
-    if (seen.has(task.id) || task.pinned_at || inArchivedGroup(task, gm)) continue;
+    if (seen.has(task.id) || pinOf(task) || inArchivedGroup(task, gm)) continue;
     const st = makeupState(task, checkIns, date, now);
     if (!st || !makeupStarted(task.id, list, st.node, addDays(date, -1))) continue;
     // 补完了：只在补完那天（有这一天记的事件）留在「已完成」段，之后不再出现
@@ -198,10 +214,11 @@ export function isVirtualMakeupToday(
   checkIns: readonly CheckIn[],
   date: DateKey,
   now: Date,
+  pinOf: PinOf = pinnedAtOf,
 ): boolean {
   const list = [...allEntries];
   if (list.some((e) => e.task_id === task.id && e.date === date)) return false;
-  return makeupDayItems([task], groups, list, checkIns, date, now, new Set()).length > 0;
+  return makeupDayItems([task], groups, list, checkIns, date, now, new Set(), pinOf).length > 0;
 }
 
 /**
@@ -229,6 +246,7 @@ export function yesterdayUnfinished(
   checkIns: readonly CheckIn[],
   today: DateKey,
   now: Date,
+  pinOf: PinOf = pinnedAtOf,
 ): Task[] {
   const yesterday = addDays(today, -1);
   const todayIds = new Set(entriesFor(entries, today).map((e) => e.task_id));
@@ -237,7 +255,7 @@ export function yesterdayUnfinished(
     if (todayIds.has(e.task_id)) continue;
     const t = tasksById.get(e.task_id);
     // 置顶的今天本来就在（Rei 2026-11-08），不用带回
-    if (!t || t.deleted || t.archived_at || t.pinned_at) continue;
+    if (!t || t.deleted || t.archived_at || pinOf(t)) continue;
     // 补打卡还在补的（Rei 2026-11-09 01:52）今天由 makeupDayItems 带着，不用再列进「昨天没做完」
     if (isHabit(t) && makeupNode(t, checkIns, today, now) && makeupNode(t, checkIns, yesterday, now) === makeupNode(t, checkIns, today, now)) continue;
     // 重复任务看的是昨天那个周期；普通任务看现在的状态
@@ -275,6 +293,8 @@ export interface SuggestionInput {
    * 不给就和以前一样，都建议。
    */
   groups?: readonly Group[];
+  /** 置顶时间（Store.pinnedAt）；不给就看 task.pinned_at。置顶的不进建议。 */
+  pinOf?: PinOf;
 }
 
 /**
@@ -334,7 +354,8 @@ export function suggestions(input: SuggestionInput): Suggestion[] {
   const groups = groupMap(input.groups);
   // 置顶的每天都在我的一天里（Rei 2026-11-08），不再建议
   // 今天要打的打卡自己就在我的一天里（Rei 2026-11-09，checkInDayItems），不再建议；移出了当天的也不再建议
-  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !s.task.pinned_at && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups) && !isCheckInDayCandidate(s.task, groups, input.today));
+  const pinOf = input.pinOf ?? pinnedAtOf;
+  return dueTodayCandidates(input).filter((s) => !inToday.has(s.task.id) && !pinOf(s.task) && !inAutoGroup(s.task, groups) && !inArchivedGroup(s.task, groups) && !isCheckInDayCandidate(s.task, groups, input.today, pinOf));
 }
 
 /**

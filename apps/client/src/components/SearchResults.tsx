@@ -69,7 +69,7 @@ export function SearchTaskRow({ id, title, snippet, active, onHover, onOpen }: R
   if (!t) return null;
   const v = viewOf(store, t);
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
-  const inDay = !!t.pinned_at || store.isInMyDay(id);
+  const inDay = store.isPinned(t) || store.isInMyDay(id);
   return (
     <li className={`palette-item${active ? ' is-active' : ''}`} onMouseEnter={onHover}>
       <RacButton className="palette-main" onPress={onOpen}>

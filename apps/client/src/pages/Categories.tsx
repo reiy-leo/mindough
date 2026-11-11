@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button as RacButton, Input, TextField } from 'react-aria-components';
 import { ChevronLeft, Tags } from 'lucide-react';
-import { isFinished, type Category, type CategoryState } from '@mindough/core';
+import { PIN_CATEGORY_ID, isFinished, type Category, type CategoryState } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { useSettings } from '../lib/settings';
@@ -172,6 +172,8 @@ function CategoryHead({ c }: { c: Category }) {
             ? tr('常用：选类型时排在最前面。')
             : tr('普通：选类型时按最近用过的先后排。')}
       </p>
+      {/* 内置类型「置顶」（Rei 2026-11-12）：挂了它就是置顶；设成不显示 = 没有置顶功能 */}
+      {c.id === PIN_CATEGORY_ID && <p className="foot-note cat-head-hint">{tr('挂了这个类型的任务就是置顶的，每天都在我的一天最上面。设成不显示后，它们都不算置顶，菜单里也不再有「置顶」。')}</p>}
     </div>
   );
 }

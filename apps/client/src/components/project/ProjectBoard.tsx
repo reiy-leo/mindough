@@ -39,7 +39,7 @@ const BoardCard = memo(function BoardCard({ store, task: t }: { store: Store; ta
   return (
     <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`board-card${selected ? ' is-selected' : ''}`}>
       {/* 置顶的把手那格换成红色图钉，还是能拖到别的状态（Rei 2026-11-09） */}
-      <RowLead pinned={!!t.pinned_at} dragLabel={tr('拖到别的状态')} />
+      <RowLead pinned={store.isPinned(t)} dragLabel={tr('拖到别的状态')} />
       {/* 行里的勾选框、按钮不吃 GridListItem 给的按钮 / 勾选框槽位（默认槽本来就是空的）：
           GridListItem 每次重渲染（点一下卡片、焦点回来、悬停）都给新的槽位对象，不隔开的话一列几十行的按钮全部跟着重渲染 */}
       <Provider

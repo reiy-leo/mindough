@@ -177,9 +177,10 @@ describe('Store', () => {
   it('打开时补齐 27 个内置打卡分类（固定 id、按 Rei 定的顺序），可改名 / 隐藏 / 新增', async () => {
     const { store } = await open();
     expect(store.checkInCategories().map((c) => c.name).join('、')).toBe(
-      '记录、整理、游戏、玩乐、健康、运动、护肤、清洁、学习、读书、饮食、作息、冥想、服药、理财、工作、写作、语言、乐器、创作、社交、宠物、植物、采购、个人护理、维护、观影',
+      '记录、整理、游戏、玩乐、健康、运动、护肤、清洁、学习、读书、饮食、作息、冥想、服药、理财、工作、写作、语言、乐器、创作、社交、宠物、植物、采购、个人护理、维护、观影、置顶',
     );
-    expect(new Set(BUILTIN_CHECKIN_CATEGORIES.map((c) => c.id)).size).toBe(27);
+    // 27 个 + 内置类型「置顶」（2026-11-12）
+    expect(new Set(BUILTIN_CHECKIN_CATEGORIES.map((c) => c.id)).size).toBe(28);
     expect(BUILTIN_CHECKIN_CATEGORIES.every((c) => isUuidv7(c.id) && c.icon)).toBe(true);
     store.updateCategory(BUILTIN_CHECKIN_CATEGORY_IDS.game, { hidden: true });
     store.updateCategory(BUILTIN_CHECKIN_CATEGORY_IDS.record, { name: '记账' });
@@ -188,7 +189,7 @@ describe('Store', () => {
     expect(names).not.toContain('游戏');
     expect(names[0]).toBe('记账');
     expect(names.at(-1)).toBe('早起');
-    expect(store.categories(true)).toHaveLength(28);
+    expect(store.categories(true)).toHaveLength(29);
     const t = store.createTask({ category_id: mine.id });
     expect(store.get('task', t.id)?.category_id).toBe(mine.id);
     // 抄给旧客户端

@@ -53,7 +53,7 @@ export function BacklogPage() {
           {(t) => (
             <GridListItem id={t.id} textValue={titleOf(store, t) || tr('任务')} className={`list-item${ui.editingId === t.id ? ' is-selected' : ''}`}>
               {/* 置顶的把手那格换成红色图钉，还是能拖（Rei 2026-11-09） */}
-              <RowLead pinned={!!t.pinned_at} dragLabel={tr('拖动排序')} />
+              <RowLead pinned={store.isPinned(t)} dragLabel={tr('拖动排序')} />
               <TaskRow
                 store={store}
                 task={t}

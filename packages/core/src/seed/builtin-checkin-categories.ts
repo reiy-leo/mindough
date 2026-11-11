@@ -65,6 +65,26 @@ export const BUILTIN_CATEGORIES: Category[] = SEED.map(([n, , name, icon, color]
 export const BUILTIN_CHECKIN_CATEGORIES = BUILTIN_CATEGORIES;
 
 /**
+ * 内置类型「置顶」（Rei 2026-11-12 03:44「置顶任务应该用"类型"，一个叫做"置顶"的类型」、03:46「有置顶类型就置顶。没就不置顶」）。
+ * 任务挂了它就是置顶，没挂就不置顶；它设成「不显示」后谁都不算置顶（见 Store.pinnedAt）。
+ * 不在上面 27 个的 SEED 里：它不进任何默认分组（落在「其他」），也不进「常用」的默认几个。id 号 28，永不复用。
+ */
+export const PIN_CATEGORY_ID = cid(28);
+export const PIN_CATEGORY: Category = {
+  id: PIN_CATEGORY_ID,
+  updated_at: '0000000000000-0000-builtin',
+  deleted: false,
+  name: '置顶',
+  icon: 'pin',
+  color: '#ff3b30',
+  builtin: true,
+  hidden: false,
+  sort: SEED.length + 1,
+  merged_into: null,
+};
+BUILTIN_CATEGORIES.push(PIN_CATEGORY);
+
+/**
  * 内置类型的默认大类（docs/CATEGORY-EDITOR.md 方案 C，Rei 2026-10-28 按默认）。组 id 见 category-prefs.ts 的 CATEGORY_GROUPS。
  * 用户改过的存同步偏好 category.groups，不改这里。
  */

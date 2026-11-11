@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
-import { BUILTIN_CATEGORIES, BUILTIN_CATEGORY_GROUPS, BUILTIN_CATEGORY_IDS } from '../src/seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, BUILTIN_CATEGORY_GROUPS, BUILTIN_CATEGORY_IDS, PIN_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
 import {
   CATEGORY_GROUPS,
   categoryGroupOverrides,
@@ -17,7 +17,9 @@ import {
 
 describe('大类', () => {
   it('内置 27 个都有默认组，5 组的名单和文档一致', () => {
-    expect(BUILTIN_CATEGORIES.every((c) => BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
+    // 「置顶」（2026-11-12）不进默认组，落在「其他」
+    expect(BUILTIN_CATEGORIES.every((c) => c.id === PIN_CATEGORY_ID || BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
+    expect(BUILTIN_CATEGORY_GROUPS[PIN_CATEGORY_ID]).toBeUndefined();
     const names = (g: string) => BUILTIN_CATEGORIES.filter((c) => BUILTIN_CATEGORY_GROUPS[c.id] === g).map((c) => c.name).sort();
     expect(names('body')).toEqual(['健康', '运动', '作息', '冥想', '服药', '护肤', '个人护理', '饮食'].sort());
     expect(names('life')).toEqual(['整理', '清洁', '采购', '维护', '植物', '宠物', '理财'].sort());
@@ -80,8 +82,8 @@ describe('选择器顺序：常用 + 最近用过', () => {
     const names = orderPickerCategories(cats, [id('watch')], last).map((c) => c.name);
     expect(names.slice(0, 3)).toEqual(['观影', '理财', '游戏']);
     expect(names.slice(3, 9)).toEqual(['健康', '运动', '学习', '读书', '饮食', '作息']);
-    expect(names).toHaveLength(27);
-    expect(new Set(names).size).toBe(27);
+    expect(names).toHaveLength(28);
+    expect(new Set(names).size).toBe(28);
   });
 
   it('最近用过：任务创建和打卡记录取最晚的', () => {

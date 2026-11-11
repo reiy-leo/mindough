@@ -223,6 +223,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "搜分组，或者输入名字新建": "Busca grupos o escribe un nombre para crear uno",
   "显示为：{name}": "Mostrar como: {name}",
   "不显示：选类型时看不到它，已经挂着的任务和项目照常显示。": "Oculta: no aparece al elegir categoría. Las tareas y proyectos que ya la usan la siguen mostrando.",
+  "挂了这个类型的任务就是置顶的，每天都在我的一天最上面。设成不显示后，它们都不算置顶，菜单里也不再有「置顶」。": "Las tareas con esta categoría están fijadas y aparecen arriba en Mi día todos los días. Si la ocultas, ninguna cuenta como fijada y «Fijar» desaparece de los menús.",
   "常用：选类型时排在最前面。": "Frecuente: aparece primero al elegir categoría.",
   "普通：选类型时按最近用过的先后排。": "Normal: se ordena según cuándo la usaste por última vez.",
   // ── 类型（统一的分类，2026-10-26）──
@@ -1883,6 +1884,7 @@ export const DATA: Record<string, string> = {
   "个人护理": "Autocuidado",
   "维护": "Mantenimiento",
   "观影": "Series y pelis",
+  "置顶": "Fijadas",
   "烂番茄": "Rotten Tomatoes",
   "豆瓣": "Douban",
   "B 站": "Bilibili",

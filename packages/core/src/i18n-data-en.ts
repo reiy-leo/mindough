@@ -112,6 +112,8 @@ export const DATA_EN: Record<string, string> = {
   个人护理: 'Self-Care',
   维护: 'Maintenance',
   观影: 'Watching',
+  // 内置类型「置顶」（Rei 2026-11-12）
+  置顶: 'Pinned',
 
   // ── 网站名 ──
   烂番茄: 'Rotten Tomatoes',

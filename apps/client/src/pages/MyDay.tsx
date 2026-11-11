@@ -38,13 +38,13 @@ export function MyDayPage() {
   const checkIns = store.list('check_in');
   // 置顶的任务每天都在，排最上面（Rei 2026-11-08，lib/myday-items）
   const items = dayItems(store, now);
-  const yesterday = yesterdayUnfinished(entries, byId, checkIns, today, now);
+  const yesterday = yesterdayUnfinished(entries, byId, checkIns, today, now, store.pinnedAt);
   const yIds = new Set(yesterday.map((t) => t.id));
   // 建议关着（设置 → 任务「显示建议」）就不算，连「刚解锁」也不算
   const sugg = daySuggestions(showSugg, () => {
     const derived = store.derived();
     const unlocked = recentlyUnlocked(tasks, store.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
-    return suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now, groups: store.list('group') }).filter((s) => !yIds.has(s.task.id));
+    return suggestions({ tasks, entries, checkIns, derived, recentlyUnlocked: unlocked, today, now, groups: store.list('group'), pinOf: store.pinnedAt }).filter((s) => !yIds.has(s.task.id));
   });
   // 标题右边「…」→「隐藏建议」：和设置里的开关是同一个；提示里说去哪儿打开，也能直接撤销
   const hideSuggestions = () => {

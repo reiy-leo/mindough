@@ -68,7 +68,8 @@ describe('i18n', () => {
         for (const o of f.options ?? []) if (/[\u4e00-\u9fff]/.test(o)) names.push(o);
       }
     }
-    expect(BUILTIN_CHECKIN_CATEGORIES).toHaveLength(27);
+    // 27 个打卡分类 + 内置类型「置顶」（2026-11-12）
+    expect(BUILTIN_CHECKIN_CATEGORIES).toHaveLength(28);
     for (const c of BUILTIN_CHECKIN_CATEGORIES) names.push(c.name);
     expect(names.filter((n) => !hasDataMessage(n) && !/^[\x20-\x7e]+$/.test(n))).toEqual([]);
   });

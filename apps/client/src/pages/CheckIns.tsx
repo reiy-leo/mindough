@@ -83,9 +83,9 @@ export function CheckInsPage() {
     const id = menuTask.current;
     const t = id ? store.get('task', id) : undefined;
     if (!t) return [];
-    const inDay = dayIds.has(t.id) || !!t.pinned_at;
+    const inDay = dayIds.has(t.id) || store.isPinned(t);
     const icon = { open: <PanelRight size={16} />, myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} /> };
-    return habitMenu(!!t.archived_at, inDay, !!t.pinned_at).map((e) => ({
+    return habitMenu(!!t.archived_at, inDay, store.isPinned(t), store.pinEnabled()).map((e) => ({
       ...e,
       icon: icon[e.id],
       onAction: () => {
@@ -123,7 +123,7 @@ export function CheckInsPage() {
     const open = isHeatmapOpen(settings.habitHeatmapOpen, t.id);
     const heatId = `habit-heat-${t.id}`;
     return (
-      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, store.categoriesOfTask(t)[0]?.color ?? color, '--ci-color')} {...bindMenu(t.id)}>
+      <div key={t.id} className={`habit-row${ui.editingId === t.id ? ' is-selected' : ''}${open ? ' is-heat-open' : ''}${t.archived_at ? ' is-archived' : ''}`} data-task-id={t.id} style={vividVar(colorLevel, store.categoriesOfTaskNoPin(t)[0]?.color ?? color, '--ci-color')} {...bindMenu(t.id)}>
         {/* 左上角活动图标：展开 / 收起这张卡片的活动图（只存本机）；和打开详情的按钮分开，点它不会打开详情 */}
         <TipButton
           tip={open ? tr('隐藏活动图') : tr('显示活动图')}

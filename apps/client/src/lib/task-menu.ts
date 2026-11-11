@@ -5,6 +5,7 @@
  * 归档（Rei 2026-11-02「打卡任务可以归档」）只给没结束的重复任务：先收起来，以后可能再打；「不再打卡」是结束这件事。
  * 归档了的只剩「取消归档」，不再给「不再打卡」（先取消归档再决定）。
  * 置顶（Rei 2026-11-08）：「置顶 / 取消置顶」跟在我的一天后面、同一组；置顶了的每天都在我的一天，不再给「加入 / 移出我的一天」。
+ * 2026-11-12 起置顶是挂上 / 摘掉内置类型「置顶」；这个类型设成不显示后没有置顶功能，菜单里不给「置顶」（pinEnabled = false）。
  * 纯逻辑，好测；TaskDetail 按 id 接上动作和图标。
  */
 import { isFinished, type Task } from '@mindough/core';
@@ -20,20 +21,22 @@ export interface DetailMenuEntry {
   separator?: boolean;
 }
 
-/** 我的一天这一组：没置顶的「加入 / 移出我的一天」+「置顶」；置顶了的只有「取消置顶」。 */
-function dayGroup<T extends string>(inDay: boolean, pinned: boolean): { id: T; label: string }[] {
-  if (pinned) return [{ id: 'unpin' as T, label: tr('取消置顶') }];
-  return [
-    { id: 'myday' as T, label: inDay ? tr('移出我的一天') : tr('加入我的一天') },
-    { id: 'pin' as T, label: tr('置顶') },
-  ];
+/** 我的一天这一组：没置顶的「加入 / 移出我的一天」+「置顶」；置顶了的只有「取消置顶」。置顶类型不显示了：只有我的一天。 */
+function dayGroup<T extends string>(inDay: boolean, pinned: boolean, pinEnabled = true): { id: T; label: string }[] {
+  if (pinned && pinEnabled) return [{ id: 'unpin' as T, label: tr('取消置顶') }];
+  const day = { id: 'myday' as T, label: inDay ? tr('移出我的一天') : tr('加入我的一天') };
+  return pinEnabled ? [day, { id: 'pin' as T, label: tr('置顶') }] : [day];
 }
 
-export function detailMenu(task: Pick<Task, 'status' | 'recurrence' | 'completion_mode' | 'archived_at' | 'pinned_at'>, inDay: boolean): DetailMenuEntry[] {
+export function detailMenu(
+  task: Pick<Task, 'status' | 'recurrence' | 'completion_mode' | 'archived_at' | 'pinned_at'>,
+  inDay: boolean,
+  pin: { pinned: boolean; enabled: boolean } = { pinned: !!task.pinned_at, enabled: true },
+): DetailMenuEntry[] {
   const finished = isFinished(task.status);
   // 重复的倒数日（Rei 2026-11-12）不是打卡：还是「关闭」，没有归档
   const recurring = !!task.recurrence && task.completion_mode !== 'countdown';
-  const out: DetailMenuEntry[] = dayGroup<DetailMenuId>(inDay, !!task.pinned_at);
+  const out: DetailMenuEntry[] = dayGroup<DetailMenuId>(inDay, pin.pinned, pin.enabled);
   const status: DetailMenuEntry[] = [];
   if (recurring && !finished && task.archived_at) {
     // 归档了：不进我的一天，只能取消归档
@@ -62,9 +65,9 @@ const asGroup = <T extends string>(xs: { id: T; label: string }[]): { id: T; lab
  * 打卡页一行的右键 / 长按菜单（Rei 2026-11-02「打卡任务可以归档」）：查看详情 ｜ 加入 / 移出我的一天 ｜ 归档；
  * 归档了的：查看详情 ｜ 取消归档。
  */
-export function habitMenu(archived: boolean, inDay: boolean, pinned = false): { id: HabitMenuId; label: string; separator?: boolean }[] {
+export function habitMenu(archived: boolean, inDay: boolean, pinned = false, pinEnabled = true): { id: HabitMenuId; label: string; separator?: boolean }[] {
   if (archived) return [{ id: 'open', label: tr('查看详情') }, { id: 'unarchive', label: tr('取消归档'), separator: true }];
-  return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<HabitMenuId>(inDay, pinned)), { id: 'archive', label: tr('归档'), separator: true }];
+  return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<HabitMenuId>(inDay, pinned, pinEnabled)), { id: 'archive', label: tr('归档'), separator: true }];
 }
 
 /**
@@ -72,6 +75,6 @@ export function habitMenu(archived: boolean, inDay: boolean, pinned = false): { 
  * 我的一天「建议」行尾的「今天到期」徽章和「+ 加入」按钮去掉了，加入我的一天挪到这里）。
  * 所有用 TaskRow 的列表都有：查看详情 ｜ 加入 / 移出我的一天、置顶（置顶了的只有「取消置顶」，Rei 2026-11-08）。
  */
-export function rowMenu(inDay: boolean, pinned = false): { id: RowMenuId; label: string; separator?: boolean }[] {
-  return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<RowMenuId>(inDay, pinned))];
+export function rowMenu(inDay: boolean, pinned = false, pinEnabled = true): { id: RowMenuId; label: string; separator?: boolean }[] {
+  return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<RowMenuId>(inDay, pinned, pinEnabled))];
 }

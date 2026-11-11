@@ -848,7 +848,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
   const lib = hasLibrary(type) ? type : null;
   const patch = (p: Partial<Task>) => store.updateTask(task.id, p);
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
-  const inDay = !!task.pinned_at || store.isInMyDay(task.id, today);
+  const pinned = store.isPinned(task);
+  const inDay = pinned || store.isInMyDay(task.id, today);
   const finished = isFinished(task.status);
   const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   const derived = store.derived().get(task.id);
@@ -898,7 +899,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     unarchive: () => archiveHabit(store, ui, task.id, false),
     delete: () => setConfirmDelete(true),
   };
-  const menu: MenuAction[] = detailMenu(task, inDay)
+  const menu: MenuAction[] = detailMenu(task, inDay, { pinned, enabled: store.pinEnabled() })
     .filter((e) => !locked || !(e.id === 'myday' || e.id === 'pin' || e.id === 'unpin'))
     .map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));
 

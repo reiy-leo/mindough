@@ -101,14 +101,15 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const tick = isHabit(task) && checkInMode(task) === 'once' && !closed && task.status !== '完成';
   const done = !closed && (doneOverride ?? (tick ? !!store.progress(task.id, today)?.met : task.status === '完成'));
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
-  const pinned = !!task.pinned_at;
+  const pinned = store.isPinned(task);
   const inDay = pinned || store.isInMyDay(task.id, today);
   const state = v.derived?.state;
   const rec = parseRecurrence(task.recurrence);
   // 打卡（重复的倒数日不算，Rei 2026-11-12）：行首重复图标、补打卡按钮只给打卡
   const habit = isHabit(task);
   const TypeIcon = typeIcon(v.type?.icon);
-  const cats = store.categoriesOfTask(task);
+  // 「置顶」不写进第二行（行里有红色图钉，Rei 2026-11-12 置顶改成类型）
+  const cats = store.categoriesOfTaskNoPin(task);
   const items = store.itemsOfTask(task);
   const CategoryIcon = typeIcon(cats[0] ? categoryIcon(cats[0]) : undefined);
   // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图，没图就不显示）。第一条资料不算进 +N，其余的才算，悬停看全部
@@ -345,7 +346,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
                 else if (k === 'pin' || k === 'unpin') togglePin(store, ui, task.id);
               }}
             >
-              {rowMenu(inDay, pinned).filter((i) => !locked || i.id === 'open').flatMap((i, n) => [
+              {rowMenu(inDay, pinned, store.pinEnabled()).filter((i) => !locked || i.id === 'open').flatMap((i, n) => [
                 ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
                 <MenuItem key={i.id} id={i.id} className="menu-item" textValue={i.label}>
                   {i.id === 'open' ? <PanelRight size={16} /> : i.id === 'pin' ? <Pin size={16} /> : i.id === 'unpin' ? <PinOff size={16} /> : inDay ? <Sun size={16} /> : <SunDim size={16} />}

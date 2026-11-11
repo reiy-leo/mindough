@@ -13,7 +13,7 @@
  *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
-import { addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
+import { PIN_CATEGORY_ID, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
 import { dataLabel, tr, trc } from './i18n';
 
 export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
@@ -24,8 +24,9 @@ export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'ty
  * 不显示的同样规则排在后面（它们挂在任务上照常成段）。
  */
 export function categorySectionOrder(store: Pick<Store, 'categories' | 'pickerCategories' | 'frequentCategoryIds' | 'categoryLastUsed' | 'categoryGroupOverrides'>): Category[] {
-  const hidden = store.categories(true).filter((c) => c.hidden);
-  return [...store.pickerCategories(), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
+  // 「置顶」不单独成段（Rei 2026-11-12）：置顶的任务按它的下一个类型分，只挂了置顶的在「没有类型」
+  const hidden = store.categories(true).filter((c) => c.hidden && c.id !== PIN_CATEGORY_ID);
+  return [...store.pickerCategories().filter((c) => c.id !== PIN_CATEGORY_ID), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
 }
 
 export function normalizeSectionBy(v: unknown, allowed: readonly SectionBy[] = SECTION_BYS): SectionBy {
@@ -183,8 +184,9 @@ export function sectionTasks<T extends Task>(
     const known = new Set(cats.map((c) => c.id));
     const byCat = new Map<string, T[]>();
     for (const t of tasks) {
-      const first = ctx.categoryIdsOf?.(t)[0];
-      const k = first && known.has(first) ? first : 'none';
+      // 第一个能成段的类型（「置顶」不成段，跳过它看下一个）
+      const first = ctx.categoryIdsOf?.(t).find((id) => known.has(id));
+      const k = first ?? 'none';
       byCat.set(k, [...(byCat.get(k) ?? []), t]);
     }
     for (const c of cats) push(c.id, dataLabel(c.name), byCat.get(c.id) ?? [], { category: c });
