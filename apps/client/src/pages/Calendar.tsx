@@ -63,6 +63,7 @@ import { LunarMark } from '../components/task/DateGrid';
 import { useLunar } from '../lib/lunar';
 import { useCalendarEvents, type CalEvent } from '../lib/calendar-subs';
 import { useSettings } from '../lib/settings';
+import { calItemColors } from '../lib/cal-item-color';
 import { calDragSuppressed, useCalDrag, type CalDragRole } from '../lib/cal-drag';
 import { useUi } from '../lib/ui';
 import { titleOf } from '../lib/view';
@@ -310,8 +311,11 @@ function DayHead({ date, today, lunar, inCore, children }: { date: DateKey; toda
 function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
   const store = useStore();
   const ui = useUi();
+  const { theme, settings } = useSettings();
   if (it.kind === 'task') {
     const title = titleOf(store, it.task) || tr('无标题');
+    // 每件自己的淡底色（Rei 2026-11-12 01:15，取色规则见 lib/cal-item-color）
+    const c = calItemColors(store, it.task, it.role === 'countdown', theme === 'dark' ? 'dark' : 'light', String(settings.colorLevel ?? 'standard'));
     const id = it.task.id;
     const role: CalDragRole | undefined = it.role === 'task' || it.role === 'countdown' ? it.role : undefined;
     return (
@@ -320,13 +324,15 @@ function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
         data-task-id={id}
         data-cal-drag={role && !store.isLocked(it.task) ? id : undefined}
         data-cal-role={role}
+        style={{ ['--item-bg' as string]: c.bg, ['--item-fg' as string]: c.fg, ['--item-border' as string]: c.border } as CSSProperties}
         onPress={() => {
           // 刚拖完、手指刚拿起的那次点按不开详情
           if (!calDragSuppressed()) ui.openEditor(id);
         }}
         aria-label={it.role === 'countdown' ? `${tr('倒数日')} · ${title}` : title}
       >
-        {it.role === 'countdown' ? <Hourglass size={12} className="cal-item-icon" aria-hidden /> : <span className="cal-item-dot" aria-hidden />}
+        {/* 任务行首不放勾选圆圈（Rei 2026-11-12 01:15）；倒数日留沙漏 */}
+        {it.role === 'countdown' && <Hourglass size={12} className="cal-item-icon" aria-hidden />}
         <span className="cal-item-text">{title}</span>
       </RacButton>
     );

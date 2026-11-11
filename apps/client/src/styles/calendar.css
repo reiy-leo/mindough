@@ -121,8 +121,20 @@
 .cal-cell-bg:first-child {
   border-left: 0;
 }
+/* 今天那一列（Rei 2026-11-12 01:15「背景色调浅一些」）：强调色叠一层薄的，比 --accent-soft 浅；不用 color-mix（Chromium 107） */
 .cal-cell-bg.is-today {
-  background: var(--accent-soft);
+  position: relative;
+}
+.cal-cell-bg.is-today::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  opacity: 0.05;
+  pointer-events: none;
+}
+[data-theme='dark'] .cal-cell-bg.is-today::before {
+  opacity: 0.08;
 }
 .cal-cell {
   position: relative;
@@ -247,20 +259,26 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cal-item-dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1.5px solid var(--accent);
+/* 任务、倒数日：每件自己的实色淡底（Rei 2026-11-12 01:15，lib/cal-item-color 算好挂在 --item-*），行首没有勾选圆圈 */
+.cal-item.is-task {
+  background: var(--item-bg, var(--surface-hover));
+  color: var(--item-fg, var(--text));
 }
-.cal-item.is-task.is-selected {
-  background: var(--accent-soft);
-  color: var(--accent-soft-text);
+.cal-item.is-task[data-hovered] {
+  background: var(--item-bg, var(--surface-hover));
+  box-shadow: inset 0 0 0 1px var(--item-border, var(--border));
 }
-.cal-slot.is-span .cal-item.is-task {
-  background: var(--accent-soft);
-  color: var(--accent-soft-text);
+/* 倒数日：沙漏 + 一圈描边 + 粗一点的字，和普通任务分得开 */
+.cal-item.is-countdown {
+  box-shadow: inset 0 0 0 1px var(--item-border, var(--border));
+  font-weight: 600;
+}
+.cal-item.is-countdown .cal-item-icon {
+  color: inherit;
+}
+.cal-item.is-task.is-selected,
+.cal-item.is-task.is-selected[data-hovered] {
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 .cal-slot.cont-left .cal-item {
   border-top-left-radius: 0;
@@ -283,10 +301,25 @@
   box-shadow: inset 3px 0 0 var(--sub);
   padding-left: 8px;
 }
+/* 全天、跨天的事件铺一层订阅色（不用 color-mix：订阅色叠一层半透明的伪元素） */
+.cal-item.is-event {
+  position: relative;
+  isolation: isolate;
+}
 .cal-item.is-event.is-allday,
 .cal-slot.is-span .cal-item.is-event {
-  background: color-mix(in srgb, var(--sub) 14%, transparent);
   color: var(--text);
+}
+.cal-item.is-event.is-allday::before,
+.cal-slot.is-span .cal-item.is-event::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--sub);
+  opacity: 0.14;
+  z-index: -1;
+  pointer-events: none;
 }
 .cal-item-time {
   flex: none;
@@ -322,9 +355,6 @@
 .cal-item-icon {
   flex: none;
   color: var(--accent);
-}
-.cal-item.is-countdown {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .cal-day-add {
   display: flex;
@@ -455,9 +485,11 @@ html[data-layout='mobile'] .cal-year {
   color: var(--accent);
   font-weight: 700;
 }
+/* 选中那天（Rei 2026-11-12 01:15「背景色调浅一些」）：原来整块强调色，改成浅强调底 + 强调字 */
 .cal-mini-cell.is-picked .cal-mini-num {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+  font-weight: 700;
 }
 .cal-mini-cell {
   position: relative;

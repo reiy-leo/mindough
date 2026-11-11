@@ -76,6 +76,18 @@ describe('日历', () => {
     expect(openEditor).toHaveBeenCalledWith('span');
   });
 
+  it('任务行首没有勾选圆圈，每件挂自己的底色（Rei 2026-11-12 01:15）', () => {
+    settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
+    tasks.push(task('a', '待办'), task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
+    act(() => root.render(<CalendarPage />));
+    expect(host.querySelector('.cal-item-dot')).toBeNull();
+    const el = host.querySelector('.cal-item.is-task[data-task-id="a"]') as HTMLElement;
+    expect(el.querySelector('svg')).toBeNull();
+    expect(el.style.getPropertyValue('--item-bg')).toMatch(/^#[0-9a-f]{6}$/);
+    const cd = host.querySelector('.cal-item.is-countdown') as HTMLElement;
+    expect(cd.querySelector('.cal-item-icon')).not.toBeNull();
+  });
+
   it('月视图：列出当天全部，倒数日 → 任务 → 订阅事件；日期旁数任务 + 打卡 + 倒数日；没有「还有 N 件」；不列打卡', () => {
     tasks.push(
       task('a', '待办'),
