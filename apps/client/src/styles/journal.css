@@ -108,6 +108,9 @@
   max-width: none;
   padding: 0;
   height: 100%;
+  /* 两栏顶上的留白（Rei 2026-11-12 01:10 去掉页头和顶部空白）：网页 12px；Mac 无标题栏壳见 skins.css，
+     中间列已有 10px 拖动条，这里改 8px，合起来 18px，同其他页 */
+  --jf-top: var(--space-3);
   --jheat-empty: color-mix(in srgb, var(--text) 7%, var(--surface));
   --jcell-r: 3px;
   --jcomp-bg: var(--surface);
@@ -134,16 +137,8 @@
   gap: var(--space-5);
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-5) var(--space-5) var(--space-6);
+  padding: var(--jf-top) var(--space-5) var(--space-6);
   border-right: 1px solid var(--border);
-}
-.jf-side-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.jf-side-head .page-title {
-  margin: 0;
 }
 .jside-title {
   margin: 0 0 var(--space-2);
@@ -161,7 +156,7 @@
 .jf-main-inner {
   max-width: 720px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-6) 80px;
+  padding: var(--jf-top) var(--space-6) 80px;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);

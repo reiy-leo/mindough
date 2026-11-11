@@ -7,17 +7,18 @@
  * - 选中的不是今天时不显示输入框（过去不补写，将来不能写）。
  * - 窄屏：活动图、心情在上，输入框和条目在下。
  * 路由 #/journal/<日期> = 选中那天（深链接 mindough://journal/YYYY-MM-DD 也是）。
+ * - 没有页头、没有搜索按钮（Rei 2026-11-12 01:10）：标题只留读屏用的 h1，搜索用侧栏顶上的搜索框或 ⌘K / Ctrl K；
+ *   手机上「日记」是底部标签，不出顶栏。两栏顶上只留 12px（Mac 壳另有 38px 红绿灯条，同其他页），见 journal.css。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { NotebookPen, Search, X } from 'lucide-react';
+import { NotebookPen, X } from 'lucide-react';
 import { filterPosts, groupPostsByDay, isDateKey, journalHeatRange, moodCounts, moodLabel, postsByDay, riverData, riverDays, riverMonths, riverSpan, riverYears, type MoodId, type RiverRange } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useSettings } from '../lib/settings';
 import { navigate } from '../lib/router';
 import { useUi } from '../lib/ui';
 import { onJournalCompose, takeJournalCompose } from '../lib/journal-compose';
-import { PageHeader } from '../components/PageHeader';
 import { Button, Empty } from '../ui/primitives';
 import { JournalHeatmap } from '../components/journal/JournalHeatmap';
 import { MoodChips, MoodRiver, RiverRangePicker } from '../components/journal/MoodRiver';
@@ -165,7 +166,7 @@ export function JournalPage({ date: wanted }: { date?: string }) {
   if (mobile)
     return (
       <div className="page journal-page jf is-mobile">
-        <PageHeader title={tr('日记')} />
+        <h1 className="sr-only">{tr('日记')}</h1>
         <div className="jf-side">{side}</div>
         <div className="jf-main">{main}</div>
       </div>
@@ -174,13 +175,7 @@ export function JournalPage({ date: wanted }: { date?: string }) {
     <div className="page journal-page jf">
       <div className="jf-layout">
         <aside className="jf-side" aria-label={tr('日记概览')}>
-          <div className="jf-side-head">
-            <h1 className="page-title">{tr('日记')}</h1>
-            <span className="grow" />
-            <RacButton className="icon-btn" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
-              <Search size={17} />
-            </RacButton>
-          </div>
+          <h1 className="sr-only">{tr('日记')}</h1>
           {side}
         </aside>
         <section className="jf-main" aria-label={tr('日记的条目')}>

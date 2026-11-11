@@ -103,6 +103,12 @@
 .platform-macos-overlay .app-desktop .main > .titlebar-space {
   height: 10px;
 }
+/* 日记页两栏自己管顶上留白（Rei 2026-11-12 01:10）：外层不加上面那 8px，两栏各留 8px，合起来同其他页 18px；
+   不然 .page 的 8px 会压过 .journal-page.jf 的 padding: 0，右栏多出一截，分隔线也到不了顶 */
+.platform-macos-overlay .app-desktop .journal-page.jf {
+  padding-top: 0;
+  --jf-top: var(--space-2);
+}
 
 /* ═════════════════════ Windows 11 / WinUI 3 ═════════════════════ */
 [data-skin='winui'] .sidebar {
