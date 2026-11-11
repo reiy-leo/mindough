@@ -16,7 +16,7 @@ import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
 import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroupId, type CategoryState, type Store } from '@mindough/core';
 import { IconTile, iconTileGlyphSize } from './IconTile';
-import { pinnedTileSize } from '../lib/pinned-tile';
+import { listTileSize, pinnedTileSize } from '../lib/pinned-tile';
 import { categoryNames } from './CategoryPicker';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -201,6 +201,9 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
 
   // 图标格子里的图标块和同端侧栏图标模式一样大（电脑 22、手机 32，lib/pinned-tile）
   const tile = pinnedTileSize(!!mobile);
+  // 列表行行首的图标块小一号（电脑 20、手机 24，lib/pinned-tile，Rei 2026-11-12 06:54）
+  const listTile = listTileSize(!!mobile);
+  const addTile = icons ? tile : listTile;
   const row = (c: Category) =>
     icons ? (
       <CategoryCell
@@ -220,6 +223,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
     <CategoryRow
       key={c.id}
       c={c}
+      tile={listTile}
       count={counts.get(c.id) ?? 0}
       state={c.hidden ? 'hidden' : frequent.includes(c.id) ? 'frequent' : 'normal'}
       selected={selectedId === c.id}
@@ -266,7 +270,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
       )}
       {/* 搜索框不动，下面的行和说明一起滚（类型页上它是唯一会滚的地方，Rei 2026-11-03） */}
       <div className="cat-list-scroll">
-      <div className={`cat-list-rows${icons ? ' is-icons' : ''}${icons && mobile ? ' is-touch' : ''}`} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
+      <div className={`cat-list-rows${icons ? ' is-icons' : ''}${mobile ? ' is-touch' : ''}`} style={{ '--cat-tile': `${listTile}px` } as CSSProperties} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
         {matches ? (
           <div className={icons ? 'cat-grid' : 'cat-match-rows'}>
             {matches.map(row)}
@@ -279,8 +283,8 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
                 className={icons ? `cat-cell cat-item-create${active === 'create' ? ' is-active' : ''}` : `cat-item cat-item-create${active === 'create' ? ' is-active' : ''}`}
                 onClick={() => create(term)}
               >
-                <span className="icon-tile icon-tile-add" aria-hidden style={icons ? ({ '--tile-size': `${tile}px` } as CSSProperties) : undefined}>
-                  <Plus size={icons ? iconTileGlyphSize(tile) : 16} />
+                <span className={`icon-tile icon-tile-add${addTile <= 20 ? ' is-small' : ''}`} aria-hidden style={{ '--tile-size': `${addTile}px` } as CSSProperties}>
+                  <Plus size={iconTileGlyphSize(addTile)} />
                 </span>
                 <span className={icons ? 'cat-cell-name' : 'cat-item-name'}>{tr('新建“{q}”', { q: term })}</span>
               </div>
@@ -344,6 +348,7 @@ function CategoryCell({ c, tile, count, hidden, selected, active, onPress }: { c
 
 function CategoryRow({
   c,
+  tile,
   count,
   state,
   selected,
@@ -355,6 +360,7 @@ function CategoryRow({
   onState,
 }: {
   c: Category;
+  tile: number;
   count: number;
   state: CategoryState;
   selected: boolean;
@@ -433,7 +439,7 @@ function CategoryRow({
           onPress();
         }}
       >
-        <CategoryTile c={c} />
+        <CategoryTile c={c} size={tile} />
         <span className="cat-item-name">{name}</span>
         {state === 'frequent' && <span className="cat-item-tag">{trc('类型档', '常用')}</span>}
         {count > 0 && <span className="cat-count">{count}</span>}

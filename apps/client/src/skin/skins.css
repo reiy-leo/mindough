@@ -1445,7 +1445,8 @@
   content: '';
   position: absolute;
   top: 0;
-  inset-inline: 48px 0;
+  /* 从名字起：左内边距 8 + 图标块 + 间距 12 */
+  inset-inline: calc(8px + var(--cat-tile, 20px) + var(--space-3)) 0;
   border-top: 0.5px solid var(--border);
 }
 [data-skin='apple'] .cat-section-rows .cat-item {
@@ -1470,6 +1471,9 @@
   min-height: 36px;
   border-radius: 4px;
 }
+[data-skin='winui'] .cat-list-rows.is-touch .cat-item {
+  min-height: 40px;
+}
 [data-skin='winui'] .cat-item.is-selected::after {
   content: '';
   position: absolute;
@@ -1487,9 +1491,13 @@
 [data-skin='material'] .cat-item {
   border-radius: 0;
 }
+/* Material 电脑 40（图标块 20），手机照旧 48 */
 [data-skin='material'] .cat-item {
-  min-height: 48px;
+  min-height: 40px;
   padding-inline: 12px;
+}
+[data-skin='material'] .cat-list-rows.is-touch .cat-item {
+  min-height: 48px;
 }
 [data-skin='material'] .cat-item.is-selected {
   border-radius: var(--radius-pill);

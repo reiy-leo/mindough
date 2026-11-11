@@ -12,3 +12,15 @@ export const PINNED_TILE = { desktop: 22, mobile: 32 } as const;
 export function pinnedTileSize(mobile: boolean): number {
   return mobile ? PINNED_TILE.mobile : PINNED_TILE.desktop;
 }
+
+/**
+ * 类型页「显示为：列表」每行行首的图标块边长（Rei 2026-11-12 06:54「类型页列表模式图标还是很大」，原来 28 / 字形 16）。
+ * 和侧栏项目行（18）、「更多」页项目行（20）一个量级：电脑 20（字形 12），手机 24（字形 14，略大好认好点）。
+ * 搜索结果行、「新建“xxx”」那行的加号块同样大；网格模式照旧用上面的 PINNED_TILE。
+ */
+export const LIST_TILE = { desktop: 20, mobile: 24 } as const;
+
+/** 这一端类型列表行的图标块边长。 */
+export function listTileSize(mobile: boolean): number {
+  return mobile ? LIST_TILE.mobile : LIST_TILE.desktop;
+}

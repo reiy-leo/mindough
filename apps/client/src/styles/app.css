@@ -3660,13 +3660,15 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   overflow: hidden;
   border-radius: var(--radius-sm);
 }
+/* 行高随行首图标块收紧（Rei 2026-11-12 06:54「类型页列表模式图标还是很大」）：电脑图标块 20、行高 32；
+   手机图标块 24、行高 40 不变（好点）。图标块边长走 --cat-tile（CategoryList 按端给，lib/pinned-tile LIST_TILE）。 */
 .cat-item {
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  min-height: 40px;
-  padding: 6px 8px;
+  min-height: 32px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   background: var(--surface);
   cursor: pointer;
@@ -3674,6 +3676,9 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   touch-action: pan-y;
   transition: transform 0.18s var(--ease, ease);
   outline: none;
+}
+.cat-list-rows.is-touch .cat-item {
+  min-height: 40px;
 }
 .cat-item:hover {
   background: var(--surface-hover);
