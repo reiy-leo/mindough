@@ -4445,10 +4445,7 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .sticky-head > :last-child {
   margin-bottom: 0;
 }
-/* 资料库列表：页头、标签条、搜索工具条一起固定 */
-.lib-head-sticky > .page-header {
-  margin-bottom: var(--space-4);
-}
+/* 资料库列表：标签条、搜索工具条一起固定（页头 2026-11-12 去掉了） */
 /* 详情页：只固定「‹ 返回」这一行；大标题滚走以后，这一行补上名字（淡入）和一个编辑按钮 */
 .sticky-head.detail-head-sticky {
   flex-direction: row;

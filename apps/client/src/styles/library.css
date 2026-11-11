@@ -775,10 +775,6 @@
 }
 
 
-.lib-add-mobile {
-  flex: none;
-  color: var(--accent);
-}
 [data-layout='mobile'] .lib-search {
   flex: 1;
 }

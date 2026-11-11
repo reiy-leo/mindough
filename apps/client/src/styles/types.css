@@ -546,20 +546,22 @@
   box-shadow: var(--focus);
 }
 
-/* 资料库页：标签条 + 「编辑」 */
+/* 资料库页：库标签 + 右端「…」和加号（Rei 2026-11-12 去掉页头，同项目列表页那一行）。
+   标签条占满剩下的宽度、多了在里面横滑；右边两个按钮 flex: none 钉住，不被挤、不折行 */
 .lib-tabs-row {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
   margin: 0 0 14px;
 }
 .lib-tabs-row .lib-tabs {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   margin: 0;
 }
-.lib-tabs-edit,
-.lib-tabs-more {
+.lib-tabs-more,
+.lib-tabs-row .lib-tabs-add {
   flex: none;
 }
 /* 编辑资料库列表：「在侧边栏显示」亮着时用强调色 */

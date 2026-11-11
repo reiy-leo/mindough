@@ -4,7 +4,7 @@
  */
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
-import { Check, ChevronLeft, Copy, ExternalLink, Library as LibraryIcon, Merge, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, ChevronLeft, Copy, ExternalLink, Merge, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import {
   BUILTIN_TYPE_IDS,
   factFieldsOf,
@@ -24,14 +24,12 @@ import {
   type TaskType,
 } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
-import { useSettings } from '../lib/settings';
 import { useUi } from '../lib/ui';
 import { href, navigate } from '../lib/router';
 import { typeIcon } from '../lib/icons';
 import { Button, ConfirmDialog, MenuAt, NewButton, OverflowMenu, Section, useContextMenuAt } from '../ui/primitives';
 import { librarySidebarAction } from '../lib/library-sidebar';
 import { libraryRoute } from '../lib/nav';
-import { PageHeader } from '../components/PageHeader';
 import { TypeManager } from '../components/TypeManager';
 import { TaskRow } from '../components/TaskRow';
 import { Markdown } from '../components/Markdown';
@@ -167,10 +165,6 @@ function LibraryOnline({ type, query }: { type: TaskType; query: string }) {
 export function LibraryPage({ typeId }: { typeId?: string }) {
   const store = useStore();
   const libs = useLibraries();
-  const { layout, skin } = useSettings();
-  const mobile = layout === 'mobile';
-  // Apple 皮肤：「添加」换成和新建打卡 / 倒数日 / 项目同一个加号按钮（NewButton，Rei 2026-11-12）；WinUI、Material 照旧
-  const apple = skin === 'apple';
   // 归档类型的库不在标签条里，但按 id 打开（如从它的资料页点「‹ 某某库」回来）照常显示这个库，不落到第一个库
   const requested = typeId ? store.get('task_type', typeId) : undefined;
   const type = libs.find((t) => t.id === typeId) ?? (requested && hasLibrary(requested) ? requested : undefined) ?? libs[0];
@@ -198,32 +192,28 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
     <div className="page lib-page has-sticky-head" style={{ '--chip-color': type.color } as CSSProperties}>
       {/* 页头、库标签、搜索和工具条固定在顶上，只有卡片网格滚（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」）；滚动条藏起来（App 的 HIDE_SCROLLBAR_PAGES） */}
       <StickyHead className="lib-head-sticky">
-      <PageHeader
-        title={tr('资料库')}
-        {...(mobile ? {} : { subtitle: tr('看过的片、在读的书、想去的地方都留在这里，新建任务时直接选。') })}
-        icon={<LibraryIcon size={22} />}
-        {...(mobile
-          ? {}
-          : {
-              actions: apple ? (
-                <NewButton label={tr('添加')} onPress={() => add(query.trim())} />
-              ) : (
-                <Button variant="primary" onPress={() => add(query.trim())}>
-                  <Plus size={16} />
-                  {tr('添加')}</Button>
-              ),
-            })}
-      />
+      {/* 页头去掉（Rei 2026-11-12 01:41「资料库页去掉页头」）：原来页头是图标 + 标题「资料库」+ 副标题（宽屏）+ 右边「＋ 添加」（宽屏；手机的加号在搜索框右边）。
+          加号改成图标按钮，挪到库标签这一行的右端（同项目列表页）；原来这行的「编辑」挪进「…」菜单。手机标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES）。
+          没有可见标题，读屏还是要有页面名 */}
+      <h1 className="sr-only">{tr('资料库')}</h1>
+      {/* 一行：左边库标签，多了在里面横滑；右边「…」和加号钉住不动（flex: none，types.css .lib-tabs-row）。标签条总有（至少当前库），所以这行一直在 */}
       <div className="lib-tabs-row">
       <nav className="lib-tabs" aria-label={tr('资料库')}>
         {libs.map((t) => (
           <LibTab key={t.id} type={t} active={t.id === type.id} onOpen={() => setQuery('')} />
         ))}
       </nav>
-        <RacButton className="btn btn-quiet filter-edit lib-tabs-edit" aria-label={tr('编辑资料库')} onPress={() => setManaging(true)}>
-          {tr('编辑')}</RacButton>
-        {/* 这个库的 ··· 菜单（Rei 2026-10-26：在侧边栏显示 / 取消在侧边栏显示）；归档的库不给（侧边栏不显示归档的） */}
-        {!isArchivedType(type) && <OverflowMenu label={tr('资料库操作')} items={[librarySidebarAction(store, type)]} className="lib-tabs-more" />}
+        {/* 这个库的 ··· 菜单：编辑资料库（原来这行的「编辑」按钮，Rei 2026-11-12）+ 在侧边栏显示 / 取消（Rei 2026-10-26；归档的库不给，侧边栏不显示归档的） */}
+        <OverflowMenu
+          label={tr('资料库操作')}
+          items={[
+            { id: 'edit', label: tr('编辑资料库'), icon: <Pencil size={16} />, onAction: () => setManaging(true) },
+            ...(isArchivedType(type) ? [] : [librarySidebarAction(store, type)]),
+          ]}
+          className="lib-tabs-more"
+        />
+        {/* 加号：和新建打卡 / 倒数日 / 项目同一个按钮（NewButton，Apple 皮肤是无边框加号），宽屏、手机都在这里 */}
+        <NewButton label={tr('添加到{name}', { name: copy.name })} className="lib-tabs-add" onPress={() => add(query.trim())} />
       </div>
       <TypeManager isOpen={managing} onOpenChange={setManaging} />
       <div className="lib-toolbar">
@@ -267,13 +257,6 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
             )}
           </>
         )}
-        {mobile && !selection && (apple ? (
-          <NewButton label={tr('添加到{name}', { name: copy.name })} className="lib-add-mobile" onPress={() => add(query.trim())} />
-        ) : (
-          <RacButton className="icon-btn lib-add-mobile" aria-label={tr('添加到{name}', { name: copy.name })} onPress={() => add(query.trim())}>
-            <Plus size={20} />
-          </RacButton>
-        ))}
       </div>
       </StickyHead>
 
