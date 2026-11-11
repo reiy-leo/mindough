@@ -14,7 +14,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Keyboard
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
 import { CATEGORY_GROUPS, categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroup, type CategoryState, type Store } from '@mindough/core';
-import { IconTile } from './IconTile';
+import { IconTile, iconTileGlyphSize } from './IconTile';
+import { pinnedTileSize } from '../lib/pinned-tile';
 import { categoryNames } from './CategoryPicker';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -192,11 +193,14 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
       return n;
     });
 
+  // 图标格子里的图标块和同端侧栏图标模式一样大（电脑 22、手机 32，lib/pinned-tile）
+  const tile = pinnedTileSize(!!mobile);
   const row = (c: Category) =>
     icons ? (
       <CategoryCell
         key={c.id}
         c={c}
+        tile={tile}
         count={counts.get(c.id) ?? 0}
         hidden={!!c.hidden}
         selected={selectedId === c.id}
@@ -245,7 +249,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
       </SearchField>
       {/* 搜索框不动，下面的行和说明一起滚（类型页上它是唯一会滚的地方，Rei 2026-11-03） */}
       <div className="cat-list-scroll">
-      <div className={`cat-list-rows${icons ? ' is-icons' : ''}`} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
+      <div className={`cat-list-rows${icons ? ' is-icons' : ''}${icons && mobile ? ' is-touch' : ''}`} id="cat-list-rows" role="listbox" aria-label={trc('分类', '类型')} ref={listRef}>
         {matches ? (
           <div className={icons ? 'cat-grid' : 'cat-match-rows'}>
             {matches.map(row)}
@@ -258,8 +262,8 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
                 className={icons ? `cat-cell cat-item-create${active === 'create' ? ' is-active' : ''}` : `cat-item cat-item-create${active === 'create' ? ' is-active' : ''}`}
                 onClick={() => create(term)}
               >
-                <span className="icon-tile icon-tile-add" aria-hidden style={icons ? ({ '--tile-size': `${CELL_TILE}px` } as CSSProperties) : undefined}>
-                  <Plus size={icons ? 20 : 16} />
+                <span className="icon-tile icon-tile-add" aria-hidden style={icons ? ({ '--tile-size': `${tile}px` } as CSSProperties) : undefined}>
+                  <Plus size={icons ? iconTileGlyphSize(tile) : 16} />
                 </span>
                 <span className={icons ? 'cat-cell-name' : 'cat-item-name'}>{tr('新建“{q}”', { q: term })}</span>
               </div>
@@ -295,14 +299,12 @@ export function modKey(): string {
 }
 
 const SWIPE_W = 168;
-/** 图标格子里图标块的边长。 */
-const CELL_TILE = 40;
 
 /**
- * 图标格子里的一个类型（显示为图标时）：彩色图标块（IconTile 原样）+ 下面的名字，名字最多两行、超出省略号，title 给全名。
+ * 图标格子里的一个类型（显示为图标时）：彩色图标块（IconTile，边长同端侧栏图标模式，tile）+ 下面的名字，名字最多两行、超出省略号，title 给全名。
  * 读屏名、点按、键盘高亮和列表的行一样；「常用」不出小标签（格子太窄），不显示的变淡。
  */
-function CategoryCell({ c, count, hidden, selected, active, onPress }: { c: Category; count: number; hidden: boolean; selected: boolean; active: boolean; onPress: () => void }) {
+function CategoryCell({ c, tile, count, hidden, selected, active, onPress }: { c: Category; tile: number; count: number; hidden: boolean; selected: boolean; active: boolean; onPress: () => void }) {
   const name = dataLabel(c.name);
   const label = count ? tr('{name}，用了 {n} 次', { name, n: count }) : name;
   return (
@@ -317,7 +319,7 @@ function CategoryCell({ c, count, hidden, selected, active, onPress }: { c: Cate
       className={`cat-cell${hidden ? ' is-hidden' : ''}${selected ? ' is-selected' : ''}${active ? ' is-active' : ''}`}
       onClick={onPress}
     >
-      <CategoryTile c={c} size={CELL_TILE} />
+      <CategoryTile c={c} size={tile} />
       <span className="cat-cell-name">{name}</span>
     </div>
   );

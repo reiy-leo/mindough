@@ -52,6 +52,7 @@ import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope'
 import { useAppMenu } from './lib/app-menu';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
 import { pinnedGrid, type PinnedStyleKind } from './lib/pinned-style';
+import { PINNED_TILE } from './lib/pinned-tile';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
 
@@ -368,7 +369,7 @@ function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; acti
         title={item.label}
       >
         <span className="nav-icon">
-          <GroupIcon group={group} size={compact ? 22 : 18} />
+          <GroupIcon group={group} size={compact ? PINNED_TILE.desktop : 18} />
         </span>
         {!compact && <span className="nav-label">{item.label}</span>}
       </a>
@@ -705,7 +706,7 @@ function MoreTileOf({ item: n, group: g }: { item: NavItem; group: Group }) {
         aria-label={n.label}
         title={n.label}
       >
-        <GroupIcon group={g} size={32} />
+        <GroupIcon group={g} size={PINNED_TILE.mobile} />
       </a>
       <MenuAt at={menu.at} label={n.label} heading={n.label} items={actions.items} onClose={menu.close} />
       {actions.dialogs}

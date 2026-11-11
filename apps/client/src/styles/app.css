@@ -4490,6 +4490,11 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .row-more-slot {
   display: contents;
 }
+/* 「显示为：图标」的格子边长（电脑侧栏 / 手机「更多」页），里面的彩色图标块边长在 lib/pinned-tile.ts（22 / 32），两边一起改 */
+:root {
+  --pinned-cell: 36px;
+  --pinned-cell-touch: 44px;
+}
 /* 图标：按行排，放不下折行，不左右滚；左边和列表时的子项图标对齐 */
 .nav-pinned-grid {
   position: relative;
@@ -4501,8 +4506,8 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 }
 .nav-item.nav-item-tile {
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: var(--pinned-cell);
+  height: var(--pinned-cell);
   padding: 0;
   gap: 0;
   justify-content: center;
@@ -4536,8 +4541,8 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .more-tile {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--pinned-cell-touch);
+  height: var(--pinned-cell-touch);
   border-radius: var(--radius-ctl);
 }
 .more-list .more-pinned-grid .nav-drop-slot {
@@ -4553,20 +4558,25 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   min-width: 0;
 }
 .cat-grid {
+  /* 图标块同侧栏图标模式（电脑 22、手机 32，lib/pinned-tile.ts），列宽跟着收：电脑最窄 60、手机 68（四个字的名字一行放得下） */
+  --cat-cell-min: 60px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: var(--space-1);
+  grid-template-columns: repeat(auto-fill, minmax(var(--cat-cell-min), 1fr));
+  gap: 2px;
   min-width: 0;
   padding: 2px 0;
+}
+.cat-list-rows.is-touch .cat-grid {
+  --cat-cell-min: 68px;
 }
 .cat-cell {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
-  padding: 10px 4px 8px;
+  padding: 8px 2px 6px;
   border-radius: var(--radius-md);
   cursor: pointer;
   user-select: none;
