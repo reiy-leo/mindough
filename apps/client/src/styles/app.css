@@ -1492,7 +1492,10 @@ span.drag-handle.is-pin {
   height: var(--c);
   aspect-ratio: 1;
   border-radius: 2px;
-  background: var(--heat-empty);
+  /* 空格子用半透明的文字色叠在底上（Rei 2026-11-12 00:35：打卡卡片选中后变淡蓝，原来不透明的浅灰空格子和底色分不清）。
+   * 不管卡片是白、选中的淡蓝 / 淡紫，还是暗色，叠出来都比底深（亮色）或亮（暗色）一档。每个皮肤 × 深浅色在 tokens.css 里写死 rgba，
+   * 不用 color-mix（Chromium 107 不认，安卓旧 WebView 会整条丢掉）。--heat-empty 还是不透明的，只给 lv-1 / lv-2 混色用，有色的格子不变 */
+  background: var(--heat-cell-empty, var(--heat-empty));
   --hc: var(--heat-color-local, var(--heat-color));
 }
 .heat-cell.lv-1 {
@@ -1505,7 +1508,7 @@ span.drag-handle.is-pin {
   background: var(--hc);
 }
 .heat-cell.is-free {
-  background: color-mix(in srgb, var(--heat-empty) 55%, transparent);
+  background: var(--heat-cell-free, transparent);
 }
 .heat-cell.is-future {
   background: transparent;

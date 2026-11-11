@@ -76,6 +76,8 @@
   --focus: 0 0 0 3px rgba(0, 122, 255, 0.35);
   --tabbar-bg: rgba(249, 249, 251, 0.86);
   --heat-empty: #ebedf0;
+  --heat-cell-empty: rgba(29, 29, 31, 0.09);
+  --heat-cell-free: rgba(29, 29, 31, 0.045);
   --heat-color: #30a14e;
   --state-done: #34c759;
   --state-blocked: #ff9500;
@@ -112,6 +114,8 @@
   --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
   --tabbar-bg: rgba(28, 28, 30, 0.86);
   --heat-empty: #2d333b;
+  --heat-cell-empty: rgba(245, 245, 247, 0.11);
+  --heat-cell-free: rgba(245, 245, 247, 0.055);
   --heat-color: #39d353;
   --state-done: #30d158;
   --state-blocked: #ff9f0a;
@@ -175,6 +179,8 @@
   --focus: 0 0 0 2px var(--text), inset 0 0 0 1px #fff;
   --tabbar-bg: rgba(243, 243, 243, 0.92);
   --heat-empty: rgba(0, 0, 0, 0.07);
+  --heat-cell-empty: rgba(0, 0, 0, 0.08);
+  --heat-cell-free: rgba(0, 0, 0, 0.04);
   --heat-color: #0f7b0f;
   --state-done: #0f7b0f;
   --state-blocked: #c27c00;
@@ -213,6 +219,8 @@
   --focus: 0 0 0 2px #fff, inset 0 0 0 1px #000;
   --tabbar-bg: rgba(32, 32, 32, 0.92);
   --heat-empty: rgba(255, 255, 255, 0.08);
+  --heat-cell-empty: rgba(255, 255, 255, 0.1);
+  --heat-cell-free: rgba(255, 255, 255, 0.05);
   --heat-color: #6ccb5f;
   --state-done: #6ccb5f;
   --state-blocked: #fce100;
@@ -278,6 +286,8 @@
   --focus: 0 0 0 3px rgba(103, 80, 164, 0.4);
   --tabbar-bg: #f3edf7;
   --heat-empty: #e7e0ec;
+  --heat-cell-empty: rgba(29, 27, 32, 0.1);
+  --heat-cell-free: rgba(29, 27, 32, 0.05);
   --heat-color: #6750a4;
   --state-done: #386a20;
   --state-blocked: #ba6100;
@@ -316,6 +326,8 @@
   --warning: #f5bd5c;
   --tabbar-bg: #211f26;
   --heat-empty: #2b2930;
+  --heat-cell-empty: rgba(230, 224, 233, 0.11);
+  --heat-cell-free: rgba(230, 224, 233, 0.055);
   --heat-color: #d0bcff;
   --state-done: #9cd67d;
   --state-blocked: #f5bd5c;
