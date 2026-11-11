@@ -11,7 +11,7 @@
 | group | mindough://group/{项目id} | mindough://group/0199f2a4-… | 打开某个组 |
 | library | mindough://library/{资料库}/{资料id} | mindough://library/movie/0199f2a4-…；mindough://library/book | 打开某条资料；不带 id 就是这个资料库。资料库用英文短名：movie、book、game、project、course、travel、shopping、restaurant、meal |
 | person | mindough://person/{人物id} | mindough://person/0199f2a4-… | 打开某个人 |
-| search | mindough://search?q={关键词} | mindough://search?q=沙丘 | 打开搜索并填好关键词 |
+| search | mindough://search?q={关键词} | mindough://search?q=沙丘 | 打开搜索并填好关键词（深链还没做，见下面第 3 条；Web 的搜索页 2026-11-12 起有了：`#/search`、`#/search?q=沙丘`，手机「更多」页进的就是它，电脑上同样能打开） |
 | journal | mindough://journal/{today 或 YYYY-MM-DD} | mindough://journal/today、mindough://journal/2026-10-17 | 打开那天的日记（Rei 2026-10-17）。today = 按「一天从几点开始」算的今天；不写日期也是今天。日期写错了，打开今天并提示「没有这一天」；是将来的日子，打开那天并提示「这天还没到，还不能写」 |
 
 ## 二、做一件事（会改数据，做完都有「撤销」提示）

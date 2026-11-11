@@ -2044,3 +2044,14 @@ Rei 2026-11-12 01:15，规则见 [CALENDAR.md](CALENDAR.md) 第十二节。
 - `styles/calendar.css`：任务实色底，倒数日描边 + 粗字，选中改 2px 强调色外圈；今天列改成强调色 5% / 8% 的伪元素；手机选中日浅强调底；全天事件底色和倒数日去掉 color-mix。
 - 测试：`lib/cal-item-color.test.ts` 3 项，`pages/Calendar.test.tsx` 加 1 项。没有迁移，Worker 没改，没有新文案。
 
+### 手机搜索改成单独一页，顶栏去掉搜索按钮 ✅（2026-11-12）
+Rei 2026-11-12 01:21：手机端任何页面都不显示搜索按钮，搜索改成单独的一页，入口放底部导航或「更多」里。
+- **入口**：「更多」页最上面单独一组一行「搜索」（Lucide `Search`，`App.tsx` 的 `SEARCH` 导航项）。没加进底部标签栏：标签栏是 Rei 2026-11-10 定好的「我的一天 · 等待安排 · 打卡 · 日记 · 更多」，不能自定义，加第五项要改他定的结构；「更多」页本来就是其余入口的地方，最上面一行一眼就看到。在搜索页时标签栏「更多」亮着。
+- **路由**：`lib/router.ts` 加 `{ page: 'search' }`，`#/search`。关键词写在 hash 的 `?q=` 上（`searchQueryInHash` / `hashWithSearchQuery`），打字时 `history.replaceState` 改当前这条，不攒记录、不触发 hashchange；`?task=` 照常叠在后面（`#/search?q=跑步&task=…`）。手机点任务是 `pushState` 进详情，返回 popstate 回到 `#/search?q=…`，页面没卸载；点资料、人物、项目、日记是 `navigate` 换页，返回时搜索页重新挂载，从 `?q=` 读回关键词。带着关键词进来不自动聚焦（返回时不弹键盘挡结果），空的才聚焦。
+- **页面**：`pages/Search.tsx`，`StickyHead` 固定搜索框（React Aria `SearchField`，清除按钮读屏「清除」，`enterKeyHint="search"`，回车只 blur 收键盘；组字中的回车由 `useImeQuery` 处理，同浮层），读屏 `h1`「搜索」。结果列表复用浮层的 `.palette-*` 行样式，样式 `styles/app.css` `.search-page-*`（输入框 16px，iOS 聚焦不放大）。
+- **同一套结果**：浮层里的取数和每一行抽到 `components/SearchResults.tsx`：`useSearchHits`（core `search()`，上限 20）、`useRecentTasks`、`openSearchHit`、`SearchTaskRow`、`SearchHitRow`；`CommandPalette` 改用它们，行为不变（↑↓、回车、命令行、Esc 都没动）。搜索页不放「写日记」「从滴答清单导入…」两条命令。
+- **顶栏**：`lib/mobile-topbar.ts` 去掉 `search` 一档，我的一天和其他没页头的页一样只放标题；搜索页有自己的搜索框，`none`（不要顶栏这一行）。测试改了。
+- **文案**：全用已有词条（「搜索」「搜索任务、资料库、人物、项目」「…」「清除」「最近的任务」「新建「{trim}」并加入我的一天」「没有找到「{trim}」」等），没有新词，9 种语言本来就有。
+- **电脑**：⌘F / Ctrl+F 浮层、侧栏顶上的搜索按钮不变；宽屏打开 `#/search` 也渲染这一页（中间列，没有右列常驻）。
+- 没有迁移，Worker 没改。自查脚本 `work/d1112-msearch/`（LightVela Chromium，三皮肤 × 手机 390 亮 / 暗 + 宽屏 1366）。
+
