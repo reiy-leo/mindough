@@ -1,12 +1,15 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Menu, MenuItem, MenuTrigger, Popover, Button as RacButton } from 'react-aria-components';
-import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
   dueToday,
   entriesFor,
   isFinished,
+  isMoodId,
+  moodLabel,
+  MOOD_IDS,
   parseRecurrence,
   taskStreak,
   toDateKey,
@@ -17,7 +20,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
-import { Button, Empty, MenuAt, Section, Segmented, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { Button, Empty, MenuAt, Section, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { useColorLevel, vividVar } from '../lib/color-level';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
@@ -49,7 +52,9 @@ export function CheckInsPage() {
 
   // 类型下拉和「编辑」按钮去掉了（Rei 2026-11-10 08:27「打卡页 不显示 类型dropdown和编辑btn」）：打卡页不再按类型筛选，
   // 想按类型看用「按类型」排列；改类型去侧栏「类型」页
-  const [arrange, setArrange] = useState<'today' | 'category'>('today');
+  // 排列方式（按今天 / 按类型 / 按心情）：页面 state，不记，每次进来都是按今天。
+  // 原来是按钮组，2026-11-12 Rei 00:48 换成下拉，同时加「按心情」（按打卡任务自己的心情分组，同「按类型」的列法）
+  const [arrange, setArrange] = useState<Arrange>('today');
   // 归档了的（Rei 2026-11-02「打卡任务可以归档」）不在主列表里，放在最下面折叠的「已归档」一节
   const liveRecurring = tasks.filter((t) => parseRecurrence(t.recurrence) && !isFinished(t.status));
   const allRecurring = liveRecurring.filter((t) => !t.archived_at);
@@ -204,15 +209,7 @@ export function CheckInsPage() {
             {tr('回到今天')}
           </RacButton>
         ) : allRecurring.length > 0 ? (
-          <Segmented
-            label={tr('排列方式')}
-            value={arrange}
-            onChange={setArrange}
-            options={[
-              { id: 'today', label: tr('按今天') },
-              { id: 'category', label: tr('按类型') },
-            ]}
-          />
+          <ArrangeMenu value={arrange} onChange={setArrange} />
         ) : (
           <span />
         )}
@@ -287,6 +284,30 @@ export function CheckInsPage() {
         )
       ) : view === 'archived' ? (
         archived.length ? <div className="habit-list">{archived.map(row)}</div> : <Empty title={tr('没有归档的打卡')} />
+      ) : arrange === 'mood' ? (
+        <>
+          {/* 按心情：每种心情一节（心情顺序同 MOOD_IDS），没记心情的放最后「没有心情」；同一节里今天要打卡的在前。标题前心情色小圆点，同列表的按心情分区 */}
+          {[...MOOD_IDS, 'none' as const].map((m) => {
+            const list = recurring.filter((t) => (m === 'none' ? !isMoodId(t.mood) : t.mood === m));
+            if (!list.length) return null;
+            list.sort((a, b) => Number(dueToday(b, today)) - Number(dueToday(a, today)));
+            return (
+              <Section
+                key={m}
+                title={
+                  <>
+                    <span className={`section-dot mood-dot${m === 'none' ? ' is-none' : ` mood-${m}`}`} aria-hidden />
+                    {m === 'none' ? tr('没有心情') : moodLabel(m)}
+                  </>
+                }
+                extra={<span className="muted small">{tr('{length} 项', { length: list.length })}</span>}
+              >
+                <div className="habit-list">{list.map(row)}</div>
+              </Section>
+            );
+          })}
+          {!recurring.length && <Empty title={tr('还没有打卡')} />}
+        </>
       ) : arrange === 'category' ? (
         <>
           {[...usedCats.map((c) => ({ key: c.id, c })), { key: NO_CATEGORY, c: undefined }].map(({ key, c }) => {
@@ -346,5 +367,54 @@ export function CheckInsPage() {
 
       <MenuAt at={menu.at} label={tr('打卡操作')} items={menu.at ? menuItems() : []} onClose={menu.close} />
     </div>
+  );
+}
+type Arrange = 'today' | 'category' | 'mood';
+const ARRANGES: readonly Arrange[] = ['today', 'category', 'mood'];
+const ARRANGE_LABEL: Record<Arrange, () => string> = {
+  today: () => tr('按今天'),
+  category: () => tr('按类型'),
+  mood: () => tr('按心情'),
+};
+
+/**
+ * 打卡页左上角的排列方式下拉（Rei 2026-11-12 00:48「按钮组换成下拉菜单，选项就是这三个，当前项打勾」）：
+ * 按钮上写当前那项的名字 + 向下箭头；菜单和「显示哪些打卡」、项目页分区 / 排序是同一套（React Aria Menu、单选打勾），三种皮肤各自的菜单样子。
+ */
+function ArrangeMenu({ value, onChange }: { value: Arrange; onChange: (v: Arrange) => void }) {
+  const name = ARRANGE_LABEL[value]();
+  return (
+    <MenuTrigger>
+      <RacButton className="btn btn-quiet checkin-arrange-btn" aria-label={tr('排列方式：{name}', { name })}>
+        <span className="checkin-arrange-name">{name}</span>
+        <ChevronDown size={15} aria-hidden />
+      </RacButton>
+      <Popover className="popover menu-popover" placement="bottom start" offset={4}>
+        <Menu
+          className="menu"
+          aria-label={tr('排列方式')}
+          selectionMode="single"
+          disallowEmptySelection
+          selectedKeys={[value]}
+          onSelectionChange={(keys) => {
+            const k = [...keys][0];
+            if (k === 'today' || k === 'category' || k === 'mood') onChange(k);
+          }}
+        >
+          {ARRANGES.map((id) => (
+            <MenuItem key={id} id={id} className="menu-item menu-check" textValue={ARRANGE_LABEL[id]()}>
+              {({ isSelected }) => (
+                <>
+                  <span className="menu-check-text">{ARRANGE_LABEL[id]()}</span>
+                  <span className="menu-check-mark" aria-hidden>
+                    {isSelected && <Check size={15} />}
+                  </span>
+                </>
+              )}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Popover>
+    </MenuTrigger>
   );
 }

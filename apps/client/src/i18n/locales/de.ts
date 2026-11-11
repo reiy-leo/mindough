@@ -20,6 +20,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "按目标日期": "Nach Fälligkeit",
   "分区：{name}": "Abschnitte: {name}",
   "排序：{name}": "Sortierung: {name}",
+  "排列方式：{name}": "Ordnen nach: {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Strenger Modus",
   "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Erledigte oder geschlossene Aufgaben können nicht mehr geändert, nur wieder geöffnet oder gelöscht werden. Gilt nur auf diesem Gerät.",

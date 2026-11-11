@@ -4233,9 +4233,20 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   justify-content: space-between;
   gap: var(--space-2);
 }
-.checkin-toolbar > .segmented {
+/* 左上角排列方式下拉（Rei 2026-11-12 00:48 按钮组换成下拉）：按钮写当前那项 + 向下箭头，安静按钮的样子，展开时同悬停底色；菜单用通用 .menu（三种皮肤各自的样子） */
+.checkin-toolbar .checkin-arrange-btn {
   flex: none;
-  flex-wrap: nowrap;
+  gap: 4px;
+  padding-inline: 10px 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+.checkin-toolbar .checkin-arrange-btn[aria-expanded='true'] {
+  background: var(--surface-hover);
+}
+.checkin-toolbar .checkin-arrange-btn svg {
+  flex: none;
+  color: var(--text-2);
 }
 .checkin-toolbar .checkin-back {
   margin-bottom: 0;

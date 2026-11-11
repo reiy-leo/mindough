@@ -20,6 +20,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "按目标日期": "Menurut tenggat",
   "分区：{name}": "Bagian: {name}",
   "排序：{name}": "Urutan: {name}",
+  "排列方式：{name}": "Atur menurut: {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Mode ketat",
   "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Tugas yang sudah selesai atau ditutup tidak bisa diubah, hanya dibuka lagi atau dihapus. Hanya berlaku di perangkat ini.",

@@ -20,6 +20,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "按目标日期": "Por data limite",
   "分区：{name}": "Seções: {name}",
   "排序：{name}": "Ordem: {name}",
+  "排列方式：{name}": "Organizar por: {name}",
   // ── 严格模式（Rei 2026-11-08，待母语者看）──
   "严格模式": "Modo estrito",
   "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Tarefas concluídas ou fechadas não podem ser alteradas, só reabertas ou excluídas. Vale só neste dispositivo.",

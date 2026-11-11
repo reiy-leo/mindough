@@ -27,6 +27,7 @@ export const EN: Record<string, EnValue> = {
   "按目标日期": "By Due Date",
   "分区：{name}": "Sections: {name}",
   "排序：{name}": "Sort: {name}",
+  "排列方式：{name}": "Arrange: {name}",
   // ── 严格模式（Rei 2026-11-08）──
   "严格模式": "Strict Mode",
   "打开后，已完成或已关闭的任务不能再改，只能重新打开或删除。只在这台设备上生效。": "Completed or closed tasks can’t be changed, only reopened or deleted. Applies to this device only.",
