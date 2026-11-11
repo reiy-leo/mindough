@@ -4599,3 +4599,16 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .cat-section-head + .cat-grid {
   margin-top: 2px;
 }
+/* 类型页页头：副标题长，手机上「···」别被挤到下一行，钉在标题右边 */
+.types-page > .page-header {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.types-page > .page-header .page-heading,
+.types-page > .page-header .page-heading > div {
+  min-width: 0;
+}
+.types-page > .page-header .page-actions {
+  flex: none;
+  margin-top: 4px;
+}
