@@ -3894,7 +3894,7 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
 }
 .countdown-row-days b {
   font-size: 17px;
-  line-height: 1.2;
+  line-height: 1;
   font-weight: 600;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
