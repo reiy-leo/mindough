@@ -1453,13 +1453,26 @@ Rei 2026-11-08「侧边栏 管理 添加一个"已完成"入口」。
 ### 任务置顶 ✅（2026-11-08）
 Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显示，直到用户手动关闭」。
 
-- 数据：`task.pinned_at`（置顶时间，迁移 v18），空 = 没置顶。`Store.pinTask` / `unpinTask`，已经是那个状态的不写。老客户端写来的行没有这一列，`applyRemote` 补成空（当没置顶）；云端只存整行 JSON，不用改。导出导入写 `pinned`。
+- 数据：`task.pinned_at`（置顶时间，迁移 v18），空 = 没置顶（2026-11-12 起置顶看内置类型「置顶」，`pinned_at` 只当排序键和给老客户端看，见下面「置顶改成类型」）。`Store.pinTask` / `unpinTask`，已经是那个状态的不写。老客户端写来的行没有这一列，`applyRemote` 补成空（当没置顶）；云端只存整行 JSON，不用改。导出导入写 `pinned`。
 - 我的一天怎么显示：不写 my_day 行，按 `pinned_at` 算出虚拟行（core `pinnedDayItems`，id 前缀 `pinned:`），`withPinned` 放到当天清单最前面，同一件也有 my_day 行的只留置顶那项。所以改日期移出、移出当天、项目「出现在我的一天」开关、`isStaleAutoEntry` 都管不着它。客户端的我的一天页、侧栏数字、小组件快照都走 `lib/myday-items.ts` 的 `dayItems`。
 - 排序：置顶的在「未完成」段最上面，后置顶的在上；不给拖动把手，`reorderSection` 去掉置顶的，拖别的不会改到它。
 - 做完：只做一次的，`done_at` 落在本机哪天，那天就在「已完成」段，之后不显示，`pinned_at` 不动；重新打开（`done_at` 清空）又回来。打卡看那天的周期达没达标，每天都在。**待 Rei 定**：做完以后要不要自动取消置顶、或者一直留在「已完成」段。现在是按这次的说法「做完那天出现，之后不显示但保持置顶」。
 - 不显示的：删了的、打卡归档了的、在归档项目里的（取消归档就回来）。
 - 别处：置顶的不进「昨天没做完」、建议、待安排（`Store.backlog` 过滤）。菜单（`lib/task-menu.ts`）里置顶了的只给「取消置顶」，不给加入 / 移出我的一天；太阳按钮（详情顶栏、⌘F 搜索结果、行尾）显示成已在今天，点了提示先取消置顶（`lib/actions.ts` `toggleMyDay`）。
 - 测试：core `task-pin.test.ts` 15 项（置顶 / 取消、每天出现、排在新加的之上、改日期和移出不影响、项目开关、归档项目、做完 / 关闭 / 打卡、不进建议和待安排、排序、迁移 v17→v18、老客户端行、同步、导入导出）；client `task-menu.test.ts`、`myday-items.test.ts`。
+
+### 置顶改成类型 ✅（2026-11-12）
+Rei 2026-11-12 03:44「置顶任务应该用"类型"，一个叫做"置顶"的类型，这样会不会更方便？」、03:46「有置顶类型就置顶。没就不置顶不就好了」。
+
+- 内置类型「置顶」：固定 id `00000000-0000-7000-8001-000000000028`（`PIN_CATEGORY_ID`，seed/builtin-checkin-categories.ts），红色 `#ff3b30`、Lucide `pin`，`builtin: true`。不在 27 个的 SEED 里：不进默认分组（落在「其他」），不进默认「常用」。老用户打开时 `ensureBuiltinCategories` 补上。名字九种语言走 `dataLabel`（DATA「置顶」）。同名的自建类型「置顶」会按同名合并并进它（内置的留下），挂了那个类型的任务也就置顶了。
+- 置顶的唯一依据是类型：`Store.pinnedAt(task)`（挂着「置顶」、类型没设成不显示才返回时间）、`isPinned`、`pinEnabled`、`hasPinCategory`。myday.ts 的纯函数（`pinnedDayItems`、`checkInDayItems`、`makeupDayItems`、`isVirtual*Today`、`yesterdayUnfinished`、`suggestions`）都收一个 `pinOf`，界面和 Store 传 `store.pinnedAt`；不传时还看 `task.pinned_at`（老测试用）。界面上判断置顶都用 `store.isPinned`，别再读 `task.pinned_at`。
+- `pinTask` / `unpinTask` = `addTaskCategory` / `removeTaskCategory`（挂在最后）。在类型选择器里勾上、去掉一样。
+- 双写：`write()` → `syncRefs` 按类型把 `pinned_at` 写回去（挂上时写成现在，摘掉清空；只改别的类型不动它）。这批直接改了 `pinned_at` 的（导入、`createTask({ pinned_at })`、老代码路径）反过来按它挂 / 摘。单值 `category_id` 跳过「置顶」：它不当主类型，老客户端显示的类型、按类型分区都不受影响。
+- 排序键：`pinned_at`；只同步来类型没有 `pinned_at` 的（两台设备的行交错时会有），用关联行 HLC 的时间，再不行用任务 `updated_at` 的时间。
+- 老客户端和迁移：`refs_mirror` 签名置顶时多一个 `|P`。只认 `pinned_at` 的客户端置顶（签名里没 P）、取消置顶（签名里有 P、`pinned_at` 空），新客户端在 `legacyLinks` → `legacyPinLink` 里挂上 / 摘掉；关联行比任务行新就不动。补的行 id 由任务 + 类型算出（`taskCategoryId`，task_category 主键），updated_at 用任务行的，不进 outbox：几台设备各补一遍是同一行，不会重复。打开时 `backfillRefs` 跑一遍，就是迁移：以前 `pinned_at` 有值的任务都补挂上。没加 schema 迁移，云端不用改。
+- 设成不显示（类型的「归档」）：`pinEnabled()` 为假，`pinnedAt` 全返回 null，挂着的关联不动；菜单（`lib/task-menu.ts` 的 `dayGroup` 第三个参数）不给「置顶 / 取消置顶」。老客户端那边 `pinned_at` 还在，照旧显示置顶（它们不认类型的显示状态）。
+- 分区和筛选：`categorySectionOrder` 去掉「置顶」，`sectionTasks` 按任务第一个能成段的类型分（跳过置顶）。打卡、倒数日的类型筛选（`usedCats`）照常列出它。列表第二行、打卡卡片颜色用 `store.categoriesOfTaskNoPin`。重复倒数日的记录不抄「置顶」。
+- 测试：core `pin-type.test.ts`（挂 / 摘、选择器、先后、不显示、直接写 pinned_at、倒数日记录、迁移幂等、老客户端置顶 / 取消、只有类型的兜底时间、两台设备同步）；原来的 `task-pin.test.ts` 照过。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
