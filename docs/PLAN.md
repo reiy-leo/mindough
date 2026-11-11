@@ -1764,6 +1764,15 @@ Rei 2026-11-09 01:31：打卡页、倒数日页的「新建」不再弹窗，直
 - 测试：client `blank-task.test.ts` 6 项。
 - 修：MdEditor 的 autoFocus 原来在 useEffect 里直接 `editor.commands.focus`，从详情第一次挂上时 view 还没挂、抛「reading 'commands' of null」，详情显示「这里出错了」。改成等 `editor.view.dom.isConnected` 再聚焦（最多重试 10 次、每次 30ms，卸载时清掉）。
 
+### 日历「+」在详情浮层里新建 ✅（2026-11-12）
+Rei 2026-11-12 06:52：「日期+弹窗用的是之前新建打卡、新建倒数日的那个弹窗，改成和看板模式弹窗同一个组件。」日历的「+」/「添加」不再弹新建面板，改成建一条那天的任务、在详情浮层（`DetailModal`）里打开。
+
+- core `Store.createDraftTask(input)`：照 `createTask` 建在内存里（界面看得见），但 `write` 走草稿分支，只改内存、通知界面，不落盘、不进 outbox；顺带写的别的行照常落盘。`isDraftTask` / `discardDraftTask`（从内存拿掉，什么都不写）。之后任何写入碰到它（任务行本身，或别的行字段里有它的 id，比如挂类型）就先把它落盘并进 outbox，再按新建规则放进今天的我的一天（`joinMyDayOnToday`），从此是普通任务。`deleteTask` 碰到草稿直接丢，不写墓碑。刷新页面草稿就没了（本来就没存过）。
+- client `lib/blank-task.ts` 加 `createDateDraftTask(store, openEditor, date)`：`createDraftTask({ body_md: '', scheduled_date: date })`、记进草稿表、要光标、`openEditor`。`sweepBlankTasks` 先试 `discardDraftTask`，不是草稿再按原规则（正文空就 `deleteTask`）。打卡 / 倒数日页的空任务还是直接落盘的老路子，没改。
+- 日历页 `create` 换成 `createDateDraftTask`。日历页在桌面布局下本来就用 `DetailModal`（`detailInModal`），手机本来就是整页详情，所以不用另外接浮层。
+- 我定的：只改了属性、正文空着关掉也删（这时已落盘，会同步一条墓碑）；N、打卡页、倒数日页的新建不动。
+- 测试：core `draft-task.test.ts` 5 项；client `blank-task.test.ts` 加 4 项，`Calendar.test.tsx` 改成查 `createDraftTask` + `openEditor`。
+
 
 ### 纯文本附件点开就能看 ✅（2026-11-09）
 
