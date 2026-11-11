@@ -4,13 +4,27 @@
  * - 手机：「更多」页放进来的项目排成图标时，格子 44×44（--pinned-cell-touch），里面的图标块 32。
  * 类型页「显示为：图标」的格子用同端的图标块边长（电脑对齐侧栏、手机对齐「更多」页），名字放在图标下面。
  * 图标字形大小由 IconTile 按边长算（iconTileGlyphSize），边长一样字形就一样。
- * 资料库放进侧栏时不画图标块，只画线条图标（20 / 24），不在这里。
+ * 资料库放进侧栏时不画图标块，只画线条图标（PINNED_LINE_ICON：20 / 24）。
  */
 export const PINNED_TILE = { desktop: 22, mobile: 32 } as const;
 
 /** 这一端图标模式的图标块边长。 */
 export function pinnedTileSize(mobile: boolean): number {
   return mobile ? PINNED_TILE.mobile : PINNED_TILE.desktop;
+}
+
+/** 放进侧栏的资料库「显示为：图标」时的线条图标边长：电脑侧栏 20、手机「更多」页 24。 */
+export const PINNED_LINE_ICON = { desktop: 20, mobile: 24 } as const;
+
+/**
+ * 放进侧栏的项目「显示为：图标」时 GroupIcon 的边长。
+ * 素净档没有色块底，项目图标的线条撑满整块（styles/color-level.css），原来按 22 / 32 画，比旁边资料库的线条图标（20 / 24）大一圈；
+ * Rei 2026-11-12 07:39–07:40「素净模式：资料库图标模式、项目图标模式的图标不一样大」「统一成资料库图标大小」：素净档项目也用 20 / 24。
+ * 标准、多彩档有彩色底块，照旧 22 / 32（和类型页图标格子一样大）。
+ */
+export function pinnedGroupIconSize(mobile: boolean, plain: boolean): number {
+  if (plain) return mobile ? PINNED_LINE_ICON.mobile : PINNED_LINE_ICON.desktop;
+  return pinnedTileSize(mobile);
 }
 
 /**

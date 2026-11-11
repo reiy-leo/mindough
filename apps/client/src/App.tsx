@@ -54,7 +54,7 @@ import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope'
 import { useAppMenu } from './lib/app-menu';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
 import { pinnedGrid, type PinnedStyleKind } from './lib/pinned-style';
-import { PINNED_TILE } from './lib/pinned-tile';
+import { PINNED_LINE_ICON, pinnedGroupIconSize } from './lib/pinned-tile';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
 
@@ -358,6 +358,8 @@ function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; acti
   const menu = useContextMenuAt({ longPress: false });
   const reorder = usePinnedReorder(group.id, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
   const actions = useProjectActions(store, group);
+  // 素净档项目图标和资料库图标一样大（Rei 2026-11-12，lib/pinned-tile pinnedGroupIconSize）
+  const plain = useColorLevel() === 'plain';
   return (
     <>
       <a
@@ -374,7 +376,7 @@ function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; acti
         title={item.label}
       >
         <span className="nav-icon">
-          <GroupIcon group={group} size={compact ? PINNED_TILE.desktop : 18} />
+          <GroupIcon group={group} size={compact ? pinnedGroupIconSize(false, plain) : 18} />
         </span>
         {!compact && <span className="nav-label">{item.label}</span>}
       </a>
@@ -411,7 +413,7 @@ function PinnedLibraryLink({ item, active, compact }: { item: NavItem; active: b
         title={item.label}
       >
         <span className="nav-icon" style={vividVar(colorLevel, t?.color)}>
-          <Icon size={compact ? 20 : 18} />
+          <Icon size={compact ? PINNED_LINE_ICON.desktop : 18} />
         </span>
         {!compact && <span className="nav-label">{item.label}</span>}
       </a>
@@ -693,7 +695,7 @@ function MoreLibraryTile({ item: n }: { item: NavItem }) {
         title={n.label}
       >
         <span className="more-icon">
-          <Icon size={24} />
+          <Icon size={PINNED_LINE_ICON.mobile} />
         </span>
       </a>
       {action && <MenuAt at={menu.at} label={n.label} heading={n.label} items={[action]} onClose={menu.close} />}
@@ -706,6 +708,7 @@ function MoreTileOf({ item: n, group: g }: { item: NavItem; group: Group }) {
   const menu = useContextMenuAt({ longPress: false });
   const reorder = usePinnedReorder(g.id, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
   const actions = useProjectActions(store, g);
+  const plain = useColorLevel() === 'plain';
   return (
     <>
       <a
@@ -720,7 +723,7 @@ function MoreTileOf({ item: n, group: g }: { item: NavItem; group: Group }) {
         aria-label={n.label}
         title={n.label}
       >
-        <GroupIcon group={g} size={PINNED_TILE.mobile} />
+        <GroupIcon group={g} size={pinnedGroupIconSize(true, plain)} />
       </a>
       <MenuAt at={menu.at} label={n.label} heading={n.label} items={actions.items} onClose={menu.close} />
       {actions.dialogs}
