@@ -4,6 +4,8 @@
  * 原来任务上的「类型」（task_type）界面上改叫「资料库」，代码里还叫 task_type / type_id。
  *
  * 规则：能加、能改名 / 颜色 / 图标、能「不显示」（hidden，选择器里不出现，挂着的照常显示），不能删。
+ * 内置类型只有「置顶」「收藏」「紧急」「重要」（Rei 2026-11-12 04:20「限制只有置顶是内置类型」、04:41 加了后三个），在类型页照常列出，但什么都不能改（isBuiltinCategory）；
+ * 原来内置的 27 个从那时起和自己建的一样（seed/builtin-checkin-categories.ts）。
  *
  * 合并（schema v11 + Store 打开时）：
  * - 打卡分类按原 id 拷进 category（内置 27 个 id 不变，各设备一样）；项目分类本来就在 category 里，id 不变。
@@ -18,6 +20,42 @@
  */
 import { tr } from './i18n';
 import type { Category, CheckInCategory } from './types';
+import { MARK_ORDER, builtinCategoryDef, type TitleMark } from './seed/builtin-checkin-categories';
+
+/**
+ * 是不是内置类型（锁定：名字、图标、颜色、分组、常用 / 普通 / 不显示都不能改）。只看 id：置顶、收藏、紧急、重要。
+ * 行里的 builtin 列不算数（原来内置的 27 个行里还是 true，但已经能改）。
+ */
+export function isBuiltinCategory(c: Pick<Category, 'id'> | string | null | undefined): boolean {
+  const id = typeof c === 'string' ? c : c?.id;
+  return !!builtinCategoryDef(id);
+}
+
+/** 不当主类型的类型（任务的单值 category_id、列表第二行、按类型分区都跳过）：现在就是全部内置类型。 */
+export const isMarkerCategory = isBuiltinCategory;
+
+/** 任务挂的类型 id 里，标题该用哪种颜色（紧急 > 重要 > 收藏）；都没挂返回 null。置顶不变色。 */
+export function titleMarkOf(categoryIds: readonly string[]): TitleMark | null {
+  for (const [m, id] of MARK_ORDER) if (categoryIds.includes(id)) return m;
+  return null;
+}
+
+/**
+ * 内置类型这一行该是什么样（老客户端改过名、换过图标、设过不显示的，一律改回内置定义）。只换会改的列，
+ * id / updated_at 留着；不是内置类型原样返回。
+ */
+export function canonicalBuiltinCategory(row: Category): Category {
+  const def = builtinCategoryDef(row.id);
+  if (!def) return row;
+  return { ...row, name: def.name, icon: def.icon, color: def.color, builtin: true, hidden: false, deleted: false, merged_into: null, sort: def.sort };
+}
+
+/** 内置类型这一行和内置定义不一样（要改回去）。 */
+export function builtinCategoryDrifted(row: Category): boolean {
+  if (!isBuiltinCategory(row)) return false;
+  const c = canonicalBuiltinCategory(row);
+  return row.name !== c.name || row.icon !== c.icon || row.color !== c.color || row.builtin !== true || row.hidden !== false || row.deleted !== false || (row.merged_into ?? null) !== null || row.sort !== c.sort;
+}
 
 export const DEFAULT_CATEGORY_ICON = 'tag';
 export const DEFAULT_CATEGORY_COLOR = '#8e8e93';
@@ -79,8 +117,12 @@ export function resolveCategoryId(get: (id: string) => Category | undefined, id:
   return cur;
 }
 
-/** 同名的几个里谁留下：内置优先，再按 sort 小的、id 小的。只看行本身，各设备一致。 */
+/**
+ * 同名的几个里谁留下：内置类型（置顶、收藏、紧急、重要）永远留下（锁定，不能被并掉）；再按 builtin 列（原来内置的优先）、sort 小的、id 小的。
+ * 只看行本身，各设备一致。
+ */
 export function survivorOrder(a: Category, b: Category): number {
+  if (isBuiltinCategory(a) !== isBuiltinCategory(b)) return isBuiltinCategory(a) ? -1 : 1;
   if (a.builtin !== b.builtin) return a.builtin ? -1 : 1;
   if (a.sort !== b.sort) return a.sort - b.sort;
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;

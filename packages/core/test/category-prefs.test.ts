@@ -1,7 +1,8 @@
+import { withFormerCategories } from './helpers';
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
-import { BUILTIN_CATEGORIES, BUILTIN_CATEGORY_GROUPS, BUILTIN_CATEGORY_IDS, PIN_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, FORMER_BUILTIN_CATEGORIES, BUILTIN_CATEGORY_GROUPS, BUILTIN_CATEGORY_IDS, PIN_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
 import {
   CATEGORY_GROUPS,
   categoryGroupOverrides,
@@ -16,11 +17,13 @@ import {
 } from '../src/category-prefs';
 
 describe('大类', () => {
-  it('内置 27 个都有默认组，5 组的名单和文档一致', () => {
+  it('原来内置的 27 个都有默认组，5 组的名单和文档一致', () => {
     // 「置顶」（2026-11-12）不进默认组，落在「其他」
-    expect(BUILTIN_CATEGORIES.every((c) => c.id === PIN_CATEGORY_ID || BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
+    expect(FORMER_BUILTIN_CATEGORIES.every((c) => BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
+    expect(BUILTIN_CATEGORIES.map((c) => c.name)).toEqual(['置顶', '收藏', '紧急', '重要']);
+    expect(BUILTIN_CATEGORIES.every((c) => !BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
     expect(BUILTIN_CATEGORY_GROUPS[PIN_CATEGORY_ID]).toBeUndefined();
-    const names = (g: string) => BUILTIN_CATEGORIES.filter((c) => BUILTIN_CATEGORY_GROUPS[c.id] === g).map((c) => c.name).sort();
+    const names = (g: string) => FORMER_BUILTIN_CATEGORIES.filter((c) => BUILTIN_CATEGORY_GROUPS[c.id] === g).map((c) => c.name).sort();
     expect(names('body')).toEqual(['健康', '运动', '作息', '冥想', '服药', '护肤', '个人护理', '饮食'].sort());
     expect(names('life')).toEqual(['整理', '清洁', '采购', '维护', '植物', '宠物', '理财'].sort());
     expect(names('study')).toEqual(['学习', '读书', '写作', '语言', '工作', '记录'].sort());
@@ -72,7 +75,7 @@ describe('三档', () => {
 });
 
 describe('选择器顺序：常用 + 最近用过', () => {
-  const cats = BUILTIN_CATEGORIES.map((c) => ({ ...c }));
+  const cats = [...FORMER_BUILTIN_CATEGORIES, ...BUILTIN_CATEGORIES].map((c) => ({ ...c }));
   const id = (k: keyof typeof BUILTIN_CATEGORY_IDS) => BUILTIN_CATEGORY_IDS[k];
   it('常用在前，用过的按最近，没用过的先放日常几个再按组', () => {
     const last = new Map([
@@ -82,8 +85,8 @@ describe('选择器顺序：常用 + 最近用过', () => {
     const names = orderPickerCategories(cats, [id('watch')], last).map((c) => c.name);
     expect(names.slice(0, 3)).toEqual(['观影', '理财', '游戏']);
     expect(names.slice(3, 9)).toEqual(['健康', '运动', '学习', '读书', '饮食', '作息']);
-    expect(names).toHaveLength(28);
-    expect(new Set(names).size).toBe(28);
+    expect(names).toHaveLength(31);
+    expect(new Set(names).size).toBe(31);
   });
 
   it('最近用过：任务创建和打卡记录取最晚的', () => {
@@ -101,7 +104,7 @@ describe('选择器顺序：常用 + 最近用过', () => {
   });
 
   it('Store：新建一个类型，用一次就靠前，不用手排', async () => {
-    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    const s = await Store.open(await withFormerCategories(), { deviceId: 'a' });
     const c = s.createCategory('装修');
     expect(s.pickerCategories().at(-1)!.id).toBe(c.id);
     s.createTask({ category_id: c.id });

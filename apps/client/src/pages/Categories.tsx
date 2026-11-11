@@ -8,11 +8,13 @@
  * - 没有页头（Rei 2026-11-12 02:14）：读屏留 h1，手机顶栏只有标题。
  * - 搜索框右边「列表 ⌄ / 图标 ⌄」下拉（Rei 2026-11-11 08:33 加在页头，原是 ···；2026-11-12 改成下拉，样子同打卡页「排列方式」；同天页头去掉后挪到搜索框这一行）：所有分组一起切，本机记住（lib/category-view）。图标 = 图标格子、名字在下。
  * - 键盘：⌘F 或直接打字聚焦搜索；⌘1 / ⌘2 / ⌘3 把高亮或打开的那个切成常用 / 普通 / 不显示。改动马上保存，改档能撤销。
+ * - 内置类型（置顶、收藏、紧急、重要，Rei 2026-11-12 04:20 / 04:41）照常列出、能点开看挂了它的任务，但详情只读：图标块不是按钮、名字是纯文字、
+ *   没有三档和分组，只有一行说明；⌘1/2/3 对它不起作用（store 也挡着）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button as RacButton, Input, TextField } from 'react-aria-components';
 import { ChevronLeft, Tags } from 'lucide-react';
-import { PIN_CATEGORY_ID, isFinished, type Category, type CategoryState } from '@mindough/core';
+import { IMPORTANT_CATEGORY_ID, STAR_CATEGORY_ID, URGENT_CATEGORY_ID, isFinished, type Category, type CategoryState } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { useSettings } from '../lib/settings';
@@ -135,6 +137,17 @@ function CategoryHead({ c }: { c: Category }) {
   };
   const state = store.categoryState(c.id);
   const group = store.categoryGroup(c.id);
+  // 内置类型（置顶、收藏、紧急、重要）只读：不出任何编辑入口，只说一句为什么
+  if (store.isCategoryLocked(c.id))
+    return (
+      <div className="cat-head is-locked">
+        <div className="cat-head-top">
+          <CategoryTile c={c} size={44} />
+          <h2 className="cat-head-title">{shown}</h2>
+        </div>
+        <p className="foot-note cat-head-hint">{lockedHint(c.id)}</p>
+      </div>
+    );
   return (
     <div className="cat-head">
       <div className="cat-head-top">
@@ -172,10 +185,16 @@ function CategoryHead({ c }: { c: Category }) {
             ? tr('常用：选类型时排在最前面。')
             : tr('普通：选类型时按最近用过的先后排。')}
       </p>
-      {/* 内置类型「置顶」（Rei 2026-11-12）：挂了它就是置顶；设成不显示 = 没有置顶功能 */}
-      {c.id === PIN_CATEGORY_ID && <p className="foot-note cat-head-hint">{tr('挂了这个类型的任务就是置顶的，每天都在我的一天最上面。设成不显示后，它们都不算置顶，菜单里也不再有「置顶」。')}</p>}
     </div>
   );
+}
+
+/** 内置类型详情里那一句说明（为什么不能改、挂了有什么用）。 */
+function lockedHint(id: string): string {
+  if (id === STAR_CATEGORY_ID) return tr('内置类型，不能改。挂了它的任务，列表里的标题是黄色的。');
+  if (id === URGENT_CATEGORY_ID) return tr('内置类型，不能改。挂了它的任务，列表里的标题是红色的。');
+  if (id === IMPORTANT_CATEGORY_ID) return tr('内置类型，不能改。挂了它的任务，列表里的标题是蓝色的。');
+  return tr('内置类型，不能改。挂了它的任务就是置顶的，每天都在我的一天最上面。');
 }
 
 /** 挂了这个类型的项目和任务（没做完的在前，做完 / 关闭的收在后面）。 */

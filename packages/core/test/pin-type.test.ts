@@ -1,6 +1,6 @@
 /**
  * 置顶改成内置类型「置顶」（Rei 2026-11-12 03:44「置顶任务应该用"类型"，一个叫做"置顶"的类型」、03:46「有置顶类型就置顶。没就不置顶不就好了」）：
- * - 挂了「置顶」= 置顶，没挂 = 不置顶；类型设成不显示 = 没有置顶功能（Store.pinnedAt / isPinned / pinEnabled）。
+ * - 挂了「置顶」= 置顶，没挂 = 不置顶（Store.pinnedAt / isPinned）。04:20 起它锁定、不能设成不显示，pinEnabled 总是 true（见 builtin-lock.test.ts）。
  * - pinTask / unpinTask 就是挂上 / 摘掉；在类型选择器里选它一样（setTaskCategories）。
  * - pinned_at 双写：挂类型时写成现在、摘时清空；老客户端照旧看它。只有类型没有 pinned_at 的，用关联行的时间兜底。
  * - 迁移 / 老客户端：pinned_at 有值没挂的补挂（id 由任务 + 类型算出、时间用任务行的，各设备一样）；老客户端取消置顶摘掉。
@@ -90,17 +90,12 @@ describe('置顶 = 挂了「置顶」类型', () => {
     expect(openIds(store)).toEqual([b.id, a.id]);
   });
 
-  it('「置顶」设成不显示：谁都不算置顶，挂着的照常挂着；再显示回来照旧', async () => {
+  it('「置顶」不能设成不显示（2026-11-12 04:20 锁定）：设了也不生效，置顶照旧', async () => {
     const { store } = await open();
     const t = store.createTask({ body_md: 'A' });
     store.pinTask(t.id);
-    store.setCategoryState(PIN_CATEGORY_ID, 'hidden');
-    expect(store.pinEnabled()).toBe(false);
-    expect(store.isPinned(t.id)).toBe(false);
-    expect(store.categoryIdsOfTask(t.id)).toEqual([PIN_CATEGORY_ID]);
-    expect(openIds(store)).toEqual([]);
-    expect(store.backlog().map((x) => x.id)).toContain(t.id);
-    store.setCategoryState(PIN_CATEGORY_ID, 'normal');
+    expect(store.setCategoryState(PIN_CATEGORY_ID, 'hidden')).toBe('normal');
+    expect(store.pinEnabled()).toBe(true);
     expect(store.isPinned(t.id)).toBe(true);
     expect(openIds(store)).toEqual([t.id]);
   });

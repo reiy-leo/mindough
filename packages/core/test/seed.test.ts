@@ -3,7 +3,7 @@ import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { seedDemo } from '../src/seed/demo';
 import { BUILTIN_TASK_TYPES } from '../src/seed/builtin-types';
-import { BUILTIN_CHECKIN_CATEGORIES, BUILTIN_CHECKIN_CATEGORY_IDS, pickFrequentCategories } from '../src/seed/builtin-checkin-categories';
+import { FORMER_BUILTIN_CATEGORIES, BUILTIN_CHECKIN_CATEGORY_IDS, pickFrequentCategories } from '../src/seed/builtin-checkin-categories';
 import { findCycleEdges } from '../src/dag';
 import { taskStreak } from '../src/checkin';
 import { local } from './helpers';
@@ -47,7 +47,7 @@ describe('演示数据', () => {
 });
 
 describe('常用打卡分类', () => {
-  const cats = BUILTIN_CHECKIN_CATEGORIES;
+  const cats = FORMER_BUILTIN_CATEGORIES;
   const id = (k: keyof typeof BUILTIN_CHECKIN_CATEGORY_IDS) => BUILTIN_CHECKIN_CATEGORY_IDS[k];
   it('没用过时是默认 6 个', () => {
     expect(pickFrequentCategories(cats, []).map((c) => c.name)).toEqual(['健康', '运动', '学习', '读书', '饮食', '作息']);

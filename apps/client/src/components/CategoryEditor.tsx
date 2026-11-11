@@ -9,6 +9,7 @@
  * - 显示为图标（Rei 2026-11-11 08:33，view='icons'）：每组排成图标格子，名字在图标下面、最多两行；点、回车、↑↓、读屏名和列表一样；
  *   格子里不左滑（改档去详情页）。搜索结果也排成格子。
  * 类型不能删：不想看到就设成不显示（挂着的任务照常显示）。
+ * 内置类型（置顶、收藏、紧急、重要，Rei 2026-11-12 04:20 / 04:41）照常列出、能点开，但不能改：手机上不左滑，改档 / 换组直接不做（store 也挡）。
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
@@ -70,7 +71,7 @@ export function useCategoryActions() {
   const ui = useUi();
   const setState = (id: string, state: CategoryState) => {
     const c = store.category(id);
-    if (!c) return;
+    if (!c || store.isCategoryLocked(c.id)) return;
     const prev = store.setCategoryState(id, state);
     if (prev === state) return;
     const name = dataLabel(c.name);
@@ -80,7 +81,7 @@ export function useCategoryActions() {
   };
   const setGroup = (id: string, group: CategoryGroupId) => {
     const c = store.category(id);
-    if (!c) return;
+    if (!c || store.isCategoryLocked(c.id)) return;
     const prev = store.categoryGroup(id);
     if (prev === group) return;
     store.setCategoryGroup(id, group);
@@ -223,7 +224,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
       state={c.hidden ? 'hidden' : frequent.includes(c.id) ? 'frequent' : 'normal'}
       selected={selectedId === c.id}
       active={active === c.id}
-      mobile={!!mobile}
+      mobile={!!mobile && !store.isCategoryLocked(c.id)}
       swiped={swiped === c.id}
       onSwipe={(open) => setSwiped(open ? c.id : null)}
       onPress={() => {

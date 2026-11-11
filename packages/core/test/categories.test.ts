@@ -4,10 +4,10 @@ import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { SqlAdapter, migrate } from '../src/storage/sql';
 import { MIGRATIONS } from '../src/storage/schema';
-import { BUILTIN_CATEGORY_IDS } from '../src/seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORY_IDS, FORMER_BUILTIN_CATEGORIES } from '../src/seed/builtin-checkin-categories';
 import { CategoryDeleteError, fillCategory, normCategoryName, planCategoryMerges, resolveCategoryId } from '../src/categories';
 import type { Category, CheckInCategory, Group } from '../src/types';
-import { mkTask } from './helpers';
+import { mkTask, withFormerCategories } from './helpers';
 import { NodeSqliteDriver, TursoNodeDriver } from './sql-drivers';
 
 const OLD = '0000000000005-0000-old';
@@ -65,6 +65,8 @@ describe('打开旧数据时合并（localStorage / 内存）', () => {
     // 旧的打卡分类：内置「运动」被改成了「健身」，另有一个自己加的「Reading」
     const sport: CheckInCategory = { id: BUILTIN_CATEGORY_IDS.sport, updated_at: '0000000000003-0000-a', deleted: false, name: '健身', icon: 'dumbbell', color: '#ff9f0a', builtin: true, hidden: false, sort: 6 };
     const reading: CheckInCategory = { id: 'ck-read', updated_at: OLD, deleted: false, name: 'Reading', icon: 'book', color: '#34c759', builtin: false, hidden: true, sort: 28 };
+    // 老用户：本机本来就有原来内置的 27 个（以前打开时预置）
+    await withFormerCategories(adapter);
     await adapter.applyRemoteChanges([
       { table: 'checkin_category', row: sport },
       { table: 'checkin_category', row: reading },
@@ -85,8 +87,8 @@ describe('打开旧数据时合并（localStorage / 内存）', () => {
 
   it('同名并成一个、引用改写、保留图标颜色，数量对', async () => {
     const s = await Store.open(await legacy(), { deviceId: 'dev1' });
-    // 27 内置 + 置顶（2026-11-12）+ Reading + 家（工作、健身、reading 并掉了）
-    expect(s.categories(true)).toHaveLength(30);
+    // 原来内置的 27 个 + 内置 4 个（置顶、收藏、紧急、重要，2026-11-12）+ Reading + 家（工作、健身、reading 并掉了）
+    expect(s.categories(true)).toHaveLength(33);
     expect(s.categories(true).filter((c) => normCategoryName(c.name) === '工作')).toHaveLength(1);
     // 项目改指留下的
     expect(s.get('group', 'g-work')!.category_id).toBe(BUILTIN_CATEGORY_IDS.work);
@@ -129,6 +131,9 @@ describe('SQLite 迁移 v11', () => {
     it(`${name}：打卡分类拷进 category、任务的分类抄到 category_id，打开后同名合并`, async () => {
       const d = await make();
       expect(await migrate(d, MIGRATIONS.filter((m) => m.version <= 10))).toBe(10);
+      // 老用户：v10 时代每台设备都预置了 27 个内置打卡分类
+      for (const c of FORMER_BUILTIN_CATEGORIES.filter((x) => x.id !== BUILTIN_CATEGORY_IDS.sport))
+        await d.run(`INSERT INTO "checkin_category" ("id","updated_at","deleted","name","icon","color","builtin","hidden","sort") VALUES (?,?,0,?,?,?,1,0,?)`, [c.id, c.updated_at, c.name, c.icon, c.color, c.sort]);
       await d.run(`INSERT INTO "checkin_category" ("id","updated_at","deleted","name","icon","color","builtin","hidden","sort") VALUES (?,?,0,'运动','dumbbell','#ff9f0a',1,0,6)`, [BUILTIN_CATEGORY_IDS.sport, OLD]);
       await d.run(`INSERT INTO "category" ("id","updated_at","deleted","name","color") VALUES ('01900000-0000-7000-8000-00000000a5b1',?,0,'运动','#00aa00'), ('pc-home',?,0,'家','#ff0000')`, [OLD, OLD]);
       await d.run(`INSERT INTO "group" ("id","updated_at","deleted","name","icon","category_id") VALUES ('g1',?,0,'健身计划','📁','01900000-0000-7000-8000-00000000a5b1')`, [OLD]);
@@ -139,7 +144,7 @@ describe('SQLite 迁移 v11', () => {
       expect(s.get('group', 'g1')!.category_id).toBe(BUILTIN_CATEGORY_IDS.sport);
       expect(s.category('01900000-0000-7000-8000-00000000a5b1')?.id).toBe(BUILTIN_CATEGORY_IDS.sport);
       expect(s.category('pc-home')).toMatchObject({ icon: '', hidden: false, builtin: false, merged_into: null });
-      expect(s.categories(true)).toHaveLength(29);
+      expect(s.categories(true)).toHaveLength(32);
       await s.flush();
       // 重开读回的一样
       const again = await Store.open(new SqlAdapter(d), { deviceId: 'dev1' });
@@ -164,7 +169,7 @@ describe('规则', () => {
   });
 
   it('不能删；改名不能撞名', async () => {
-    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    const s = await Store.open(await withFormerCategories(), { deviceId: 'a' });
     const c = s.createCategory('旅行');
     expect(() => s.remove('category', c.id)).toThrow(CategoryDeleteError);
     expect(() => s.remove('checkin_category', BUILTIN_CATEGORY_IDS.sport)).toThrow(CategoryDeleteError);
@@ -201,7 +206,7 @@ describe('同步兼容旧客户端', () => {
   });
 
   it('拉到旧客户端的任务（没有 category_id）：用 checkin_category_id；指着被并掉的会改指留下的', async () => {
-    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    const s = await Store.open(await withFormerCategories(), { deviceId: 'a' });
     const later = '9999999999990-0000-old';
     s.applyRemote([
       // 旧客户端新建了一个和内置同名的打卡分类，并挂到任务上

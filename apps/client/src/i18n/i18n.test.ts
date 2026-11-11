@@ -8,7 +8,7 @@
  */
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BUILTIN_CHECKIN_CATEGORIES, BUILTIN_TASK_TYPES, dataLabel, hasDataMessage, hasMessage, setLocale, tr } from '@mindough/core';
+import { BUILTIN_CATEGORIES, FORMER_BUILTIN_CATEGORIES, BUILTIN_TASK_TYPES, dataLabel, hasDataMessage, hasMessage, setLocale, tr } from '@mindough/core';
 import '../lib/i18n';
 import { scan, scanFile, walk } from './scan';
 
@@ -68,9 +68,10 @@ describe('i18n', () => {
         for (const o of f.options ?? []) if (/[\u4e00-\u9fff]/.test(o)) names.push(o);
       }
     }
-    // 27 个打卡分类 + 内置类型「置顶」（2026-11-12）
-    expect(BUILTIN_CHECKIN_CATEGORIES).toHaveLength(28);
-    for (const c of BUILTIN_CHECKIN_CATEGORIES) names.push(c.name);
+    // 原来内置的 27 个类型（2026-11-12 起是普通类型，没改名的照旧按语言显示）+ 内置类型置顶、收藏、紧急、重要
+    expect(FORMER_BUILTIN_CATEGORIES).toHaveLength(27);
+    expect(BUILTIN_CATEGORIES).toHaveLength(4);
+    for (const c of [...FORMER_BUILTIN_CATEGORIES, ...BUILTIN_CATEGORIES]) names.push(c.name);
     expect(names.filter((n) => !hasDataMessage(n) && !/^[\x20-\x7e]+$/.test(n))).toEqual([]);
   });
 

@@ -177,7 +177,10 @@ export const EN: Record<string, EnValue> = {
   "搜分组，或者输入名字新建": "Search groups, or type a name to create one",
   "显示为：{name}": "Show As: {name}",
   "不显示：选类型时看不到它，已经挂着的任务和项目照常显示。": "Hidden: it won’t appear when you pick a category. Tasks and projects that already use it still show it.",
-  "挂了这个类型的任务就是置顶的，每天都在我的一天最上面。设成不显示后，它们都不算置顶，菜单里也不再有「置顶」。": "Tasks with this category are pinned and stay at the top of My Day every day. Hide it and none of them count as pinned; Pin also leaves the menus.",
+  "内置类型，不能改。挂了它的任务就是置顶的，每天都在我的一天最上面。": "Built-in category, can’t be edited. Tasks with it are pinned and stay at the top of My Day every day.",
+  "内置类型，不能改。挂了它的任务，列表里的标题是黄色的。": "Built-in category, can’t be edited. Tasks with it have yellow titles in lists.",
+  "内置类型，不能改。挂了它的任务，列表里的标题是红色的。": "Built-in category, can’t be edited. Tasks with it have red titles in lists.",
+  "内置类型，不能改。挂了它的任务，列表里的标题是蓝色的。": "Built-in category, can’t be edited. Tasks with it have blue titles in lists.",
   "常用：选类型时排在最前面。": "Frequent: listed first when you pick a category.",
   "普通：选类型时按最近用过的先后排。": "Normal: sorted by how recently you used it when you pick a category.",
   // ── 类型（统一的分类，2026-10-26）──

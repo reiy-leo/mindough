@@ -13,7 +13,7 @@
  *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
-import { PIN_CATEGORY_ID, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
+import { isMarkerCategory, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
 import { dataLabel, tr, trc } from './i18n';
 
 export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
@@ -24,9 +24,9 @@ export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'ty
  * 不显示的同样规则排在后面（它们挂在任务上照常成段）。
  */
 export function categorySectionOrder(store: Pick<Store, 'categories' | 'pickerCategories' | 'frequentCategoryIds' | 'categoryLastUsed' | 'categoryGroupOverrides'>): Category[] {
-  // 「置顶」不单独成段（Rei 2026-11-12）：置顶的任务按它的下一个类型分，只挂了置顶的在「没有类型」
-  const hidden = store.categories(true).filter((c) => c.hidden && c.id !== PIN_CATEGORY_ID);
-  return [...store.pickerCategories().filter((c) => c.id !== PIN_CATEGORY_ID), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
+  // 内置的标记类型（置顶、收藏、紧急、重要）不单独成段（Rei 2026-11-12）：挂了它们的任务按下一个类型分，只挂了这几个的在「没有类型」
+  const hidden = store.categories(true).filter((c) => c.hidden && !isMarkerCategory(c));
+  return [...store.pickerCategories().filter((c) => !isMarkerCategory(c)), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
 }
 
 export function normalizeSectionBy(v: unknown, allowed: readonly SectionBy[] = SECTION_BYS): SectionBy {

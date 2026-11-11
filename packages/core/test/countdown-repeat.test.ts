@@ -119,7 +119,7 @@ describe('Store.rollRecurringCountdowns', () => {
   it('过了目标日：滚到下一次，过去那次生成一条完成的记录，连成前置', async () => {
     let now = local(2026, 11, 12, 9);
     const store = await open(() => now);
-    const cat = store.categories()[0]!;
+    const cat = store.createCategory('家人');
     const g = store.insert('group', { name: '家', icon: '🏠', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
     const t = store.createTask({ body_md: '妈妈生日\n买蛋糕', completion_mode: 'countdown', target_date: '2026-11-12', recurrence: YEARLY_1112, group_id: g.id, card_color: 'red', category_id: cat.id }, { joinMyDay: false });
     expect(store.rollRecurringCountdowns()).toBe(0);

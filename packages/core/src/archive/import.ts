@@ -24,6 +24,7 @@ import { isDateKey, journalEntryId } from '../journal';
 import { migratedPostId, parseJournalDay } from '../journal-feed';
 import { isFileKey, safeFileName } from '../attachments';
 import { categoryFromCheckin, fillCategory } from '../categories';
+import { formerBuiltinCategory } from '../seed/builtin-checkin-categories';
 import {
   COMPLETION_MODES,
   TASK_STATUSES,
@@ -436,7 +437,8 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       icon: str(p.fm.icon) ?? '📁',
       start_at: dateKey(p.fm.start),
       end_at: dateKey(p.fm.end),
-      category_id: cat && (archiveCats.has(cat) || store.get('category', cat)) ? cat : null,
+      // 原来内置的类型（2026-11-12 起新库不预置）也认：写进去时 Store 按原定义补回那一行
+      category_id: cat && (archiveCats.has(cat) || store.get('category', cat) || formerBuiltinCategory(cat)) ? cat : null,
       default_type_id: dt && (archiveTypes.has(dt) || store.get('task_type', dt)) ? dt : null,
       my_day_auto: p.fm.my_day !== false,
       color: normalizeIconColor(p.fm.color),
@@ -575,7 +577,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     // 类型：新文件写 category，旧文件写 checkin_category（同一套 id）
     const catRaw = isId(fm.category) ? fm.category : isId(fm.checkin_category) ? fm.checkin_category : null;
     let cat: string | null = catRaw ? catRaw.trim() : null;
-    if (cat && !(archiveCats.has(cat) || archiveCheckinCats.has(cat) || store.get('category', cat) || store.get('checkin_category', cat))) cat = null;
+    if (cat && !(archiveCats.has(cat) || archiveCheckinCats.has(cat) || store.get('category', cat) || store.get('checkin_category', cat) || formerBuiltinCategory(cat))) cat = null;
     let repeat = str(fm.repeat)?.trim() || null;
     if (repeat && !parseRecurrence(repeat)) {
       warn(p.path, tr('重复规则看不懂，当只做一次导入'));
@@ -618,7 +620,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     });
     add('task', 'task', p.path, firstLine((row as unknown as Task).body_md) || stemOf(p.path), row);
     refs.push({ taskId: id, path: p.path, after: idList(fm.after), related: idList(fm.related), people: idList(fm.people), myDay: dateList(fm.my_day),
-      categories: idList(fm.categories).filter((c) => archiveCats.has(c) || archiveCheckinCats.has(c) || !!store.get('category', c)),
+      categories: idList(fm.categories).filter((c) => archiveCats.has(c) || archiveCheckinCats.has(c) || !!store.get('category', c) || !!formerBuiltinCategory(c)),
       items: idList(fm.items).filter((i) => archiveItems.has(i) || !!store.get('library_item', i)),
     });
   }

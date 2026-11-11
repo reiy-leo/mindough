@@ -42,9 +42,9 @@ import {
   type LibraryEntry,
 } from './library';
 import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
-import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID } from './seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID, formerBuiltinCategory, type TitleMark } from './seed/builtin-checkin-categories';
 import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
-import { CategoryDeleteError, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
+import { CategoryDeleteError, builtinCategoryDrifted, canonicalBuiltinCategory, isBuiltinCategory, isMarkerCategory, titleMarkOf, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
 import { isCardColor } from './card-color';
@@ -357,6 +357,8 @@ export class Store {
     if (!this.libSettling) for (const c of changes) if (c.table === 'task' && !prevTasks.has(c.row.id)) prevTasks.set(c.row.id, this.tables.task.get(c.row.id));
     const stampOne = (c: { table: TableName; row: BaseRow }): Change => {
       const row = { ...c.row, updated_at: this.clock.tick() };
+      // 内置类型（置顶、收藏、紧急、重要）锁定（Rei 2026-11-12 04:20 / 04:41）：不管哪条路径写它，名字、图标、颜色、不显示都按内置定义写
+      if (c.table === 'category' && isBuiltinCategory(row.id)) Object.assign(row, canonicalBuiltinCategory(row as Category));
       // 类型：旧客户端只认 checkin_category_id，写任务时抄一份过去
       if (c.table === 'task' && (row as Task).category_id !== undefined) (row as Task).checkin_category_id = (row as Task).category_id;
       // 多类型与多资料：任务行总带着单值的签名（见 task-refs.ts）
@@ -372,6 +374,8 @@ export class Store {
     const prevPin = new Map<string, string | null>();
     for (const c of changes) if (c.table === 'task' && !prevPin.has(c.row.id)) prevPin.set(c.row.id, this.tables.task.get(c.row.id)?.pinned_at ?? null);
     let stamped: Change[] = changes.map(stampOne);
+    // 指着原来内置的类型、本机却没有那一行的（新库不再预置它们）：按原定义补回那一行
+    this.reviveFormerCategories(stamped);
     // 单值和多值对齐（双写）：写了单值的补进多值，多值变了的把第一个抄回单值
     const extra = this.syncRefs(stamped, prevPin);
     if (extra.length) stamped = dedupeRows([...stamped, ...extra.map(stampOne)]) as Change[];
@@ -590,13 +594,62 @@ export class Store {
     }
   }
 
-  /** 补齐内置类型（固定 id）；以后在种子里追加的新类型，老用户打开时也会补上。 */
+  /**
+   * 补齐内置类型（固定 id）。2026-11-12 起只有置顶、收藏、紧急、重要（Rei 04:20「限制只有置顶是内置类型」、04:41 加了后三个）：新的空库只预置它们，
+   * 原来内置的 27 个不再预置，只在有任务 / 项目指着时补回（reviveFormerCategories）。
+   */
   private ensureBuiltinCategories() {
     const missing = BUILTIN_CATEGORIES.filter((c) => !this.tables.category.has(c.id));
-    if (!missing.length) return;
-    for (const c of missing) this.tables.category.set(c.id, { ...c });
+    if (missing.length) {
+      for (const c of missing) this.tables.category.set(c.id, { ...c });
+      this._version++;
+      this.pending = this.pending.then(() => this.adapter.applyChanges(missing.map((row) => ({ table: 'category', row }))));
+    }
+    this.reviveFormerCategories();
+    this.settlePinCategory();
+  }
+
+  /**
+   * 原来内置的类型（27 个，固定 id）新库不再预置。老数据、演示数据、同步过来的任务 / 项目 / 打卡还指着它们，而本机没有那一行时，
+   * 按原定义补回（时间戳是内置戳，云端或别的设备上任何真改动都比它新，拉下来就盖掉它）。
+   * 给了 changes 只看这批行指着的，否则看全部。补回的行进 outbox，和以前预置时一样。
+   */
+  private reviveFormerCategories(changes?: readonly Change[]): void {
+    const want = new Set<string>();
+    const add = (id: unknown) => {
+      if (typeof id === 'string' && !this.tables.category.has(id) && formerBuiltinCategory(id)) want.add(id);
+    };
+    const scan = (table: TableName, row: BaseRow) => {
+      if (row.deleted) return;
+      if (table === 'task') {
+        add((row as Task).category_id);
+        add((row as Task).checkin_category_id);
+      } else if (table === 'task_category' || table === 'group') add((row as TaskCategory | Group).category_id);
+    };
+    if (changes) for (const c of changes) scan(c.table, c.row);
+    else {
+      for (const t of this.tables.task.values()) scan('task', t);
+      for (const l of this.tables.task_category.values()) scan('task_category', l);
+      for (const g of this.tables.group.values()) scan('group', g);
+    }
+    if (!want.size) return;
+    const rows = [...want].map((id) => ({ ...formerBuiltinCategory(id)! }));
+    for (const r of rows) this.tables.category.set(r.id, r);
     this._version++;
-    this.pending = this.pending.then(() => this.adapter.applyChanges(missing.map((row) => ({ table: 'category', row }))));
+    this.pending = this.pending.then(() => this.adapter.applyChanges(rows.map((row) => ({ table: 'category' as const, row })))).catch((err) => this.opts.onError?.(err));
+  }
+
+  /**
+   * 内置类型（置顶、收藏、紧急、重要）的行和内置定义不一样（老客户端改过名、换过图标颜色、设过不显示，或者被同名合并掉了）：改回内置定义，
+   * 用新的时间戳写（进 outbox），老客户端拉到后也看到原样（Rei 2026-11-12 04:20：内置类型不能编辑）。
+   */
+  private settlePinCategory(): void {
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const def of BUILTIN_CATEGORIES) {
+      const cur = this.tables.category.get(def.id);
+      if (cur && builtinCategoryDrifted(cur)) rows.push({ table: 'category', row: canonicalBuiltinCategory(cur) });
+    }
+    this.write(rows);
   }
 
   /**
@@ -634,6 +687,7 @@ export class Store {
    * 挑谁留下只看行本身（categories.ts survivorOrder），两台设备各跑一遍结果一样。只写真变了的行。
    */
   settleCategories(): void {
+    this.reviveFormerCategories();
     const rows: Array<{ table: TableName; row: BaseRow }> = [];
     for (const m of planCategoryMerges([...this.tables.category.values()])) {
       if (m.survivorChanged) rows.push({ table: 'category', row: m.survivor });
@@ -653,6 +707,7 @@ export class Store {
       if (to !== g.category_id) refs.push({ table: 'group', row: { ...g, category_id: to } as BaseRow });
     }
     this.write(refs);
+    this.settlePinCategory();
   }
 
   /**
@@ -925,9 +980,17 @@ export class Store {
     return [...new Set(this.list('task_person').filter((x) => x.task_id === taskId).map((x) => this.resolvePersonId(x.person_id) ?? x.person_id))].filter((id) => !!this.get('person', id));
   }
 
-  /** 任务挂的类型，不含「置顶」（列表行的类型小字、颜色用：置顶有自己的红色图钉，Rei 2026-11-12）。 */
+  /**
+   * 任务挂的类型，不含内置的标记类型（置顶、收藏、紧急、重要）。列表行的类型小字、打卡卡片颜色用：
+   * 置顶有自己的红色图钉，收藏 / 紧急 / 重要让标题变色（Rei 2026-11-12），都不当主类型。
+   */
   categoriesOfTaskNoPin(task: Pick<Task, 'id' | 'category_id'> | string): Category[] {
-    return this.categoriesOfTask(task).filter((c) => c.id !== PIN_CATEGORY_ID);
+    return this.categoriesOfTask(task).filter((c) => !isMarkerCategory(c));
+  }
+
+  /** 标题该用哪种颜色（挂了紧急 / 重要 / 收藏，紧急 > 重要 > 收藏，Rei 2026-11-12 04:41）；都没挂返回 null。 */
+  titleMark(task: Pick<Task, 'id' | 'category_id'> | string): TitleMark | null {
+    return titleMarkOf(this.categoryIdsOfTask(task));
   }
 
   /** 挂了这个类型的任务（顺着合并算）。 */
@@ -1099,7 +1162,7 @@ export class Store {
       } else if (hasPin && !pinnedAt) pinnedAt = now;
       else if (!hasPin && pinnedAt) pinnedAt = null;
       // 单值不放「置顶」：它不当任务的主类型（按类型分区、老客户端显示的类型都看单值）
-      const firstCat = cats.map((l) => this.resolveCat(l.category_id)).find((x): x is string => !!x && x !== PIN_CATEGORY_ID && !!this.get('category', x)) ?? null;
+      const firstCat = cats.map((l) => this.resolveCat(l.category_id)).find((x): x is string => !!x && !isMarkerCategory(x) && !!this.get('category', x)) ?? null;
       const firstItemId = items.map((l) => this.resolveItemId(l.item_id)).find((x): x is string => !!x) ?? null;
       const firstItem = this.get('library_item', firstItemId);
       const next: Task = { ...t, category_id: firstCat, library_item_id: firstItemId, pinned_at: pinnedAt };
@@ -1527,7 +1590,7 @@ export class Store {
         { joinMyDay: false },
       );
       // 「置顶」不抄：那次的记录不该跟着置顶
-      const cats = this.categoryIdsOfTask(task.id).filter((c) => c !== PIN_CATEGORY_ID);
+      const cats = this.categoryIdsOfTask(task.id).filter((c) => !isMarkerCategory(c));
       if (cats.length) this.setTaskCategories(id, cats);
     }
     const depId = countdownRecordDepId(task.id, date);
@@ -1932,10 +1995,12 @@ export class Store {
     return this.categoryIdsOfTask(task).includes(PIN_CATEGORY_ID);
   }
 
-  /** 「置顶」类型还管用吗：在、没设成不显示（Rei 2026-11-12：设成不显示 = 没有置顶功能，菜单里也不给「置顶」）。 */
+  /**
+   * 「置顶」类型还管用吗。2026-11-12 04:20 起它是锁定的内置类型，不能设成不显示，所以总是管用（行一定在，打开时补齐）。
+   * 以前「设成不显示 = 没有置顶功能」那条作废了；留着这个方法给界面菜单用。
+   */
   pinEnabled(): boolean {
-    const c = this.get('category', PIN_CATEGORY_ID);
-    return !!c && !c.hidden;
+    return true;
   }
 
   /**
@@ -2554,22 +2619,31 @@ export class Store {
     );
   }
 
-  /** 标成「常用」的类型 id（同步偏好 category.frequent，按设成常用的先后）。 */
+  /** 标成「常用」的类型 id（同步偏好 category.frequent，按设成常用的先后）。内置类型不算（老客户端设过也不算）。 */
   frequentCategoryIds(): string[] {
-    return frequentCategoryIds(this.pref(CATEGORY_FREQUENT_PREF));
+    return frequentCategoryIds(this.pref(CATEGORY_FREQUENT_PREF)).filter((id) => !isBuiltinCategory(id));
   }
 
-  /** 常用 / 普通 / 不显示。 */
+  /** 常用 / 普通 / 不显示。内置类型永远是普通。 */
   categoryState(id: string): CategoryState {
     const c = this.category(id);
-    return c ? categoryStateOf(c, this.frequentCategoryIds()) : 'normal';
+    if (!c || isBuiltinCategory(c)) return 'normal';
+    return categoryStateOf(c, this.frequentCategoryIds());
   }
 
-  /** 改档：常用（显示 + 进常用列表）、普通（显示、出常用列表）、不显示（hidden = true、出常用列表）。返回改之前的档（撤销用）。 */
+  /** 内置类型（置顶、收藏、紧急、重要）锁定，什么都不能改（Rei 2026-11-12 04:20 / 04:41）。界面用它决定只读。 */
+  isCategoryLocked(id: string | null | undefined): boolean {
+    return isBuiltinCategory(this.category(id)?.id ?? id ?? null);
+  }
+
+  /**
+   * 改档：常用（显示 + 进常用列表）、普通（显示、出常用列表）、不显示（hidden = true、出常用列表）。返回改之前的档（撤销用）。
+   * 内置类型不改，原样返回它的档。
+   */
   setCategoryState(id: string, state: CategoryState): CategoryState {
     const prev = this.categoryState(id);
     const c = this.get('category', id);
-    if (!c) return prev;
+    if (!c || isBuiltinCategory(c)) return prev;
     const hidden = state === 'hidden';
     if (c.hidden !== hidden) this.update('category', id, { hidden });
     const ids = this.frequentCategoryIds();
@@ -2586,6 +2660,8 @@ export class Store {
     const m: Map<string, CategoryGroupId> = categoryGroupOverrides(this.pref(CATEGORY_GROUP_PREF));
     const alive = new Set(this.customCategoryGroups().map((g) => g.id));
     for (const [id, gid] of customGroupAssignments(this.pref(CUSTOM_GROUP_OF_PREF))) if (alive.has(gid)) m.set(id, gid);
+    // 内置类型固定在「其他」（老客户端给它换过组也不算）
+    for (const c of BUILTIN_CATEGORIES) m.delete(c.id);
     return m;
   }
 
@@ -2596,6 +2672,7 @@ export class Store {
 
   /** 换分组：内置组存偏好 category.groups，自建组存 category.custom_group_of（两边只留一处）。 */
   setCategoryGroup(id: string, group: CategoryGroupId): void {
+    if (isBuiltinCategory(id)) return;
     if (isCategoryGroup(group)) {
       this.setPref(CATEGORY_GROUP_PREF, withCategoryGroup(this.pref(CATEGORY_GROUP_PREF), id, group));
       const cur = this.pref(CUSTOM_GROUP_OF_PREF);
@@ -2653,7 +2730,7 @@ export class Store {
   reorderCategories(order: readonly string[]): void {
     const rows = order
       .map((cid, k) => ({ cur: this.get('category', cid), sort: k + 1 }))
-      .filter((x): x is { cur: Category; sort: number } => !!x.cur && x.cur.sort !== x.sort)
+      .filter((x): x is { cur: Category; sort: number } => !!x.cur && x.cur.sort !== x.sort && !isBuiltinCategory(x.cur))
       .map(({ cur, sort }) => ({ table: 'category' as const, row: { ...cur, sort } as BaseRow }));
     this.write(rows);
   }
@@ -2672,10 +2749,10 @@ export class Store {
     return this.insert('category', { name: n, icon, color, builtin: false, hidden: false, sort, merged_into: null });
   }
 
-  /** 改名 / 颜色 / 图标 / 不显示。改成别的类型已经用的名字时不改名，返回 false。 */
+  /** 改名 / 颜色 / 图标 / 不显示。改成别的类型已经用的名字时不改名，返回 false。内置类型（置顶、收藏、紧急、重要）不能改，返回 false。 */
   updateCategory(id: string, patch: Partial<Pick<Category, 'name' | 'icon' | 'color' | 'hidden'>>): boolean {
     const cur = this.get('category', id);
-    if (!cur) return false;
+    if (!cur || isBuiltinCategory(cur)) return false;
     const next = { ...patch };
     if (next.name !== undefined) {
       next.name = next.name.trim();

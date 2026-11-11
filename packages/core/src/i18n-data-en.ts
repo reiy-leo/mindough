@@ -114,6 +114,10 @@ export const DATA_EN: Record<string, string> = {
   观影: 'Watching',
   // 内置类型「置顶」（Rei 2026-11-12）
   置顶: 'Pinned',
+  // 内置类型「收藏」「紧急」「重要」（Rei 2026-11-12 04:41）
+  收藏: 'Starred',
+  紧急: 'Urgent',
+  重要: 'Important',
 
   // ── 网站名 ──
   烂番茄: 'Rotten Tomatoes',

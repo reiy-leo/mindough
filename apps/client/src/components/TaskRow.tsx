@@ -108,8 +108,9 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 打卡（重复的倒数日不算，Rei 2026-11-12）：行首重复图标、补打卡按钮只给打卡
   const habit = isHabit(task);
   const TypeIcon = typeIcon(v.type?.icon);
-  // 「置顶」不写进第二行（行里有红色图钉，Rei 2026-11-12 置顶改成类型）
+  // 内置的标记类型不写进第二行：置顶行里有红色图钉，收藏 / 紧急 / 重要让标题变色（Rei 2026-11-12）
   const cats = store.categoriesOfTaskNoPin(task);
+  const mark = store.titleMark(task);
   const items = store.itemsOfTask(task);
   const CategoryIcon = typeIcon(cats[0] ? categoryIcon(cats[0]) : undefined);
   // 资料不写进第二行（Rei 2026-11-03：资料只显示缩略图，没图就不显示）。第一条资料不算进 +N，其余的才算，悬停看全部
@@ -217,7 +218,8 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         }}
       >
         {/* 第一行是任务标题 = 正文第一行，挂了资料也一样（Rei 2026-11-03）；资料只在行首显示缩略图 */}
-        <span className="row-title">
+        {/* 挂了收藏 / 紧急 / 重要：标题变暗黄 / 暗红 / 暗蓝（Rei 2026-11-12 04:41；紧急 > 重要 > 收藏，颜色见 styles/app.css .row-title.is-mark-*） */}
+        <span className={`row-title${mark ? ` is-mark-${mark}` : ''}`}>
           {v.title}
         </span>
         <span className="row-meta">

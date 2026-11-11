@@ -3,10 +3,10 @@ import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { CycleError } from '../src/dag';
 import { BUILTIN_TASK_TYPES, BUILTIN_TYPE_IDS } from '../src/seed/builtin-types';
-import { BUILTIN_CHECKIN_CATEGORIES, BUILTIN_CHECKIN_CATEGORY_IDS } from '../src/seed/builtin-checkin-categories';
+import { BUILTIN_CHECKIN_CATEGORIES, BUILTIN_CHECKIN_CATEGORY_IDS, FORMER_BUILTIN_CATEGORIES } from '../src/seed/builtin-checkin-categories';
 import { formatRecurrence } from '../src/recurrence';
 import { isUuidv7 } from '../src/uuid';
-import { local, mkTask } from './helpers';
+import { local, mkTask, withFormerCategories } from './helpers';
 import type { TaskStatus } from '../src/types';
 
 async function open(now = local(2026, 10, 15, 10)) {
@@ -174,14 +174,16 @@ describe('Store', () => {
     expect((await adapter.pendingOutbox()).some((e) => e.id === 't-old')).toBe(true);
   });
 
-  it('打开时补齐 27 个内置打卡分类（固定 id、按 Rei 定的顺序），可改名 / 隐藏 / 新增', async () => {
+  it('新库只预置内置类型「置顶」「收藏」「紧急」「重要」（2026-11-12 04:20 / 04:41）；原来内置的 27 个（固定 id、按 Rei 定的顺序）被任务指着时补回，能改名 / 隐藏，也能新增', async () => {
     const { store } = await open();
-    expect(store.checkInCategories().map((c) => c.name).join('、')).toBe(
-      '记录、整理、游戏、玩乐、健康、运动、护肤、清洁、学习、读书、饮食、作息、冥想、服药、理财、工作、写作、语言、乐器、创作、社交、宠物、植物、采购、个人护理、维护、观影、置顶',
+    expect(store.categories(true).map((c) => c.name)).toEqual(['置顶', '收藏', '紧急', '重要']);
+    expect(new Set(FORMER_BUILTIN_CATEGORIES.map((c) => c.id)).size).toBe(27);
+    expect(FORMER_BUILTIN_CATEGORIES.map((c) => c.name).join('、')).toBe(
+      '记录、整理、游戏、玩乐、健康、运动、护肤、清洁、学习、读书、饮食、作息、冥想、服药、理财、工作、写作、语言、乐器、创作、社交、宠物、植物、采购、个人护理、维护、观影',
     );
-    // 27 个 + 内置类型「置顶」（2026-11-12）
-    expect(new Set(BUILTIN_CHECKIN_CATEGORIES.map((c) => c.id)).size).toBe(28);
     expect(BUILTIN_CHECKIN_CATEGORIES.every((c) => isUuidv7(c.id) && c.icon)).toBe(true);
+    store.createTask({ body_md: 'a', category_id: BUILTIN_CHECKIN_CATEGORY_IDS.game });
+    store.createTask({ body_md: 'b', category_id: BUILTIN_CHECKIN_CATEGORY_IDS.record });
     store.updateCategory(BUILTIN_CHECKIN_CATEGORY_IDS.game, { hidden: true });
     store.updateCategory(BUILTIN_CHECKIN_CATEGORY_IDS.record, { name: '记账' });
     const mine = store.createCategory('早起', 'leaf');
@@ -189,7 +191,7 @@ describe('Store', () => {
     expect(names).not.toContain('游戏');
     expect(names[0]).toBe('记账');
     expect(names.at(-1)).toBe('早起');
-    expect(store.categories(true)).toHaveLength(29);
+    expect(store.categories(true)).toHaveLength(7);
     const t = store.createTask({ category_id: mine.id });
     expect(store.get('task', t.id)?.category_id).toBe(mine.id);
     // 抄给旧客户端
@@ -255,8 +257,8 @@ describe('同步的偏好（pref）', () => {
 });
 
 describe('打卡分类排序', () => {
-  it('上移 / 下移只改 sort，id 不变，到头不动', async () => {
-    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+  it('上移 / 下移只改 sort，id 不变，到头不动（内置的「置顶」不动）', async () => {
+    const s = await Store.open(await withFormerCategories(), { deviceId: 'a' });
     const before = s.checkInCategories(true).map((c) => c.id);
     s.moveCategory(before[1]!, -1);
     const after = s.checkInCategories(true).map((c) => c.id);

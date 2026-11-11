@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { withFormerCategories } from './helpers';
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
@@ -35,7 +36,8 @@ const ALL: DidaOptions = { include: { open: true, done: true, closed: true }, ti
 
 async function open() {
   let t = Date.UTC(2026, 9, 21, 0, 0, 0);
-  return Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => new Date((t += 1000)) });
+  // 老用户的库（有原来内置的 27 个类型），「工作」和已有的同名类型对上
+  return Store.open(await withFormerCategories(), { deviceId: 'dev1', now: () => new Date((t += 1000)) });
 }
 
 describe('CSV', () => {
@@ -219,7 +221,7 @@ describe('导入', () => {
     undoDida(s, receipt);
     expect(s.list('task').length).toBe(before);
     expect(s.list('group').find((g) => g.name === '项目 A')).toBeUndefined();
-    // 「工作」和内置类型同名，用的就是内置那个：撤销不动它（类型不能删）
+    // 「工作」和已有的类型（原来内置的）同名，用的就是那个：撤销不动它（类型不能删）
     expect(s.category(groupA.category_id)?.builtin).toBe(true);
     expect(s.edges().some((e) => e.succ_id === parentId)).toBe(false);
 
