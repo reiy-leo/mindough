@@ -60,7 +60,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   storage/              StorageAdapter 接口；memory、localStorage、SQLite（sql.ts + schema.ts 迁移）适配器；migrate.ts（localStorage → SQLite）
   categories.ts         类型（Rei 2026-10-26 打卡分类 + 项目分类合成一套，界面叫「类型」）：同名合并（survivorOrder）、merged_into 解析、旧行映射（categoryFromCheckin / fillCategory）；不能删（CategoryDeleteError）。读写走 store.categories() / category(id) / categoryOf(task) / createCategory / updateCategory；选择器顺序用 store.pickerCategories() / frequentCategories(n)，别自己按 sort 排
   category-prefs.ts     类型页方案 C（Rei 2026-10-28）：分组（界面原叫大类，2026-11-12 改名；内置 6 组默认在 seed，改到内置组的存偏好 category.groups；自建组一组一行偏好 category.custom_group.<cg-id>、放进自建组存 category.custom_group_of；过滤 / 新建 filterGroupOptions / groupCreateName）、常用 / 普通 / 不显示三档（常用存偏好 category.frequent）、选择器顺序（常用 + 最近用过）、拼音首字母搜索（tiny-pinyin + pinyin-polyphone.ts）
-  seed/                 内置 11 种资料库、27 个内置类型（原打卡分类，固定 id）、演示数据
+  seed/                 内置 11 种资料库、内置类型「置顶」「收藏」「紧急」「重要」（锁定；原来内置的 27 个从 2026-11-12 起是普通类型，新库不预置，任务指着时补回）、演示数据
 apps/client/src/
   skin/                 皮肤层：tokens.css（三套令牌 × 明暗）、skins.css（平台形状）、platform.ts（检测）
   styles/app.css        结构样式（只用令牌变量）
@@ -141,7 +141,8 @@ docs/                   PLAN.md、PRODUCT.md、COPY.md（界面文案）、EXPOR
 - 滴答清单导入（docs/IMPORT-DIDA.md）：解析、拉取、映射都在 core `dida/`，客户端只做界面；两种来源都先变成 `DidaRow`，再走 `planDida` / `applyDida`，别另写一套写入。任务 id 用滴答清单的 taskId 算（`didaTaskId`），重复导入不出重复任务就靠它，别改算法。令牌只存本机（`lib/dida.ts`），不进同步表、不发给云端库；Worker 代理只转发白名单路径。改菜单栏文字时，要同时改 `menu.rs` 的 `MenuLabels` 和 `lib/app-menu.ts`。
 - 外链：在 Tauri 里都走 `lib/external.ts`（全局拦截 + `openExternal`），交给系统浏览器打开；不要自己 `window.open` 或另装 opener 调用。
 - 资料 / 人物合并后，并进去的那条变成墓碑并记下 `merged_into`：读任务挂的资料都走 `store.itemOf(task)` / `resolveItemId` / `resolvePersonId`（会顺着 merged_into 找到留下的那条），不要直接 `get('library_item', task.library_item_id)`。
-- 任务置顶（PLAN「任务置顶」「置顶改成类型」，Rei 2026-11-08 / 2026-11-12）：置顶 = 挂了内置类型「置顶」（`PIN_CATEGORY_ID`），判断一律用 `store.isPinned` / `store.pinnedAt`（类型设成不显示时都不算），别读 `task.pinned_at`（它只是排序键和给老客户端看的，`syncRefs` 跟着类型写）；core 的我的一天纯函数要传 `store.pinnedAt` 当 `pinOf`。置顶的任务在我的一天里是算出来的虚拟行（core `pinnedDayItems` / `withPinned`，id 前缀 `pinned:`），不写 my_day 表；界面上要当天清单都用 `lib/myday-items.ts` 的 `dayItems`（我的一天页、侧栏数字、小组件），别自己拿 `myDayItems` 拼，否则会漏掉置顶的。别对虚拟行做移出、排序。
+- 任务置顶（PLAN「任务置顶」「置顶改成类型」，Rei 2026-11-08 / 2026-11-12）：置顶 = 挂了内置类型「置顶」（`PIN_CATEGORY_ID`），判断一律用 `store.isPinned` / `store.pinnedAt`，别读 `task.pinned_at`（它只是排序键和给老客户端看的，`syncRefs` 跟着类型写）；core 的我的一天纯函数要传 `store.pinnedAt` 当 `pinOf`。置顶的任务在我的一天里是算出来的虚拟行（core `pinnedDayItems` / `withPinned`，id 前缀 `pinned:`），不写 my_day 表；界面上要当天清单都用 `lib/myday-items.ts` 的 `dayItems`（我的一天页、侧栏数字、小组件），别自己拿 `myDayItems` 拼，否则会漏掉置顶的。别对虚拟行做移出、排序。
+- 内置类型只有「置顶」「收藏」「紧急」「重要」（Rei 2026-11-12 04:20 / 04:41，PLAN「只有「置顶」是内置类型」「内置类型「收藏」「紧急」「重要」」）：它们都不当主类型（`isMarkerCategory`，单值 category_id、第二行类型、按类型分区都跳过）；标题颜色用 `store.titleMark` + `.row-title.is-mark-*`，颜色变量 `--mark-*` 在 styles/app.css 按皮肤 × 亮暗写死，新列表显示任务标题时也要带上这个类。锁定看 core `isBuiltinCategory` / `store.isCategoryLocked`，别看行里的 `builtin` 列。界面上类型能改的地方都要先问 `isCategoryLocked`，锁定的不出编辑入口；core 的 `updateCategory` / `setCategoryState` / `setCategoryGroup` 也挡着，`write()` 写它时一律按内置定义。原来的 27 个内置类型（`FORMER_BUILTIN_CATEGORY_IDS`）是普通类型，别再当内置的特殊处理，也别假设本机一定有这几行。
 - 相关任务（task_link）不是依赖：不进 dependency 表，不过环检测，不影响派生状态；同一对任务如果有前后关系，只按前后关系显示。
 - 加依赖边必须过环检测；组件外观只写在皮肤层（tokens + 平台样式），业务组件不写死某个平台的样式；改界面后在三种皮肤（Apple / WinUI / Material）× 桌面 / 手机下截图检查。
 

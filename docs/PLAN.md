@@ -1470,9 +1470,32 @@ Rei 2026-11-12 03:44「置顶任务应该用"类型"，一个叫做"置顶"的�
 - 双写：`write()` → `syncRefs` 按类型把 `pinned_at` 写回去（挂上时写成现在，摘掉清空；只改别的类型不动它）。这批直接改了 `pinned_at` 的（导入、`createTask({ pinned_at })`、老代码路径）反过来按它挂 / 摘。单值 `category_id` 跳过「置顶」：它不当主类型，老客户端显示的类型、按类型分区都不受影响。
 - 排序键：`pinned_at`；只同步来类型没有 `pinned_at` 的（两台设备的行交错时会有），用关联行 HLC 的时间，再不行用任务 `updated_at` 的时间。
 - 老客户端和迁移：`refs_mirror` 签名置顶时多一个 `|P`。只认 `pinned_at` 的客户端置顶（签名里没 P）、取消置顶（签名里有 P、`pinned_at` 空），新客户端在 `legacyLinks` → `legacyPinLink` 里挂上 / 摘掉；关联行比任务行新就不动。补的行 id 由任务 + 类型算出（`taskCategoryId`，task_category 主键），updated_at 用任务行的，不进 outbox：几台设备各补一遍是同一行，不会重复。打开时 `backfillRefs` 跑一遍，就是迁移：以前 `pinned_at` 有值的任务都补挂上。没加 schema 迁移，云端不用改。
-- 设成不显示（类型的「归档」）：`pinEnabled()` 为假，`pinnedAt` 全返回 null，挂着的关联不动；菜单（`lib/task-menu.ts` 的 `dayGroup` 第三个参数）不给「置顶 / 取消置顶」。老客户端那边 `pinned_at` 还在，照旧显示置顶（它们不认类型的显示状态）。
+- ~~设成不显示（类型的「归档」）：`pinEnabled()` 为假……~~ 2026-11-12 04:20 作废：「置顶」锁定，不能设成不显示，`pinEnabled()` 总是 true（参数留着），见下一节。
 - 分区和筛选：`categorySectionOrder` 去掉「置顶」，`sectionTasks` 按任务第一个能成段的类型分（跳过置顶）。打卡、倒数日的类型筛选（`usedCats`）照常列出它。列表第二行、打卡卡片颜色用 `store.categoriesOfTaskNoPin`。重复倒数日的记录不抄「置顶」。
 - 测试：core `pin-type.test.ts`（挂 / 摘、选择器、先后、不显示、直接写 pinned_at、倒数日记录、迁移幂等、老客户端置顶 / 取消、只有类型的兜底时间、两台设备同步）；原来的 `task-pin.test.ts` 照过。
+
+### 只有「置顶」是内置类型 ✅（2026-11-12）
+Rei 2026-11-12 04:19「内置类型会在类型页显示，但不可以编辑」，04:20 改成「限制只有置顶是内置类型」「现在」。04:41 又加了「收藏」「紧急」「重要」三个内置类型（见下一节），下面说「置顶」的锁定规则对四个都一样。
+
+- 内置类型只剩「置顶」（04:41 起加上收藏、紧急、重要，`BUILTIN_CATEGORIES` 四个）。锁不锁只看 id：core `isBuiltinCategory(c)`（categories.ts）、`Store.isCategoryLocked(id)`。行里的 `builtin` 列不再表示锁定，只表示「原来是内置的」（同名合并时还排在前面）。
+- 锁定在 core 挡住：`updateCategory` 返回 false；`setCategoryState` 不改、返回它的档（永远「普通」）；`setCategoryGroup`、`reorderCategories` 跳过它；`remove` 本来就不让删类型。别的路径直接写这一行（`store.update`、导入、同名合并）时，`write()` 里一律按内置定义写（`canonicalBuiltinCategory`）。偏好里给它记的「常用」、换的分组都不算（`frequentCategoryIds` 去掉它、`categoryGroupOverrides` 删掉它）。同名合并 `survivorOrder` 让它永远留下。
+- 老客户端（e711402 及以前）还能改它。新客户端打开时、拉到类型行后（`settleCategories` → `settlePinCategory`），这一行和内置定义不一样就用新时间戳写回内置定义（进 outbox）。这样云端也改回来了，老客户端下次拉到也变回原样；老客户端再改，下一台新客户端再改回去。偏好里的常用 / 分组不改写，只是不认。决定：显示和写回都按内置定义，库里改过的名字图标不留。
+- 界面：类型页详情（pages/Categories.tsx `CategoryHead`）对它只读：图标块不是按钮、名字是 `h2` 纯文字、没有三档和分组，一行说明「内置类型，不能改。挂了它的任务就是置顶的，每天都在我的一天最上面。」（新文案，九种语言，外语待母语者看；原来那句「设成不显示后……」删了）。手机上它那行不左滑；`useCategoryActions` 对它不动、不出提示，⌘1 / ⌘2 / ⌘3 也就没反应。没有右键菜单（类型页本来就没有）。任务挂上 / 摘掉照常。
+- 「置顶」不显示 = 关掉置顶，这条作废：`pinEnabled()` 总是 true，`pinnedAt` 不再看显示状态。以前设成不显示的，打开时改回显示，置顶跟着回来。
+- 原来的 27 个内置类型变成普通类型：id 不变（`FORMER_BUILTIN_CATEGORY_IDS`，旧名 `BUILTIN_CATEGORY_IDS` 留着当别名），任务、项目、打卡的关联不动，能改名、换图标颜色、换分组、改档、设成不显示。现在的名字、图标、颜色、显示状态都保持原样，改过的不恢复默认，库里不写任何东西。
+- 名字的语言：选「保留多语言显示」，不固化。没改过名的行存的还是中文原名，界面照旧用 `dataLabel` 按当前语言显示；改过名的显示用户写的。理由：固化要每台设备按自己的界面语言写名字，两台语言不同的设备会互相盖（行级 LWW），而且改动会同步给老客户端；不固化什么都不用写。代价：以后用户新建一个叫「运动」的类型也会被翻译显示（以前就这样）。
+- 新库不再预置那 27 个，只预置内置类型（`ensureBuiltinCategories`）。为了不丢显示：任务（`category_id` / `checkin_category_id`）、`task_category`、项目指着原内置 id、本机却没这一行时，按原定义补回（`reviveFormerCategories`：打开时、本机写入时、拉完类型 / 任务 / 项目后），用原来的内置时间戳，云端或别的设备上任何真改动都比它新，拉下来就盖掉它。所以新设备还没同步就建了挂「运动」的任务（演示数据就是这样）也能显示；同步后显示的是云端改过的名字。老客户端打开时还会按它们的种子补全 27 个（内置时间戳），推上云端后新客户端也会看到这几行，属于正常数据。
+- 「普通」「项目」不是类型，是资料库（task_type）的内置项，这次没动；「项目」资料库 r4 默认归档那条照旧。
+
+### 内置类型「收藏」「紧急」「重要」：标题变色 ✅（2026-11-12）
+Rei 2026-11-12 04:41「内置类型再添加几个"收藏"（任务列表中任务标题是黑黄色）、"紧急"（任务列表中任务标题是黑红色）、"重要"（任务列表中任务标题是黑蓝色）。颜色要注意light dark theme。」
+
+- 固定 id 号 29（收藏，Lucide `star`，图标块 #f5a623）、30（紧急，`siren`，#e5484d）、31（重要，`flag`，#0a84ff），`STAR_CATEGORY_ID` / `URGENT_CATEGORY_ID` / `IMPORTANT_CATEGORY_ID`，进 `BUILTIN_CATEGORIES`，和「置顶」一样锁定、打开时补齐、老客户端改过的改回。名字九种语言走 `dataLabel`（DATA）。
+- 不当主类型：core `isMarkerCategory`（= 内置类型）。单值 `category_id`（`syncRefs` 的 firstCat）、`categoriesOfTaskNoPin`（列表第二行、打卡卡片颜色）、客户端 `categorySectionOrder`（按类型分区）、重复倒数日记录都跳过它们。
+- 标题颜色：core `titleMarkOf(ids)` / `Store.titleMark(task)`，紧急 > 重要 > 收藏（`MARK_ORDER`，我定的）。客户端 `TaskRow` 和倒数日页的行在 `.row-title` 上加 `is-mark-urgent|important|star`；`styles/app.css` 里按 `:root[data-skin][data-theme]` 六组写死 `--mark-*`（不用 color-mix），选择器 (0,4,1) 盖过 Material 选中行的标题色；`.is-done` / `.is-closed` 里照旧 `--text-3`；素净档 `--mark-*` = `--text` 再加粗。对比度用 `work/d1112-builtinlock/contrast.py` 对每套皮肤的底、卡片、悬停、选中底色算过，最低 4.99（亮色）/ 5.02（暗色）。
+- 同名合并：以前自己建过叫「收藏」「紧急」「重要」的类型，会按同名合并并进内置的（内置的留下），挂着它们的任务标题跟着变色。
+- 测试：core `builtin-lock.test.ts`「收藏 / 紧急 / 重要」两项；UI 自查 `work/d1112-builtinlock/marks.mjs`（三皮肤 × 亮暗，量计算后的颜色）。
+- 测试：core `builtin-lock.test.ts`（锁定、直接写也改回、老客户端改过的打开 / 同步时改回并推回云端、同名自建「置顶」并进内置的、新库只有置顶、原内置改过的不恢复且能接着改、缺行补回、补回的不盖云端）；`pin-type.test.ts` 的「设成不显示」改成「不能设成不显示」；`store.test.ts`、`seed.test.ts`、`category-prefs.test.ts` 跟着改。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
