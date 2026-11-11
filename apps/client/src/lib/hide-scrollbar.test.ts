@@ -46,11 +46,11 @@ describe('滚动条不显示', () => {
     expect(ruleHas('.sticky-head', /background:\s*var\(--bg\)/)).toBe(true);
     expect(ruleHas('.app-mobile .page.has-sticky-head', /padding-top:\s*0/)).toBe(true);
     const lib = read('../pages/Library.tsx');
-    // 列表页：页头、标签条、工具条在固定块里，卡片网格在它后面
+    // 列表页：读屏 h1、标签条、工具条在固定块里，卡片网格在它后面（页头 2026-11-12 去掉了，只留读屏 h1）
     const head = lib.indexOf('<StickyHead className="lib-head-sticky">');
     const end = lib.indexOf('</StickyHead>', head);
     expect(head).toBeGreaterThan(-1);
-    for (const s of ['<PageHeader', 'lib-tabs-row', 'lib-toolbar']) {
+    for (const s of ['<h1 className="sr-only">', 'lib-tabs-row', 'lib-toolbar']) {
       const i = lib.indexOf(s, head);
       expect(i > head && i < end, s).toBe(true);
     }
