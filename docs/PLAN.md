@@ -1464,7 +1464,7 @@ Rei 2026-11-08「任务支持置顶，置顶的任务在我的一天中永远显
 ### 置顶改成类型 ✅（2026-11-12）
 Rei 2026-11-12 03:44「置顶任务应该用"类型"，一个叫做"置顶"的类型，这样会不会更方便？」、03:46「有置顶类型就置顶。没就不置顶不就好了」。
 
-- 内置类型「置顶」：固定 id `00000000-0000-7000-8001-000000000028`（`PIN_CATEGORY_ID`，seed/builtin-checkin-categories.ts），红色 `#ff3b30`、Lucide `pin`，`builtin: true`。不在 27 个的 SEED 里：不进默认分组（落在「其他」），不进默认「常用」。老用户打开时 `ensureBuiltinCategories` 补上。名字九种语言走 `dataLabel`（DATA「置顶」）。同名的自建类型「置顶」会按同名合并并进它（内置的留下），挂了那个类型的任务也就置顶了。
+- 内置类型「置顶」：固定 id `00000000-0000-7000-8001-000000000028`（`PIN_CATEGORY_ID`，seed/builtin-checkin-categories.ts），红色 `#ff3b30`、Lucide `pin`，`builtin: true`。不在 27 个的 SEED 里：不进默认分组（原来落在「其他」，2026-11-12 07:20 起在固定的「内置」组，见「内置类型单独一组「内置」」），不进默认「常用」。老用户打开时 `ensureBuiltinCategories` 补上。名字九种语言走 `dataLabel`（DATA「置顶」）。同名的自建类型「置顶」会按同名合并并进它（内置的留下），挂了那个类型的任务也就置顶了。
 - 置顶的唯一依据是类型：`Store.pinnedAt(task)`（挂着「置顶」、类型没设成不显示才返回时间）、`isPinned`、`pinEnabled`、`hasPinCategory`。myday.ts 的纯函数（`pinnedDayItems`、`checkInDayItems`、`makeupDayItems`、`isVirtual*Today`、`yesterdayUnfinished`、`suggestions`）都收一个 `pinOf`，界面和 Store 传 `store.pinnedAt`；不传时还看 `task.pinned_at`（老测试用）。界面上判断置顶都用 `store.isPinned`，别再读 `task.pinned_at`。
 - `pinTask` / `unpinTask` = `addTaskCategory` / `removeTaskCategory`（挂在最后）。在类型选择器里勾上、去掉一样。
 - 双写：`write()` → `syncRefs` 按类型把 `pinned_at` 写回去（挂上时写成现在，摘掉清空；只改别的类型不动它）。这批直接改了 `pinned_at` 的（导入、`createTask({ pinned_at })`、老代码路径）反过来按它挂 / 摘。单值 `category_id` 跳过「置顶」：它不当主类型，老客户端显示的类型、按类型分区都不受影响。
@@ -1496,6 +1496,17 @@ Rei 2026-11-12 04:41「内置类型再添加几个"收藏"（任务列表中任�
 - 同名合并：以前自己建过叫「收藏」「紧急」「重要」的类型，会按同名合并并进内置的（内置的留下），挂着它们的任务标题跟着变色。
 - 测试：core `builtin-lock.test.ts`「收藏 / 紧急 / 重要」两项；UI 自查 `work/d1112-builtinlock/marks.mjs`（三皮肤 × 亮暗，量计算后的颜色）。
 - 测试：core `builtin-lock.test.ts`（锁定、直接写也改回、老客户端改过的打开 / 同步时改回并推回云端、同名自建「置顶」并进内置的、新库只有置顶、原内置改过的不恢复且能接着改、缺行补回、补回的不盖云端）；`pin-type.test.ts` 的「设成不显示」改成「不能设成不显示」；`store.test.ts`、`seed.test.ts`、`category-prefs.test.ts` 跟着改。
+
+### 内置类型单独一组「内置」，排在最下面 ✅（2026-11-12）
+Rei 2026-11-12 07:20「把置顶、收藏、紧急、重要这四个类型分到"内置"分组中，放在最下面」。
+
+- core 加一个固定分组 id `builtin`（`BUILTIN_CATEGORY_GROUP`，category-prefs.ts）。它不在 `CATEGORY_GROUPS` 里，所以 `isCategoryGroup` 不认它：偏好 `category.groups` 里写了 `=builtin` 也不算，`setCategoryGroup` 换不进去。
+- 内置类型在哪组只看 id：`categoryGroupOf` / `defaultCategoryGroup` 对四个内置 id 一律返回 `builtin`，overrides 里有什么都不看。旧数据里给置顶记过的分组（`category.groups`、`category.custom_group_of`）照旧不认，不用迁移，什么都不写。
+- 顺序：`categoryGroupOrder` 把它放在「其他」后面，`Store.categoryGroupIds()` 带着它；`groupRank` 让没用过的类型按组排时它也在最后。
+- 不能自建同名分组：`createCategoryGroup('内置')` 返回 null；选分组下拉（`CategoryGroupCombo`）不列它，打「内置」或它在当前语言的名字，既搜不到也不出「新建分组」。
+- 类型页列表、图标两种模式：「内置」组排在最下面，「不显示」那组也在它上面（Rei 说「放在最下面」，按字面做）。组名走 `trc('类型分组', '内置')`，九种语言。
+- 搜索结果（类型页和选择器）：内置类型排在别的类型后面、「新建」那行前面。类型选择器：不搜时最后一组是「内置」；内置类型不进「最近用过」（挂过置顶也一样），只在「内置」组出现。
+- 测试：core `category-groups.test.ts`「固定分组「内置」」四项；`builtin-lock.test.ts` 置顶的组改成 `builtin`；client `CategoryGroupCombo.test.ts` 加一项。UI 自查 `work/d1112-builtingroup/bg.mjs`。
 
 ### M5 项目视角
 - SS / FF / SF 与间隔（lag）。
