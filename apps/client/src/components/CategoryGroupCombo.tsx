@@ -4,11 +4,13 @@
  * - 打字就按名字过滤，拼音首字母 / 全拼也行（core filterGroupOptions，规则同类型搜索）。
  * - 没有同名的分组时，列表最后一项「新建分组“xxx”」，选它就新建（store.createCategoryGroup）并把类型放进去。
  * - 选了或者点开别处，框里回到当前分组的名字。
+ * - 固定的「内置」组（Rei 2026-11-12 07:20，只放置顶、收藏、紧急、重要）不出现在下拉里，自建类型选不进去；
+ *   打「内置」（或它在当前语言的名字）也不出「新建分组」。
  */
 import { useMemo, useState } from 'react';
 import { Button as RacButton, ComboBox, Input, Label, ListBox, ListBoxItem, Popover, type Key } from 'react-aria-components';
 import { Check, ChevronDown, Plus } from 'lucide-react';
-import { CATEGORY_GROUP_ZH, filterGroupOptions, groupCreateName, isCategoryGroup, type CategoryGroupId, type GroupOption } from '@mindough/core';
+import { BUILTIN_CATEGORY_GROUP_ZH, CATEGORY_GROUP_ZH, filterGroupOptions, groupCreateName, isBuiltinCategoryGroup, isCategoryGroup, type CategoryGroupId, type GroupOption } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { categoryGroupLabel } from './CategoryEditor';
 import { tr } from '../lib/i18n';
@@ -25,15 +27,20 @@ interface Item {
 export function groupOptions(ids: readonly CategoryGroupId[], label: (g: CategoryGroupId) => string): (GroupOption & { label: string })[] {
   return ids.map((id) => {
     const l = label(id);
-    const names = isCategoryGroup(id) && CATEGORY_GROUP_ZH[id] !== l ? [l, CATEGORY_GROUP_ZH[id]] : [l];
+    const zh = isCategoryGroup(id) ? CATEGORY_GROUP_ZH[id] : isBuiltinCategoryGroup(id) ? BUILTIN_CATEGORY_GROUP_ZH : null;
+    const names = zh && zh !== l ? [l, zh] : [l];
     return { id, label: l, names };
   });
 }
 
-/** 下拉该列哪些项：没打字（或框里就是当前分组名）时列全部；打了字就过滤，没有同名的再加最后一项「新建」。 */
+/**
+ * 下拉该列哪些项：没打字（或框里就是当前分组名）时列全部；打了字就过滤，没有同名的再加最后一项「新建」。
+ * 「内置」组不列（选不进去），但算同名：打「内置」不出「新建」。
+ */
 export function groupComboItems(options: readonly (GroupOption & { label: string })[], input: string, currentLabel: string): Item[] {
   const typed = input.trim() && input !== currentLabel ? input : '';
-  const list: Item[] = filterGroupOptions(options, typed).map((o) => ({ id: o.id, label: o.label }));
+  const pickable = options.filter((o) => !isBuiltinCategoryGroup(o.id));
+  const list: Item[] = filterGroupOptions(pickable, typed).map((o) => ({ id: o.id, label: o.label }));
   const name = typed ? groupCreateName(options, typed) : null;
   if (name) list.push({ id: CREATE, label: name, create: true });
   return list;

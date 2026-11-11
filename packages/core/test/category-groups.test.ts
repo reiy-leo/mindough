@@ -2,8 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
-import { BUILTIN_CATEGORY_IDS } from '../src/seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, BUILTIN_CATEGORY_IDS, PIN_CATEGORY_ID, STAR_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
 import {
+  BUILTIN_CATEGORY_GROUP,
+  categoryGroupOf,
+  isCategoryGroup,
   CATEGORY_GROUP_PREF,
   CATEGORY_GROUP_ZH,
   CATEGORY_GROUPS,
@@ -81,8 +84,8 @@ describe('自建分组：存法', () => {
       { id: 'cg-02', name: '旅行' },
     ]);
   });
-  it('分组顺序：内置前五组、自建组、「其他」最后', () => {
-    expect(categoryGroupOrder([{ id: 'cg-1' }, { id: 'cg-2' }])).toEqual(['body', 'life', 'study', 'hobby', 'people', 'cg-1', 'cg-2', 'other']);
+  it('分组顺序：内置前五组、自建组、「其他」，固定的「内置」组最后', () => {
+    expect(categoryGroupOrder([{ id: 'cg-1' }, { id: 'cg-2' }])).toEqual(['body', 'life', 'study', 'hobby', 'people', 'cg-1', 'cg-2', 'other', 'builtin']);
   });
   it('放进自建组的记录：只认 cg- 开头的组，同一类型后写的算；拿出来就删那一项', () => {
     expect([...customGroupAssignments(['a=cg-1', 'b=life', 'a=cg-2', 3, '=cg-1'])]).toEqual([['a', 'cg-2']]);
@@ -110,7 +113,7 @@ describe('Store：新建分组、放进去、换回内置组', () => {
     const gid = s.createCategoryGroup('  户外 ')!;
     expect(gid).toMatch(/^cg-/);
     expect(s.customCategoryGroups()).toEqual([{ id: gid, name: '户外' }]);
-    expect(s.categoryGroupIds()).toEqual(['body', 'life', 'study', 'hobby', 'people', gid, 'other']);
+    expect(s.categoryGroupIds()).toEqual(['body', 'life', 'study', 'hobby', 'people', gid, 'other', 'builtin']);
     expect(s.customCategoryGroupName(gid)).toBe('户外');
     s.setCategoryGroup(c.id, gid);
     expect(s.categoryGroup(c.id)).toBe(gid);
@@ -150,5 +153,50 @@ describe('Store：新建分组、放进去、换回内置组', () => {
     s.update('pref', row.id, { deleted: true });
     expect(s.categoryGroup(sport)).toBe('body');
     expect(s.categoryGroupIds()).not.toContain(gid);
+  });
+});
+
+describe('固定分组「内置」（Rei 2026-11-12 07:20）', () => {
+  it('只放置顶、收藏、紧急、重要，排在所有分组最下面', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    for (const c of BUILTIN_CATEGORIES) expect(s.categoryGroup(c.id)).toBe(BUILTIN_CATEGORY_GROUP);
+    const gid = s.createCategoryGroup('户外')!;
+    expect(s.categoryGroupIds().at(-1)).toBe(BUILTIN_CATEGORY_GROUP);
+    expect(s.categoryGroupIds().indexOf('other')).toBeGreaterThan(s.categoryGroupIds().indexOf(gid));
+    // 别的类型都不在这一组
+    const mine = s.createCategory('滑雪');
+    expect(s.categoryGroup(mine.id)).toBe('other');
+    expect(s.categories(true).filter((c) => s.categoryGroup(c.id) === BUILTIN_CATEGORY_GROUP).map((c) => c.id).sort()).toEqual(BUILTIN_CATEGORIES.map((c) => c.id).sort());
+  });
+  it('自建类型换不进「内置」组；也不能新建叫「内置」的分组', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    const mine = s.createCategory('滑雪');
+    s.setCategoryGroup(mine.id, BUILTIN_CATEGORY_GROUP);
+    expect(s.categoryGroup(mine.id)).toBe('other');
+    expect(s.pref(CATEGORY_GROUP_PREF)).toBeUndefined();
+    expect(s.createCategoryGroup('内置')).toBeNull();
+    expect(s.createCategoryGroup(' 内置 ')).toBeNull();
+    expect(s.customCategoryGroups()).toHaveLength(0);
+    expect(isCategoryGroup(BUILTIN_CATEGORY_GROUP)).toBe(false);
+  });
+  it('旧数据：偏好里给置顶记过分组（category.groups / custom_group_of）、给别的类型写了 =builtin，都不认', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'a' });
+    const gid = s.createCategoryGroup('户外')!;
+    const mine = s.createCategory('滑雪');
+    s.setPref(CATEGORY_GROUP_PREF, [`${PIN_CATEGORY_ID}=other`, `${STAR_CATEGORY_ID}=body`, `${mine.id}=builtin`]);
+    s.setPref(CUSTOM_GROUP_OF_PREF, [`${PIN_CATEGORY_ID}=${gid}`]);
+    expect(s.categoryGroup(PIN_CATEGORY_ID)).toBe(BUILTIN_CATEGORY_GROUP);
+    expect(s.categoryGroup(STAR_CATEGORY_ID)).toBe(BUILTIN_CATEGORY_GROUP);
+    expect(s.categoryGroup(mine.id)).toBe('other');
+    // 纯函数：overrides 里硬塞也不算
+    expect(categoryGroupOf(PIN_CATEGORY_ID, new Map([[PIN_CATEGORY_ID, 'life']]))).toBe(BUILTIN_CATEGORY_GROUP);
+    expect(categoryGroupOf('x', new Map([['x', BUILTIN_CATEGORY_GROUP]]))).toBe('other');
+  });
+  it('没用过的类型按分组排时，内置类型排在「其他」后面', () => {
+    const cats = [
+      { id: PIN_CATEGORY_ID, sort: 1, name: '置顶' },
+      { id: 'x', sort: 2, name: 'x' },
+    ];
+    expect(ids(orderPickerCategories(cats, [], new Map(), new Map()))).toEqual(['x', PIN_CATEGORY_ID]);
   });
 });

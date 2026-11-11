@@ -10,11 +10,13 @@
  *   格子里不左滑（改档去详情页）。搜索结果也排成格子。
  * 类型不能删：不想看到就设成不显示（挂着的任务照常显示）。
  * 内置类型（置顶、收藏、紧急、重要，Rei 2026-11-12 04:20 / 04:41）照常列出、能点开，但不能改：手机上不左滑，改档 / 换组直接不做（store 也挡）。
+ * 它们单独一组「内置」（Rei 2026-11-12 07:20「分到"内置"分组中，放在最下面」），排在最下面（「不显示」那组也在它上面）；
+ * 搜索结果里它们也排在别的类型后面（「新建」那行之前）。
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Input, SearchField } from 'react-aria-components';
 import { ChevronDown, Plus, Search } from 'lucide-react';
-import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, normCategoryName, type Category, type CategoryGroupId, type CategoryState, type Store } from '@mindough/core';
+import { BUILTIN_CATEGORY_GROUP, categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, isBuiltinCategory, normCategoryName, type Category, type CategoryGroupId, type CategoryState, type Store } from '@mindough/core';
 import { IconTile, iconTileGlyphSize } from './IconTile';
 import { listTileSize, pinnedTileSize } from '../lib/pinned-tile';
 import { categoryNames } from './CategoryPicker';
@@ -50,6 +52,8 @@ export function categoryGroupLabel(g: CategoryGroupId, store?: Pick<Store, 'cust
       return trc('类型分组', '爱好');
     case 'people':
       return trc('类型分组', '人');
+    case BUILTIN_CATEGORY_GROUP:
+      return trc('类型分组', '内置');
     default:
       return trc('类型分组', '其他');
   }
@@ -123,28 +127,36 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
   const overrides = store.categoryGroupOverrides();
   const term = q.trim();
 
-  // 搜索结果：对得上的（不显示的也搜得到，好改回来），开头对上的在前；没有同名的就加一行「新建」
+  // 搜索结果：对得上的（不显示的也搜得到，好改回来），开头对上的在前，内置类型排在最后（同「内置」组在最下面）；没有同名的就加一行「新建」
   const matches = useMemo(() => {
     if (!term) return null;
     const order = new Map(store.pickerCategories().map((c, i) => [c.id, i]));
     return all
       .filter((c) => categoryMatches(categoryNames(c), term))
-      .sort((a, b) => categoryMatchRank(categoryNames(a), term) - categoryMatchRank(categoryNames(b), term) || (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+      .sort(
+        (a, b) =>
+          Number(isBuiltinCategory(a)) - Number(isBuiltinCategory(b)) ||
+          categoryMatchRank(categoryNames(a), term) - categoryMatchRank(categoryNames(b), term) ||
+          (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999),
+      );
   }, [all, term, store]);
   const exact = term ? all.find((c) => categoryNames(c).some((n) => normCategoryName(n) === normCategoryName(term))) : undefined;
 
-  // 分组按顺序（内置前五组、自己建的、其他），组里常用的在前、再按原来的顺序；没类型的组不出；不显示的单独一组在最后
+  // 分组按顺序（内置前五组、自己建的、其他），组里常用的在前、再按原来的顺序；没类型的组不出；不显示的单独一组；
+  // 固定的「内置」组（置顶、收藏、紧急、重要）永远在最下面（Rei 2026-11-12 07:20）
   const groupIds = store.categoryGroupIds();
   const sections = useMemo(() => {
     const out: { key: string; label: string; items: Category[] }[] = [];
     const vis = all.filter((c) => !c.hidden);
-    for (const g of groupIds) {
+    const section = (g: string) => {
       const items = vis.filter((c) => categoryGroupOf(c.id, overrides) === g);
       items.sort((a, b) => Number(frequent.includes(b.id)) - Number(frequent.includes(a.id)));
       if (items.length) out.push({ key: g, label: categoryGroupLabel(g, store), items });
-    }
-    const hidden = all.filter((c) => c.hidden);
+    };
+    for (const g of groupIds) if (g !== BUILTIN_CATEGORY_GROUP) section(g);
+    const hidden = all.filter((c) => c.hidden && categoryGroupOf(c.id, overrides) !== BUILTIN_CATEGORY_GROUP);
     if (hidden.length) out.push({ key: 'hidden', label: trc('类型档', '不显示'), items: hidden });
+    section(BUILTIN_CATEGORY_GROUP);
     return out;
   }, [all, overrides, frequent, groupIds, store]);
 

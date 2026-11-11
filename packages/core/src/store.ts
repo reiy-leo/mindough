@@ -43,7 +43,7 @@ import {
 } from './library';
 import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
 import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID, formerBuiltinCategory, type TitleMark } from './seed/builtin-checkin-categories';
-import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
+import { BUILTIN_CATEGORY_GROUP_ZH, CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isBuiltinCategoryGroup, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
 import { CategoryDeleteError, builtinCategoryDrifted, canonicalBuiltinCategory, isBuiltinCategory, isMarkerCategory, titleMarkOf, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
@@ -2726,19 +2726,19 @@ export class Store {
     const m: Map<string, CategoryGroupId> = categoryGroupOverrides(this.pref(CATEGORY_GROUP_PREF));
     const alive = new Set(this.customCategoryGroups().map((g) => g.id));
     for (const [id, gid] of customGroupAssignments(this.pref(CUSTOM_GROUP_OF_PREF))) if (alive.has(gid)) m.set(id, gid);
-    // 内置类型固定在「其他」（老客户端给它换过组也不算）
+    // 内置类型固定在「内置」组（Rei 2026-11-12 07:20；老客户端给它换过组也不算，见 categoryGroupOf）
     for (const c of BUILTIN_CATEGORIES) m.delete(c.id);
     return m;
   }
 
-  /** 类型在哪个分组（内置的默认见 seed，自定义的默认「其他」）。 */
+  /** 类型在哪个分组（内置类型固定「内置」组；原来内置的默认见 seed，自定义的默认「其他」）。 */
   categoryGroup(id: string): CategoryGroupId {
     return categoryGroupOf(id, this.categoryGroupOverrides());
   }
 
-  /** 换分组：内置组存偏好 category.groups，自建组存 category.custom_group_of（两边只留一处）。 */
+  /** 换分组：内置组存偏好 category.groups，自建组存 category.custom_group_of（两边只留一处）。内置类型不能换，别的类型也换不进「内置」组。 */
   setCategoryGroup(id: string, group: CategoryGroupId): void {
-    if (isBuiltinCategory(id)) return;
+    if (isBuiltinCategory(id) || isBuiltinCategoryGroup(group)) return;
     if (isCategoryGroup(group)) {
       this.setPref(CATEGORY_GROUP_PREF, withCategoryGroup(this.pref(CATEGORY_GROUP_PREF), id, group));
       const cur = this.pref(CUSTOM_GROUP_OF_PREF);
@@ -2754,7 +2754,7 @@ export class Store {
     return customCategoryGroups(this.list('pref'));
   }
 
-  /** 全部分组的 id，按显示顺序：内置前五组、自建组、「其他」。 */
+  /** 全部分组的 id，按显示顺序：内置前五组、自建组、「其他」、「内置」（固定组，只放内置类型；选分组的下拉里不出它）。 */
   categoryGroupIds(): CategoryGroupId[] {
     return categoryGroupOrder(this.customCategoryGroups());
   }
@@ -2772,6 +2772,8 @@ export class Store {
     const n = name.normalize('NFKC').trim().replace(/\s+/g, ' ');
     if (!n) return null;
     const key = normGroupName(n);
+    // 「内置」是固定组的名字，不能自己建同名的（也不能借这个名字把类型换进内置组）
+    if (key === normGroupName(BUILTIN_CATEGORY_GROUP_ZH)) return null;
     const builtin = CATEGORY_GROUPS.find((g) => normGroupName(CATEGORY_GROUP_ZH[g]) === key);
     if (builtin) return builtin;
     const same = this.customCategoryGroups().find((g) => normGroupName(g.name) === key);

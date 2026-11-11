@@ -202,6 +202,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "类型分组|身体": "Cuerpo",
   "类型分组|学习和工作": "Estudio y trabajo",
   "类型分组|人": "Personas",
+  "类型分组|内置": "Integradas",
   "类型档|常用": "Frecuente",
   "类型档|普通": "Normal",
   "已把「{name}」设成常用": "«{name}» ahora es frecuente",

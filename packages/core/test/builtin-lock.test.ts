@@ -45,7 +45,7 @@ describe('「置顶」锁定', () => {
     store.reorderCategories([PIN_CATEGORY_ID]);
     expect(store.get('category', PIN_CATEGORY_ID)).toEqual(before);
     expect(store.categoryState(PIN_CATEGORY_ID)).toBe('normal');
-    expect(store.categoryGroup(PIN_CATEGORY_ID)).toBe('other');
+    expect(store.categoryGroup(PIN_CATEGORY_ID)).toBe('builtin');
     expect(store.frequentCategoryIds()).not.toContain(PIN_CATEGORY_ID);
     expect(() => store.remove('category', PIN_CATEGORY_ID)).toThrow();
   });
@@ -70,7 +70,7 @@ describe('「置顶」锁定', () => {
     expect(row.updated_at > drift.updated_at).toBe(true);
     expect(store.pinEnabled()).toBe(true);
     expect(store.categoryState(PIN_CATEGORY_ID)).toBe('normal');
-    expect(store.categoryGroup(PIN_CATEGORY_ID)).toBe('other');
+    expect(store.categoryGroup(PIN_CATEGORY_ID)).toBe('builtin');
   });
 
   it('同步拉到老客户端改过的「置顶」：改回去并推回云端', async () => {

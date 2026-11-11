@@ -18,7 +18,7 @@ import {
 
 describe('大类', () => {
   it('原来内置的 27 个都有默认组，5 组的名单和文档一致', () => {
-    // 「置顶」（2026-11-12）不进默认组，落在「其他」
+    // 内置类型（置顶、收藏、紧急、重要）不在 seed 的默认组里，固定在「内置」组（见 category-groups.test.ts）
     expect(FORMER_BUILTIN_CATEGORIES.every((c) => BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);
     expect(BUILTIN_CATEGORIES.map((c) => c.name)).toEqual(['置顶', '收藏', '紧急', '重要']);
     expect(BUILTIN_CATEGORIES.every((c) => !BUILTIN_CATEGORY_GROUPS[c.id])).toBe(true);

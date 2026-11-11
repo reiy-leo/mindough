@@ -1,6 +1,7 @@
 /**
  * 类型编辑改版（docs/CATEGORY-EDITOR.md 方案 C，Rei 2026-10-28「按方案C执行」）的纯逻辑：
  * - 分组（原叫「大类」，Rei 2026-11-12 改名；代码里还叫 group）：内置 6 组（身体、生活、学习和工作、爱好、人、其他）是固定 id，
+ *   另有一个固定的「内置」组（BUILTIN_CATEGORY_GROUP，Rei 2026-11-12 07:20）只放置顶、收藏、紧急、重要，排在最下面、不能选；
  *   内置 27 个类型的默认组写在 seed/builtin-checkin-categories.ts；改到内置组的存同步偏好 `category.groups`；
  *   自定义类型默认进「其他」。组只为了好找，不影响别处怎么用类型。
  * - 自己新建的分组（Rei 2026-11-12）：一组一行偏好 `category.custom_group.<组 id>`，值是名字（组 id = "cg-" + UUIDv7，按建的先后排）；
@@ -17,7 +18,7 @@
  */
 import TinyPinyin from 'tiny-pinyin';
 import { POLYPHONE } from './pinyin-polyphone';
-import { BUILTIN_CATEGORY_GROUPS, DEFAULT_FREQUENT_CHECKIN_CATEGORY_KEYS, BUILTIN_CATEGORY_IDS } from './seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORY_GROUPS, DEFAULT_FREQUENT_CHECKIN_CATEGORY_KEYS, BUILTIN_CATEGORY_IDS, builtinCategoryDef } from './seed/builtin-checkin-categories';
 import type { Category } from './types';
 
 /** 内置分组，按显示顺序。界面名字：身体、生活、学习和工作、爱好、人、其他。 */
@@ -29,6 +30,18 @@ export const isCategoryGroup = (v: unknown): v is CategoryGroup => typeof v === 
 /** 内置分组的中文名（界面上的名字走 client 的词典，这里给去重、拼音搜索用）。 */
 // i18n-ignore：只拿来比同名、搜拼音，不显示
 export const CATEGORY_GROUP_ZH: Record<CategoryGroup, string> = { body: '身体', life: '生活', study: '学习和工作', hobby: '爱好', people: '人', other: '其他' };
+
+/**
+ * 固定分组「内置」（Rei 2026-11-12 07:20「把置顶、收藏、紧急、重要这四个类型分到"内置"分组中，放在最下面」）：
+ * 只放内置类型（置顶、收藏、紧急、重要），也只有它们在这一组。排在所有分组最下面（「其他」之后）。
+ * 不在 CATEGORY_GROUPS 里：不能把别的类型换进来（isCategoryGroup 不认它，偏好 category.groups 里写了也不算），也不能改名、重排。
+ * 不存任何东西：内置类型在哪组只看 id（categoryGroupOf），旧数据里给置顶写过的分组（category.groups / custom_group_of）一律不认。
+ */
+export const BUILTIN_CATEGORY_GROUP = 'builtin' as const;
+export const isBuiltinCategoryGroup = (v: unknown): v is typeof BUILTIN_CATEGORY_GROUP => v === BUILTIN_CATEGORY_GROUP;
+/** 「内置」分组的中文名（同 CATEGORY_GROUP_ZH，只拿来比同名：自建分组不能叫这个）。 */
+// i18n-ignore：只拿来比同名，不显示
+export const BUILTIN_CATEGORY_GROUP_ZH = '内置';
 
 /** 自建分组一组一行偏好的 key 前缀：`category.custom_group.<组 id>`，值是名字。 */
 export const CUSTOM_GROUP_PREF_PREFIX = 'category.custom_group.';
@@ -78,9 +91,9 @@ export function withCustomGroupAssignment(value: unknown, id: string, gid: strin
   return [...m.entries()].map(([k, g]) => `${k}=${g}`);
 }
 
-/** 显示顺序：内置前五组，自建组按建的先后，「其他」最后。 */
+/** 显示顺序：内置前五组，自建组按建的先后，「其他」，最后是固定的「内置」组。 */
 export function categoryGroupOrder(custom: readonly Pick<CustomCategoryGroup, 'id'>[]): CategoryGroupId[] {
-  return [...CATEGORY_GROUPS.filter((g) => g !== 'other'), ...custom.map((g) => g.id), 'other'];
+  return [...CATEGORY_GROUPS.filter((g) => g !== 'other'), ...custom.map((g) => g.id), 'other', BUILTIN_CATEGORY_GROUP];
 }
 
 /** 分组名字统一成好比较的样子（去两头空白、全半角统一、不分大小写）。 */
@@ -151,14 +164,17 @@ export function withCategoryGroup(value: unknown, id: string, group: CategoryGro
   return [...m.entries()].map(([k, g]) => `${k}=${g}`);
 }
 
-/** 默认组：内置的看 seed，自定义的是「其他」。 */
-export function defaultCategoryGroup(id: string): CategoryGroup {
+/** 默认组：内置类型（置顶、收藏、紧急、重要）是「内置」，原来内置的 27 个看 seed，自定义的是「其他」。 */
+export function defaultCategoryGroup(id: string): CategoryGroup | typeof BUILTIN_CATEGORY_GROUP {
+  if (builtinCategoryDef(id)) return BUILTIN_CATEGORY_GROUP;
   return BUILTIN_CATEGORY_GROUPS[id] ?? 'other';
 }
 
-/** 一个类型在哪个组。overrides 可以带自建组（Store.categoryGroupOverrides 合好的）。 */
+/** 一个类型在哪个组。overrides 可以带自建组（Store.categoryGroupOverrides 合好的）。内置类型永远在「内置」组，overrides 里有也不算。 */
 export function categoryGroupOf(id: string, overrides: ReadonlyMap<string, CategoryGroupId>): CategoryGroupId {
-  return overrides.get(id) ?? defaultCategoryGroup(id);
+  if (builtinCategoryDef(id)) return BUILTIN_CATEGORY_GROUP;
+  const g = overrides.get(id);
+  return g && !isBuiltinCategoryGroup(g) ? g : defaultCategoryGroup(id);
 }
 
 /** 一个类型在哪一档。不显示优先（hidden 列），再看常用列表。 */
@@ -194,8 +210,9 @@ export function categoryLastUsed(
   return out;
 }
 
-/** 组的先后：内置组按 CATEGORY_GROUPS，自建组排在「其他」前面。 */
+/** 组的先后：内置组按 CATEGORY_GROUPS，自建组排在「其他」前面，「内置」组最后。 */
 function groupRank(g: CategoryGroupId): number {
+  if (isBuiltinCategoryGroup(g)) return CATEGORY_GROUPS.length;
   const i = (CATEGORY_GROUPS as readonly string[]).indexOf(g);
   return i >= 0 ? i : CATEGORY_GROUPS.length - 1.5;
 }

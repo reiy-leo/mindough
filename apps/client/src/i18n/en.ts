@@ -156,6 +156,7 @@ export const EN: Record<string, EnValue> = {
   "类型分组|身体": "Body",
   "类型分组|学习和工作": "Learning & Work",
   "类型分组|人": "People",
+  "类型分组|内置": "Built-in",
   "类型档|常用": "Frequent",
   "类型档|普通": "Normal",
   "已把「{name}」设成常用": "Marked “{name}” as frequent",

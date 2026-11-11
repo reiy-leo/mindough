@@ -4,8 +4,10 @@ import { CATEGORY_GROUP_ZH, isCategoryGroup } from '@mindough/core';
 import { groupComboItems, groupOptions } from './CategoryGroupCombo';
 
 const ids = ['body', 'life', 'study', 'hobby', 'people', 'cg-1', 'other'];
+// store.categoryGroupIds() 带着最后的固定组「内置」
+const withBuiltin = [...ids, 'builtin'];
 const zh = (g: string) => (isCategoryGroup(g) ? CATEGORY_GROUP_ZH[g] : g === 'cg-1' ? '旅行' : g);
-const en: Record<string, string> = { body: 'Body', life: 'Life', study: 'Learning & Work', hobby: 'Hobbies', people: 'People', other: 'Other', 'cg-1': '旅行' };
+const en: Record<string, string> = { body: 'Body', life: 'Life', study: 'Learning & Work', hobby: 'Hobbies', people: 'People', other: 'Other', 'cg-1': '旅行', builtin: 'Built-in' };
 
 describe('选分组下拉', () => {
   const opts = groupOptions(ids, zh);
@@ -36,5 +38,15 @@ describe('选分组下拉', () => {
     expect(o.find((x) => x.id === 'life')!.names).toEqual(['Life', '生活']);
     expect(groupComboItems(o, 'sh', 'Other').map((i) => i.id)).toEqual(['body', 'life', '__create__']);
     expect(groupComboItems(o, '生活', 'Other').map((i) => i.id)).toEqual(['life']);
+  });
+  it('固定的「内置」组（Rei 2026-11-12 07:20）不列出来，也不能借名字新建', () => {
+    const o = groupOptions(withBuiltin, (g) => (g === 'builtin' ? '内置' : zh(g)));
+    expect(groupComboItems(o, '生活', '生活').map((i) => i.id)).toEqual(ids);
+    expect(groupComboItems(o, '内置', '生活')).toEqual([]);
+    expect(groupComboItems(o, 'nz', '生活').map((i) => i.id)).toEqual(['__create__']);
+    const e = groupOptions(withBuiltin, (g) => en[g]!);
+    expect(e.find((x) => x.id === 'builtin')!.names).toEqual(['Built-in', '内置']);
+    expect(groupComboItems(e, 'built-in', 'Other')).toEqual([]);
+    expect(groupComboItems(e, '内置', 'Other')).toEqual([]);
   });
 });

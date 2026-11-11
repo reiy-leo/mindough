@@ -3,19 +3,20 @@
  * 任务属性胶囊「类型」、新建面板用多选；项目还是一个类型，用同一个列表的单选。
  *
  * - 顶上一个输入框：已选的类型是可删的小标签排在框里，后面接着打字搜（名字、英文名、拼音首字母都能搜，复用方案 C 的 category-prefs）。
- * - 不搜时：「常用」「最近用过」排在前面，其余按大类分组（身体、生活、学习和工作、爱好、人、其他）。
+ * - 不搜时：「常用」「最近用过」排在前面，其余按分组（身体、生活、学习和工作、爱好、人、自己建的、其他、内置）。
  * - 每行前面是勾选框，点一下勾上 / 去掉，列表不收起；单选点了就收起。
  * - 键盘：↑↓ 移动，回车勾选，输入框空着时退格去掉最后一个；Esc 关掉。
  * - 搜不到同名的：最后一行「新建类型“xxx”」，建好直接勾上。
  * - 底部「管理类型…」去侧栏「管理 → 类型」页。手机上整个面板从底部出来（.is-sheet）。
  * 不显示的类型不在列表里（已经挂着的照常显示成小标签）。
+ * 内置类型（置顶、收藏、紧急、重要）只在最下面的「内置」组（Rei 2026-11-12 07:20，同类型页）：不进「最近用过」，搜索时也排在别的类型后面。
  */
 import { imeBusy, useImeQuery } from '../lib/ime';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Check, ChevronDown, Plus, Search, X } from 'lucide-react';
 import { PopoverPanel } from '../ui/primitives';
-import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, normCategoryName, type Category, type Store } from '@mindough/core';
+import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, isBuiltinCategory, normCategoryName, type Category, type Store } from '@mindough/core';
 import { typeIcon } from '../lib/icons';
 import { navigate } from '../lib/router';
 import { dataLabel, tr, trc } from '../lib/i18n';
@@ -100,7 +101,12 @@ export function CategoryList({
       const pool = [...all, ...selected.filter((c) => !all.some((x) => x.id === c.id))];
       const hits = pool
         .filter((c) => categoryMatches(categoryNames(c), term))
-        .sort((a, b) => categoryMatchRank(categoryNames(a), term) - categoryMatchRank(categoryNames(b), term) || (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+        .sort(
+          (a, b) =>
+            Number(isBuiltinCategory(a)) - Number(isBuiltinCategory(b)) ||
+            categoryMatchRank(categoryNames(a), term) - categoryMatchRank(categoryNames(b), term) ||
+            (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999),
+        );
       const exact = store.categories(true).some((c) => categoryNames(c).some((n) => normCategoryName(n) === normCategoryName(q)));
       const rows: Row[] = hits.map((c) => ({ kind: 'cat', c }));
       if (!exact && q.trim()) rows.push({ kind: 'create', name: q.trim() });
@@ -110,12 +116,13 @@ export function CategoryList({
     const last = store.categoryLastUsed();
     const overrides = store.categoryGroupOverrides();
     const top = all.filter((c) => frequent.has(c.id));
-    const recent = all.filter((c) => !frequent.has(c.id) && last.has(c.id)).slice(0, 6);
+    // 内置类型不进「最近用过」，只在最下面的「内置」组（Rei 2026-11-12 07:20）
+    const recent = all.filter((c) => !frequent.has(c.id) && !isBuiltinCategory(c) && last.has(c.id)).slice(0, 6);
     const used = new Set([...top, ...recent].map((c) => c.id));
     const out: Section[] = [];
     if (top.length) out.push({ key: 'frequent', label: trc('类型档', '常用'), rows: top.map((c) => ({ kind: 'cat', c })) });
     if (recent.length) out.push({ key: 'recent', label: tr('最近用过'), rows: recent.map((c) => ({ kind: 'cat', c })) });
-    // 分组顺序同类型页：内置前五组、自己建的分组、其他
+    // 分组顺序同类型页：内置前五组、自己建的分组、其他、「内置」（置顶、收藏、紧急、重要）
     for (const g of store.categoryGroupIds()) {
       const items = all.filter((c) => !used.has(c.id) && categoryGroupOf(c.id, overrides) === g);
       if (items.length) out.push({ key: g, label: categoryGroupLabel(g, store), rows: items.map((c) => ({ kind: 'cat', c })) });
