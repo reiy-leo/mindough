@@ -9,8 +9,10 @@
  *   原来按天往下排的时间轴列表已经删掉（旧地址 #/agenda、view/timeline 打开的就是这一页）。
  * - 订阅事件（lib/calendar-subs）：带订阅颜色的竖线、只读，点开看详情（EventSheet）。
  * - 节假日 / 农历：日期旁的小字和「休」「班」都走 useLunar（同日期面板的 LunarMark）。
- * - 新建（Rei 2026-11-12 02:04）：格子右上角「+」、当天列表的「添加」直接弹出新建任务面板（同按 N 的 TaskComposer），日期预填那一天；
- *   不再先出行内输入框。日历没有时间格，只带日期。月视图点数字弹出的当天列表里点「添加」：先关列表再弹面板。年视图、手机小月历没有「+」。
+ * - 新建（Rei 2026-11-12 06:52「改成和看板模式弹窗同一个组件」，替代 02:04 的新建面板）：格子右上角「+」、当天列表的「添加」
+ *   建一条日期是那天的草稿任务（lib/blank-task createDateDraftTask），直接在点任务时的同一个详情浮层（DetailModal）里打开，
+ *   光标在正文第一行；手机推入整页详情。正文空着关掉就丢掉，不留空任务、不进同步队列。日历没有时间格，只带日期。
+ *   月视图点数字弹出的当天列表里点「添加」：先关列表再开详情。年视图、手机小月历没有「+」。按 N 仍是新建面板。
  * - 拖动改日期（Rei 2026-11-11 06:55，lib/cal-drag）：周、多日、多周、月能拖，年视图不拖；能拖的是任务和倒数日，订阅事件只读。
  *   有起止的整段平移、天数不变（core calDropPatch）；写入走 store.updateTask（我的一天跟着走），提示里能撤销。手机月视图从下面的列表拖到上面的小月历。
  * - 手机：月视图上面是小月历（只画点），下面是选中那天的列表；周、多日、多周按天竖排；年视图一列两个月。
@@ -65,6 +67,7 @@ import { useSettings } from '../lib/settings';
 import { calItemColors } from '../lib/cal-item-color';
 import { calDragSuppressed, useCalDrag, type CalDragRole } from '../lib/cal-drag';
 import { useUi } from '../lib/ui';
+import { createDateDraftTask } from '../lib/blank-task';
 import { titleOf } from '../lib/view';
 import { intlLocale, tr, trc } from '../lib/i18n';
 import '../styles/calendar.css';
@@ -155,8 +158,8 @@ export function CalendarPage() {
     setAnchor(today);
     setPicked(today);
   };
-  // 新建：弹出新建任务面板（ui.openQuickCreate，和按 N 同一个），日期预填点的那天（Rei 2026-11-12 02:04）
-  const create = (date: DateKey) => ui.openQuickCreate({ scheduled_date: date });
+  // 新建：建一条那天的草稿任务，在详情浮层（宽屏 DetailModal，手机整页）里打开，光标进第一行（Rei 2026-11-12 06:52）
+  const create = (date: DateKey) => void createDateDraftTask(store, ui.openEditor, date);
 
   const toolbar = (
     <div className="cal-toolbar">
@@ -265,7 +268,7 @@ export function CalendarPage() {
           if (it.kind === 'event') setOpenEvent(it);
           setDayOpen(null);
         }} onCreate={(d) => {
-          // 两层弹窗不叠：先关当天列表，再弹新建面板
+          // 两层弹窗不叠：先关当天列表，再开详情浮层
           setDayOpen(null);
           create(d);
         }} bare />}

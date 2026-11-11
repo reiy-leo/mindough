@@ -2,7 +2,7 @@
 /** 打卡 / 倒数日页「新建」直接建空任务进详情（Rei 2026-11-09 01:31）。 */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MemoryAdapter, Store } from '@mindough/core';
-import { createBlankTask, sweepBlankTasks, wantsBodyFocus } from './blank-task';
+import { createBlankTask, createDateDraftTask, sweepBlankTasks, wantsBodyFocus } from './blank-task';
 
 async function setup() {
   const store = await Store.open(new MemoryAdapter(), { now: () => new Date(2026, 10, 9, 9) });
@@ -67,5 +67,45 @@ describe('sweepBlankTasks：正文空着离开就删', () => {
     const x = store.createTask({ body_md: '' });
     expect(sweepBlankTasks(store, null)).toEqual([]);
     expect(alive(store, x.id)).toBe(true);
+  });
+});
+
+describe('createDateDraftTask：日历「+」（Rei 2026-11-12 06:52）', () => {
+  it('日期是那天、正文空、选中并要光标；是草稿，不进同步', async () => {
+    const { store, opened, open } = await setup();
+    const pushed: string[] = [];
+    store.onLocalWrite((cs) => pushed.push(...cs.map((c) => c.row.id)));
+    const t = createDateDraftTask(store, open, '2026-11-20');
+    expect(t.scheduled_date).toBe('2026-11-20');
+    expect(t.body_md).toBe('');
+    expect(opened).toEqual([t.id]);
+    expect(wantsBodyFocus(t.id)).toBe(true);
+    expect(store.isDraftTask(t.id)).toBe(true);
+    expect(pushed).toEqual([]);
+  });
+  it('没打字就关：丢掉，什么都不写', async () => {
+    const { store, open } = await setup();
+    const pushed: string[] = [];
+    store.onLocalWrite((cs) => pushed.push(...cs.map((c) => c.row.id)));
+    const t = createDateDraftTask(store, open, '2026-11-20');
+    expect(sweepBlankTasks(store, t.id)).toEqual([]);
+    expect(sweepBlankTasks(store, null)).toEqual([t.id]);
+    expect(store.get('task', t.id)).toBeUndefined();
+    expect(pushed).toEqual([]);
+  });
+  it('打了字：成了普通任务，关掉留着', async () => {
+    const { store, open } = await setup();
+    const t = createDateDraftTask(store, open, '2026-11-20');
+    store.updateTask(t.id, { body_md: '看牙' });
+    expect(store.isDraftTask(t.id)).toBe(false);
+    expect(sweepBlankTasks(store, null)).toEqual([]);
+    expect(alive(store, t.id)).toBe(true);
+  });
+  it('只改了日期、正文还空着关：删掉（已落盘，写墓碑）', async () => {
+    const { store, open } = await setup();
+    const t = createDateDraftTask(store, open, '2026-11-20');
+    store.updateTask(t.id, { scheduled_date: '2026-11-21' });
+    expect(sweepBlankTasks(store, null)).toEqual([t.id]);
+    expect(alive(store, t.id)).toBe(false);
   });
 });

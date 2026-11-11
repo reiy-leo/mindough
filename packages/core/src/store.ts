@@ -154,6 +154,14 @@ export class Store {
   private pending: Promise<void> = Promise.resolve();
   private _version = 0;
   private batchBuffer: Change[] | null = null;
+  /**
+   * 草稿任务（Rei 2026-11-12 06:52 日历「+」）：只在内存里、还没落盘也没进 outbox 的新任务。
+   * createDraftTask 建；第一次有写入碰到它（改正文、改属性、挂类型…）就先把它落盘并进 outbox，之后就是普通任务；
+   * discardDraftTask 直接从内存拿掉，什么都不写。刷新页面就没了（本来就没存过）。
+   */
+  private drafts = new Set<string>();
+  /** createDraftTask 期间：write 只改内存、通知界面，不落盘、不进 outbox，行收在这里。 */
+  private draftCapture: Change[] | null = null;
   private derivedCache: { version: number; value: Map<string, DerivedStatus> } | null = null;
   private relatedCache: { version: number; value: Map<string, string[]> } | null = null;
   private edgeCache: { version: number; accepted: Edge[]; conflicts: ConflictEdge[] } | null = null;
@@ -348,6 +356,8 @@ export class Store {
   /** 写一批行：补 updated_at，改内存，通知，再异步落盘。 */
   write(changes: Array<{ table: TableName; row: BaseRow }>): void {
     if (!changes.length) return;
+    // 碰到草稿任务的写入：先把草稿落盘（进 outbox），再照常写这一批
+    if (this.drafts.size && !this.draftCapture) this.materializeDrafts(changes);
     // 严格模式（Rei 2026-11-08）：完成和关闭的任务不能改，整批不写（见 strict.ts）
     if (this.strictDone && violatesStrict(changes, (id) => isStrictLocked(true, this.tables.task.get(id)))) throw new StrictModeError();
     // 日记的条目发了就不能改（Rei 2026-10-28）：只许打墓碑、撤销删除
@@ -384,7 +394,12 @@ export class Store {
       const via = this.manualLibViaRows(stamped, prevTasks);
       if (via.length) stamped = dedupeRows([...stamped, ...via.map(stampOne)]) as Change[];
     }
-    if (this.batchBuffer) {
+    if (this.draftCapture) {
+      // 建草稿：只改内存、通知界面
+      this.draftCapture.push(...stamped);
+      this._version++;
+      for (const fn of this.listeners) fn();
+    } else if (this.batchBuffer) {
       this.batchBuffer.push(...stamped);
       this._version++;
     } else this.commit(stamped);
@@ -1599,9 +1614,60 @@ export class Store {
     }
   }
 
-  /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。 */
+  /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。草稿任务直接丢掉，不写墓碑。 */
   deleteTask(id: string): void {
+    if (this.discardDraftTask(id)) return;
     this.write(this.taskTombstoneRows(id));
+  }
+
+  /**
+   * 建一条草稿任务（Rei 2026-11-12 06:52 日历「+」：先开详情，正文空着关掉就不留）：和 createTask 一样建在内存里、界面看得见，
+   * 但不落盘、不进 outbox。之后第一次有写入碰到它就转成普通任务落盘（日期是今天的那时才放进我的一天）；
+   * 没碰过就关掉的，discardDraftTask 拿掉，云端和别的设备都不知道有过它。
+   * 顺带写的别的行（不是这件任务本身的）照常落盘。
+   */
+  createDraftTask(input: NewTaskInput = {}): Task {
+    if (this.draftCapture || this.batchBuffer) return this.createTask(input);
+    const captured: Change[] = [];
+    this.draftCapture = captured;
+    let task: Task;
+    try {
+      task = this.createTask(input, { joinMyDay: false });
+    } finally {
+      this.draftCapture = null;
+    }
+    const others = captured.filter((c) => !(c.table === 'task' && c.row.id === task.id));
+    if (others.length) this.commit(others);
+    this.drafts.add(task.id);
+    return this.tables.task.get(task.id) ?? task;
+  }
+
+  /** 这件任务还是草稿（只在内存里）吗。 */
+  isDraftTask(id: string): boolean {
+    return this.drafts.has(id);
+  }
+
+  /** 丢掉草稿任务：从内存拿掉、通知界面，什么都不写。不是草稿（已经落盘了）返回 false、不动。 */
+  discardDraftTask(id: string): boolean {
+    if (!this.drafts.delete(id)) return false;
+    this.tables.task.delete(id);
+    this._version++;
+    for (const fn of this.listeners) fn();
+    return true;
+  }
+
+  /** 这批写入里有碰到草稿任务的（任务本身，或别的行里指着它的 id）：草稿先落盘，再按新建时的规则放进我的一天。 */
+  private materializeDrafts(changes: ReadonlyArray<{ table: TableName; row: BaseRow }>): void {
+    const hit = [...this.drafts].filter((id) => changes.some((c) => c.row.id === id || Object.values(c.row as unknown as Record<string, unknown>).includes(id)));
+    for (const id of hit) {
+      this.drafts.delete(id);
+      const row = this.tables.task.get(id);
+      if (!row) continue;
+      const change = { table: 'task', row } as Change;
+      if (this.batchBuffer) this.batchBuffer.push(change);
+      else this.commit([change]);
+      this.joinMyDayOnToday(row, null);
+    }
   }
 
   /** 删一件任务要打墓碑的所有行（任务本身 + 依赖边、相关任务、我的一天、人物 / 类型 / 资料关联、附件）。 */
