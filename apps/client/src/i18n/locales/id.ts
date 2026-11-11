@@ -123,6 +123,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "项目显示方式|列表": "Daftar",
   "项目显示方式|图标": "Ikon",
   "放进侧边栏的项目": "Proyek di bilah samping",
+  "资料库显示方式": "Tampilan pustaka",
+  "放进侧边栏的资料库": "Pustaka di bilah samping",
   "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Menampilkan tugas yang jatuh tempo hari ini, check-in hari ini, dan tugas yang baru terbuka di bawah Hari Saya. Hanya di perangkat ini.",
   // ── 日期面板方案 A（Rei 2026-11-01，待母语者看）──
   "已选的日期": "Tanggal yang dipilih",

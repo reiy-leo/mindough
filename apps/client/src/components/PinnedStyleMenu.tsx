@@ -1,11 +1,12 @@
 /**
  * 侧栏里放进来的项目「显示为：列表 / 图标」（Rei 2026-11-11 02:18 定入口）：电脑侧栏「项目」那行、手机「更多」页「项目」那行右边一个小的 ···，
  * 点开单选菜单，当前项打勾。偏好在 lib/pinned-style（本机，不同步）。
+ * 放进来的资料库同样（Rei 2026-11-12 00:24）：「资料库」那行右边的 ···（kind="library"），设置和项目的各管各的。
  * 入口单独成一个组件，以后挪地方（比如项目列表页右上角、小节右键菜单）只要换放的位置。
  */
 import { Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Button as RacButton } from 'react-aria-components';
 import { Check, LayoutGrid, List, MoreHorizontal } from 'lucide-react';
-import { PINNED_STYLES, usePinnedGroupStyle, type PinnedStyle } from '../lib/pinned-style';
+import { PINNED_STYLES, usePinnedStyle, type PinnedStyle, type PinnedStyleKind } from '../lib/pinned-style';
 import { Tip } from '../ui/primitives';
 import { tr, trc } from '../lib/i18n';
 
@@ -62,7 +63,12 @@ export function DisplayStyleMenu({ label, value, onChange, className }: { label:
   );
 }
 
-export function PinnedStyleMenu({ className }: { className?: string }) {
-  const [style, setStyle] = usePinnedGroupStyle();
-  return <DisplayStyleMenu label={tr('项目显示方式')} value={style} onChange={setStyle} className={className} />;
+const MENU_LABEL: Record<PinnedStyleKind, () => string> = {
+  group: () => tr('项目显示方式'),
+  library: () => tr('资料库显示方式'),
+};
+
+export function PinnedStyleMenu({ kind = 'group', className }: { kind?: PinnedStyleKind; className?: string }) {
+  const [style, setStyle] = usePinnedStyle(kind);
+  return <DisplayStyleMenu label={MENU_LABEL[kind]()} value={style} onChange={setStyle} className={className} />;
 }

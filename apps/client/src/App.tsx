@@ -51,7 +51,7 @@ import { MenuAt, OverflowMenu, useContextMenuAt, type MenuAction } from './ui/pr
 import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
 import { useAppMenu } from './lib/app-menu';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
-import { pinnedGroupGrid } from './lib/pinned-style';
+import { pinnedGrid, type PinnedStyleKind } from './lib/pinned-style';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
 
@@ -252,7 +252,8 @@ function PinnedLink({ item, active, compact, rail }: { item: NavItem; active: bo
   // 列表样式：项目菜单从行右边的 ··· 进，不再右键 / 长按（Rei 2026-11-11 02:56）；图标样式、960 图标栏没地方放 ···，照旧右键 / 长按
   if (g) return compact || rail ? <PinnedGroupLink item={item} active={active} group={g} compact={compact} /> : <PinnedGroupRow item={item} active={active} group={g} />;
   // 资料库那一串同样（Rei 2026-11-11 04:27）：列表里行右边 ···，960 图标栏照旧右键
-  return rail ? <PinnedLibraryLink item={item} active={active} /> : <PinnedLibraryRow item={item} active={active} />;
+  // 「显示为：图标」（Rei 2026-11-12）同项目：只放图标，右键 / 长按出菜单
+  return compact || rail ? <PinnedLibraryLink item={item} active={active} compact={compact} /> : <PinnedLibraryRow item={item} active={active} />;
 }
 
 /**
@@ -377,8 +378,9 @@ function PinnedGroupLink({ item, active, group, compact }: { item: NavItem; acti
   );
 }
 
-/** 放进侧边栏的资料库，960 图标栏：没地方放 ···，照旧右键出「取消在侧边栏显示」。 */
-function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean }) {
+/** 放进侧边栏的资料库，图标样式 / 960 图标栏：没地方放 ···，照旧右键出「取消在侧边栏显示」。
+ *  compact：「显示为：图标」时只放图标（Rei 2026-11-12，同项目），名字在悬停提示和读屏名里；手指长按没挪松开出的菜单顶上写名字。 */
+function PinnedLibraryLink({ item, active, compact }: { item: NavItem; active: boolean; compact?: boolean | undefined }) {
   const store = useStore();
   const menu = useContextMenuAt({ longPress: false });
   const reorder = usePinnedReorder(item.libraryId, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
@@ -397,16 +399,17 @@ function PinnedLibraryLink({ item, active }: { item: NavItem; active: boolean })
         onClick={(e) => {
           if (menu.consumeLongPress()) e.preventDefault();
         }}
-        className={`nav-item nav-item-sub${active ? ' is-active' : ''}`}
+        className={`nav-item nav-item-sub${compact ? ' nav-item-tile' : ''}${active ? ' is-active' : ''}`}
         aria-current={active ? 'page' : undefined}
+        aria-label={compact ? item.label : undefined}
         title={item.label}
       >
         <span className="nav-icon" style={vividVar(colorLevel, t?.color)}>
-          <Icon size={18} />
+          <Icon size={compact ? 20 : 18} />
         </span>
-        <span className="nav-label">{item.label}</span>
+        {!compact && <span className="nav-label">{item.label}</span>}
       </a>
-      {action && <MenuAt at={menu.at} label={item.label} items={[action]} onClose={menu.close} />}
+      {action && <MenuAt at={menu.at} label={item.label} heading={compact ? item.label : undefined} items={[action]} onClose={menu.close} />}
     </>
   );
 }
@@ -476,38 +479,61 @@ function MorePage() {
   );
 }
 
+/** 一行属于哪一串置顶：项目 / 资料库，别的行不算。 */
+function pinnedKindOf(n: NavItem): PinnedStyleKind | null {
+  return n.groupId ? 'group' : n.libraryId ? 'library' : null;
+}
+
+/** 「项目」/「资料库」那行（不是放进来的某一个）：这一串有东西时右边放 ··· 切「显示为」。 */
+function anchorKindOf(n: NavItem): PinnedStyleKind | null {
+  if (n.key) return null;
+  return n.page === 'groups' ? 'group' : n.page === 'library' ? 'library' : null;
+}
+
+const PINNED_GRID_LABEL: Record<PinnedStyleKind, () => string> = {
+  group: () => tr('放进侧边栏的项目'),
+  library: () => tr('放进侧边栏的资料库'),
+};
+
 /**
- * 侧栏一节里的项（Rei 2026-11-11 项目「显示为：列表 / 图标」）：放进侧栏的项目连成一串；选了图标（且不是中等宽度的图标栏）时，
- * 这一串包进一个会折行的网格（data-reorder-layout="grid"，拖动排序按网格算）。有放进来的项目时，「项目」那行右边多一个 ···（PinnedStyleMenu）。
+ * 侧栏一节里的项（Rei 2026-11-11 项目「显示为：列表 / 图标」，2026-11-12 资料库也跟上）：放进侧栏的项目 / 资料库各连成一串；
+ * 这一串选了图标（且不是中等宽度的图标栏）时，包进一个会折行的网格（data-reorder-layout="grid"，拖动排序按网格算）。
+ * 有放进来的项目 / 资料库时，「项目」/「资料库」那行右边多一个 ···（PinnedStyleMenu），两串各管各的设置。
  */
 function SidebarItems({ items, narrow, render }: { items: NavItem[]; narrow: boolean; render: (n: NavItem, compact: boolean) => ReactNode }) {
   const { settings } = useSettings();
-  const grid = pinnedGroupGrid(settings, narrow);
-  const hasPinned = items.some((n) => n.groupId);
+  const has = (k: PinnedStyleKind) => items.some((n) => pinnedKindOf(n) === k);
   const out: ReactNode[] = [];
   let run: NavItem[] = [];
+  let runKind: PinnedStyleKind | null = null;
   const flush = () => {
-    if (!run.length) return;
-    if (grid)
+    if (!run.length || !runKind) return;
+    const k = runKind;
+    if (pinnedGrid(settings, k, narrow))
       out.push(
-        <div key="pinned-groups" className="nav-pinned-grid" data-reorder-layout="grid" role="group" aria-label={tr('放进侧边栏的项目')}>
+        <div key={`pinned-${k}`} className="nav-pinned-grid" data-reorder-layout="grid" role="group" aria-label={PINNED_GRID_LABEL[k]()}>
           {run.map((n) => render(n, true))}
         </div>,
       );
     else out.push(...run.map((n) => render(n, false)));
     run = [];
+    runKind = null;
   };
   for (const n of items) {
-    if (n.groupId) {
+    const k = pinnedKindOf(n);
+    if (k) {
+      if (k !== runKind) flush();
+      runKind = k;
       run.push(n);
       continue;
     }
     flush();
-    if (n.page === 'groups' && !n.key && hasPinned && !narrow)
+    const anchor = anchorKindOf(n);
+    if (anchor && has(anchor) && !narrow)
       out.push(
-        <div key="groups-row" className="nav-item-split">
+        <div key={`${anchor}-row`} className="nav-item-split">
           {render(n, false)}
-          <PinnedStyleMenu className="nav-item-more" />
+          <PinnedStyleMenu kind={anchor} className="nav-item-more" />
         </div>,
       );
     else out.push(render(n, false));
@@ -516,18 +542,19 @@ function SidebarItems({ items, narrow, render }: { items: NavItem[]; narrow: boo
   return <>{out}</>;
 }
 
-/** 「更多」页一节里的行；放进侧栏的项目同侧栏一样按「显示为」排（手机没有图标栏，只看设置）。 */
+/** 「更多」页一节里的行；放进侧栏的项目 / 资料库同侧栏一样按各自的「显示为」排（手机没有图标栏，只看设置）。 */
 function MoreItems({ items }: { items: NavItem[] }) {
   const { settings } = useSettings();
-  const grid = pinnedGroupGrid(settings, false);
-  const hasPinned = items.some((n) => n.groupId);
+  const has = (k: PinnedStyleKind) => items.some((n) => pinnedKindOf(n) === k);
   const out: ReactNode[] = [];
   let run: NavItem[] = [];
+  let runKind: PinnedStyleKind | null = null;
   const flush = () => {
-    if (!run.length) return;
-    if (grid)
+    if (!run.length || !runKind) return;
+    const k = runKind;
+    if (pinnedGrid(settings, k, false))
       out.push(
-        <div key="pinned-groups" className="more-item more-pinned-grid" data-reorder-layout="grid" role="group" aria-label={tr('放进侧边栏的项目')}>
+        <div key={`pinned-${k}`} className="more-item more-pinned-grid" data-reorder-layout="grid" role="group" aria-label={PINNED_GRID_LABEL[k]()}>
           {run.map((n) => (
             <MoreTile key={n.key} item={n} />
           ))}
@@ -535,21 +562,26 @@ function MoreItems({ items }: { items: NavItem[] }) {
       );
     else out.push(...run.map((n) => <MoreLink key={n.key} item={n} />));
     run = [];
+    runKind = null;
   };
   for (const n of items) {
-    if (n.groupId) {
+    const k = pinnedKindOf(n);
+    if (k) {
+      if (k !== runKind) flush();
+      runKind = k;
       run.push(n);
       continue;
     }
     flush();
-    out.push(<MoreLink key={n.key ?? n.page} item={n} menu={n.page === 'groups' && !n.key && hasPinned} />);
+    const anchor = anchorKindOf(n);
+    out.push(<MoreLink key={n.key ?? n.page} item={n} {...(anchor && has(anchor) ? { menu: anchor } : {})} />);
   }
   flush();
   return <>{out}</>;
 }
 
-/** 「更多」页的一行；置顶的项目 / 资料库能长按拖动排序（Rei 2026-11-10），长按没挪就松开什么也不做。menu：「项目」那行右边放 ···。 */
-function MoreLink({ item: n, menu }: { item: NavItem; menu?: boolean }) {
+/** 「更多」页的一行；置顶的项目 / 资料库能长按拖动排序（Rei 2026-11-10），长按没挪就松开什么也不做。menu：「项目」/「资料库」那行右边放哪一串的 ···。 */
+function MoreLink({ item: n, menu }: { item: NavItem; menu?: PinnedStyleKind }) {
   const store = useStore();
   const g = n.groupId ? store.get('group', n.groupId) : null;
   if (g) return <MoreGroupRow item={n} group={g} />;
@@ -594,7 +626,7 @@ function MorePinnedRow({ item: n, reorderId, items, children }: { item: NavItem;
   );
 }
 
-function MoreLinkPlain({ item: n, menu }: { item: NavItem; menu?: boolean }) {
+function MoreLinkPlain({ item: n, menu }: { item: NavItem; menu?: PinnedStyleKind }) {
   const Icon = n.icon;
   const reorder = usePinnedReorder(n.groupId ?? n.libraryId);
   const link = (
@@ -610,16 +642,48 @@ function MoreLinkPlain({ item: n, menu }: { item: NavItem; menu?: boolean }) {
   return (
     <div className="more-item more-item-split">
       {link}
-      <PinnedStyleMenu className="more-item-more" />
+      <PinnedStyleMenu kind={menu} className="more-item-more" />
     </div>
   );
 }
 
-/** 「更多」页「显示为：图标」时的一个项目图标：读屏名、悬停提示是项目名；长按拿起没挪就松开，出项目菜单（顶上写项目名）。 */
+/** 「更多」页「显示为：图标」时的一个项目 / 资料库图标：读屏名、悬停提示是名字；长按拿起没挪就松开，出它的菜单（顶上写名字）。 */
 function MoreTile({ item: n }: { item: NavItem }) {
   const store = useStore();
   const g = n.groupId ? store.get('group', n.groupId) : null;
-  return g ? <MoreTileOf item={n} group={g} /> : null;
+  if (g) return <MoreTileOf item={n} group={g} />;
+  return n.libraryId ? <MoreLibraryTile item={n} /> : null;
+}
+
+/** 「更多」页放进来的资料库，「显示为：图标」（Rei 2026-11-12）：同项目图标，菜单是原来那个「取消在侧边栏显示」。图标同「更多」页列表行。 */
+function MoreLibraryTile({ item: n }: { item: NavItem }) {
+  const store = useStore();
+  const menu = useContextMenuAt({ longPress: false });
+  const reorder = usePinnedReorder(n.libraryId, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
+  const t = n.libraryId ? store.get('task_type', n.libraryId) : null;
+  const action = t ? librarySidebarAction(store, t) : null;
+  const Icon = n.icon;
+  return (
+    <>
+      <a
+        className="more-tile more-tile-lib"
+        href={href(n.to!)}
+        draggable={false}
+        {...menu.props}
+        {...reorder.props}
+        onClick={(e) => {
+          if (menu.consumeLongPress()) e.preventDefault();
+        }}
+        aria-label={n.label}
+        title={n.label}
+      >
+        <span className="more-icon">
+          <Icon size={24} />
+        </span>
+      </a>
+      {action && <MenuAt at={menu.at} label={n.label} heading={n.label} items={[action]} onClose={menu.close} />}
+    </>
+  );
 }
 
 function MoreTileOf({ item: n, group: g }: { item: NavItem; group: Group }) {

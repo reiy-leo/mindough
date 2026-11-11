@@ -76,6 +76,8 @@ export const EN: Record<string, EnValue> = {
   "项目显示方式|列表": "List",
   "项目显示方式|图标": "Icons",
   "放进侧边栏的项目": "Projects in Sidebar",
+  "资料库显示方式": "Library Display",
+  "放进侧边栏的资料库": "Libraries in Sidebar",
   "在我的一天下面列出今天到期、今天要打卡、刚解锁的任务。只在这台设备上生效。": "Lists tasks due today, check-ins due today, and tasks just unlocked under My Day. Only applies on this device.",
   "我的一天、严格模式、日期显示、农历": "My Day, strict mode, date display, Chinese calendar",
   "我的一天、严格模式、日期显示": "My Day, strict mode, date display",
