@@ -397,6 +397,15 @@
   align-items: center;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
+/* 行底下那条分隔线在行自己的边框上，固定列盖不到，网格线和今天线会从这 1px 里漏出来：
+   固定格往下多盖 1px，自己画这条线（画在自己的不透明底上，不会透） */
+.tl-row .tl-name {
+  align-self: stretch;
+  height: auto;
+  margin-bottom: -1px;
+  border-bottom: 1px solid var(--border);
+  border-bottom-color: color-mix(in srgb, var(--border) 60%, transparent);
+}
 .tl-row.is-selected .tl-name {
   --tl-name-over: var(--accent-soft);
   color: var(--accent-soft-text, var(--accent));
