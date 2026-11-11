@@ -10,6 +10,7 @@ import { QuickAddBar } from '../components/QuickAddBar';
 import { titleOf } from '../lib/view';
 import { RowLead, TaskRow } from '../components/TaskRow';
 import { LunarLine } from '../components/LunarLine';
+import { TopbarActions } from '../lib/topbar-slot';
 import { useSettings } from '../lib/settings';
 import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
@@ -88,6 +89,19 @@ export function MyDayPage() {
         label={tr('添加任务到今天')}
         create={(body) => createToday(store, body, today, { dateToday: settings.myDayDefaultToday })}
         head={
+          layout === 'mobile' ? (
+            // 手机不放页头（Rei 2026-11-12 01:56「我的一天、等待安排、过期积压不显示顶部的页头」）：大号日期和农历去掉，读屏留 h1；
+            // 排序 / 分区按钮挪到顶栏右边（顶栏左边写「我的一天」），状态还在这一页
+            <>
+              <h1 className="sr-only">{tr('我的一天')} · {formatDateZh(today)}</h1>
+              <TopbarActions>
+                <span className="list-tools">
+                  <DaySortMenu value={view.sort} onChange={(sort) => setView({ sort })} />
+                  <SectionMenu value={view.section as SectionBy} options={MYDAY_SECTIONS} onChange={(section) => setView({ section })} />
+                </span>
+              </TopbarActions>
+            </>
+          ) : (
           <div className="myday-head">
             <div className="myday-head-text">
               <h1 className="page-title myday-date">
@@ -101,6 +115,7 @@ export function MyDayPage() {
               <SectionMenu value={view.section as SectionBy} options={MYDAY_SECTIONS} onChange={(section) => setView({ section })} />
             </span>
           </div>
+          )
         }
       />
 

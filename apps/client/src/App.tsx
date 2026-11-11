@@ -61,6 +61,7 @@ import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
 import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
 import { mobileTopbar } from './lib/mobile-topbar';
+import { TOPBAR_SLOT_ID } from './lib/topbar-slot';
 interface NavItem {
   page: Route['page'];
   label: string;
@@ -907,6 +908,8 @@ export function App() {
         ) : (
           <div className="topbar">
             <span className="topbar-title">{current?.label ?? appName()}</span>
+            {/* 页面送过来的按钮（我的一天的排序 / 分区，lib/topbar-slot） */}
+            <span className="topbar-actions" id={TOPBAR_SLOT_ID} />
           </div>
         )}
         <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>

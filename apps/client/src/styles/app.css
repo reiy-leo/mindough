@@ -4793,3 +4793,22 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 [data-layout='mobile'] .search-page-list .palette-item {
   min-height: 48px;
 }
+
+/* 手机顶栏右边：页面送过来的按钮（我的一天的排序 / 分区，Rei 2026-11-12 01:56 手机不放页头，lib/topbar-slot） */
+.topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.topbar-actions:empty {
+  display: none;
+}
+.topbar .list-tools {
+  margin-block: 0;
+  gap: 4px;
+}
+.topbar .list-tools .icon-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
