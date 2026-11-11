@@ -19,7 +19,7 @@ import { ProjectTimeline } from '../components/project/ProjectTimeline';
 import { ProjectChains } from '../components/project/ProjectChains';
 import { SectionMenu, SortMenu, ViewMenu } from '../components/project/ProjectMenus';
 import { SectionedList } from '../components/SectionedList';
-import { sectionTasks } from '../lib/sections';
+import { categorySectionOrder, sectionTasks } from '../lib/sections';
 import { useSettings } from '../lib/settings';
 import { useColorLevel } from '../lib/color-level';
 import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
@@ -209,7 +209,12 @@ function GroupDetail({
   const open = tasks.filter((t) => !isFinished(t.status));
   const ended = tasks.filter((t) => isFinished(t.status));
   // 分区只分没结束的；「已结束」那段照旧单独在下面（Rei 2026-11-08）
-  const sections = prefs.view === 'list' ? sectionTasks(open, prefs.section, { now: store.now(), today: toDateKey(store.now()), weekStart: weekStartsOn() }) : null;
+  const sections = prefs.view === 'list' ? sectionTasks(open, prefs.section, {
+          now: store.now(),
+          today: toDateKey(store.now()),
+          weekStart: weekStartsOn(),
+          ...(prefs.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
+        }) : null;
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
   const pageRef = useProjectTint(g);

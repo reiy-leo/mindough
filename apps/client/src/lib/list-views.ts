@@ -9,7 +9,7 @@ import { normalizeSectionBy, type SectionBy } from './sections';
 
 export type ListPage = 'myday' | 'doable' | 'done';
 
-export const MYDAY_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'project'];
+export const MYDAY_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'project', 'type'];
 /** 积压、已完成：按日期（原来的分段）或不分区。 */
 export type DateSection = 'date' | 'none';
 export const DATE_SECTIONS: readonly DateSection[] = ['date', 'none'];

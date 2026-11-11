@@ -12,7 +12,7 @@ import { addDays, diffDays, isMoodId, startOfWeek, TASK_STATUSES, type DateKey, 
 import { moodRank, normalizeSectionBy, type SectionBy } from './sections';
 
 /** 项目页能选的分区：不分区、按心情、按目标日期。 */
-export const PROJECT_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'due'];
+export const PROJECT_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'type', 'due'];
 
 export type ProjectView = 'list' | 'board' | 'timeline' | 'chain';
 export const PROJECT_VIEWS: readonly ProjectView[] = ['list', 'board', 'timeline', 'chain'];

@@ -33,13 +33,14 @@ export const SECTION_LABEL: Record<SectionBy | 'date', () => string> = {
   none: () => tr('不分区'),
   mood: () => tr('按心情'),
   project: () => tr('按项目'),
+  type: () => tr('按类型'),
   due: () => tr('按目标日期'),
   date: () => tr('按日期'),
 };
 
 /**
  * 分区菜单（Rei 2026-11-08）：右上角一个图标按钮，单选打勾。选了「不分区」以外的，图标是强调色。
- * options：这一页能选的（我的一天：不分区 / 按心情 / 按项目；项目：不分区 / 按心情 / 按目标日期；积压、已完成：按日期 / 不分区）。
+ * options：这一页能选的（我的一天：不分区 / 按心情 / 按项目 / 按类型；项目：不分区 / 按心情 / 按类型 / 按目标日期；积压、已完成：按日期 / 不分区）。
  */
 export function SectionMenu<K extends string>({ value, options, onChange, plain }: { value: K; options: readonly K[]; onChange: (v: K) => void; /** 哪个算「没改过」（图标不亮），默认 none */ plain?: K }) {
   const label = tr('分区：{name}', { name: SECTION_LABEL[value as SectionBy]?.() ?? value });

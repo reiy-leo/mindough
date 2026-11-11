@@ -4,23 +4,27 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { CalendarClock, ChevronRight, Shapes, Smile } from 'lucide-react';
-import { groupColor, type Task } from '@mindough/core';
+import { CalendarClock, ChevronRight, Shapes, Smile, Tag } from 'lucide-react';
+import { categoryIcon, groupColor, type Task } from '@mindough/core';
 import { MoodIcon } from './journal/MoodIcon';
 import { GroupIcon } from './project/GroupIcon';
+import { IconTile } from './IconTile';
 import { useColorLevel } from '../lib/color-level';
 import { sectionCollapsed, toggleSectionCollapsed, type ListSection } from '../lib/sections';
 
 function SectionIcon({ s }: { s: ListSection<Task> }) {
   if (s.kind === 'mood') return s.key === 'none' ? <Smile size={15} aria-hidden /> : <MoodIcon mood={s.key} size={16} />;
   if (s.kind === 'project') return s.group ? <GroupIcon group={s.group} size={16} /> : <Shapes size={15} aria-hidden />;
+  // 按类型（Rei 2026-11-12）：类型自己的小图标块（IconTile，和类型页、侧栏一样）；「没有类型」一个中性的标签图标
+  if (s.kind === 'type') return s.category ? <IconTile icon={categoryIcon(s.category)} color={s.category.color} size={16} /> : <Tag size={15} aria-hidden />;
   return <CalendarClock size={15} aria-hidden />;
 }
 
-/** 多彩档分区标题的颜色：心情用心情色，项目用项目色；「没有心情 / 没有项目」和日期分区不上色。 */
+/** 多彩档分区标题的颜色：心情用心情色，项目用项目色，类型用类型色；「没有心情 / 没有项目 / 没有类型」和日期分区不上色。 */
 function tint(s: ListSection<Task>): CSSProperties | undefined {
   if (s.kind === 'mood' && s.key !== 'none') return { '--section-tint': `var(--mood-${s.key})` } as CSSProperties;
   if (s.kind === 'project' && s.group) return { '--section-tint': groupColor(s.group) } as CSSProperties;
+  if (s.kind === 'type' && s.category?.color) return { '--section-tint': s.category.color } as CSSProperties;
   return undefined;
 }
 
@@ -38,7 +42,7 @@ export function SectionedList<T extends Task>({
   idPrefix: string;
   renderList: (tasks: T[], s: ListSection<T>) => ReactNode;
 }) {
-  // 多彩档（色彩设置，Rei 2026-11-09）：心情 / 项目分区的标题直接用彩色文字，不放色点（混一点正文色保住对比度，见 color-level.css）
+  // 多彩档（色彩设置，Rei 2026-11-09）：心情 / 项目 / 类型分区的标题直接用彩色文字，不放色点（混一点正文色保住对比度，见 color-level.css）
   const vivid = useColorLevel() === 'vivid';
   return (
     <>

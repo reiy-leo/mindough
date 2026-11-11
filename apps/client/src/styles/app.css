@@ -4128,7 +4128,8 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .list-section {
   margin-top: var(--space-2);
 }
-.list-section-toggle .mood-icon {
+.list-section-toggle .mood-icon,
+.list-section-toggle .icon-tile {
   flex: none;
 }
 .list-section .task-list { margin-top: var(--space-2); }

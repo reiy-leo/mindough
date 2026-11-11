@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Group, Task } from '@mindough/core';
-import { backlogSections, dueBucket, moodRank, overdueBucket, overdueBucketOfDays, sectionOverdue, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
+import type { Category, Group, Task } from '@mindough/core';
+import { backlogSections, categorySectionOrder, dueBucket, moodRank, overdueBucket, overdueBucketOfDays, sectionOverdue, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
 import { normalizeListView } from './list-views';
 import { normalizePrefs, sortTasks } from './project-view';
 
@@ -36,6 +36,43 @@ describe('列表分区 sections', () => {
     expect(s[2]!.tasks).toHaveLength(2);
     expect(s[0]!.group?.name).toBe('A');
   });
+  it('按类型：只进第一个类型，按传进来的类型顺序，没有类型（或不认识的类型）最后', () => {
+    const c = (id: string, name: string, o: Partial<Category> = {}) => ({ id, name, color: '#123456', icon: 'tag', hidden: false, ...o }) as unknown as Category;
+    const cats = [c('run', '跑步'), c('read', '读书'), c('old', '旧的', { hidden: true }), c('none-used', '没人用')];
+    const links: Record<string, string[]> = {};
+    const mk = (ids: string[]) => {
+      const x = t();
+      links[x.id] = ids;
+      return x;
+    };
+    const a = mk(['read', 'run']);
+    const b = mk(['run']);
+    const d = mk([]);
+    const e = mk(['old']);
+    const f = mk(['gone']);
+    const s = sectionTasks([a, b, d, e, f], 'type', { categories: cats, categoryIdsOf: (x) => links[x.id] ?? [] })!;
+    expect(s.map((x) => x.key)).toEqual(['run', 'read', 'old', 'none']);
+    expect(s[0]!.tasks).toEqual([b]);
+    expect(s[1]!.tasks).toEqual([a]); // 挂了两个类型只出现一次，在第一个类型下
+    expect(s[2]!.category?.id).toBe('old'); // 不显示的类型照常成段
+    expect(s[3]!.tasks).toEqual([d, f]);
+    expect(s.every((x) => x.kind === 'type')).toBe(true);
+    // 没传取类型的函数：全进「没有类型」
+    expect(sectionTasks([a], 'type', { categories: cats })!.map((x) => x.key)).toEqual(['none']);
+  });
+  it('按类型的先后：能显示的按选择器顺序，不显示的同样规则排在后面', () => {
+    const c = (id: string, o: Partial<Category> = {}) => ({ id, name: id, color: '', icon: '', hidden: false, sort: 0, ...o }) as unknown as Category;
+    const vis = [c('b'), c('a')];
+    const hid = [c('h1', { hidden: true, sort: 2 }), c('h2', { hidden: true, sort: 1 })];
+    const store = {
+      categories: (all?: boolean) => (all ? [...vis, ...hid] : vis),
+      pickerCategories: () => vis,
+      frequentCategoryIds: () => [],
+      categoryLastUsed: () => new Map([['h1', '2026-11-11T00:00:00Z']]),
+      categoryGroupOverrides: () => new Map(),
+    } as unknown as Parameters<typeof categorySectionOrder>[0];
+    expect(categorySectionOrder(store).map((x) => x.id)).toEqual(['b', 'a', 'h1', 'h2']);
+  });
   it('目标日期段：过期 / 今天 / 本周 / 本月 / 更远 / 没有日期，日期段看结束日', () => {
     const b = (o: Partial<Task>, ws: 0 | 1 = 1) => dueBucket(t(o) as Task, now, today, ws);
     expect(b({ scheduled_date: '2026-11-10' })).toBe('overdue');
@@ -66,6 +103,7 @@ describe('列表视图设置', () => {
     expect(normalizeListView('myday', undefined)).toEqual({ section: 'none', sort: 'manual', collapsed: [] });
     expect(normalizeListView('myday', { section: 'due', sort: 'mood' })).toMatchObject({ section: 'none', sort: 'mood' });
     expect(normalizeListView('myday', { section: 'project' }).section).toBe('project');
+    expect(normalizeListView('myday', { section: 'type' }).section).toBe('type');
   });
   it('积压、已完成：默认按日期，能选不分区', () => {
     expect(normalizeListView('doable', undefined).section).toBe('date');
@@ -75,6 +113,7 @@ describe('列表视图设置', () => {
   it('项目页：分区不认按项目；排序能按心情，没心情的正序倒序都最后', () => {
     expect(normalizePrefs({ section: 'project' }).section).toBe('none');
     expect(normalizePrefs({ section: 'due' }).section).toBe('due');
+    expect(normalizePrefs({ section: 'type' }).section).toBe('type');
     const base = { sort: 0, created_at: '', updated_at: '', scheduled_date: null, target_date: null, completion_mode: 'once' } as const;
     const list = [
       { ...base, id: 'a', mood: null },

@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
 import { ChevronRight, CircleCheck, EyeOff, Lightbulb, RotateCcw, Sun } from 'lucide-react';
-import { formatDateZh, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem } from '@mindough/core';
+import { formatDateZh, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem, type Task } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
@@ -16,7 +16,7 @@ import { JournalCard } from '../components/journal/JournalCard';
 import { visibleDayEntries } from '../lib/project-archive';
 import { dayItems } from '../lib/myday-items';
 import { MYDAY_SECTIONS, useListView } from '../lib/list-views';
-import { sectionTasks, sortByMood, type SectionBy } from '../lib/sections';
+import { categorySectionOrder, sectionTasks, sortByMood, type SectionBy } from '../lib/sections';
 import { SectionedList } from '../components/SectionedList';
 import { DaySortMenu, SectionMenu } from '../components/project/ProjectMenus';
 
@@ -60,7 +60,10 @@ export function MyDayPage() {
   const restOpen = open.filter((i) => !isPinnedEntry(i.entry));
   const sortedRest = view.sort === 'mood' ? sortByMood(restOpen.map((i) => ({ ...i, mood: i.task.mood }))) : restOpen;
   const byTask = new Map(sortedRest.map((i) => [i.task.id, i]));
-  const daySections = custom ? sectionTasks(sortedRest.map((i) => i.task), view.section as SectionBy, { groups: store.activeGroups() }) : null;
+  const daySections = custom ? sectionTasks(sortedRest.map((i) => i.task), view.section as SectionBy, {
+        groups: store.activeGroups(),
+        ...(view.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
+      }) : null;
   const plainRows = (list: MyDayItem[]) => (
     <div className="task-list plain">
       {list.map((i) => (

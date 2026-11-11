@@ -7,13 +7,26 @@
  * - 按目标日期：过期 / 今天 / 本周 / 本月 / 更远 / 没有日期。目标日期 = 任务的日期，日期段取结束日（core taskEndDate，和积压、过期一致）；
  *   倒数日也取任务的日期（scheduled_date，不看 target_date），Rei 说的「倒数日取开始日」。「今天」「过期」按任务时区（taskToday）。
  *   本周 = 今天之后、这周最后一天之前（一周从哪天开始用 core weekStartsOn()，和月历一样）；本月 = 这周以后、这个月底之前；更远 = 再往后。
+ * - 按类型（Rei 2026-11-12 00:47「我的一天和项目页的分区里加按类型」）：一件任务能挂几个类型，只进一个分区＝它的第一个类型
+ *   （任务上类型的顺序，store.categoryIdsOfTask 的第一个，和打卡页按类型分组一样不重复出现）；没挂类型的放最后「没有类型」。
+ *   分区顺序和类型页、类型选择器同一个规则（categorySectionOrder）：常用的在前，其余按最近用过，没用过的按默认组；
+ *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
-import { addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, startOfWeek, taskEndDate, taskToday, type DateKey, type Group, type Task } from '@mindough/core';
-import { tr } from './i18n';
+import { addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
+import { dataLabel, tr } from './i18n';
 
-export type SectionBy = 'none' | 'mood' | 'project' | 'due';
-export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'due'];
+export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
+export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'type', 'due'];
+
+/**
+ * 按类型分区时类型的先后：能显示的按选择器顺序（store.pickerCategories：常用 → 最近用过 → 默认组），
+ * 不显示的同样规则排在后面（它们挂在任务上照常成段）。
+ */
+export function categorySectionOrder(store: Pick<Store, 'categories' | 'pickerCategories' | 'frequentCategoryIds' | 'categoryLastUsed' | 'categoryGroupOverrides'>): Category[] {
+  const hidden = store.categories(true).filter((c) => c.hidden);
+  return [...store.pickerCategories(), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
+}
 
 export function normalizeSectionBy(v: unknown, allowed: readonly SectionBy[] = SECTION_BYS): SectionBy {
   return allowed.includes(v as SectionBy) ? (v as SectionBy) : 'none';
@@ -133,6 +146,8 @@ export interface ListSection<T> {
   kind: Exclude<SectionBy, 'none'> | 'overdue';
   /** 按项目时是那个项目（画图标）。 */
   group?: Group;
+  /** 按类型时是那个类型（画图标、上色）。 */
+  category?: Category;
   tasks: T[];
 }
 
@@ -140,12 +155,20 @@ export interface ListSection<T> {
 export function sectionTasks<T extends Task>(
   tasks: readonly T[],
   by: SectionBy,
-  ctx: { groups?: readonly Group[]; now?: Date; today?: DateKey; weekStart?: 0 | 1 } = {},
+  ctx: {
+    groups?: readonly Group[];
+    /** 按类型：类型的先后（categorySectionOrder），和每件任务挂的类型 id（按任务上的顺序，store.categoryIdsOfTask）。 */
+    categories?: readonly Category[];
+    categoryIdsOf?: (t: T) => readonly string[];
+    now?: Date;
+    today?: DateKey;
+    weekStart?: 0 | 1;
+  } = {},
 ): ListSection<T>[] | null {
   if (by === 'none') return null;
   const out: ListSection<T>[] = [];
-  const push = (key: string, label: string, list: T[], group?: Group) => {
-    if (list.length) out.push({ key, label, kind: by as Exclude<SectionBy, 'none'>, tasks: list, ...(group ? { group } : {}) });
+  const push = (key: string, label: string, list: T[], extra?: { group?: Group; category?: Category }) => {
+    if (list.length) out.push({ key, label, kind: by as Exclude<SectionBy, 'none'>, tasks: list, ...(extra?.group ? { group: extra.group } : {}), ...(extra?.category ? { category: extra.category } : {}) });
   };
   if (by === 'mood') {
     for (const id of MOOD_IDS) push(id, moodLabel(id), tasks.filter((t) => t.mood === id));
@@ -153,8 +176,19 @@ export function sectionTasks<T extends Task>(
   } else if (by === 'project') {
     const groups = ctx.groups ?? [];
     const known = new Set(groups.map((g) => g.id));
-    for (const g of groups) push(g.id, g.name, tasks.filter((t) => t.group_id === g.id), g);
+    for (const g of groups) push(g.id, g.name, tasks.filter((t) => t.group_id === g.id), { group: g });
     push('none', tr('没有项目'), tasks.filter((t) => !t.group_id || !known.has(t.group_id)));
+  } else if (by === 'type') {
+    const cats = ctx.categories ?? [];
+    const known = new Set(cats.map((c) => c.id));
+    const byCat = new Map<string, T[]>();
+    for (const t of tasks) {
+      const first = ctx.categoryIdsOf?.(t)[0];
+      const k = first && known.has(first) ? first : 'none';
+      byCat.set(k, [...(byCat.get(k) ?? []), t]);
+    }
+    for (const c of cats) push(c.id, dataLabel(c.name), byCat.get(c.id) ?? [], { category: c });
+    push('none', tr('没有类型'), byCat.get('none') ?? []);
   } else {
     const now = ctx.now ?? new Date();
     const today = ctx.today ?? now.toISOString().slice(0, 10);
