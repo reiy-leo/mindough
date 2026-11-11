@@ -1656,7 +1656,7 @@ Rei 2026-11-11 02:15「右上角加一个按钮组…列表…图标」，02:18 
 - **图标网格**：选了图标时，连着的置顶项目包进 `.nav-pinned-grid`（「更多」页 `.more-item.more-pinned-grid`），`display: flex; flex-wrap: wrap`，`data-reorder-layout="grid"`、`role="group"`（读屏「放进侧边栏的项目」）。侧栏每格是 `PinnedGroupLink compact`（36×36，只有 GroupIcon 22，`aria-label` / `title` 是项目名）；「更多」页是 `MoreTile`（44×44，GroupIcon 32，长按拿起不挪松开出项目菜单）。`MenuAt` 加了可选 `heading`，只放图标时菜单顶上写项目名。中等宽度（图标栏）不排网格。
 - **拖动排序**：`lib/nav-reorder.ts` 认父元素 `data-reorder-layout="grid"`：按 offsetLeft / offsetTop 记每格，落点是离被拖那格中心最近的一格（`gridTargetIndex`），别的格子挪到新顺序里自己那一格（`gridShift`，折行处跨行挪），占位格横竖都跟；手指拿起后横挪也开始拖；键盘多认 ⌥← / ⌥→（`reorderKey(e, grid)`）。列表的算法没动。
 - **测试**：`lib/pinned-style.test.ts` 2 项、`lib/nav-reorder.test.ts` 加 3 项（网格落点、跨行挪、⌥← / ⌥→）。截图脚本 `work/d1111-pinstyle/ps.mjs`（LightVela Chromium，三皮肤宽屏 1366 + 960 + 手机 390）。
-- **没做**：资料库那一串的图标显示；手机「更多」页列表模式里置顶项目的图标样子没改。
+- **没做**：手机「更多」页列表模式里置顶项目的图标样子没改。资料库那一串的图标显示 2026-11-12 补上，见「侧栏资料库显示为列表 / 图标」。
 
 ### 侧栏项目的菜单换成行右边的 ··· ✅（2026-11-11）
 Rei 2026-11-11 02:56「添加到侧边栏的项目，右键菜单换成右侧的『···』」。
@@ -1976,3 +1976,12 @@ Rei 2026-11-11 08:33「类型页中，每个分组下的类型可以按现在的
 - **照旧的**：点格子 = 点行（宽屏右边出详情、手机整页推进详情）；搜索结果也排成格子，「新建“xxx”」是最后一格；↑↓ 还是按顺序一个一个挪高亮（不按行跳，我定的：搜索框里 ←→ 要留给光标，按行跳会有够不着的格子），回车打开；⌘1 / ⌘2 / ⌘3、⌘F 不变；分组折叠不变；「不显示」的照旧沉到最后一组、图标变淡、名字变灰。
 - **手机**：格子里不左滑（改档去详情页），底下说明换成「类型不能删，不想看到就设成不显示；已经挂着的任务和项目照常显示。」（已有文案）。页头 ··· 钉在标题右边（类型页页头不折行），不被长副标题挤到下一行。
 - 测试：`lib/category-view.test.ts` 1 项。截图 `work/d1111-typegrid/tg.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390 暗：默认列表、菜单两项、切图标后每组都是格子、一行几个、名字在图标下且居中、不出格、最多两行、超长名字截断、不左右滚、role / 读屏名、刷新记住、搜索结果是格子 + ↓ + 回车打开、点格子开详情 / 选中高亮、⌘3 后沉到最后一组变淡再 ⌘2 改回、分组折叠、切回列表、··· 和标题同一行）。
+
+### 侧栏资料库显示为列表 / 图标 ✅（2026-11-12）
+Rei 2026-11-12 00:24：侧栏里放进来的资料库也要「列表 / 图标」两种显示，入口也用「···」，和项目置顶区一样。
+
+- **存法**：本机设置 `pinnedLibraryStyle: 'list' | 'icons'`（`lib/settings.tsx`，默认 list，不同步），和 `pinnedGroupStyle` 各管各的。`lib/pinned-style.ts` 改成按串取：`pinnedGrid(settings, kind, narrow)`、`usePinnedStyle(kind)`（kind 是 `group` / `library`），旧的 `pinnedGroupGrid`、`usePinnedGroupStyle` 留着包一层。
+- **入口**：`PinnedStyleMenu` 加 `kind`（默认 group），读屏名「项目显示方式」/「资料库显示方式」，菜单仍是 `DisplayStyleMenu`。App 里 `SidebarItems` / `MoreItems` 用 `anchorKindOf` 认出「项目」「资料库」那两行（`groups` / `library`，不是放进来的某一个），这一串有东西、又不是中等宽度图标栏时包成 `.nav-item-split` 放 ···。
+- **网格**：`pinnedKindOf` 把连着的置顶项按串切开，每串各看各的设置：选了图标就包进 `.nav-pinned-grid`（「更多」页 `.more-item.more-pinned-grid`），`role="group"`，读屏「放进侧边栏的项目」/「放进侧边栏的资料库」。侧栏每格是 `PinnedLibraryLink compact`（36×36，图标 20，`aria-label` / `title` 是库名，右键 / 长按出「取消在侧边栏显示」，`MenuAt heading` 写库名）；960 图标栏还是 `PinnedLibraryLink` 不带 compact。「更多」页是新 `MoreLibraryTile`（44×44，图标 24，同项目的 `MoreTileOf`）。图标用资料库自己的 lucide 图标，不换成带底色的 `IconTile`（我定的：和它列表时的样子一致；侧栏多彩档照旧挂 `--vivid-color`，「更多」页列表行本来不上色，图标也不上色）。拖动排序沿用 `data-reorder-layout="grid"`，`NavReorderScope kind="library"` 本来就有。
+- **文案**：新 2 条「资料库显示方式」「放进侧边栏的资料库」，9 种语言（7 种待母语者看）；「显示为」「列表」「图标」共用。
+- **测试**：`lib/pinned-style.test.ts` 加 2 项（两串各看各的、没存过是列表）。截图脚本 `work/d1112-libside/ls.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 + 960 + 手机 390 暗：没放时不出 ···、悬停才显示、默认列表、切图标后成网格、项目那串不跟着变、两串都图标各一块、36×36、折行、不左右滚、读屏名 / 悬停全名、拖动和 ⌥→、右键菜单顶上写库名、点开高亮、多彩档上色、刷新记住、960 不排网格不出 ··· 且右键照旧；手机「更多」页 ··· 常显、换图标、≥ 44、长按松开出菜单、点开）。
