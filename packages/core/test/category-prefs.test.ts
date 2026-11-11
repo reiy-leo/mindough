@@ -106,7 +106,10 @@ describe('选择器顺序：常用 + 最近用过', () => {
   it('Store：新建一个类型，用一次就靠前，不用手排', async () => {
     const s = await Store.open(await withFormerCategories(), { deviceId: 'a' });
     const c = s.createCategory('装修');
-    expect(s.pickerCategories().at(-1)!.id).toBe(c.id);
+    // 没用过的按分组排：新类型在「其他」最后，后面只有「内置」组的四个（Rei 2026-11-12 07:20）
+    const ids = s.pickerCategories().map((x) => x.id);
+    expect(ids.slice(-BUILTIN_CATEGORIES.length)).toEqual(BUILTIN_CATEGORIES.map((x) => x.id));
+    expect(ids.at(-BUILTIN_CATEGORIES.length - 1)).toBe(c.id);
     s.createTask({ category_id: c.id });
     expect(s.pickerCategories()[0]!.id).toBe(c.id);
     expect(s.frequentCategories(6)).toHaveLength(6);
