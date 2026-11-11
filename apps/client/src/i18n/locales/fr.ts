@@ -1711,6 +1711,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "« {library} » est liée à « {project} ». Une bibliothèque ne peut être liée qu’à un seul projet ; après le changement, ses tâches passent dans ce projet.",
   "改关联": "Changer",
   "提到一件任务": "Mentionner une tâche",
+  "插入当前时间": "Insérer l’heure actuelle",
   "打 @ 提到一件任务，点它就打开那件任务。": "Tapez @ pour mentionner une tâche ; cliquez dessus pour l’ouvrir.",
   "高德地图": "Amap",
   "B0FFKKRXAZ，或粘贴高德链接": "B0FFKKRXAZ ou collez un lien Amap",

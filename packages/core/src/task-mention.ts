@@ -94,3 +94,28 @@ export function mentionQueryAt(textBefore: string): { at: number; query: string 
   if (!m) return null;
   return { at: m.index + m[1]!.length, query: m[3]! };
 }
+
+// ───────── @ 插入当前时间 ─────────
+// Rei 2026-11-12 07:09：@ 下拉里加「插入当前时间」，打 @现在、@now、@time、@xianzai 都能出来，排在最上面；
+// 选了把 @ 和后面的字换成本机时区的「2026-11-12 07:09」纯文字（24 小时制），不是胶囊。
+
+/** 能叫出「插入当前时间」的词。 */
+export const MENTION_NOW_WORDS = ['现在', 'now', 'time', 'xianzai'] as const;
+
+/**
+ * @ 后面打的字能不能叫出「插入当前时间」：是上面某个词的开头（不分大小写）。
+ * 太短的不算，免得按拼音找任务时总冒出来：字母至少 3 个（now、tim、xia），汉字要打全「现在」。
+ */
+export function mentionNowMatches(query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  const latin = /^[a-z]+$/.test(q);
+  if (latin ? q.length < 3 : q.length < 2) return false;
+  return MENTION_NOW_WORDS.some((w) => w.startsWith(q));
+}
+
+/** 本机时区的「YYYY-MM-DD HH:mm」（24 小时制）。 */
+export function formatNowStamp(d: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}

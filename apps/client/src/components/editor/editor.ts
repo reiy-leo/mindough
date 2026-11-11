@@ -179,6 +179,8 @@ export interface MdEditorHandle {
   applyLink(range: { from: number; to: number }, text: string, href: string): boolean;
   /** 把正在打的 @（range）换成提及（第一行是纯文字标题时换成标题文字）。 */
   insertMention(range: { from: number; to: number }, task: { id: string; title: string }): void;
+  /** 把 [from, to) 换成一段纯文字（@ 插入当前时间），光标放在后面。 */
+  insertPlain(range: { from: number; to: number }, text: string): void;
   /** 一段的纯文字（链接框预填）。 */
   textOf(range: { from: number; to: number }): string;
   /** 当前选区（链接框新加时用）。 */
@@ -350,6 +352,13 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
       if (range.from < 0 || range.to > size || range.from > range.to) return false;
       v.dispatch(applyLinkTr(v.state, range, text, url));
       return true;
+    },
+    insertPlain(range, text) {
+      const v = view();
+      const size = v.state.doc.content.size;
+      if (range.from < 0 || range.to > size || range.from > range.to) return;
+      v.dispatch(v.state.tr.insertText(text, range.from, range.to).scrollIntoView());
+      v.focus();
     },
     insertMention(range, task) {
       insertMention(view(), range, task);

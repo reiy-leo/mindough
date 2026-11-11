@@ -1711,6 +1711,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "「{library}」已关联项目「{project}」。一个资料库只能关联一个项目，改过来以后，它里面的任务会一起挪到这个项目。": "“{library}” sudah tertaut ke “{project}”. Satu pustaka hanya bisa tertaut ke satu proyek; setelah dipindah, tugasnya ikut pindah ke proyek ini.",
   "改关联": "Pindahkan",
   "提到一件任务": "Sebut tugas",
+  "插入当前时间": "Sisipkan waktu sekarang",
   "打 @ 提到一件任务，点它就打开那件任务。": "Ketik @ untuk menyebut tugas; klik untuk membukanya.",
   "高德地图": "Amap",
   "B0FFKKRXAZ，或粘贴高德链接": "B0FFKKRXAZ, atau tempel tautan Amap",

@@ -30,8 +30,8 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type Muta
 import { createPortal } from 'react-dom';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
-import { Circle, CircleCheck, ExternalLink, Hourglass } from 'lucide-react';
-import type { MentionCandidate, MentionScope } from '@mindough/core';
+import { Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
+import { formatNowStamp, mentionNowMatches, type MentionCandidate, type MentionScope } from '@mindough/core';
 import { mentionChoices, mentionInfo } from '../../lib/task-mention';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
@@ -39,6 +39,11 @@ import { readClipboardLink } from '../../lib/clip-link';
 import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
+
+/** @ 下拉里的「插入当前时间」那一项（不是任务）。 */
+const NOW_ITEM = { now: true } as const;
+type MentionItem = MentionCandidate | typeof NOW_ITEM;
+const isNowItem = (c: MentionItem): c is typeof NOW_ITEM => c === NOW_ITEM;
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
@@ -122,13 +127,16 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     () => (mq && mention ? mentionChoices(mention.scope, mention.selfId, mq.query) : []),
     [mq?.query, mq != null, mention?.scope, mention?.selfId], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  const mRef = useRef({ mq, choices, mActive });
-  mRef.current = { mq, choices, mActive };
+  // 「插入当前时间」（Rei 2026-11-12 07:09）：@现在 / @now / @time / @xianzai 时排在最上面，选了换成「2026-11-12 07:09」纯文字
+  const items: MentionItem[] = useMemo(() => (mq && mention && mentionNowMatches(mq.query) ? [NOW_ITEM, ...choices] : choices), [choices, mq?.query]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mRef = useRef({ mq, items, mActive });
+  mRef.current = { mq, items, mActive };
   useEffect(() => setMActive(0), [mq?.query, mq?.from]);
-  const pickMention = (c: MentionCandidate) => {
+  const pickMention = (c: MentionItem) => {
     const cur = mRef.current.mq;
     if (!cur) return;
-    handle.current?.insertMention({ from: cur.from, to: cur.to }, { id: c.id, title: c.title });
+    if (isNowItem(c)) handle.current?.insertPlain({ from: cur.from, to: cur.to }, formatNowStamp());
+    else handle.current?.insertMention({ from: cur.from, to: cur.to }, { id: c.id, title: c.title });
     mPointer.current = false;
   };
   const pickRef = useRef(pickMention);
@@ -240,7 +248,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
           mention: {
             onState: (st: MentionState | null) => setMq(st),
             onKey: (key: 'up' | 'down' | 'enter') => {
-              const { choices: list, mActive: at } = mRef.current;
+              const { items: list, mActive: at } = mRef.current;
               if (key === 'enter') {
                 const c = list[at];
                 if (!c) return false;
@@ -599,7 +607,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     const next = { left: p.left - o.left, top: p.top - o.top };
     if (!mPos || Math.abs(mPos.left - next.left) > 0.5 || Math.abs(mPos.top - next.top) > 0.5) setMPos(next);
     return cancel;
-  }, [mOpen, mq?.from, mq?.to, choices.length, mTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mOpen, mq?.from, mq?.to, items.length, mTick]); // eslint-disable-line react-hooks/exhaustive-deps
   // 浮层开着时：外层的 transform 变了（看板详情浮层换行后居中平移的动画）、滚动、窗口 / 键盘变化，浮层就不在算好的位置了，重放一次
   useEffect(() => {
     if (!mOpen) return;
@@ -645,14 +653,14 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       dom = null;
     }
     if (!dom) return;
-    if (mOpen && choices.length) {
+    if (mOpen && items.length) {
       dom.setAttribute('aria-controls', `${mUid}-list`);
       dom.setAttribute('aria-activedescendant', `${mUid}-opt-${mActive}`);
     } else {
       dom.removeAttribute('aria-controls');
       dom.removeAttribute('aria-activedescendant');
     }
-  }, [mOpen, mActive, choices.length, mUid]);
+  }, [mOpen, mActive, items.length, mUid]);
   const mentionPop = mOpen && (
       <div
         ref={mPopEl}
@@ -666,8 +674,24 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
         onPointerUp={() => setTimeout(() => (mPointer.current = false), 400)}
         onPointerCancel={() => (mPointer.current = false)}
       >
-        {choices.length ? (
-          choices.map((c, i) => {
+        {items.length ? (
+          items.map((c, i) => {
+            if (isNowItem(c))
+              return (
+                <div
+                  key="now"
+                  id={`${mUid}-opt-${i}`}
+                  role="option"
+                  aria-selected={i === mActive}
+                  className={`mention-item is-now${i === mActive ? ' is-active' : ''}`}
+                  onMouseMove={() => i !== mActive && setMActive(i)}
+                  onClick={() => pickMention(c)}
+                >
+                  <Clock size={14} aria-hidden className="mention-item-icon" />
+                  <span className="grow ellipsis">{tr('插入当前时间')}</span>
+                  <span className="mention-item-meta">{formatNowStamp()}</span>
+                </div>
+              );
             const meta = c.ended ? tr('已结束') : c.kind === 'countdown' ? mentionInfo(c.id, '').suffix || tr('倒数日') : '';
             const Icon = c.kind === 'countdown' ? Hourglass : c.ended ? CircleCheck : Circle;
             return (

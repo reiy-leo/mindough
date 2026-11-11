@@ -1,6 +1,6 @@
 /** 正文里 @ 提及任务（Rei 2026-11-10）：地址、候选范围、过滤和排序、光标前的 @。 */
 import { describe, expect, it } from 'vitest';
-import { mentionCandidates, mentionHref, mentionIdOf, mentionKind, mentionQueryAt, mentionable } from '../src/task-mention';
+import { formatNowStamp, mentionCandidates, mentionHref, mentionIdOf, mentionKind, mentionNowMatches, mentionQueryAt, mentionable } from '../src/task-mention';
 import { taskTitle } from '../src/preview';
 import { mkTask } from './helpers';
 
@@ -110,5 +110,18 @@ describe('光标前的 @', () => {
   });
   it('只看最后一个 @', () => {
     expect(mentionQueryAt('@a @b')).toEqual({ at: 3, query: 'b' });
+  });
+});
+
+describe('@ 插入当前时间', () => {
+  it('现在 / now / time / xianzai 能叫出来，开头几个字也行', () => {
+    for (const q of ['现在', 'now', 'NOW', 'time', 'tim', 'xianzai', 'xian', 'xia']) expect(mentionNowMatches(q), q).toBe(true);
+  });
+  it('空、太短、别的词不叫出来', () => {
+    for (const q of ['', ' ', 'n', 'no', 'ti', 'x', 'xi', '现', '现在吧', 'nowx', '时间', '周报']) expect(mentionNowMatches(q), q).toBe(false);
+  });
+  it('格式 YYYY-MM-DD HH:mm，本机时区、24 小时制', () => {
+    expect(formatNowStamp(new Date(2026, 10, 12, 7, 9, 59))).toBe('2026-11-12 07:09');
+    expect(formatNowStamp(new Date(2026, 0, 3, 23, 5))).toBe('2026-01-03 23:05');
   });
 });
