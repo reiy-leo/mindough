@@ -27,6 +27,7 @@ export type CategoryGroup = (typeof CATEGORY_GROUPS)[number];
 export type CategoryGroupId = string;
 export const isCategoryGroup = (v: unknown): v is CategoryGroup => typeof v === 'string' && (CATEGORY_GROUPS as readonly string[]).includes(v);
 /** 内置分组的中文名（界面上的名字走 client 的词典，这里给去重、拼音搜索用）。 */
+// i18n-ignore：只拿来比同名、搜拼音，不显示
 export const CATEGORY_GROUP_ZH: Record<CategoryGroup, string> = { body: '身体', life: '生活', study: '学习和工作', hobby: '爱好', people: '人', other: '其他' };
 
 /** 自建分组一组一行偏好的 key 前缀：`category.custom_group.<组 id>`，值是名字。 */
