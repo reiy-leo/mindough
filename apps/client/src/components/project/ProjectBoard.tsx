@@ -9,7 +9,7 @@
  * 打开的详情不在右列：桌面布局下看板视图不放右列，看板占满，详情是浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」，
  * App 里 lib/detail-pane detailInModal 决定，浮层在 components/task/DetailModal.tsx）。这里照旧只调 ui.openEditor。
  */
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ButtonContext, CheckboxContext, GridList, GridListItem, Provider, useDragAndDrop, type DropItem } from 'react-aria-components';
 import { TASK_STATUS_LABEL, type Store, type Task, type TaskStatus } from '@mindough/core';
 import { useIsEditing, useUiStable } from '../../lib/ui';
@@ -57,38 +57,33 @@ const BoardCard = memo(function BoardCard({ store, task: t }: { store: Store; ta
 const NO_SLOTS = {};
 
 /**
- * 一列先放够一屏的卡片，往下滚到这一列底部附近再补一批（2026-11-12 看板卡顿）：240 件的项目切到看板，一次挂四列几百张卡片
- * （每张都带拖放、勾选、按钮）要卡半秒；先出每列前 BOARD_FIRST 张，看板马上出来，列底下的哨兵进到视口下方 1000px 以内时补 BOARD_STEP 张（提前补，滚到时已经在了）。
- * 每列各管各的（补一列只有这一列重渲染）；列头的数字一直是全部件数。键盘方向键走到最后一张时它滚进视口，下面的跟着补上。
+ * 一列先放够一屏的卡片，其余等看板画出来以后补齐（2026-11-12 看板卡顿）：240 件的项目切到看板，一次挂四列几百张卡片
+ * （每张都带拖放、勾选、按钮）要卡半秒多；先出每列前 BOARD_FIRST 张，看板马上出来，下一帧起每列各用一个任务把剩下的一次补齐
+ * （列和列错开 BOARD_GAP 毫秒，不挤成一次长卡顿）。补齐以后和以前一样，滚动时不再有额外的活。列头的数字一直是全部件数。
+ * 试过「滚到列底附近再补」：每补一批都要重建这一列的集合，深滚时一卡几百毫秒，比一次补齐差，没用。
  */
 const BOARD_FIRST = 20;
-const BOARD_STEP = 15;
-const BOARD_AHEAD = '0px 0px 1000px 0px';
-function useColumnLimit(total: number) {
-  const [limit, setLimit] = useState(BOARD_FIRST);
-  const sentinel = useRef<HTMLDivElement>(null);
-  const more = limit < total;
+const BOARD_GAP = 40;
+function useColumnLimit(total: number, order: number) {
+  const [full, setFull] = useState(false);
+  const more = !full && total > BOARD_FIRST;
   useEffect(() => {
-    const el = sentinel.current;
-    if (!more || !el || typeof IntersectionObserver === 'undefined') return;
-    // 每次补完换一个新的观察者：它一开始会报一次当前位置，补完哨兵还在视口附近就接着补
-    // 补的那一下放进单独的任务：几列同时到底时各补各的，不挤成一次长卡顿
+    if (!more) return;
     let t = 0;
-    const io = new IntersectionObserver((es) => {
-      if (es.some((e) => e.isIntersecting)) t = window.setTimeout(() => setLimit((n) => n + BOARD_STEP), 0);
-    }, { rootMargin: BOARD_AHEAD });
-    io.observe(el);
+    const raf = requestAnimationFrame(() => {
+      t = window.setTimeout(() => setFull(true), order * BOARD_GAP);
+    });
     return () => {
-      io.disconnect();
+      cancelAnimationFrame(raf);
       clearTimeout(t);
     };
-  }, [limit, more]);
-  return { limit, more, sentinel };
+  }, [more, order]);
+  return more ? BOARD_FIRST : total;
 }
 
-function Column({ store, status, tasks }: { store: Store; status: TaskStatus; tasks: Task[] }) {
+function Column({ store, status, tasks, order }: { store: Store; status: TaskStatus; tasks: Task[]; order: number }) {
   const ui = useUiStable();
-  const { limit, more, sentinel } = useColumnLimit(tasks.length);
+  const limit = useColumnLimit(tasks.length, order);
   const guard = useReorderGuard();
   const moveHere = async (items: readonly DropItem[]) => {
     for (const id of await idsOf(items)) changeStatus(store, ui, id, status);
@@ -130,7 +125,6 @@ function Column({ store, status, tasks }: { store: Store; status: TaskStatus; ta
       >
         {(t) => <BoardCard store={store} task={t} version={store.version} />}
       </GridList>
-      {more && <div ref={sentinel} className="board-more" aria-hidden />}
     </section>
   );
 }
@@ -138,8 +132,8 @@ function Column({ store, status, tasks }: { store: Store; status: TaskStatus; ta
 export function ProjectBoard({ store, tasks }: { store: Store; tasks: Task[] }) {
   return (
     <div className="board" role="group" aria-label={tr('看板')}>
-      {boardColumns(tasks).map((c) => (
-        <Column key={c.status} store={store} status={c.status} tasks={c.tasks} />
+      {boardColumns(tasks).map((c, i) => (
+        <Column key={c.status} store={store} status={c.status} tasks={c.tasks} order={i} />
       ))}
     </div>
   );

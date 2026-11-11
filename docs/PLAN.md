@@ -2117,7 +2117,7 @@ Rei 2026-11-12 01:26：项目页切到看板很卡，看板里点任务弹详情
   - `lib/ui.tsx` 加 `useUiStable()`（对象不变、字段读最新值）和 `useIsEditing(id)`（只在这件选中 / 取消时重渲染）。`TaskRow`、打卡控件、补打卡、`QuickAddBar`、`ProjectActions`、项目页用前者；行的选中样子用后者。要跟着 UI 状态变的地方照旧 `useUi()`。
   - `App.tsx` 的页面本体 `Page` 用 `memo`（route 只在换页时换对象）。
   - `ProjectBoard`：卡片抽成 `memo` 的 `BoardCard`，选中看 `useIsEditing`；`dependencies` 只留 `store.version`；行外面包一层不变的 `ButtonContext` / `CheckboxContext`（默认槽本来就是空的），拖动把手在外面照常吃 `drag` 槽。
-- **切到看板卡**：一次挂四列 240 张卡片。现在每列先出 20 张，列底下放一个哨兵，进到视口下方 1000px 内补 15 张（提前补，滚到时已经在了；几列各自一个任务）。列头数字一直是全部件数。代价：往下滚到很深时偶尔有一两次几十毫秒的补卡片。
+- **切到看板卡**：一次挂四列 240 张卡片。现在每列先出 20 张，看板画出来以后每列用一个任务把剩下的一次补齐（列和列错开 40ms）。列头数字一直是全部件数。试过「滚到列底附近再分批补」：每批都要重建那一列的集合，深滚时一卡几百毫秒，放弃。
 - 设备时区记一秒（core `deviceTimeZone`、`date-display` 里的 `deviceZone`）：以前每行都 new 一个 `Intl.DateTimeFormat`。
 - 详情浮层高度跟着内容走（Rei 2026-11-12 02:08）：见 PRODUCT 项目页「看板 / 日历的详情浮层」。`.modal-detail` 改成 `height: auto`、`max-height: min(86vh, 900px)`，正文区 `flex: 0 1 auto`；`DetailModal` 的 `useSmoothRecenter` 用 ResizeObserver 看外框高度，一变就让外框从原位置平移到新的居中位置（FLIP 160ms），高度本身当帧到位（做高度动画的话正文会短暂比内容矮，闪滚动条、光标被拉着滚）。入场动画期间、「减少动态效果」时不平移。手机布局的详情是整页，不走浮层，不变。
 - 测试：`ProjectBoard.test.tsx` 选中改成订阅、加分批一项；`Calendar.test.tsx` 的 ui 假对象补上新导出。没有迁移，Worker 没改，没有新文案。

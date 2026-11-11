@@ -121,43 +121,16 @@ describe('看板卡片点开详情', () => {
   });
 });
 
-describe('任务多的列先放一屏、滚到列底附近再补（2026-11-12 看板卡顿）', () => {
-  it('一列 45 件：先出 20 张、列头写 45；哨兵进视口补 15 张、再补到齐，补齐后哨兵去掉', async () => {
-    const ios: { cb: IntersectionObserverCallback; el?: Element }[] = [];
-    const Orig = globalThis.IntersectionObserver;
-    globalThis.IntersectionObserver = class {
-      rec: { cb: IntersectionObserverCallback; el?: Element };
-      constructor(cb: IntersectionObserverCallback) {
-        this.rec = { cb };
-        ios.push(this.rec);
-      }
-      observe(el: Element) {
-        this.rec.el = el;
-      }
-      disconnect() {
-        this.rec.el = undefined;
-      }
-    } as unknown as typeof IntersectionObserver;
-    try {
-      const many = Array.from({ length: 45 }, (_, i) => mk(`m${i}`, '待办'));
-      act(() => root.render(<ProjectBoard store={store} tasks={many} />));
-      const todo = () => host.querySelector('.board-col.is-todo')!;
-      expect(todo().querySelectorAll('.board-card').length).toBe(20);
-      expect(todo().querySelector('.board-col-count')!.textContent).toBe('45');
-      const fire = async () => {
-        const live = ios.filter((r) => r.el);
-        live.forEach((r) => r.cb([{ isIntersecting: true, target: r.el } as unknown as IntersectionObserverEntry], {} as IntersectionObserver));
-        await act(async () => {
-          await new Promise((r) => setTimeout(r, 5));
-        });
-      };
-      await fire();
-      expect(todo().querySelectorAll('.board-card').length).toBe(35);
-      await fire();
-      expect(todo().querySelectorAll('.board-card').length).toBe(45);
-      expect(todo().querySelector('.board-more')).toBeNull();
-    } finally {
-      globalThis.IntersectionObserver = Orig;
-    }
+describe('任务多的列先放一屏、画出来以后补齐（2026-11-12 看板卡顿）', () => {
+  it('一列 45 件：先出 20 张、列头写 45；下一帧后补齐 45 张', async () => {
+    const many = Array.from({ length: 45 }, (_, i) => mk(`m${i}`, '待办'));
+    act(() => root.render(<ProjectBoard store={store} tasks={many} />));
+    const todo = () => host.querySelector('.board-col.is-todo')!;
+    expect(todo().querySelectorAll('.board-card').length).toBe(20);
+    expect(todo().querySelector('.board-col-count')!.textContent).toBe('45');
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 120));
+    });
+    expect(todo().querySelectorAll('.board-card').length).toBe(45);
   });
 });
