@@ -64,10 +64,16 @@ export function MyDayPage() {
         groups: store.activeGroups(),
         ...(view.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
       }) : null;
+  // 分区 / 按心情排时不能拖，但行左边照样留把手那一格（Rei 2026-11-12 01:19「分区时置顶任务的图钉很挤」）：
+  // 以前这里是普通清单，图钉塞进行左边 12px 留白、紧贴勾选圈，圈也比不分区时往左 26px；
+  // 现在和不分区（DayList）同一套 .list-item + RowLead：置顶的图钉在那格，别的行是同宽占位，图钉、圈、标题都和不分区时一样
   const plainRows = (list: MyDayItem[]) => (
-    <div className="task-list plain">
+    <div className="task-list">
       {list.map((i) => (
-        <TaskRow key={i.task.id} store={store} task={i.task} showMyDay={false} doneOverride={i.done} />
+        <div key={i.task.id} className={`list-item${ui.editingId === i.task.id ? ' is-selected' : ''}`}>
+          <RowLead pinned={isPinnedEntry(i.entry)} />
+          <TaskRow store={store} task={i.task} pinInLead showMyDay={false} doneOverride={i.done} />
+        </div>
       ))}
     </div>
   );
