@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { RowLead } from './TaskRow';
+import { LEAD_GRIP_SIZE, LEAD_PIN_SIZE, RowLead } from './TaskRow';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -48,5 +48,13 @@ describe('RowLead', () => {
   it('不能拖也没置顶：同宽占位', () => {
     render(<RowLead pinned={false} />);
     expect(host.querySelector('.drag-handle.is-placeholder')).toBeTruthy();
+  });
+  it('图钉和把手画出来一样高（Rei 2026-11-11「大小也要一致」）：图钉 12、把手 15，按各自图形的墨迹高度配平都是 10px', () => {
+    // lucide Pin 墨迹高 20/24，GripVertical 16/24（含线宽）
+    expect((LEAD_PIN_SIZE * 20) / 24).toBe((LEAD_GRIP_SIZE * 16) / 24);
+    render(<RowLead pinned dragLabel="拖动排序" />);
+    expect(host.querySelector('svg.lucide-pin')!.getAttribute('width')).toBe(String(LEAD_PIN_SIZE));
+    render(<RowLead pinned={false} dragLabel="拖动排序" />);
+    expect(host.querySelector('svg.lucide-grip-vertical')!.getAttribute('width')).toBe(String(LEAD_GRIP_SIZE));
   });
 });
