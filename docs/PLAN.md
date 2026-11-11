@@ -2021,3 +2021,11 @@ Rei 2026-11-12 00:54，方案见 [CALENDAR.md](CALENDAR.md) 第十一节。
 - 测试：`pages/Calendar.test.tsx` 加 2 项，顺手给 store 假对象补了 `isLocked` / `get` / `updateTask`（拖动改日期以后 5 项一直报错）；`lib/mobile-topbar.test.ts` 改 1 处。截图 `work/d1112-calhdr/ch.mjs`（三皮肤 × 1366 / 390）。
 - 没有迁移，Worker 没改。
 
+### 项目列表页去掉页头、「新建项目」挪到筛选行 ✅（2026-11-12）
+Rei 2026-11-12 00:56：项目列表页（侧栏「项目」进的总览页，不是单个项目页）去掉页头；「新建项目」做成图标按钮，放在类别行右侧，标签多时标签区横滑、按钮固定在右；手机没有类别行时也要有入口。
+- 原来的页头只有图标 + 标题「项目」、副标题「把相关的任务放在一起」和右边的「新建项目」，除了这个按钮没有别的控件，没有要挪的。
+- `pages/Groups.tsx`：去掉 `PageHeader`，加读屏用的 `<h1 className="sr-only">项目</h1>`（同打卡页）。筛选那行改成 `.filter-row.groups-toolbar`：左边 `.groups-filter`（占满剩下的宽度，里面是原来的 `ChipPicker`，胶囊多了自己横滑），右边 `Tip` + `.btn-icon-only.groups-new`（`flex: none`，不被挤）。这一行总是渲染：没有可筛的类型时左边空着，按钮照样靠右，所以电脑和手机在没项目、项目都没类型时也有新建入口。
+- `lib/mobile-topbar.ts`：`HEADERLESS_PAGES` 加 `groups`，手机顶栏显示标题「项目」（只有标题，没有搜索）。
+- 样式 `styles/project.css`：删掉 `.page-header:has(.groups-new)`，加 `.groups-toolbar` / `.groups-filter`。
+- 副标题「把相关的任务放在一起」没人用了，留在词典里没删（同「不限时间」）。没有新文案、没迁移，Worker 没改。
+- 测试：`lib/mobile-topbar.test.ts` 改成 groups 只有标题。截图脚本 `work/d1112-projhdr/ph.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390，Apple 亮、WinUI / Material 暗）：没页头、读屏 h1、按钮和胶囊同一行居中且在最右、悬停提示、手机顶栏标题；胶囊复制多份后筛选区横滑、按钮不挪、页面不横向溢出；点按钮出「新建项目」面板；删光项目后只剩按钮、靠右、能新建。
