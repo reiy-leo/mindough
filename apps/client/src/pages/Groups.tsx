@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, ChevronRight, CircleCheck, Plus, Shapes } from 'lucide-react';
+import { Archive, ArchiveRestore, ChevronRight, CircleCheck, Plus } from 'lucide-react';
 import { isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
@@ -80,33 +80,34 @@ export function GroupsPage() {
   const hasNone = all.some((g) => !catOf(g));
   const groups = all.filter((g) => cat === 'all' || (cat === NO_CATEGORY ? !catOf(g) : catOf(g)?.id === cat));
   return (
-    <div className="page">
-      <PageHeader
-        title={trc('导航', '项目')}
-        subtitle={tr('把相关的任务放在一起')}
-        icon={<Shapes size={22} />}
-        actions={
-          // 只放图标（Rei 2026-11-10「项目列表页 右上角的新建项目用icon btn」），和打卡、倒数日页同一个按钮；文字在悬停提示和读屏名里
-          <Tip content={tr('新建项目')}>
-            <Button variant="primary" className="btn-icon-only groups-new" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
-              <Plus size={18} aria-hidden />
-            </Button>
-          </Tip>
-        }
-      />
-      <div className="filter-row">
-        {usedCats.length > 0 && (
-          <ChipPicker
-            label={tr('按类型筛选')}
-            value={cat}
-            onChange={setCat}
-            options={[
-              { id: 'all', label: tr('全部 {length}', { length: all.length }) },
-              ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} plain />, color: c.color })),
-              ...(hasNone ? [{ id: NO_CATEGORY, label: tr('没有类型') }] : []),
-            ]}
-          />
-        )}
+    <div className="page groups-page">
+      {/* 页头去掉（Rei 2026-11-12 00:56「项目列表页去掉 header」）：原来页头只有标题「项目」、副标题和右边的「新建项目」，
+          新建项目挪到类型筛选那行的右边，标题和副标题不再显示；手机上标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES），同打卡页。
+          没有可见标题，读屏还是要有页面名 */}
+      <h1 className="sr-only">{trc('导航', '项目')}</h1>
+      {/* 一行：左边类型筛选胶囊，多了横着滑；右边「新建项目」图标按钮钉住不动。
+          没有类型可筛（没项目、项目都没设类型）时这行只剩按钮，靠右，电脑和手机都一样，新建入口不会没了 */}
+      <div className="filter-row groups-toolbar">
+        <div className="groups-filter">
+          {usedCats.length > 0 && (
+            <ChipPicker
+              label={tr('按类型筛选')}
+              value={cat}
+              onChange={setCat}
+              options={[
+                { id: 'all', label: tr('全部 {length}', { length: all.length }) },
+                ...usedCats.map((c) => ({ id: c.id, label: <CategoryLabel c={c} plain />, color: c.color })),
+                ...(hasNone ? [{ id: NO_CATEGORY, label: tr('没有类型') }] : []),
+              ]}
+            />
+          )}
+        </div>
+        {/* 只放图标（Rei 2026-11-10「新建项目用icon btn」），和打卡、倒数日页同一个按钮；文字在悬停提示和读屏名里 */}
+        <Tip content={tr('新建项目')}>
+          <Button variant="primary" className="btn-icon-only groups-new" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
+            <Plus size={18} aria-hidden />
+          </Button>
+        </Tip>
       </div>
       {groups.length === 0 ? (
         archived.length ? null : <Empty title={tr('还没有项目')} hint={tr('项目用来装一批相关任务，比如“搬家”“开发某个功能”')} />

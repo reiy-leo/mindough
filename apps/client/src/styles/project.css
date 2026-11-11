@@ -571,10 +571,20 @@
   opacity: 1;
 }
 
-/* 项目列表右上角「新建项目」2026-11-10 起只放图标，尺寸样式用 app.css 的 .btn-icon-only（和打卡、倒数日页一样）；
-   这页页头有副标题，按钮和标题加副标题整块上下居中（原来就是这样），不沉到底 */
-.page-header:has(.groups-new) {
+/* 项目列表页没有页头（Rei 2026-11-12）：类型筛选和「新建项目」一行。左边筛选区占满剩下的宽度，胶囊多了在里面横滑（.chip-picker 自己 overflow-x）；
+   右边按钮 flex: none 钉住，不被挤、不折行。没有筛选胶囊时左边是空的，按钮照样靠右。按钮尺寸用 app.css 的 .btn-icon-only（同打卡、倒数日页） */
+.groups-toolbar {
+  flex-wrap: nowrap;
   align-items: center;
+  gap: var(--space-2);
+}
+.groups-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+.groups-toolbar .groups-new {
+  flex: none;
 }
 /* 项目面板的「资料库」多选（Rei 2026-11-10）：已关联别的项目的库在名字下面写一行小字 */
 .project-libs {
