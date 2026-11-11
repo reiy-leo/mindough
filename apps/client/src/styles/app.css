@@ -4270,6 +4270,73 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   margin-top: var(--space-4);
 }
 
+/* 资料库列表页、资料详情页、人物详情页、已完成页：顶部固定，只滚下面的内容（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」，08:11 追加已完成页）。
+   组件 components/StickyHead；做法同 .checkin-head-sticky：整块 sticky、不透明页面底（var(--bg)，彩色档位 / WinUI 的底图照画）、左右多铺一点盖住行的悬停底色、滚动后底下一条细线。
+   滚的还是 .main（macOS 无标题栏时 .main-scroll），手机触屏、返回手势、安全区不受影响；页面加 has-sticky-head，上边距挪进固定块，免得一开始滚页头先跟着走一截。 */
+.sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--space-2)) var(--space-4);
+  padding: var(--space-5) var(--space-2) var(--space-3);
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease;
+}
+.sticky-head.is-stuck {
+  border-bottom-color: var(--border);
+}
+.page.has-sticky-head,
+.app-mobile .page.has-sticky-head,
+.platform-macos-overlay .app-desktop .page.has-sticky-head {
+  padding-top: 0;
+}
+.app-mobile .sticky-head,
+.platform-macos-overlay .app-desktop .sticky-head {
+  padding-top: var(--space-2);
+}
+/* 固定块里最后一行的下边距由固定块的下内边距接管 */
+.sticky-head > :last-child {
+  margin-bottom: 0;
+}
+/* 资料库列表：页头、标签条、搜索工具条一起固定 */
+.lib-head-sticky > .page-header {
+  margin-bottom: var(--space-4);
+}
+/* 详情页：只固定「‹ 返回」这一行；大标题滚走以后，这一行补上名字（淡入）和一个编辑按钮 */
+.sticky-head.detail-head-sticky {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 32px;
+  padding-bottom: var(--space-2);
+}
+.detail-head-sticky > .back-link {
+  flex: none;
+  margin: 0 0 0 -4px;
+}
+.sticky-head-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.sticky-head-title.is-shown {
+  opacity: 1;
+}
+.sticky-head-action {
+  flex: none;
+}
+
 /* 侧栏置顶的项目 / 资料库拖动排序（Rei 2026-11-10，lib/nav-reorder）：
    被拖那行浮起跟手（底色用卡片面、阴影用各皮肤的弹层阴影，圆角沿用行本身），别的行让位滑开，
    落点是强调色淡底 + 虚线框的占位格（圆角跟行一样）。宽屏侧栏、图标栏、手机「更多」页共用。 */

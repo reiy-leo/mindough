@@ -21,10 +21,10 @@ describe('滚动条不显示', () => {
       expect(ruleHas(`${sel}::-webkit-scrollbar`, /display:\s*none/), `${sel}::-webkit-scrollbar 缺 display: none`).toBe(true);
     }
   });
-  it('只给任务列表和打卡页：我的一天、待安排、积压、日历、项目页、已完成、打卡（Rei 2026-11-11）；日记、设置不在里面', () => {
+  it('只给任务列表、打卡页和资料库：我的一天、待安排、积压、日历、项目页、已完成、打卡、资料库列表 / 资料详情 / 人物详情（Rei 2026-11-11）；日记、设置不在里面', () => {
     const app = read('../App.tsx');
     const pages = /HIDE_SCROLLBAR_PAGES: Route\['page'\]\[\] = \[([^\]]+)\]/.exec(app)?.[1] ?? '';
-    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done', 'checkin']);
+    expect(pages.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(['myday', 'backlog', 'doable', 'agenda', 'group', 'done', 'checkin', 'library', 'libitem', 'person']);
     expect(app.match(/data-hide-scrollbar=/g)?.length).toBe(2);
   });
   it('打卡页：工具栏和顶部活动图一起 sticky、不透明底，页面上边距挪进固定块', () => {
@@ -39,5 +39,29 @@ describe('滚动条不显示', () => {
     expect(page.indexOf('checkin-toolbar')).toBeGreaterThan(sticky);
     expect(page.indexOf('heatmap-card')).toBeGreaterThan(sticky);
     expect(page.indexOf("tr('今天要打卡')")).toBeGreaterThan(page.indexOf('heatmap-card'));
+  });
+  it('资料库列表 / 资料详情 / 人物详情 / 已完成：顶部一块 sticky、不透明底，页面上边距挪进固定块（Rei 2026-11-11）', () => {
+    expect(ruleHas('.sticky-head', /position:\s*sticky/)).toBe(true);
+    expect(ruleHas('.sticky-head', /top:\s*0/)).toBe(true);
+    expect(ruleHas('.sticky-head', /background:\s*var\(--bg\)/)).toBe(true);
+    expect(ruleHas('.app-mobile .page.has-sticky-head', /padding-top:\s*0/)).toBe(true);
+    const lib = read('../pages/Library.tsx');
+    // 列表页：页头、标签条、工具条在固定块里，卡片网格在它后面
+    const head = lib.indexOf('<StickyHead className="lib-head-sticky">');
+    const end = lib.indexOf('</StickyHead>', head);
+    expect(head).toBeGreaterThan(-1);
+    for (const s of ['<PageHeader', 'lib-tabs-row', 'lib-toolbar']) {
+      const i = lib.indexOf(s, head);
+      expect(i > head && i < end, s).toBe(true);
+    }
+    expect(lib.indexOf('lib-grid shape-', head)).toBeGreaterThan(end);
+    // 详情页：返回一行固定
+    expect(lib).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
+    expect(read('../pages/People.tsx')).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
+    // 已完成：页头固定，任务列表在后面
+    const done = read('../pages/Done.tsx');
+    expect(done.indexOf('<PageHeader')).toBeGreaterThan(done.indexOf('<StickyHead>'));
+    expect(done.indexOf('<PageHeader')).toBeLessThan(done.indexOf('</StickyHead>'));
+    expect(done.indexOf('task-list')).toBeGreaterThan(-1);
   });
 });

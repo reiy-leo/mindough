@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Cake, ChevronLeft, ImagePlus, Merge, Plus } from 'lucide-react';
+import { Button as RacButton } from 'react-aria-components';
+import { Cake, ChevronLeft, ImagePlus, Merge, Pencil, Plus } from 'lucide-react';
 import { BUILTIN_TYPE_IDS, formatDateZh } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
@@ -11,6 +12,7 @@ import { Avatar } from '../components/Avatar';
 import { TaskRow } from '../components/TaskRow';
 import { Markdown } from '../components/Markdown';
 import { NoteField } from '../components/library/NoteField';
+import { StickyHead, useScrolledPast } from '../components/StickyHead';
 
 import { tr } from '../lib/i18n';
 export function PersonDialog({ id, initialName, onClose }: { id?: string; initialName?: string; onClose: () => void }) {
@@ -72,19 +74,31 @@ export function PersonDetailPage({ id }: { id: string }) {
   const ui = useUi();
   const [editing, setEditing] = useState(false);
   const [mergeInto, setMergeInto] = useState(false);
+  const hero = useScrolledPast<HTMLHeadingElement>();
   const p = store.get('person', id);
   const personType = store.get('task_type', BUILTIN_TYPE_IDS.person);
   if (!p) return <Empty title={tr('找不到这个人')} />;
   const tasks = store.tasksOfPerson(id);
   return (
-    <div className="page">
-      <a className="back-link" href={href({ page: 'people' })}>
-        <ChevronLeft size={16} aria-hidden />
-        {tr('人物')}</a>
+    <div className="page has-sticky-head">
+      {/* 返回这一行固定在顶上，只滚下面（Rei 2026-11-11 资料库只滚内容，人物是资料库里的一个库）；名字滚走以后补小标题和「编辑」 */}
+      <StickyHead className="detail-head-sticky">
+        <a className="back-link" href={href({ page: 'people' })}>
+          <ChevronLeft size={16} aria-hidden />
+          {tr('人物')}</a>
+        <span className={`sticky-head-title${hero.past ? ' is-shown' : ''}`} aria-hidden>
+          {p.name}
+        </span>
+        {hero.past && (
+          <RacButton className="icon-btn sticky-head-action" aria-label={tr('编辑')} onPress={() => setEditing(true)}>
+            <Pencil size={16} />
+          </RacButton>
+        )}
+      </StickyHead>
       <header className="person-hero">
         <Avatar store={store} person={p} size={72} />
         <div className="grow">
-          <h1 className="page-title">{p.name}</h1>
+          <h1 ref={hero.ref} className="page-title">{p.name}</h1>
           <div className="page-subtitle">
             {p.relation ?? tr('未填写关系')}
             {p.birthday && (

@@ -45,6 +45,7 @@ import { PersonDialog } from './People';
 import { imageUrl } from '../lib/view';
 import { longPressNow, longPressStillValid } from '../lib/long-press';
 import { tileSubText } from '../lib/lib-tile';
+import { StickyHead, useScrolledPast } from '../components/StickyHead';
 
 import { dataLabel, tr } from '../lib/i18n';
 function useLibraries(): TaskType[] {
@@ -192,7 +193,9 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
   const add = (name = '') => setAdding(name);
 
   return (
-    <div className="page lib-page" style={{ '--chip-color': type.color } as CSSProperties}>
+    <div className="page lib-page has-sticky-head" style={{ '--chip-color': type.color } as CSSProperties}>
+      {/* 页头、库标签、搜索和工具条固定在顶上，只有卡片网格滚（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」）；滚动条藏起来（App 的 HIDE_SCROLLBAR_PAGES） */}
+      <StickyHead className="lib-head-sticky">
       <PageHeader
         title={tr('资料库')}
         {...(mobile ? {} : { subtitle: tr('看过的片、在读的书、想去的地方都留在这里，新建任务时直接选。') })}
@@ -266,6 +269,7 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
           </RacButton>
         )}
       </div>
+      </StickyHead>
 
       {entries.length === 0 ? (
         <div className="lib-empty">
@@ -328,6 +332,8 @@ export function LibraryItemPage({ typeId, id }: { typeId: string; id: string }) 
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [mergeInto, setMergeInto] = useState(false);
+  // 大标题滚到顶栏下面以后，顶栏里补小标题和「编辑资料」
+  const hero = useScrolledPast<HTMLHeadingElement>();
   const item = store.get('library_item', id);
   const type = store.get('task_type', item?.type_id ?? typeId);
   if (!item || !type)
@@ -350,16 +356,27 @@ export function LibraryItemPage({ typeId, id }: { typeId: string; id: string }) 
     .map((f) => ({ f, v: item.fields[f.key] }))
     .filter(({ v }) => fieldText(v).trim() !== '');
   return (
-    <div className="page lib-item-page" style={{ '--chip-color': type.color } as CSSProperties}>
-      <a className="back-link" href={href({ page: 'library', typeId: type.id })}>
-        <ChevronLeft size={16} aria-hidden />
-        {copy.name}
-      </a>
+    <div className="page lib-item-page has-sticky-head" style={{ '--chip-color': type.color } as CSSProperties}>
+      {/* 返回这一行固定在顶上（Rei 2026-11-11 资料库只滚内容）；大标题滚走以后这一行补上名字和「编辑资料」 */}
+      <StickyHead className="detail-head-sticky">
+        <a className="back-link" href={href({ page: 'library', typeId: type.id })}>
+          <ChevronLeft size={16} aria-hidden />
+          {copy.name}
+        </a>
+        <span className={`sticky-head-title${hero.past ? ' is-shown' : ''}`} aria-hidden>
+          {item.name}
+        </span>
+        {hero.past && (
+          <RacButton className="icon-btn sticky-head-action" aria-label={tr('编辑资料')} onPress={() => setEditing(true)}>
+            <Pencil size={16} />
+          </RacButton>
+        )}
+      </StickyHead>
       <header className={`lib-hero shape-${shape}`}>
         <ItemArt src={imageUrl(store, item.image)} name={item.name} shape={shape} className="lib-hero-art" />
         <div className="lib-hero-text">
           <div className="lib-hero-kicker">{dataLabel(type.name)}</div>
-          <h1 className="page-title lib-hero-title">{item.name}</h1>
+          <h1 ref={hero.ref} className="page-title lib-hero-title">{item.name}</h1>
           {facts.length > 0 && (
             <dl className="lib-facts">
               {facts.map(({ f, v }) => (
