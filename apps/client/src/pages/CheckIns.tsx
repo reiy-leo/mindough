@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Menu, MenuItem, MenuTrigger, Popover, Button as RacButton } from 'react-aria-components';
-import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Plus, Sun, SunDim, Timer } from 'lucide-react';
+import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Sun, SunDim, Timer } from 'lucide-react';
 import {
   buildRatioIndex,
   describeRecurrence,
@@ -20,7 +20,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
-import { Button, Empty, MenuAt, Section, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { Button, Empty, MenuAt, NewButton, Section, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { useColorLevel, vividVar } from '../lib/color-level';
 import { habitMenu } from '../lib/task-menu';
 import { archiveHabit, toggleMyDay, togglePin } from '../lib/actions';
@@ -215,17 +215,8 @@ export function CheckInsPage() {
         )}
         <div className="checkin-head-actions">
           {/* 只放图标（Rei 2026-11-09 01:59「新建按钮只显示图标」），文字在悬停提示和读屏名里 */}
-          <Tip content={tr('新建打卡')}>
-            <Button
-              variant="primary"
-              className="btn-icon-only"
-              aria-label={tr('新建打卡')}
-              // 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task）
-              onPress={() => createBlankTask(store, ui.openEditor, 'checkin', null)}
-            >
-              <Plus size={18} aria-hidden />
-            </Button>
-          </Tip>
+          {/* 不弹新建面板（Rei 2026-11-09 01:31）：直接建一条空打卡，在详情里打开（lib/blank-task） */}
+          <NewButton label={tr('新建打卡')} onPress={() => createBlankTask(store, ui.openEditor, 'checkin', null)} />
           <MenuTrigger>
             <Tip content={tr('显示哪些打卡')}>
               <RacButton className={`icon-btn${view !== 'today' ? ' is-active' : ''}`} aria-label={tr('显示哪些打卡')}>

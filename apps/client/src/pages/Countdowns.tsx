@@ -1,11 +1,11 @@
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator } from 'react-aria-components';
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight, Plus } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight } from 'lucide-react';
 import { cardColorOf, formatDateZh, formatTaskDate, toDateKey, weekStartsOn, type Task } from '@mindough/core';
 import { useDateDisplay } from '../lib/date-display';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
-import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, Tip, useContextMenuAt, type MenuAction } from '../ui/primitives';
+import { ChipPicker, Empty, MenuAt, NewButton, OverflowMenu, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { CardColorPicker } from '../components/CardColorPicker';
 import { cardColorStyle, cardColorVars } from '../lib/card-colors';
 import { useColorLevel } from '../lib/color-level';
@@ -362,11 +362,7 @@ export function CountdownsPage() {
         </div>
         <div className="checkin-head-actions">
           {/* 原来在页头右边，只放图标（Rei 2026-11-09 01:59），文字在悬停提示和读屏名里 */}
-          <Tip content={tr('新建倒数日')}>
-            <Button variant="primary" className="btn-icon-only" aria-label={tr('新建倒数日')} onPress={newCountdown}>
-              <Plus size={18} aria-hidden />
-            </Button>
-          </Tip>
+          <NewButton label={tr('新建倒数日')} onPress={newCountdown} />
         </div>
       </div>
       {countdowns.length > 0 && usedCats.length > 0 && (

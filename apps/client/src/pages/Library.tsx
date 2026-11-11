@@ -28,7 +28,7 @@ import { useSettings } from '../lib/settings';
 import { useUi } from '../lib/ui';
 import { href, navigate } from '../lib/router';
 import { typeIcon } from '../lib/icons';
-import { Button, ConfirmDialog, MenuAt, OverflowMenu, Section, useContextMenuAt } from '../ui/primitives';
+import { Button, ConfirmDialog, MenuAt, NewButton, OverflowMenu, Section, useContextMenuAt } from '../ui/primitives';
 import { librarySidebarAction } from '../lib/library-sidebar';
 import { libraryRoute } from '../lib/nav';
 import { PageHeader } from '../components/PageHeader';
@@ -167,8 +167,10 @@ function LibraryOnline({ type, query }: { type: TaskType; query: string }) {
 export function LibraryPage({ typeId }: { typeId?: string }) {
   const store = useStore();
   const libs = useLibraries();
-  const { layout } = useSettings();
+  const { layout, skin } = useSettings();
   const mobile = layout === 'mobile';
+  // Apple 皮肤：「添加」换成和新建打卡 / 倒数日 / 项目同一个加号按钮（NewButton，Rei 2026-11-12）；WinUI、Material 照旧
+  const apple = skin === 'apple';
   // 归档类型的库不在标签条里，但按 id 打开（如从它的资料页点「‹ 某某库」回来）照常显示这个库，不落到第一个库
   const requested = typeId ? store.get('task_type', typeId) : undefined;
   const type = libs.find((t) => t.id === typeId) ?? (requested && hasLibrary(requested) ? requested : undefined) ?? libs[0];
@@ -203,7 +205,9 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
         {...(mobile
           ? {}
           : {
-              actions: (
+              actions: apple ? (
+                <NewButton label={tr('添加')} onPress={() => add(query.trim())} />
+              ) : (
                 <Button variant="primary" onPress={() => add(query.trim())}>
                   <Plus size={16} />
                   {tr('添加')}</Button>
@@ -263,11 +267,13 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
             )}
           </>
         )}
-        {mobile && !selection && (
+        {mobile && !selection && (apple ? (
+          <NewButton label={tr('添加到{name}', { name: copy.name })} className="lib-add-mobile" onPress={() => add(query.trim())} />
+        ) : (
           <RacButton className="icon-btn lib-add-mobile" aria-label={tr('添加到{name}', { name: copy.name })} onPress={() => add(query.trim())}>
             <Plus size={20} />
           </RacButton>
-        )}
+        ))}
       </div>
       </StickyHead>
 

@@ -24,6 +24,57 @@
   border-color: var(--border);
   box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.12);
 }
+/* 页面里的「新建 / 添加」加号（NewButton：新建打卡、新建倒数日、新建项目、资料库添加，Rei 2026-11-12「非常不像 Apple 按钮」）。
+ * 照 macOS 工具栏（提醒事项、Things 3）和 iOS 导航栏：无边框图标按钮，平时只有强调色加号、没有底；
+ * 鼠标悬停垫一层浅灰圆角底，按下再深一点；手机上（触屏、iOS 导航栏那种）按下是加号变淡，不垫底。
+ * 尺寸和同一行的 .icon-btn（32×32、圆角 7）一样；加号笔画略粗，接近 SF Symbols 的 medium。
+ * 不用 color-mix（Chromium 107 不支持），浅灰底直接写 rgba。WinUI、Material 不走这里，仍是填充强调色方块。 */
+[data-skin='apple'] .btn.btn-icon-only.btn-new {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--accent);
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+}
+[data-skin='apple'] .btn.btn-icon-only.btn-new svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.25;
+}
+[data-skin='apple'] .btn.btn-icon-only.btn-new[data-hovered] {
+  background: rgba(0, 0, 0, 0.06);
+}
+[data-skin='apple'] .btn.btn-icon-only.btn-new[data-pressed] {
+  background: rgba(0, 0, 0, 0.11);
+}
+[data-skin='apple'][data-theme='dark'] .btn.btn-icon-only.btn-new[data-hovered] {
+  background: rgba(255, 255, 255, 0.09);
+}
+[data-skin='apple'][data-theme='dark'] .btn.btn-icon-only.btn-new[data-pressed] {
+  background: rgba(255, 255, 255, 0.15);
+}
+[data-skin='apple'][data-layout='mobile'] .btn.btn-icon-only.btn-new {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+[data-skin='apple'][data-layout='mobile'] .btn.btn-icon-only.btn-new svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.1;
+}
+[data-skin='apple'][data-layout='mobile'] .btn.btn-icon-only.btn-new[data-hovered],
+[data-skin='apple'][data-layout='mobile'] .btn.btn-icon-only.btn-new[data-pressed] {
+  background: transparent;
+}
+[data-skin='apple'][data-layout='mobile'] .btn.btn-icon-only.btn-new[data-pressed] {
+  opacity: 0.35;
+}
 [data-skin='apple'] .page-icon {
   border-radius: 9px;
 }

@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Archive, ArchiveRestore, ChevronRight, CircleCheck, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, ChevronRight, CircleCheck } from 'lucide-react';
 import { isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
-import { Button, ChipPicker, Empty, MenuAt, OverflowMenu, PopoverPanel, Tip, useContextMenuAt } from '../ui/primitives';
+import { Button, ChipPicker, Empty, MenuAt, NewButton, OverflowMenu, PopoverPanel, useContextMenuAt } from '../ui/primitives';
 import { GroupIcon } from '../components/project/GroupIcon';
 import { ProjectTitle, unarchiveProject, useProjectActions } from '../components/project/ProjectActions';
 import { useUi } from '../lib/ui';
@@ -103,11 +103,7 @@ export function GroupsPage() {
           )}
         </div>
         {/* 只放图标（Rei 2026-11-10「新建项目用icon btn」），和打卡、倒数日页同一个按钮；文字在悬停提示和读屏名里 */}
-        <Tip content={tr('新建项目')}>
-          <Button variant="primary" className="btn-icon-only groups-new" aria-label={tr('新建项目')} onPress={() => setCreating(true)}>
-            <Plus size={18} aria-hidden />
-          </Button>
-        </Tip>
+        <NewButton label={tr('新建项目')} className="groups-new" onPress={() => setCreating(true)} />
       </div>
       {groups.length === 0 ? (
         archived.length ? null : <Empty title={tr('还没有项目')} hint={tr('项目用来装一批相关任务，比如“搬家”“开发某个功能”')} />

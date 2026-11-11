@@ -35,7 +35,7 @@ import {
   type PopoverProps,
   type Key,
 } from 'react-aria-components';
-import { Check, ChevronDown, MoreHorizontal, X } from 'lucide-react';
+import { Check, ChevronDown, MoreHorizontal, Plus, X } from 'lucide-react';
 import { useSettings } from '../lib/settings';
 
 import { tr } from '../lib/i18n';
@@ -143,6 +143,21 @@ export function Tip({ content, children, delay = 400 }: { content: ReactNode; ch
         {content}
       </Tooltip>
     </TooltipTrigger>
+  );
+}
+
+/**
+ * 页面里的「新建 / 添加」按钮（新建打卡、新建倒数日、新建项目、资料库添加共用，Rei 2026-11-12「在 Apple 皮肤里非常不像 Apple 按钮」）：
+ * 只有一个 Lucide 加号，文字在悬停提示和读屏名里。样子按皮肤：Apple 是工具栏里的无边框图标按钮（强调色加号、悬停 / 按下才有浅灰底，
+ * 见 skins.css .btn-new）；WinUI、Material 仍是原来的填充强调色方块（.btn-primary.btn-icon-only）。
+ */
+export function NewButton({ label, tip = label, onPress, className, iconSize = 18 }: { label: string; tip?: string; onPress: () => void; className?: string; iconSize?: number }) {
+  return (
+    <Tip content={tip}>
+      <Button variant="primary" className={`btn-icon-only btn-new${className ? ` ${className}` : ''}`} aria-label={label} onPress={onPress}>
+        <Plus size={iconSize} aria-hidden />
+      </Button>
+    </Tip>
   );
 }
 
