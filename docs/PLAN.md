@@ -2088,3 +2088,13 @@ Rei 2026-11-12 01:22 三条：显示方式（列表 / 图标）改成下拉，�
   - 等待安排、过期积压：页面里本来就没有可见页头（2026-10-26 去掉的，只有读屏 `h1` 和件数小字），顶栏只有标题，这次没改代码。
   - 手机上不再显示今天的日期和农历；要的话可以放回顶栏标题旁边做小字，待 Rei 定。
 
+
+### Apple 皮肤新建加号、资料库页去掉页头 ✅（2026-11-12）
+Rei 2026-11-12 01:31：「新建倒数日」「新建打卡」「资料库中的添加按钮」在 Apple 皮肤里很不像 Apple 按钮，三处统一，和项目列表页的「＋」一致；01:41：资料库页去掉页头，新建换成图标按钮放在库标签行右边（照项目列表页），「编辑」挪进「…」菜单。
+
+- **共用按钮**（`ui/primitives.tsx` `NewButton`）：Lucide 加号 + `Tip` 悬停提示 + 读屏名，类名 `btn btn-primary btn-icon-only btn-new`。新建打卡、新建倒数日、新建项目、资料库添加四处都换成它（项目列表页原来也是同一个填充方块，一起改，四处才一样）。
+- **Apple 样子**（`skin/skins.css` `[data-skin='apple'] .btn.btn-icon-only.btn-new`）：照提醒事项 / Things 3 工具栏、iOS 导航栏：透明底、无边框、强调色加号，图标 20px、笔画 2.25；悬停 `rgba(0,0,0,.06)`、按下 `.11`（暗色 `rgba(255,255,255,.09 / .15)`）圆角 7px；手机 36×36、图标 24px，按下不垫底、加号 opacity .35。不用 color-mix。WinUI、Material 没写这条规则，还是 `.btn-primary.btn-icon-only` 填充方块。
+- **资料库页**（`pages/Library.tsx`）：去掉 `PageHeader`（图标 + 标题 + 宽屏副标题 + 宽屏「＋ 添加」），换成 `h1.sr-only`；`.lib-tabs-row` 右端 `OverflowMenu`（编辑资料库 ｜ 在侧边栏显示，归档库只有第一项）+ `NewButton`（`.lib-tabs-add`，读屏「添加到{name}」，宽屏手机同）；搜索行里手机的 `.lib-add-mobile` 和标签行的「编辑」按钮去掉。`types.css` 里标签条 `flex: 1 1 auto`，右边两个按钮 `flex: none`。`HEADERLESS_PAGES` 加 `library`、`people`（人物库也走这页），手机顶栏写「资料库」。
+- **文案**：没有新词条（「编辑资料库」「资料库操作」「添加到{name}」都是已有的）。
+- **测试**：`lib/mobile-topbar.test.ts` 改了；tsc、nav / i18n / locales 测试过。自查脚本 `work/d1112-applebtn/ab.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 / 手机 390），截图 `work/shots-d1112-applebtn/before`、`after`。
+- **待 Rei 确认**：① 项目列表页的加号也跟着变成 Apple 无边框样子（四处同一个按钮）；② 资料库「…」放在加号左边，菜单里写「编辑资料库」（沿用原按钮的读屏名）；③ WinUI、Material 的资料库添加从「＋ 添加」文字按钮变成填充加号方块（页头去掉了，跟着项目列表页做）。
