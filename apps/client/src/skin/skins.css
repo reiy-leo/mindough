@@ -154,11 +154,14 @@
 .platform-macos-overlay .app-desktop .main > .titlebar-space {
   height: 10px;
 }
-/* 日记页两栏自己管顶上留白（Rei 2026-11-12 01:10）：外层不加上面那 8px，两栏各留 8px，合起来同其他页 18px；
-   不然 .page 的 8px 会压过 .journal-page.jf 的 padding: 0，右栏多出一截，分隔线也到不了顶 */
+/* 日记页两栏的背景和中间分隔线通到窗口最顶（Rei 2026-11-12 01:59「日记顶部没有贯通，似乎是给 titlebar 留了空间，不用留」）：
+   中间列不要那条 10px 拖动条，页面也不加上面那 8px（不然 .page 的 8px 会压过 .journal-page.jf 的 padding: 0）；
+   两栏顶上照网页留 12px（--jf-top 默认值）。拖窗口靠 Journal.tsx 里顶上那条透明的 .jf-drag。 */
+.platform-macos-overlay .app-desktop .main:has(.journal-page.jf) > .titlebar-space {
+  display: none;
+}
 .platform-macos-overlay .app-desktop .journal-page.jf {
   padding-top: 0;
-  --jf-top: var(--space-2);
 }
 
 /* ═════════════════════ Windows 11 / WinUI 3 ═════════════════════ */

@@ -173,6 +173,8 @@ export function JournalPage({ date: wanted }: { date?: string }) {
     );
   return (
     <div className="page journal-page jf">
+      {/* Mac 无标题栏壳里拖窗口用（只在 html.platform-macos-overlay 时显示，见 journal.css） */}
+      <div className="jf-drag" data-tauri-drag-region aria-hidden />
       <div className="jf-layout">
         <aside className="jf-side" aria-label={tr('日记概览')}>
           <h1 className="sr-only">{tr('日记')}</h1>

@@ -108,8 +108,9 @@
   max-width: none;
   padding: 0;
   height: 100%;
-  /* 两栏顶上的留白（Rei 2026-11-12 01:10 去掉页头和顶部空白）：网页 12px；Mac 无标题栏壳见 skins.css，
-     中间列已有 10px 拖动条，这里改 8px，合起来 18px，同其他页 */
+  position: relative;
+  /* 两栏顶上的留白（Rei 2026-11-12 01:10 去掉页头和顶部空白）：网页和 Mac 无标题栏壳都是 12px。
+     Mac 壳里日记页不要中间列的 10px 拖动条，两栏背景和分隔线通到窗口最顶（01:59，见 skins.css） */
   --jf-top: var(--space-3);
   --jheat-empty: color-mix(in srgb, var(--text) 7%, var(--surface));
   --jcell-r: 3px;
@@ -119,6 +120,20 @@
 [data-theme='dark'] .journal-page.jf {
   --jheat-empty: color-mix(in srgb, var(--text) 11%, var(--surface));
   --jcomp-bg: color-mix(in srgb, var(--text) 5%, var(--bg));
+}
+/* Mac 无标题栏壳：两栏顶上 12px 留白横着一条透明拖动条，按住能拖窗口、双击放大（Tauri data-tauri-drag-region 只认按下的那个元素本身）。
+   盖在两栏上面但只有留白那么高，不挡下面的活动图、筛选条和输入框；网页和手机不显示。 */
+.jf-drag {
+  display: none;
+}
+.platform-macos-overlay .app-desktop .jf-drag {
+  display: block;
+  position: absolute;
+  z-index: 7;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--jf-top);
 }
 .jf-layout {
   display: grid;
