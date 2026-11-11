@@ -9,13 +9,14 @@
  *   原来按天往下排的时间轴列表已经删掉（旧地址 #/agenda、view/timeline 打开的就是这一页）。
  * - 订阅事件（lib/calendar-subs）：带订阅颜色的竖线、只读，点开看详情（EventSheet）。
  * - 节假日 / 农历：日期旁的小字和「休」「班」都走 useLunar（同日期面板的 LunarMark）。
- * - 新建：格子右上角「+」→ 格子里输入，回车建那天的任务。
+ * - 新建（Rei 2026-11-12 02:04）：格子右上角「+」、当天列表的「添加」直接弹出新建任务面板（同按 N 的 TaskComposer），日期预填那一天；
+ *   不再先出行内输入框。日历没有时间格，只带日期。月视图点数字弹出的当天列表里点「添加」：先关列表再弹面板。年视图、手机小月历没有「+」。
  * - 拖动改日期（Rei 2026-11-11 06:55，lib/cal-drag）：周、多日、多周、月能拖，年视图不拖；能拖的是任务和倒数日，订阅事件只读。
  *   有起止的整段平移、天数不变（core calDropPatch）；写入走 store.updateTask（我的一天跟着走），提示里能撤销。手机月视图从下面的列表拖到上面的小月历。
  * - 手机：月视图上面是小月历（只画点），下面是选中那天的列表；周、多日、多周按天竖排；年视图一列两个月。
  */
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Form, TextField, Button as RacButton } from 'react-aria-components';
+import { Button as RacButton } from 'react-aria-components';
 import { ChevronLeft, ChevronRight, Hourglass, Minus, Plus, MapPin } from 'lucide-react';
 import {
   CAL_VIEW_KINDS,
@@ -41,7 +42,6 @@ import {
   normalizeSubColor,
   parseRecurrence,
   parseDateKey,
-  plainTitleMarkdown,
   sortDayItems,
   stepCalAnchor,
   addDays,
@@ -58,7 +58,6 @@ import {
 } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button, IconButton, InlineNumber, Select, Sheet } from '../ui/primitives';
-import { WrapInput, stripNewlines } from '../components/WrapInput';
 import { LunarMark } from '../components/task/DateGrid';
 import { useLunar } from '../lib/lunar';
 import { useCalendarEvents, type CalEvent } from '../lib/calendar-subs';
@@ -118,6 +117,7 @@ export function CalendarPage() {
   const range = calRange(view, anchor, weekStart);
   const lunar = useLunar(store);
   const events = useCalendarEvents(store);
+  const ui = useUi();
 
   // 完成、关闭的不列；重复的（打卡）不画进格子；归档项目里的不列（activeTasks 已排除）
   const active = store.activeTasks();
@@ -154,9 +154,8 @@ export function CalendarPage() {
     setAnchor(today);
     setPicked(today);
   };
-  const create = (date: DateKey, text: string) => {
-    if (text.trim()) store.createTask({ body_md: plainTitleMarkdown(text.trim()), scheduled_date: date });
-  };
+  // 新建：弹出新建任务面板（ui.openQuickCreate，和按 N 同一个），日期预填点的那天（Rei 2026-11-12 02:04）
+  const create = (date: DateKey) => ui.openQuickCreate({ scheduled_date: date });
 
   const toolbar = (
     <div className="cal-toolbar">
@@ -189,7 +188,6 @@ export function CalendarPage() {
   const onItem = (it: Item) => (it.kind === 'task' ? undefined : setOpenEvent(it));
 
   // 拖动改日期（年视图不拖）
-  const ui = useUi();
   const rootRef = useRef<HTMLDivElement>(null);
   const applyMove = useCallback((id: string, patch: CalDatePatch | null) => {
     const task = store.get('task', id);
@@ -265,7 +263,11 @@ export function CalendarPage() {
         {dayOpen && <DayList date={dayOpen} today={today} items={itemsOnDay(dayOpen, items)} lunar={lunar} onItem={(it) => {
           if (it.kind === 'event') setOpenEvent(it);
           setDayOpen(null);
-        }} onCreate={create} bare />}
+        }} onCreate={(d) => {
+          // 两层弹窗不叠：先关当天列表，再弹新建面板
+          setDayOpen(null);
+          create(d);
+        }} bare />}
       </Sheet>
     </div>
   );
@@ -346,35 +348,12 @@ function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
   );
 }
 
-function AddInline({ date, onCreate, onDone }: { date: DateKey; onCreate: (d: DateKey, text: string) => void; onDone: () => void }) {
-  const [draft, setDraft] = useState('');
-  const submit = () => {
-    onCreate(date, draft);
-    setDraft('');
-    onDone();
-  };
-  return (
-    <Form
-      className="add-bar inline cal-add"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <TextField aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateRange(date, null) })} value={draft} onChange={(v) => setDraft(stripNewlines(v))} className="add-bar-field" autoFocus onBlur={submit}>
-        <WrapInput value={draft} placeholder={tr('写下一件事，按回车添加')} onSubmit={submit} />
-      </TextField>
-    </Form>
-  );
-}
-
 /**
  * 宽屏周、多日、多周、月（Rei 2026-11-11 01:10）：每格列出当天全部条目，没有「还有 N 件」，行按内容撑高。
  * 排道分档：倒数日 → 任务 → 订阅事件，每天从上往下都是这个顺序；多天的任务、事件照旧画成跨格横条。
  * 给了 countItems（月视图）时，日期旁写「任务 + 打卡 + 倒数日」的个数，点了看那天的列表。
  */
-function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; coreTo: DateKey; today: DateKey; items: Item[]; countItems?: Item[]; lunar: Lunar; onItem: (it: Item) => void; onDay: (d: DateKey) => void; onCreate: (d: DateKey, text: string) => void }) {
-  const [adding, setAdding] = useState<DateKey | null>(null);
+function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; coreTo: DateKey; today: DateKey; items: Item[]; countItems?: Item[]; lunar: Lunar; onItem: (it: Item) => void; onDay: (d: DateKey) => void; onCreate: (d: DateKey) => void }) {
   const cols = p.rows[0]?.length ?? 7;
   const tall = p.view.kind === 'week' || p.view.kind === 'days';
   const month = p.view.kind === 'month';
@@ -405,7 +384,7 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
               return (
                 <div key={d} role="gridcell" className="cal-cell" style={{ gridColumn: c + 1, gridRow: 1 }} data-date={d}>
                   <DayHead date={d} today={p.today} lunar={p.lunar} inCore={compareDateKey(d, p.coreFrom) >= 0 && compareDateKey(d, p.coreTo) <= 0}>
-                    <RacButton className="cal-cell-add" aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateRange(d, null) })} onPress={() => setAdding(d)}>
+                    <RacButton className="cal-cell-add" aria-label={tr('添加到{formatDateZh}', { formatDateZh: formatDateRange(d, null) })} onPress={() => p.onCreate(d)}>
                       <Plus size={14} />
                     </RacButton>
                     {count > 0 && (
@@ -426,11 +405,6 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
                 <ItemButton it={x.item} onItem={p.onItem} />
               </div>
             ))}
-            {adding && row.includes(adding) && (
-              <div className="cal-add-slot" style={{ gridColumn: row.indexOf(adding) + 1, gridRow: lanes + 2 }}>
-                <AddInline date={adding} onCreate={p.onCreate} onDone={() => setAdding(null)} />
-              </div>
-            )}
           </div>
         );
       })}
@@ -479,8 +453,7 @@ function MiniMonth(p: { rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; 
   );
 }
 
-function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar; onItem: (it: Item) => void; onCreate: (d: DateKey, text: string) => void; bare?: boolean }) {
-  const [adding, setAdding] = useState(false);
+function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar; onItem: (it: Item) => void; onCreate: (d: DateKey) => void; bare?: boolean }) {
   const info = p.lunar.any ? p.lunar.day(p.date) : null;
   // 倒数日 → 任务 → 订阅事件（全天在前，再按时间）（Rei 2026-11-11 01:10）；打卡不进列表
   const sorted = sortDayItems(p.date, p.items);
@@ -497,14 +470,10 @@ function DayList(p: { date: DateKey; today: DateKey; items: Item[]; lunar: Lunar
         {sorted.map((it) => (
           <ItemButton key={it.id} it={it} onItem={p.onItem} />
         ))}
-        {!sorted.length && !adding && <div className="cal-empty">{tr('这天没有安排')}</div>}
-        {adding ? (
-          <AddInline date={p.date} onCreate={p.onCreate} onDone={() => setAdding(false)} />
-        ) : (
-          <RacButton className="cal-day-add" onPress={() => setAdding(true)}>
-            <Plus size={14} /> {tr('添加')}
-          </RacButton>
-        )}
+        {!sorted.length && <div className="cal-empty">{tr('这天没有安排')}</div>}
+        <RacButton className="cal-day-add" onPress={() => p.onCreate(p.date)}>
+          <Plus size={14} /> {tr('添加')}
+        </RacButton>
       </div>
     </section>
   );

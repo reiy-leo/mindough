@@ -216,18 +216,11 @@
   }
 }
 
-.cal-slot,
-.cal-add-slot {
+.cal-slot {
   position: relative;
   z-index: 1;
   min-width: 0;
   padding: 0 4px;
-}
-.cal-add-slot {
-  padding-top: 2px;
-}
-.cal-add-slot .add-bar {
-  margin: 0;
 }
 .cal-item {
   display: flex;

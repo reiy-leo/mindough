@@ -14,11 +14,12 @@ const tasks = vi.hoisted(() => [] as Task[]);
 const events = vi.hoisted(() => [] as unknown[]);
 const settings = vi.hoisted(() => ({ value: { calendarView: { kind: 'month', days: 3, weeks: 2 } } as Record<string, unknown>, layout: 'desktop' }));
 const openEditor = vi.fn();
+const openQuickCreate = vi.fn();
 const setSetting = vi.fn();
 const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
 vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
-vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, editingId: null }) }));
+vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, openQuickCreate, editingId: null }) }));
 vi.mock('../lib/lunar', () => ({ useLunar: () => ({ show: false, holidays: false, any: false, day: () => ({ label: null, sub: null }) }) }));
 vi.mock('../lib/calendar-subs', () => ({ useCalendarEvents: () => events }));
 vi.mock('../components/PageHeader', () => ({ PageHeader: () => null }));
@@ -43,6 +44,8 @@ afterEach(() => {
   events.length = 0;
   settings.layout = 'desktop';
   settings.value = { calendarView: { kind: 'month', days: 3, weeks: 2 } };
+  openQuickCreate.mockClear();
+  store.createTask.mockClear();
 });
 
 const task = (id: string, status: string, extra: Partial<Task> = {}) =>
@@ -174,5 +177,70 @@ describe('日历', () => {
     expect(host.querySelector('.cal-mini-cell.is-today .cal-mini-count')!.textContent).toBe('3');
     expect([...host.querySelectorAll('.cal-day-list .cal-item.is-task')].map((el) => el.getAttribute('data-task-id'))).toEqual(['cd', 'open']);
     expect(host.querySelector('.cal-item.is-checkin')).toBeNull();
+  });
+  describe('「+」直接弹新建面板，日期预填那一天（Rei 2026-11-12 02:04）', () => {
+    const plus = (d: string) => host.querySelector(`.cal-cell[data-date="${d}"] .cal-cell-add`) as HTMLButtonElement;
+    for (const kind of ['week', 'days', 'weeks', 'month'] as const) {
+      it(`宽屏${kind}：点格子的「+」`, () => {
+        settings.value = { calendarView: { kind, days: 3, weeks: 2 } };
+        act(() => root.render(<CalendarPage />));
+        const btn = plus(today);
+        expect(btn.getAttribute('aria-label')).toMatch(/^添加到/);
+        act(() => btn.click());
+        expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
+        // 不再出行内输入框，也不直接建任务
+        expect(host.querySelector('.cal-add, .add-bar, input, textarea')).toBeNull();
+        expect(store.createTask).not.toHaveBeenCalled();
+      });
+    }
+
+    it('键盘：Enter 按「+」也弹面板', () => {
+      settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
+      act(() => root.render(<CalendarPage />));
+      const btn = plus('2026-11-12');
+      act(() => btn.focus());
+      act(() => {
+        btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        btn.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+      });
+      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: '2026-11-12' });
+    });
+
+    it('手机月视图：当天列表的「添加」带选中那天', () => {
+      settings.layout = 'mobile';
+      act(() => root.render(<CalendarPage />));
+      const add = host.querySelector('.cal-day-add') as HTMLButtonElement;
+      expect(add.textContent).toContain('添加');
+      act(() => add.click());
+      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
+      expect(host.querySelector('.cal-add, .add-bar')).toBeNull();
+    });
+
+    it('手机周视图：每天列表的「添加」带各自那天', () => {
+      settings.layout = 'mobile';
+      settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
+      act(() => root.render(<CalendarPage />));
+      const list = host.querySelectorAll('.cal-day-list')[2]!;
+      act(() => (list.querySelector('.cal-day-add') as HTMLElement).click());
+      const d = (openQuickCreate.mock.calls[0]![0] as { scheduled_date: string }).scheduled_date;
+      expect(d).toBe(list.getAttribute('data-drop-date'));
+      expect(d).not.toBe(today);
+    });
+
+    it('月视图点数字弹出的当天列表：点「添加」先关列表再弹面板', () => {
+      tasks.push(task('a', '待办'));
+      act(() => root.render(<CalendarPage />));
+      act(() => (host.querySelector(`.cal-cell[data-date="${today}"] .cal-cell-count`) as HTMLElement).click());
+      const add = document.querySelector('.cal-day-list .cal-day-add') as HTMLElement;
+      act(() => add.click());
+      expect(openQuickCreate).toHaveBeenCalledWith({ scheduled_date: today });
+      expect(document.querySelector('.cal-day-list .cal-day-add')).toBeNull();
+    });
+
+    it('年视图没有「+」', () => {
+      settings.value = { calendarView: { kind: 'year', days: 3, weeks: 2 } };
+      act(() => root.render(<CalendarPage />));
+      expect(host.querySelector('.cal-cell-add, .cal-day-add')).toBeNull();
+    });
   });
 });
