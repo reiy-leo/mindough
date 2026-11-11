@@ -100,7 +100,7 @@ export function mentionQueryAt(textBefore: string): { at: number; query: string 
 // 选了把 @ 和后面的字换成本机时区的「2026-11-12 07:09」纯文字（24 小时制），不是胶囊。
 
 /** 能叫出「插入当前时间」的词。 */
-export const MENTION_NOW_WORDS = ['现在', 'now', 'time', 'xianzai'] as const;
+export const MENTION_NOW_WORDS = ['现在', 'now', 'time', 'xianzai'] as const; // i18n-ignore 匹配用的原文，不显示
 
 /**
  * @ 后面打的字能不能叫出「插入当前时间」：是上面某个词的开头（不分大小写）。
