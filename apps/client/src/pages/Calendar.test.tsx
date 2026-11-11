@@ -14,9 +14,10 @@ const tasks = vi.hoisted(() => [] as Task[]);
 const events = vi.hoisted(() => [] as unknown[]);
 const settings = vi.hoisted(() => ({ value: { calendarView: { kind: 'month', days: 3, weeks: 2 } } as Record<string, unknown>, layout: 'desktop' }));
 const openEditor = vi.fn();
+const setSetting = vi.fn();
 const store = { activeTasks: () => tasks, createTask: vi.fn(), version: 1 };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
-vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: vi.fn(), layout: settings.layout }) }));
+vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
 vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, editingId: null }) }));
 vi.mock('../lib/lunar', () => ({ useLunar: () => ({ show: false, holidays: false, any: false, day: () => ({ label: null, sub: null }) }) }));
 vi.mock('../lib/calendar-subs', () => ({ useCalendarEvents: () => events }));
@@ -130,6 +131,28 @@ describe('日历', () => {
     settings.value = { calendarView: { kind: 'days', days: 4, weeks: 2 } };
     act(() => root.render(<CalendarPage />));
     expect(host.querySelectorAll('.cal-cell').length).toBe(4);
+  });
+
+  it('没有页头：只有读屏的「日历」标题；视图下拉的标签只给读屏', () => {
+    act(() => root.render(<CalendarPage />));
+    expect(host.querySelector('.page-header')).toBeNull();
+    expect(host.querySelector('h1.sr-only')!.textContent).toBe('日历');
+    expect(host.querySelector('.cal-toolbar .cal-view-select .field-label')!.textContent).toBe('视图');
+  });
+
+  it('多日 / 多周：− + 每次 1，到边界禁用', () => {
+    settings.value = { calendarView: { kind: 'days', days: 14, weeks: 1 } };
+    act(() => root.render(<CalendarPage />));
+    const btn = (l: string) => host.querySelector(`.cal-count [aria-label="${l}"]`) as HTMLButtonElement;
+    expect(btn('多一天').disabled).toBe(true);
+    expect(btn('少一天').disabled).toBe(false);
+    act(() => btn('少一天').click());
+    expect(setSetting).toHaveBeenLastCalledWith('calendarView', { kind: 'days', days: 13, weeks: 1 });
+    settings.value = { calendarView: { kind: 'weeks', days: 3, weeks: 1 } };
+    act(() => root.render(<CalendarPage key="w" />));
+    expect(btn('少一周').disabled).toBe(true);
+    act(() => btn('多一周').click());
+    expect(setSetting).toHaveBeenLastCalledWith('calendarView', { kind: 'weeks', days: 3, weeks: 2 });
   });
 
   it('手机月视图：小月历写个数（含打卡）+ 当天列表（倒数日 → 任务 → 事件，不列打卡）', () => {

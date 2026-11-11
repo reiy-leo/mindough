@@ -1,7 +1,7 @@
 import type { Route } from './router';
 
-/** 中间列不放页头的页面（Rei 2026-10-26；打卡页 2026-11-10 去掉页头）：手机上标题显示在顶栏。 */
-export const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin'];
+/** 中间列不放页头的页面（Rei 2026-10-26；打卡页 2026-11-10、日历页 2026-11-12 去掉页头）：手机上标题显示在顶栏。 */
+export const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin', 'agenda'];
 
 /**
  * 手机顶栏放什么（Rei 2026-11-11 02:09「只有我的一天保留这个搜索，其他页面都不显示」，不要因此留出空行）：

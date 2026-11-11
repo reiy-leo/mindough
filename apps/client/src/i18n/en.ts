@@ -1488,4 +1488,8 @@ export const EN: Record<string, EnValue> = {
   "类型显示方式": "Category Display",
   "列表分区|按类型": "By Category",
   "列表分区|没有类型": "No Category",
+  "少一天": "One day fewer",
+  "多一天": "One day more",
+  "少一周": "One week fewer",
+  "多一周": "One week more",
 };

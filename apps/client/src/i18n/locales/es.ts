@@ -1771,6 +1771,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "类型显示方式": "Vista de categorías",
   "列表分区|按类型": "Por categoría",
   "列表分区|没有类型": "Sin categoría",
+  "少一天": "Un día menos",
+  "多一天": "Un día más",
+  "少一周": "Una semana menos",
+  "多一周": "Una semana más",
 };
 
 export const DATA: Record<string, string> = {

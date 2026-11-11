@@ -16,7 +16,7 @@
  */
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Form, TextField, Button as RacButton } from 'react-aria-components';
-import { Calendar, ChevronLeft, ChevronRight, Hourglass, Plus, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Hourglass, Minus, Plus, MapPin } from 'lucide-react';
 import {
   CAL_VIEW_KINDS,
   DAYS_MAX,
@@ -58,7 +58,6 @@ import {
 } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button, IconButton, InlineNumber, Select, Sheet } from '../ui/primitives';
-import { PageHeader } from '../components/PageHeader';
 import { WrapInput, stripNewlines } from '../components/WrapInput';
 import { LunarMark } from '../components/task/DateGrid';
 import { useLunar } from '../lib/lunar';
@@ -177,16 +176,10 @@ export function CalendarPage() {
       <div className="cal-view-pick">
         <Select label={tr('视图')} className="cal-view-select" value={view.kind} onChange={(k) => setView({ ...view, kind: k as CalViewKind })} options={CAL_VIEW_KINDS.map((k) => ({ id: k, label: VIEW_LABEL[k]() }))} />
         {view.kind === 'days' && (
-          <span className="cal-count">
-            <InlineNumber label={tr('天数')} value={view.days} min={DAYS_MIN} max={DAYS_MAX} width={2} onChange={(n) => setView({ ...view, days: n })} />
-            {tr('天')}
-          </span>
+          <CountStepper label={tr('天数')} unit={tr('天')} dec={tr('少一天')} inc={tr('多一天')} value={view.days} min={DAYS_MIN} max={DAYS_MAX} onChange={(n) => setView({ ...view, days: n })} />
         )}
         {view.kind === 'weeks' && (
-          <span className="cal-count">
-            <InlineNumber label={tr('周数')} value={view.weeks} min={WEEKS_MIN} max={WEEKS_MAX} width={2} onChange={(n) => setView({ ...view, weeks: n })} />
-            {tr('周')}
-          </span>
+          <CountStepper label={tr('周数')} unit={tr('周')} dec={tr('少一周')} inc={tr('多一周')} value={view.weeks} min={WEEKS_MIN} max={WEEKS_MAX} onChange={(n) => setView({ ...view, weeks: n })} />
         )}
       </div>
     </div>
@@ -261,7 +254,9 @@ export function CalendarPage() {
 
   return (
     <div ref={rootRef} className={`page cal-page is-${view.kind}${mobile ? ' is-mobile' : ''}`}>
-      <PageHeader title={trc('导航', '日历')} icon={<Calendar size={22} />} compact />
+      {/* 页头去掉（Rei 2026-11-12 00:54「去掉页头」）：原页头只有图标和「日历」标题，没有按钮；翻页、今天、范围标题、视图、天数 / 周数本来就在下面这行工具栏。
+          读屏还是要有页面名（同打卡页）；手机上标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES） */}
+      <h1 className="sr-only">{trc('导航', '日历')}</h1>
       {toolbar}
       {body}
       <EventSheet event={openEvent} onClose={() => setOpenEvent(null)} />
@@ -276,6 +271,25 @@ export function CalendarPage() {
 }
 
 type Lunar = ReturnType<typeof useLunar>;
+
+/**
+ * 多日的天数、多周的周数：「− [n] + 天」（Rei 2026-11-12 00:54）。每次 ±1，到最小 / 最大值那头的按钮禁用；
+ * 输入框照旧能直接打字（InlineNumber 自己夹在 min–max 里）。
+ */
+function CountStepper({ label, unit, dec, inc, value, min, max, onChange }: { label: string; unit: string; dec: string; inc: string; value: number; min: number; max: number; onChange: (n: number) => void }) {
+  return (
+    <span className="cal-count">
+      <IconButton label={dec} className="cal-step" isDisabled={value <= min} onPress={() => onChange(Math.max(min, value - 1))}>
+        <Minus size={16} />
+      </IconButton>
+      <InlineNumber label={label} value={value} min={min} max={max} width={2} onChange={onChange} />
+      <IconButton label={inc} className="cal-step" isDisabled={value >= max} onPress={() => onChange(Math.min(max, value + 1))}>
+        <Plus size={16} />
+      </IconButton>
+      <span className="cal-count-unit">{unit}</span>
+    </span>
+  );
+}
 
 function DayHead({ date, today, lunar, inCore, children }: { date: DateKey; today: DateKey; lunar: Lunar; inCore: boolean; children?: ReactNode }) {
   const info = lunar.any ? lunar.day(date) : null;

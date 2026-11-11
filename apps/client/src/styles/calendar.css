@@ -51,8 +51,15 @@
   align-items: center;
   gap: var(--space-2);
 }
+/* 视图下拉不写「视图」两个字（Rei 2026-11-12 00:54），宽屏手机都一样；标签还在，读屏照读 */
 .cal-view-select .field-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .cal-view-select .select-btn {
   min-width: 96px;
@@ -62,6 +69,14 @@
   align-items: center;
   gap: 4px;
   color: var(--text-2);
+}
+/* 天数 / 周数两边的 − +（Rei 2026-11-12 00:54） */
+.cal-count .cal-step[data-disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+.cal-count-unit {
+  margin-left: 2px;
 }
 
 /* 宽屏格子 */
@@ -519,13 +534,6 @@ html[data-layout='mobile'] .cal-toolbar {
 html[data-layout='mobile'] .cal-range-title {
   font-size: 15px;
   margin-left: 0;
-}
-html[data-layout='mobile'] .cal-view-select .field-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
 }
 
 /* 事件详情 */

@@ -1771,6 +1771,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "类型显示方式": "カテゴリの表示",
   "列表分区|按类型": "カテゴリ別",
   "列表分区|没有类型": "カテゴリなし",
+  "少一天": "1日減らす",
+  "多一天": "1日増やす",
+  "少一周": "1週減らす",
+  "多一周": "1週増やす",
 };
 
 export const DATA: Record<string, string> = {
