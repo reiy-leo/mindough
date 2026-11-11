@@ -220,7 +220,7 @@ describe('日历', () => {
       settings.layout = 'mobile';
       settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
       act(() => root.render(<CalendarPage />));
-      const list = host.querySelectorAll('.cal-day-list')[2]!;
+      const list = host.querySelectorAll('.cal-day-list')[0]!;
       act(() => (list.querySelector('.cal-day-add') as HTMLElement).click());
       const d = (openQuickCreate.mock.calls[0]![0] as { scheduled_date: string }).scheduled_date;
       expect(d).toBe(list.getAttribute('data-drop-date'));
