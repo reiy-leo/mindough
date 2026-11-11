@@ -20,6 +20,7 @@ import { imeGuardExtension } from './ime-guard';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
+import { usableRect } from './mention-place';
 import { insertMention, mentionExtension, mentionParse, mentionSerialize, remarkTaskMentions, type MentionHooks } from './mention';
 export type { MentionState } from './mention';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
@@ -183,7 +184,8 @@ export interface MdEditorHandle {
   /** 当前选区（链接框新加时用）。 */
   selection(): { from: number; to: number };
   /** 链接起点在页面上的位置（浮层定位）。 */
-  coordsOf(range: { from: number; to: number }): { left: number; top: number; bottom: number } | null;
+  /** 某个位置在屏幕上的矩形；量不到、量出来是 0 矩形或跑出编辑器（节点刚被换掉）都给 null。side -1 = 贴前面的字。 */
+  coordsOf(range: { from: number; to: number }, side?: -1 | 1): { left: number; top: number; bottom: number } | null;
   view(): EditorView;
 }
 
@@ -366,10 +368,13 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
       const { from, to } = v.state.selection;
       return { from, to };
     },
-    coordsOf(range) {
+    coordsOf(range, side = 1) {
       try {
-        const c = view().coordsAtPos(range.from, 1);
-        return { left: c.left, top: c.top, bottom: c.bottom };
+        const v = view();
+        if (!v.dom.isConnected) return null;
+        const c = v.coordsAtPos(range.from, side);
+        const r = { left: c.left, top: c.top, bottom: c.bottom };
+        return usableRect(r, v.dom.getBoundingClientRect()) ? r : null;
       } catch {
         return null;
       }

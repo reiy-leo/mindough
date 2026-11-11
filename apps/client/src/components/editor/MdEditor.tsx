@@ -38,6 +38,7 @@ import { externalHref, openExternal } from '../../lib/external';
 import { readClipboardLink } from '../../lib/clip-link';
 import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
+import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
@@ -542,32 +543,60 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     </form>
   );
 
-  // @ 浮层：贴着 @（下面放不下就放上面，手机按键盘上沿算），收在视口里
+  // @ 浮层：贴在光标那一行下面、和 @ 对齐（下面放不下就放上面，手机按键盘上沿算），收在视口里。
+  // 输入法刚上屏、节点刚被换掉的那一下可能量不到位置（coordsOf 给 null）：浮层留在上一次的位置，下一帧再量，
+  // 不再按 0 矩形跳到窗口左上角（mention-place.ts）。
   const mPopEl = useRef<HTMLDivElement>(null);
   const [mPos, setMPos] = useState<{ left: number; top: number } | null>(null);
+  const mLast = useRef<Coords | null>(null);
+  const mRetry = useRef(0);
+  const [mTick, setMTick] = useState(0);
   const mOpen = !!(mq && mention && focused && !readOnly);
   useLayoutEffect(() => {
     const el = mPopEl.current;
     const h = handle.current;
-    if (!mOpen || !el || !h || !mq) return setMPos(null);
-    const c = h.coordsOf({ from: mq.from, to: mq.from });
-    if (!c) return setMPos(null);
+    if (!mOpen || !el || !h || !mq) {
+      mLast.current = null;
+      mRetry.current = 0;
+      return setMPos(null);
+    }
+    const got = mentionAnchor(h.coordsOf({ from: mq.from, to: mq.from }, 1), h.coordsOf({ from: mq.to, to: mq.to }, -1));
+    let c = got;
+    if (got) {
+      mLast.current = got;
+      mRetry.current = 0;
+    } else {
+      // 没量到：下一帧再量（最多 30 帧）；先用上一次的位置
+      if (mRetry.current < 30) {
+        mRetry.current += 1;
+        const id = requestAnimationFrame(() => setMTick((n) => n + 1));
+        c = mLast.current;
+        if (!c) return () => cancelAnimationFrame(id);
+        if (mPos) return () => cancelAnimationFrame(id);
+      } else {
+        // 一直量不到（极少）：贴编辑器左上，总比窗口左上角强
+        const b = wrap.current?.getBoundingClientRect();
+        c = mLast.current ?? (b && b.width > 0 ? { left: b.left + 8, top: b.top, bottom: b.top + 24 } : null);
+        if (!c) return;
+      }
+    }
+    if (!c) return;
     const vv = window.visualViewport;
     const vTop = vv ? vv.offsetTop : 0;
     const vBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-    const vw = window.innerWidth;
-    const w = el.offsetWidth;
-    const hgt = el.offsetHeight;
-    const left = Math.max(8, Math.min(c.left - 8, vw - w - 8));
-    let top = c.bottom + 6;
-    if (top + hgt > vBottom - 8 && c.top - 6 - hgt >= vTop + 8) top = c.top - 6 - hgt;
+    const p = placeMentionPop(c, { width: el.offsetWidth, height: el.offsetHeight }, { top: vTop, bottom: vBottom, width: window.innerWidth });
     // 浮层放在编辑器里面（不放 body：弹层 / 新建面板会把点在外面的当成「点了外面」关掉自己），position: fixed。
     // 外面哪层有 transform 时 fixed 是相对那一层的：先放到 0,0 量出那一层的原点，再减掉
+    const prevL = el.style.left;
+    const prevT = el.style.top;
     el.style.left = '0px';
     el.style.top = '0px';
     const o = el.getBoundingClientRect();
-    setMPos({ left: left - o.left, top: Math.max(vTop + 8, top) - o.top });
-  }, [mOpen, mq?.from, mq?.to, choices.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    el.style.left = prevL;
+    el.style.top = prevT;
+    const next = { left: p.left - o.left, top: p.top - o.top };
+    if (!mPos || Math.abs(mPos.left - next.left) > 0.5 || Math.abs(mPos.top - next.top) > 0.5) setMPos(next);
+  }, [mOpen, mq?.from, mq?.to, choices.length, mTick]); // eslint-disable-line react-hooks/exhaustive-deps
   // 选中的那条滚进来
   useEffect(() => {
     mPopEl.current?.querySelector('.mention-item.is-active')?.scrollIntoView({ block: 'nearest' });
