@@ -14,7 +14,7 @@
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
 import { addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
-import { dataLabel, tr } from './i18n';
+import { dataLabel, tr, trc } from './i18n';
 
 export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
 export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'type', 'due'];
@@ -188,7 +188,7 @@ export function sectionTasks<T extends Task>(
       byCat.set(k, [...(byCat.get(k) ?? []), t]);
     }
     for (const c of cats) push(c.id, dataLabel(c.name), byCat.get(c.id) ?? [], { category: c });
-    push('none', tr('没有类型'), byCat.get('none') ?? []);
+    push('none', trc('列表分区', '没有类型'), byCat.get('none') ?? []);
   } else {
     const now = ctx.now ?? new Date();
     const today = ctx.today ?? now.toISOString().slice(0, 10);

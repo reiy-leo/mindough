@@ -1486,4 +1486,6 @@ export const EN: Record<string, EnValue> = {
   "季 {length}": "Seasons {length}",
   "已把「{title}」改到{date}": "Moved “{title}” to {date}",
   "类型显示方式": "Category Display",
+  "列表分区|按类型": "By Category",
+  "列表分区|没有类型": "No Category",
 };

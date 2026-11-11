@@ -1769,6 +1769,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 集": "{n, plural, one {# episodio} other {# episodios}}",
   "已把「{title}」改到{date}": "«{title}» se movió a {date}",
   "类型显示方式": "Vista de categorías",
+  "列表分区|按类型": "Por categoría",
+  "列表分区|没有类型": "Sin categoría",
 };
 
 export const DATA: Record<string, string> = {

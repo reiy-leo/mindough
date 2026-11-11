@@ -9,7 +9,7 @@ import type { SectionBy } from '../../lib/sections';
 import { DEFAULT_PREFS, SORT_FIELDS, type ProjectView, type SortDir, type SortField } from '../../lib/project-view';
 import { Tip } from '../../ui/primitives';
 
-import { tr } from '../../lib/i18n';
+import { tr, trc } from '../../lib/i18n';
 
 export const VIEW_ICON: Record<ProjectView, LucideIcon> = { list: LayoutList, board: Kanban, timeline: GanttChart, chain: Workflow };
 
@@ -33,7 +33,8 @@ export const SECTION_LABEL: Record<SectionBy | 'date', () => string> = {
   none: () => tr('不分区'),
   mood: () => tr('按心情'),
   project: () => tr('按项目'),
-  type: () => tr('按类型'),
+  // 和打卡页「排列：按类型」同字，英文按分区菜单大写（By Category），所以带语境
+  type: () => trc('列表分区', '按类型'),
   due: () => tr('按目标日期'),
   date: () => tr('按日期'),
 };

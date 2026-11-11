@@ -1769,6 +1769,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{n} 集": "{n} episode",
   "已把「{title}」改到{date}": "“{title}” dipindah ke {date}",
   "类型显示方式": "Tampilan kategori",
+  "列表分区|按类型": "Menurut kategori",
+  "列表分区|没有类型": "Tanpa kategori",
 };
 
 export const DATA: Record<string, string> = {
