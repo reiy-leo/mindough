@@ -1775,6 +1775,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "多一天": "На день больше",
   "少一周": "На неделю меньше",
   "多一周": "На неделю больше",
+  "卡片": "Карточки",
+  "到期日期": "Дата события",
+  "添加日期": "Дата добавления",
 };
 
 export const DATA: Record<string, string> = {

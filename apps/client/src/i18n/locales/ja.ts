@@ -1775,6 +1775,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "多一天": "1日増やす",
   "少一周": "1週減らす",
   "多一周": "1週増やす",
+  "卡片": "カード",
+  "到期日期": "期日",
+  "添加日期": "追加日",
 };
 
 export const DATA: Record<string, string> = {

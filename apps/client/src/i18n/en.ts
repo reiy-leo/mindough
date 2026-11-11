@@ -1492,4 +1492,7 @@ export const EN: Record<string, EnValue> = {
   "多一天": "One day more",
   "少一周": "One week fewer",
   "多一周": "One week more",
+  "卡片": "Cards",
+  "到期日期": "Due Date",
+  "添加日期": "Date Added",
 };
