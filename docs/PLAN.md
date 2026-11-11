@@ -2055,3 +2055,17 @@ Rei 2026-11-12 01:21：手机端任何页面都不显示搜索按钮，搜索改
 - **电脑**：⌘F / Ctrl+F 浮层、侧栏顶上的搜索按钮不变；宽屏打开 `#/search` 也渲染这一页（中间列，没有右列常驻）。
 - 没有迁移，Worker 没改。自查脚本 `work/d1112-msearch/`（LightVela Chromium，三皮肤 × 手机 390 亮 / 暗 + 宽屏 1366）。
 
+
+### 倒数日页去掉页头，加视图 / 排序 / 分区下拉 ✅（2026-11-12）
+Rei 2026-11-12 01:09：倒数日页去掉页头，页头里有用的控件挪到下面；左上角三个下拉：视图（列表 / 卡片）、排序（到期日期 / 添加日期 + 升序 / 倒序，同一个菜单两组各自打勾）、分区（不分区 / 按类型 / 按目标日期 / 按心情，规则同我的一天、项目页）；默认卡片、到期日期升序、不分区（就是原来的样子）；三项本机记住，不同步；已过期、已完成的现有规则不变。
+
+- **页头去向**：`PageHeader`（「倒数日」标题 + 沙漏图标 + 新建按钮）去掉。新建（加号图标按钮，悬停 / 读屏「新建倒数日」）挪到工具栏右边，和打卡页同一个位置；标题只留读屏用的 `h1.sr-only`；手机顶栏写「倒数日」（`lib/mobile-topbar.ts` 的 `HEADERLESS_PAGES` 加 `countdown`，同打卡页）。类型筛选胶囊照旧在工具栏下面一行。原来那行右边的「排列方式：按日期 / 按类型」按钮组去掉，并进分区（不分区 = 按日期，按类型 = 按类型）。
+- **工具栏**（`pages/Countdowns.tsx`，`.filter-row.checkin-toolbar.countdown-toolbar`）：左边 `.countdown-menus` 三个下拉，触发器和打卡页排列方式下拉同一个样子（`.btn.btn-quiet.checkin-arrange-btn`：当前那项 + `ChevronDown`，菜单是通用 `.menu` + `.menu-item.menu-check`，勾在右边，popover `bottom start`）；装不下就折行（外语、手机），加号钉在右上。还没有倒数日时左边空着。排序按钮在名字后面多一个小图标（`ArrowUpNarrowWide` 正序 / `ArrowDownWideNarrow` 倒序），读屏名「排序：到期日期，正序」。
+- **视图**：卡片 = 原来的 `CountdownCard`；列表 = `CountdownRow`，外层是 `.task-list.plain` 里的 `.task-row`（行高、内边距、悬停、选中、分隔线同任务列表），里面整块是按钮：行首卡片颜色小圆点（`--cd-dot` = `cardColorStyle(color, theme).bg`；没设颜色、素净档不画、留同宽空位让标题对齐）、类型小图标（同卡片）、标题（单行省略），右边「还有 N 天 / 今天 / 已过 N 天」（数字强调色加粗）。点行开详情，右键 / 长按同卡片的菜单（查看详情 ｜ 颜色…）。列表行不放 ··· 按钮（任务行也没有）。
+- **排序**（`lib/countdown-view.ts` `sortCountdowns`）：到期日期 = target_date（就是还有几天），添加日期 = created_at，正序 / 倒序。已过的规则不变：不论按什么排，过了的都在还没到的后面、刚过的在前，排序只管今天和还没到的。所以默认「到期日期正序」= 原来的顺序。值一样保持原顺序。
+- **分区**（`sectionCountdowns`）：直接用 `lib/sections.ts` 的 `sectionTasks`（section-by-type 合进 main 的实现）。按类型：只进第一个类型，段的先后 `categorySectionOrder`，没类型的放最后；按目标日期：已过期 / 今天 / 本周 / 本月 / 更远，倒数日看 target_date（`sectionTasks` 本来看 scheduled_date / end_date，这里拿 target_date 换进去再分，段里放回原任务）；按心情：好到坏，没记的最后。段标题能折叠（`SectionedList`），收起了哪几段也记在本机。段里的顺序是排好的顺序。按类型分区时卡片上不再写类型（段标题就是），同原来的「按类型」排列。
+- **记法**：本机设置 `listViews.countdown = { view, sort, dir, section, collapsed }`（`useCountdownPrefs`，认不出的值回默认），不同步。类型筛选照旧不记。
+- **不变**：只列没关闭、有目标日期、不在归档项目里的倒数日；完成了的（到那天自动标完成）照旧列着；卡片样子、卡片颜色、菜单都没改。
+- **文案**：新 3 条「卡片」「到期日期」「添加日期」9 种语言（7 种待母语者看）；「列表」「视图」「视图：{name}」「排序」「排序依据」「顺序」「正序」「倒序」「排序：{name}，{dir}」「分区」「分区：{name}」和分区名都是已有的。Rei 说的「升序」界面上用已有的「正序」（项目页排序同一个词，我定的）。
+- **测试**：`lib/countdown-view.test.ts` 10 项（默认值和认值、四种排序、过了的总在后、稳定、三种分区和 target_date）；`mobile-topbar.test.ts` 改一项。截图 `work/d1112-countdown/cdv.mjs`（LightVela Chromium，三皮肤 × 宽屏 1366 亮 / 手机 390（Apple 亮、WinUI / Material 暗）× 卡片 / 列表）。
+- **待 Rei 确认**：① 「升序」用了已有的「正序」；② 排序只排还没到的，过了的总在后面、刚过的在前；③ 「排列方式：按日期 / 按类型」去掉、并进分区；④ 列表行不放 ··· 按钮，没设颜色的行首留空位不画点。
