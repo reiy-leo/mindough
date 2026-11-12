@@ -1,7 +1,7 @@
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator } from 'react-aria-components';
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight, Repeat } from 'lucide-react';
-import { cardColorOf, describeRecurrence, formatDateZh, formatTaskDate, parseRecurrence, toDateKey, weekStartsOn, type Task } from '@mindough/core';
+import { logicalToday, cardColorOf, describeRecurrence, formatDateZh, formatTaskDate, parseRecurrence, weekStartsOn, type Task } from '@mindough/core';
 import { useLunarUi } from '../lib/lunar';
 import { useDateDisplay } from '../lib/date-display';
 import { useNow, useStore } from '../store/StoreProvider';
@@ -85,7 +85,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
   const ui = useUi();
   const { theme } = useSettings();
   const colorLevel = useColorLevel();
-  const today = toDateKey(useNow());
+  const today = logicalToday(useNow());
   const dateMode = useDateDisplay();
   const { menu, items, picking, setPicking } = useCountdownMenu(t);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -152,7 +152,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
         <span className={`countdown-dot${dot ? '' : ' is-none'}`} style={dot ? ({ '--cd-dot': dot } as CSSProperties) : undefined} aria-hidden />
         {type && type.layout !== 'text' && <Icon size={14} className="countdown-row-icon" style={{ color: type.color }} aria-hidden />}
         <span className={`row-title countdown-row-title${store.titleMark(t) ? ` is-mark-${store.titleMark(t)}` : ''}${store.isPinned(t) ? ' is-pinned' : ''}`}>{titleOf(store, t)}</span>
-        <RepeatMark task={t} today={toDateKey(new Date())} />
+        <RepeatMark task={t} today={logicalToday()} />
         <span className={`countdown-row-days${t.target_date ? '' : ' is-undated'}`}>{t.target_date ? <DaysText n={n} /> : tr('还没选日期')}</span>
       </RacButton>
       <MenuAt at={menu.at} label={tr('倒数日操作')} items={items} onClose={menu.close} />
@@ -310,7 +310,7 @@ export function CountdownsPage() {
   const store = useStore();
   const ui = useUi();
   const now = useNow();
-  const today = toDateKey(now);
+  const today = logicalToday(now);
   const [prefs, setPrefs] = useCountdownPrefs();
   const daysOf = (t: Task) => store.progress(t.id, today)?.value ?? 0;
   // 归档了的项目里的倒数日不列（Rei 2026-11-05）

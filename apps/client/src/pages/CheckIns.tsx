@@ -1,22 +1,7 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Menu, MenuItem, MenuTrigger, Popover, Button as RacButton } from 'react-aria-components';
 import { Activity, Archive, ArchiveRestore, ArrowLeft, CalendarCheck2, Check, ChevronDown, ListFilter, ChevronRight, CircleCheck, Ellipsis, Flame, GripHorizontal, History, PanelRight, Pin, PinOff, Sun, SunDim, Timer } from 'lucide-react';
-import {
-  buildRatioIndex,
-  describeRecurrence,
-  dueToday,
-  entriesFor,
-  isFinished,
-  isMoodId,
-  moodLabel,
-  MOOD_IDS,
-  habitRule,
-  parseRecurrence,
-  taskStreak,
-  toDateKey,
-  type DateKey,
-  type Task,
-} from '@mindough/core';
+import { logicalToday, buildRatioIndex, describeRecurrence, dueToday, entriesFor, isFinished, isMoodId, moodLabel, MOOD_IDS, habitRule, parseRecurrence, taskStreak, type DateKey, type Task } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
@@ -43,7 +28,7 @@ export function CheckInsPage() {
   const { layout, settings, set } = useSettings();
   const colorLevel = useColorLevel();
   const now = useNow();
-  const today = toDateKey(now);
+  const today = logicalToday(now);
   const lunarUi = useLunarUi();
   // 归档了的项目里的打卡不列（Rei 2026-11-05），在项目页里还看得到
   const tasks = store.activeTasks();

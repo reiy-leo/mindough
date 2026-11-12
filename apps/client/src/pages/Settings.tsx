@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
-import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, Clock, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
 import { focusMainWindow, isSettingsWindow, SETTINGS_NAV_EVENT } from '../lib/windows';
 import { relay } from '../lib/window-relay';
@@ -13,7 +13,7 @@ import { isTauri } from '../store/sqlite-tauri';
 import { useUi } from '../lib/ui';
 import { addDays, DATE_DISPLAYS, formatTaskDate, isChineseLocale, resetSyncState, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
 import { Button, Section, Segmented, Select, Switch } from '../ui/primitives';
-import { JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
+import { DAY_START_PREF, JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
 import { formatRemindTime } from '../components/task/RemindPanel';
 import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPermission, setRemindersEnabled, type NotifyPermission } from '../lib/reminders';
 import { PageHeader } from '../components/PageHeader';
@@ -34,19 +34,20 @@ const ArchiveImportSheet = lazy(() => import('../components/ArchiveImport').then
 import type { LocalePref } from '../lib/i18n';
 
 /**
- * 设置分成八项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
+ * 设置分成十项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
  * 又说「农历、类型、日记这三个可以放在一个」；同一天又说「这个页面的底部的关于念头团的说明，可以放在一个单独的选项卡：关于」「设置中日记单独一个tab」）：
  * - 账户：登录、同步状态、数据怎么走
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
+ * - 时间：一天从几点开始（Rei 2026-11-13 01:16 从「日记」挪过来，全局生效：我的一天、过期积压、日历、项目、打卡、倒数日、日记的「今天」都按它算）
  * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
  * - 日历：节假日（显示开关 + 节假日订阅）、农历开关、日历订阅（Rei 2026-11-10，农历从「任务」挪过来，docs/CALENDAR.md）
  * - 打卡：在打卡页顶部显示活动图（Rei 2026-11-10 加）
- * - 日记：一天从几点开始、每天提醒写日记
+ * - 日记：每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
  * 桌面 app（Tauri）里设置是单独的窗口（SettingsWindow，?window=settings）；Web 和手机是页面：
- * 宽屏左边一列八项、右边内容；窄屏先列出八项，点进去整页推入，左上角返回。
+ * 宽屏左边一列十项、右边内容；窄屏先列出十项，点进去整页推入，左上角返回。
  */
 type SettingsItem = { id: SettingsSection; icon: LucideIcon; label: () => string; hint: () => string };
 
@@ -55,10 +56,11 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
+  { id: 'time', icon: Clock, label: () => trc('设置分区', '时间'), hint: () => tr('一天从几点开始，「今天」都按它算') },
   { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、严格模式、日期显示') },
   { id: 'calendar', icon: CalendarIcon, label: () => trc('设置分区', '日历'), hint: () => (isChineseLocale() ? tr('节假日、农历、日历订阅') : tr('节假日、日历订阅')) },
   { id: 'checkin', icon: CalendarCheck2, label: () => trc('导航', '打卡'), hint: () => tr('打卡页顶部的活动图') },
-  { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('一天从几点开始、每天提醒写日记') },
+  { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('每天提醒写日记') },
   { id: 'about', icon: Info, label: () => tr('关于'), hint: () => tr('版本、数据来源') },
 ];
 
@@ -90,6 +92,8 @@ function SectionBody({ id }: { id: SettingsSection }) {
       return <DataSection />;
     case 'reminders':
       return <ReminderSection />;
+    case 'time':
+      return <TimeSection />;
     case 'tasks':
       return (
         <>
@@ -109,7 +113,7 @@ function SectionBody({ id }: { id: SettingsSection }) {
   }
 }
 
-/** 左边那一列（宽屏页面和设置窗口共用）：↑ ↓ 在八项之间换。名字太长就截断加省略号，整列不左右滚（Rei 2026-10-26「设置的侧边栏禁止左右滚动」）。 */
+/** 左边那一列（宽屏页面和设置窗口共用）：↑ ↓ 在十项之间换。名字太长就截断加省略号，整列不左右滚（Rei 2026-10-26「设置的侧边栏禁止左右滚动」）。 */
 function SettingsNav({ current }: { current: SettingsSection }) {
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
@@ -148,7 +152,7 @@ function SettingsNav({ current }: { current: SettingsSection }) {
 
 /**
  * 设置底部那行小字版本号（Rei 2026-11-03：macOS app 要分得出第几个 alpha）：「版本 v0.1.0-alpha.13」，网页版和非标签构建是「v0.1.0-dev+短哈希」。
- * 点一下复制完整版本（报问题时好贴）。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在八项列表下面。
+ * 点一下复制完整版本（报问题时好贴）。桌面设置窗口在侧栏最下面，Web 宽屏在左边一列下面，手机在十项列表下面。
  */
 function VersionFooter() {
   const { toast } = useUi();
@@ -182,7 +186,7 @@ async function copyText(text: string) {
   }
 }
 
-/** Web 与手机的设置页。section 省略：宽屏显示上次那项，窄屏列出八项。 */
+/** Web 与手机的设置页。section 省略：宽屏显示上次那项，窄屏列出十项。 */
 export function SettingsPage({ section }: { section?: SettingsSection }) {
   const { layout } = useSettings();
   const narrow = layout === 'mobile';
@@ -864,32 +868,46 @@ function journalTimeOptions(cur: string) {
 }
 
 /**
- * 日记（Rei 2026-10-17）：「一天从几点开始」（默认 5 点，只用于日记）、每天提醒写日记（默认开、21:00，写没写都响）。
- * 都是跟着账户同步的偏好；提醒还要这台设备的「提醒通知」开着。
+ * 时间（Rei 2026-11-13 01:16「设置中新建一个"时间"选项卡；把"日记"中的"一天从几点开始"移动到这个"时间"选项卡中，
+ * 这个会更改我的一天、过期积压、日历、项目、打卡、倒数日、日记中的"一天"的范围」）：
+ * 「一天从几点开始」（0–23 整点，默认 5 点），同步的偏好，键还是 journal.day_start（老数据照用）。还没到这个点就算前一天（core day-start.ts）。
+ * 提醒照真实时钟响，不受它影响。
+ */
+function TimeSection() {
+  const store = useStore();
+  const dayStart = store.dayStart();
+  const hourLabel = (h: number) => formatRemindTime(`${String(h).padStart(2, '0')}:00`);
+  return (
+    <div className="card settings-card">
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('一天从几点开始')}</div>
+          <div className="setting-hint">{tr('还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。')}</div>
+        </div>
+        <Select
+          label={tr('一天从几点开始')}
+          className="setting-select"
+          value={String(dayStart)}
+          onChange={(v) => store.setPref(DAY_START_PREF, Number(v))}
+          options={Array.from({ length: 24 }, (_, h) => ({ id: String(h), label: hourLabel(h) }))}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 日记（Rei 2026-10-17）：每天提醒写日记（默认开、21:00，写没写都响）。跟着账户同步；提醒还要这台设备的「提醒通知」开着。
+ * 「一天从几点开始」2026-11-13 挪到「时间」（TimeSection）。
  */
 function JournalSection() {
   const store = useStore();
-  const dayStart = store.journalDayStart();
   const remind = store.pref(JOURNAL_PREFS.remind) !== false;
   const time = normalizeRemindTime(String(store.pref(JOURNAL_PREFS.remindTime) ?? '')) ?? JOURNAL_REMIND_TIME_DEFAULT;
   const [deviceOn, setDeviceOn] = useState(remindersEnabled);
   useEffect(() => onReminderSettings(() => setDeviceOn(remindersEnabled())), []);
-  const hourLabel = (h: number) => formatRemindTime(`${String(h).padStart(2, '0')}:00`);
   return (
     <div className="card settings-card">
-        <div className="setting">
-          <div className="setting-text">
-            <div className="setting-name">{tr('一天从几点开始')}</div>
-            <div className="setting-hint">{tr('还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。')}</div>
-          </div>
-          <Select
-            label={tr('一天从几点开始')}
-            className="setting-select"
-            value={String(dayStart)}
-            onChange={(v) => store.setPref(JOURNAL_PREFS.dayStart, Number(v))}
-            options={Array.from({ length: 24 }, (_, h) => ({ id: String(h), label: hourLabel(h) }))}
-          />
-        </div>
         <div className="setting">
           <div className="setting-text">
             <div className="setting-name">{tr('每天提醒写日记')}</div>

@@ -1531,7 +1531,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已导出 {n} 件任务、{j} 条日记": "{n, plural, one {# tâche exportée} other {# tâches exportées}} et {j, plural, one {# entrée de journal} other {# entrées de journal}}",
   "；{m} 张网上的图片没取到，照原链接写着": " ; {m, plural, one {# image en ligne n’a pas pu être récupérée et garde son lien} other {# images en ligne n’ont pas pu être récupérées et gardent leur lien}}",
   "一天从几点开始": "La journée commence à",
-  "还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。": "Avant cette heure, « Entrée du jour » est encore celle de la veille (écrire à 3 h du matin compte pour hier). S’applique uniquement au journal.",
   "每天提醒写日记": "Rappel quotidien du journal",
   "关着：不提醒写日记。": "Désactivé : aucun rappel de journal.",
   "每天 {time} 提醒，写没写都会响。": "Vous rappelle chaque jour à {time}, que vous ayez écrit ou non.",
@@ -1649,7 +1648,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "年月日": "Date",
   "年月日+时区": "Date + fuseau horaire",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Comment les dates s’affichent dans les listes de tâches, les détails, les rappels, les comptes à rebours, les chaînes de tâches et les frises des projets. Enregistré sur cet appareil uniquement.",
-  "一天从几点开始、每天提醒写日记": "Début de la journée, rappel quotidien du journal",
   "菜单|设置…": "Réglages…",
   "这次的打卡已经达标了，不能再加": "Objectif déjà atteint pour ce suivi, impossible d’ajouter plus",
   "今天要打的都打完了": "Tous les suivis du jour sont faits",
@@ -1795,6 +1793,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Cartes",
   "到期日期": "Date d’échéance",
   "添加日期": "Date d’ajout",
+  "设置分区|时间": "Heure",
+  "一天从几点开始，「今天」都按它算": "Début de la journée : « aujourd’hui » le suit partout",
+  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Avant cette heure, c’est encore la veille : à 3 h du matin, Ma journée, En retard, Calendrier, Projets, Habitudes, Comptes à rebours et Journal affichent encore hier. Les rappels suivent l’heure réelle.",
 };
 
 export const DATA: Record<string, string> = {

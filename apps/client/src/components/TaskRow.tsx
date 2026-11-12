@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, t
 import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
 import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
-import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
+import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, type Store, type Task } from '@mindough/core';
 import { useIsEditing, useUiStable } from '../lib/ui';
 import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
@@ -72,7 +72,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 不订阅整个 UI 状态（2026-11-12 看板卡顿）：选中只看自己这件，别的行选中 / 取消时不重渲染
   const ui = useUiStable();
   const v = viewOf(store, task);
-  const today = toDateKey(store.now());
+  const today = store.today();
   const lunarUi = useLunarUi();
   const tzBadge = timeZoneBadge(task, task.scheduled_date);
   const checkIn = isCheckInTask(task);

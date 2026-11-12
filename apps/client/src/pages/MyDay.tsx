@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
 import { ChevronRight, CircleCheck, EyeOff, Lightbulb, RotateCcw, Sun } from 'lucide-react';
-import { isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem, type Task } from '@mindough/core';
+import { logicalToday, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, yesterdayUnfinished, type MyDayItem, type Task } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
@@ -27,7 +27,7 @@ export function MyDayPage() {
   const store = useStore();
   const ui = useUi();
   const now = useNow();
-  const today = toDateKey(now);
+  const today = logicalToday(now);
   const { layout, settings, set } = useSettings();
   const showSugg = suggestionsOn(settings);
   const inlineCheckIn = layout !== 'mobile';

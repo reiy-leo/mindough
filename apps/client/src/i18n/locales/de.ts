@@ -1531,7 +1531,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已导出 {n} 件任务、{j} 条日记": "{n, plural, one {# Aufgabe} other {# Aufgaben}} und {j, plural, one {# Tagebucheintrag} other {# Tagebucheinträge}} exportiert",
   "；{m} 张网上的图片没取到，照原链接写着": "; {m, plural, one {# Online-Bild konnte nicht geladen werden und behält} other {# Online-Bilder konnten nicht geladen werden und behalten}} den Link",
   "一天从几点开始": "Der Tag beginnt um",
-  "还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。": "Vor dieser Uhrzeit gehört „Heutiger Eintrag“ noch zum Vortag (wer um 3 Uhr nachts schreibt, schreibt für gestern). Gilt nur für das Tagebuch.",
   "每天提醒写日记": "Tägliche Tagebuch-Erinnerung",
   "关着：不提醒写日记。": "Aus: keine Tagebuch-Erinnerungen.",
   "每天 {time} 提醒，写没写都会响。": "Erinnert dich jeden Tag um {time}, ob du geschrieben hast oder nicht.",
@@ -1649,7 +1648,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "年月日": "Datum",
   "年月日+时区": "Datum + Zeitzone",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Wie Daten in Aufgabenlisten, Details, Erinnerungen, Countdowns, Aufgabenketten und Projekt-Zeitleisten angezeigt werden. Nur auf diesem Gerät gespeichert.",
-  "一天从几点开始、每天提醒写日记": "Wann der Tag beginnt, tägliche Journal-Erinnerung",
   "菜单|设置…": "Einstellungen …",
   "这次的打卡已经达标了，不能再加": "Dieses Ziel ist schon erreicht, mehr geht nicht",
   "今天要打的都打完了": "Alle heutigen Check-ins sind erledigt",
@@ -1795,6 +1793,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Karten",
   "到期日期": "Fälligkeitsdatum",
   "添加日期": "Hinzugefügt am",
+  "设置分区|时间": "Zeit",
+  "一天从几点开始，「今天」都按它算": "Wann der Tag beginnt – „heute“ richtet sich überall danach",
+  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Vor dieser Uhrzeit zählt noch der Vortag: Um 3 Uhr nachts zeigen Mein Tag, Überfällig, Kalender, Projekte, Gewohnheiten, Countdowns und Tagebuch noch gestern. Erinnerungen richten sich nach der echten Uhrzeit.",
 };
 
 export const DATA: Record<string, string> = {

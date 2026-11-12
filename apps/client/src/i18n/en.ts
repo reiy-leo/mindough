@@ -1225,7 +1225,6 @@ export const EN: Record<string, EnValue> = {
   '已导出 {n} 件任务、{j} 条日记': (p) => `Exported ${n(p.n, 'task', 'tasks')} and ${n(p.j, 'journal entry', 'journal entries')}`,
   '；{m} 张网上的图片没取到，照原链接写着': (p) => `; ${n(p.m, 'online image', 'online images')} couldn’t be fetched and kept their links`,
   一天从几点开始: 'Day Starts At',
-  '还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。': 'Before this hour, “Today’s Entry” is still the previous day’s (so writing at 3 AM counts as yesterday). Only applies to the journal.',
   每天提醒写日记: 'Daily Journal Reminder',
   '关着：不提醒写日记。': 'Off: no journal reminders.',
   '每天 {time} 提醒，写没写都会响。': 'Reminds you every day at {time}, whether or not you’ve written.',
@@ -1350,7 +1349,6 @@ export const EN: Record<string, EnValue> = {
   "年月日": "Date",
   "年月日+时区": "Date + time zone",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "How dates show in task lists, details, reminders, countdowns, task chains and project timelines. Saved on this device only.",
-  "一天从几点开始、每天提醒写日记": "When the day starts, daily journal reminder",
   '菜单|设置…': 'Settings…',
   // ── 打卡归档、倒数日卡片颜色、图标选择重做（Rei 2026-11-02）──
   "归档": "Archive",
@@ -1507,4 +1505,7 @@ export const EN: Record<string, EnValue> = {
   "只这一次": "Just this once",
   "循环倒数": "Repeat countdown",
   "过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。": "After the day passes, it moves to the next one. Each past one stays as its own countdown, linked before it.",
+  "设置分区|时间": "Time",
+  "一天从几点开始，「今天」都按它算": "When the day starts — “today” follows it everywhere",
+  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Before this hour it still counts as the previous day: at 3 AM, My Day, Overdue, Calendar, Projects, Check-ins, Countdowns and Journal all still show yesterday. Reminders follow the real clock.",
 };

@@ -7,7 +7,8 @@
  * - 怎么排：按结束时间从新到旧。结束时间是 done_at（完成、关闭都记）；老数据没有 done_at 的，拿最后修改时间（updated_at 的 HLC 毫秒）顶上。
  * - 怎么分段：按结束时间落在本机的哪一天分段；段标题今天 / 昨天 / 具体日期（不是今年带年份）。
  */
-import { diffDays, formatDate, parseDateKey, toDateKey } from './dates';
+import { dayOf } from './day-start';
+import { diffDays, formatDate, parseDateKey } from './dates';
 import { parseHlc } from './hlc';
 import { tr } from './i18n';
 import { isFinished, type DateKey, type Task } from './types';
@@ -45,7 +46,7 @@ export interface DoneDay<T> {
 /**
  * 按结束那天分段（段从新到旧，段里也从新到旧）。toLocalDate 把毫秒换成本机日期，默认按运行环境时区。
  */
-export function doneDays<T extends DoneListTask>(tasks: readonly T[], toLocalDate: (ms: number) => DateKey = (ms) => toDateKey(new Date(ms))): DoneDay<T>[] {
+export function doneDays<T extends DoneListTask>(tasks: readonly T[], toLocalDate: (ms: number) => DateKey = (ms) => dayOf(ms)): DoneDay<T>[] {
   const out: DoneDay<T>[] = [];
   for (const t of doneTasks(tasks)) {
     const ms = finishedAtMs(t);

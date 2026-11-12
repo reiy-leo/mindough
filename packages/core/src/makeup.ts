@@ -8,8 +8,8 @@
  * - 点了以后让它待在我的一天里，直到补完或者到了下一个节点（makeupStarted + myday.ts 的 makeupDayItems）；
  * - 统计照常把补完的节点算达成（metPeriods 不变），活动图上把「补的」和「当天打的」分开画（isMadeUpPeriod）。
  */
+import { dayOf } from './day-start';
 import { computeProgress, type ProgressTask } from './checkin';
-import { toDateKey } from './dates';
 import { parseRecurrence, periodStart, type Recurrence } from './recurrence';
 import { isFinished, type CheckIn, type DateKey, type MyDayEntry, type Task } from './types';
 
@@ -50,7 +50,7 @@ export function makeupState(task: MakeupTask, events: readonly CheckIn[], today:
   if (!r || isDailyRule(r)) return null;
   const node = periodStart(r, today);
   if (!node || node >= today) return null;
-  if (node < toDateKey(new Date(task.created_at))) return null;
+  if (node < dayOf(task.created_at)) return null;
   const evs = events.filter((e) => !e.deleted && e.task_id === task.id && e.period_key === node);
   return { node, met: computeProgress(task, evs, now).met, events: evs };
 }
@@ -70,7 +70,7 @@ export function makeupStarted(taskId: string, entries: Iterable<Pick<MyDayEntry,
  */
 export function isMadeUpPeriod(task: ProgressTask, periodEvents: readonly CheckIn[], node: DateKey, now: Date): boolean {
   const live = periodEvents.filter((e) => !e.deleted);
-  if (!live.some((e) => toDateKey(new Date(e.at)) > node)) return false;
+  if (!live.some((e) => dayOf(e.at) > node)) return false;
   if (!computeProgress(task, live, now).met) return false;
-  return !computeProgress(task, live.filter((e) => toDateKey(new Date(e.at)) <= node), now).met;
+  return !computeProgress(task, live.filter((e) => dayOf(e.at) <= node), now).met;
 }

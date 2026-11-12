@@ -1,6 +1,7 @@
 /** 依赖图（前导图 PDM）：DAG、环检测、派生状态、解锁后续。 */
+import { dayOf } from './day-start';
 import { isFinished, type DateKey, type Dependency, type Task } from './types';
-import { diffDays, formatDate, toDateKey } from './dates';
+import { diffDays, formatDate } from './dates';
 import { formatTaskDate, type DateDisplay } from './date-display';
 
 import { tr, trc } from './i18n';
@@ -426,7 +427,7 @@ export function chainStepWhen(
   opts: { myDay?: ReadonlyMap<string, readonly DateKey[]>; toLocalDate?: (ts: string) => DateKey } = {},
 ): ChainWhen {
   const live = tasks.filter((t) => !t.deleted);
-  const local = opts.toLocalDate ?? ((ts: string) => toDateKey(new Date(ts)));
+  const local = opts.toLocalDate ?? ((ts: string) => dayOf(ts));
   const open = live.filter((t) => !isFinished(t.status));
   if (live.length && !open.length) {
     let date: DateKey | null = null;

@@ -14,6 +14,7 @@
  * id 稳定：同一次提醒（任务 + 种类 + 那天 / 那段计时）每次算出来的 id 一样，客户端用它去重、记「已响过」、稍后再提醒。
  */
 import { addDays, toDateKey } from './dates';
+import { dayOf } from './day-start';
 import { foldTimer, formatDuration, habitRule, periodKeyForTask, progressOn } from './checkin';
 import { isDueOn, parseRecurrence } from './recurrence';
 import { isFinished, type CheckIn, type DateKey, type Task } from './types';
@@ -144,7 +145,8 @@ export function upcomingReminders(tasks: readonly Task[], checkIns: readonly Che
 
     // 计时到点：正在走、有目标、还没到
     if (t.completion_mode === 'timer' && t.target_value && t.target_value > 0) {
-      const today = dateKeyIn(nowMs, tz);
+      // 打卡记在逻辑今天（一天从几点开始，day-start.ts），这里取同一个周期
+      const today = dayOf(nowMs, tz);
       const periodEvents = rec ? events.filter((e) => e.period_key === periodKeyForTask(t, today)) : events;
       const f = foldTimer(periodEvents, nowMs);
       if (f.running && f.runningSince !== null) {

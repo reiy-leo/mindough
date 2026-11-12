@@ -3,6 +3,7 @@ export * from './types';
 export * from './uuid';
 export * from './hlc';
 export * from './dates';
+export * from './day-start';
 export * from './date-display';
 export * from './date-range';
 export * from './date-grid';
