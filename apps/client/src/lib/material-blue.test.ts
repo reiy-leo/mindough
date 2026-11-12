@@ -1,6 +1,8 @@
 /**
  * Material 皮肤换成 Apple 的蓝（Rei 2026-11-13「换成和 Apple 皮肤一样的蓝」）：
- * 强调色亮 #007aff、暗 #0a84ff 和 Apple 皮肤一样；容器、中性色从这个蓝推出，M3 基准紫那一套一个都不留；
+ * 容器、中性色从 Apple 的蓝推出，M3 基准紫那一套一个都不留；暗色强调色 #0a84ff 和 Apple 一样。
+ * 亮色强调色深一档用 #0068d9（Rei 2026-11-13「按你推荐来」）：蓝底白字 ≥ 4.5:1，Apple 的 #007aff 只有 4.0:1；
+ * 「重要」提示块保留紫，暗色强调色上的字保留深蓝 #001a41。
  * 浅色容器上的字、正文、第三级文字对比度都 ≥ 4.5:1；不用 color-mix。
  */
 import { readFileSync } from 'node:fs';
@@ -25,9 +27,11 @@ const appleLight = ruleBody(tokens, "[data-skin='apple']");
 const appleDark = ruleBody(tokens, "[data-skin='apple'][data-theme='dark']");
 
 describe('Material 皮肤的蓝', () => {
-  it('强调色和 Apple 皮肤一样', () => {
-    expect(prop(light, '--accent')).toBe(prop(appleLight, '--accent'));
+  it('亮色强调色是深一档的 #0068d9，暗色和 Apple 皮肤一样', () => {
+    expect(prop(light, '--accent')).toBe('#0068d9');
+    expect(prop(appleLight, '--accent')).toBe('#007aff');
     expect(prop(dark, '--accent')).toBe(prop(appleDark, '--accent'));
+    expect(prop(dark, '--accent')).toBe('#0a84ff');
     expect(prop(light, '--heat-color')).toBe(prop(light, '--accent'));
     expect(prop(dark, '--heat-color')).toBe(prop(dark, '--accent'));
   });
@@ -54,8 +58,24 @@ describe('Material 皮肤的蓝', () => {
     expect(cr(prop(body, '--nav-active-text'), prop(body, '--nav-active-bg'))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('暗色强调色上的字 ≥ 4.5:1（M3 暗色 on-primary 用深蓝）', () => {
+  it('亮色蓝底白字 ≥ 4.5:1，悬停色更深', () => {
+    expect(prop(light, '--accent-contrast')).toBe('#ffffff');
+    expect(cr('#ffffff', prop(light, '--accent'))).toBeGreaterThanOrEqual(4.5);
+    expect(cr('#ffffff', prop(light, '--accent-hover'))).toBeGreaterThan(cr('#ffffff', prop(light, '--accent')));
+  });
+
+  it('亮色焦点圈跟着新强调色', () => {
+    expect(prop(light, '--focus')).toContain('rgba(0, 104, 217,');
+  });
+
+  it('暗色强调色上的字 ≥ 4.5:1（M3 暗色 on-primary 用深蓝 #001a41）', () => {
+    expect(prop(dark, '--accent-contrast')).toBe('#001a41');
     expect(cr(prop(dark, '--accent-contrast'), prop(dark, '--accent'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('「重要」提示块保留紫', () => {
+    expect(prop(light, '--alert-important')).toBe('#8944ab');
+    expect(prop(dark, '--alert-important')).toBe('#bf5af2');
   });
 
   it('Material 两段色板不用 color-mix', () => {

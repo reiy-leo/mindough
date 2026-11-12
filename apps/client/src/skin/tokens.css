@@ -254,8 +254,9 @@
   --nav-radius: 28px;
 
   /* M3 色板，种子色是 Apple 皮肤的蓝 #007aff（Rei 2026-11-13「换成和 Apple 皮肤一样的蓝」）：
-     强调色亮 #007aff、暗 #0a84ff 直接用 Apple 的值；容器、中性色按 M3 Tonal Spot 从这个蓝推出（material-color-utilities），
-     原来 M3 基准紫 #6750a4 那一套不再用。以后接 Android 动态取色 */
+     容器、中性色按 M3 Tonal Spot 从这个蓝推出（material-color-utilities），原来 M3 基准紫 #6750a4 那一套不再用。
+     亮色强调色用深一档的 #0068d9（Rei 2026-11-13「按你推荐来」）：白字 5.3:1，#007aff 只有 4.0:1；悬停再深一档 #0058c4。
+     暗色强调色 #0a84ff 跟 Apple 一样，上面的字用深蓝 #001a41。以后接 Android 动态取色 */
   --bg: #f9f9ff;
   --bg-image: none;
   --sidebar-bg: #f3f3fa;
@@ -272,8 +273,8 @@
   --text: #1a1b20;
   --text-2: #44474f;
   --text-3: #565e71;
-  --accent: #007aff;
-  --accent-hover: #0068d9;
+  --accent: #0068d9;
+  --accent-hover: #0058c4;
   --accent-contrast: #ffffff;
   --accent-soft: #dbe2f9;
   --accent-soft-text: #141b2c;
@@ -285,12 +286,12 @@
   --warning: #7d5700;
   --shadow-card: none;
   --shadow-pop: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
-  --focus: 0 0 0 3px rgba(0, 122, 255, 0.4);
+  --focus: 0 0 0 3px rgba(0, 104, 217, 0.4);
   --tabbar-bg: #ededf4;
   --heat-empty: #e1e2ec;
   --heat-cell-empty: rgba(26, 27, 32, 0.1);
   --heat-cell-free: rgba(26, 27, 32, 0.05);
-  --heat-color: #007aff;
+  --heat-color: #0068d9;
   --state-done: #386a20;
   --state-blocked: #ba6100;
   --overlay: rgba(0, 0, 0, 0.32);

@@ -116,7 +116,7 @@ img:not([draggable='true']) {
   background-color: rgba(96, 205, 255, 0.3);
 }
 [data-skin='material'] ::selection {
-  background-color: rgba(0, 122, 255, 0.22);
+  background-color: rgba(0, 104, 217, 0.22);
 }
 [data-skin='material'][data-theme='dark'] ::selection {
   background-color: rgba(10, 132, 255, 0.35);
