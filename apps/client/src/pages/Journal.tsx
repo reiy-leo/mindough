@@ -136,15 +136,18 @@ export function JournalPage({ date: wanted }: { date?: string }) {
       <section className="jf-heat" aria-label={tr('写日记的日子')}>
         <JournalHeatmap days={days} weeks={range.weeks} today={today} selected={day} onSelect={selectDay} />
       </section>
-      <section className="jriver" aria-label={tr('心情')}>
-        <div className="jriver-head">
-          <h2 className="jside-title">{tr('心情')}</h2>
-          <span className="grow" />
-          <RiverRangePicker range={riverRange} onChange={setRiverRange} years={years} monthsOf={(y) => riverMonths(all, y)} thisYear={Number(today.slice(0, 4))} />
-        </div>
-        <MoodRiver data={river} focus={mood} range={riverRange} />
-        <MoodChips counts={counts} selected={mood} onSelect={setMood} />
-      </section>
+      {/* 手机布局（安卓 App、手机网页）不放心情河流这一块，活动图下面直接是输入框（Rei 2026-11-12） */}
+      {!mobile && (
+        <section className="jriver" aria-label={tr('心情')}>
+          <div className="jriver-head">
+            <h2 className="jside-title">{tr('心情')}</h2>
+            <span className="grow" />
+            <RiverRangePicker range={riverRange} onChange={setRiverRange} years={years} monthsOf={(y) => riverMonths(all, y)} thisYear={Number(today.slice(0, 4))} />
+          </div>
+          <MoodRiver data={river} focus={mood} range={riverRange} />
+          <MoodChips counts={counts} selected={mood} onSelect={setMood} />
+        </section>
+      )}
     </>
   );
   // 筛选条和输入框固定在右栏顶上，条目在下面滚（Rei 2026-11-02「日记中的输入框也不滚动」）
