@@ -3248,8 +3248,9 @@ html:not(:lang(zh)):not(:lang(ja)) .page-title {
     local('SourceHanSansSC-Bold');
   unicode-range: U+2014, U+2018-201F, U+2026;
 }
-/* 日文界面同样用这组中文字体：日文字体（Noto Sans CJK JP、思源黑体 JP）把这几个码位做成半宽的比例字形，
- * 苹果的冬青黑体又是全角，跟着系统走反而各平台不一样；中文字体的全角引号、省略号放进日文里也是对的。 */
+/* 日文界面同样钉这组字体，标题和正文至少一致。注意：Noto Sans CJK / 思源黑体是泛中日韩字体，带 locl，
+ * 在 lang=ja 下会把引号换成日文的比例字形（实测约半宽），所以 Linux、安卓上日文界面的引号不是全角；
+ * 苹方没有日文 locl，Mac 上是全角。日文习惯用「」，这里不硬改。 */
 html:lang(zh) body,
 html:lang(zh) .kbd,
 html:lang(zh) .file-icon .fi-ext,
