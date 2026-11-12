@@ -1252,7 +1252,7 @@ Rei 2026-11-03：「任务的标题不渲染任何样式，或者列表，以及
 
 Rei 2026-11-03 21:00：「重新梳理一下，我新建了一个任务A，然后添加了资料库-电影中的电影B，那么任务列表中，应该显示任务名称是任务A的第一行，电影B只是显示海报缩略图。任务列表中item的第二行小字部分是之前说过的各种属性和状态。」此前还说「任何任务的中文第一行都是标题」。
 
-- **标题**：core `taskTitle(task)` 只看正文：`firstLine(body_md) || 空白任务`，不再取类型主字段（资料名）。`taskSubtitle` 删了。客户端 `titleOf` / `viewOf().title` 都走它，所以列表、详情、⌘K（`search.ts`）、挑任务、提醒、小组件、我的一天、时间轴、看板、任务链、完成 / 归档 / 连上的提示、深链接提示都跟着变。以前的取法留成 `itemTitleOf`，只给迁移和新建补第一行用。导出 Markdown 文件夹时文件名照旧 `firstLine || 资料名 || 空白任务`。
+- **标题**：core `taskTitle(task)` 只看正文：`firstLine(body_md) || 占位`（2026-11-12 09:33 起占位是「未提供描述」/ 倒数日「未命名倒数日」，界面上 `Store.titleOfTask` 按创建时间编号，原来是「空白任务」），不再取类型主字段（资料名）。`taskSubtitle` 删了。客户端 `titleOf` / `viewOf().title` 都走它，所以列表、详情、⌘K（`search.ts`）、挑任务、提醒、小组件、我的一天、时间轴、看板、任务链、完成 / 归档 / 连上的提示、深链接提示都跟着变。以前的取法留成 `itemTitleOf`，只给迁移和新建补第一行用。导出 Markdown 文件夹时文件名照旧 `firstLine || 资料名 || 空白任务`。
 - **列表行**（`TaskRow`）：第一行是标题，第二行小字去掉资料名（原来的 `meta-item`），只留类型、项目、日期、重复、相关、状态；第一条资料以外的资料合进「+N」，悬停列出全部（第一条没图时就看不到它，和 Rei 说的「没图就不显示」一致）。行首缩略图（`TaskThumb` 的 `hasItem`）：挂了资料就只用第一条资料的 `image`，版式按资料所在的库（`viewOf().thumbLayout`），没图什么都不放（不用类型图标、不用渐变占位）；没挂资料的照旧。⌘K 的任务行同样。尺寸（`skins.css` 末尾）：Apple、WinUI 竖版海报 24×36（WinUI 2px 圆角加 1px 描边），Material 30×45、8px 圆角，都不超过两行字，有图、没图的行一样高。
 - **编辑器**：`plainTitle` 对所有任务开（详情、新建面板），日记、资料备注照旧不开。
 - **补第一行**（core `needsTitleLine` / `withTitleLine` / `itemTaskBody`）：正文第一条非空行不是「纯文字标题的存法」（`escapeTitleLine(unescapeMarkdown(行)) === 行`）就算缺标题行，比如空正文、`## 想看理由`、列表、带格式。缺的时候把资料名按 `escapeTitleLine` 转义放到最前面，原来的内容空一行接上。新客户端写的正文第一行总是纯文字，所以只有旧客户端写的和空正文会被补。
@@ -1781,7 +1781,7 @@ Rei 2026-11-12 06:52：「日期+弹窗用的是之前新建打卡、新建倒�
 - core `Store.createDraftTask(input)`：照 `createTask` 建在内存里（界面看得见），但 `write` 走草稿分支，只改内存、通知界面，不落盘、不进 outbox；顺带写的别的行照常落盘。`isDraftTask` / `discardDraftTask`（从内存拿掉，什么都不写）。之后任何写入碰到它（任务行本身，或别的行字段里有它的 id，比如挂类型）就先把它落盘并进 outbox，再按新建规则放进今天的我的一天（`joinMyDayOnToday`），从此是普通任务。`deleteTask` 碰到草稿直接丢，不写墓碑。刷新页面草稿就没了（本来就没存过）。
 - client `lib/blank-task.ts` 加 `createDateDraftTask(store, openEditor, date)`：`createDraftTask({ body_md: '', scheduled_date: date })`、记进草稿表、要光标、`openEditor`。`sweepBlankTasks` 先试 `discardDraftTask`，不是草稿再按原规则（正文空就 `deleteTask`）。打卡 / 倒数日页的空任务还是直接落盘的老路子，没改。
 - 日历页 `create` 换成 `createDateDraftTask`。日历页在桌面布局下本来就用 `DetailModal`（`detailInModal`），手机本来就是整页详情，所以不用另外接浮层。
-- 我定的：只改了属性、正文空着关掉也删（这时已落盘，会同步一条墓碑）；N、打卡页、倒数日页的新建不动。
+- ~~我定的：只改了属性、正文空着关掉也删~~ → Rei 2026-11-12 09:22 改成：改过任何属性就留下；只有正文空、属性也没动才删。实现是建好时在 sessionStorage 记一份属性签名（任务行除正文 / 时间戳外的字段 + 指着它的依赖、人物、类型、资料、相关、附件、打卡行，我的一天行不算），离开时比对。N、打卡页、倒数日页的新建不动。
 - 测试：core `draft-task.test.ts` 5 项；client `blank-task.test.ts` 加 4 项，`Calendar.test.tsx` 改成查 `createDraftTask` + `openEditor`。
 
 
