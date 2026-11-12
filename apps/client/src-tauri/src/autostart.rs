@@ -7,10 +7,10 @@
 //!   （macOS 收进程序坞，Windows 收进任务栏）；点程序坞 / 任务栏图标、再打开一次（single-instance）都能拉回来。
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Manager, Runtime};
 
 /// 开机启动时带的参数（lib.rs 注册插件时传给它）。
+#[cfg(desktop)]
 pub const AUTOSTART_ARG: &str = "--autostart";
 const FILE: &str = "launch.json";
 const KEY: &str = "minimize_on_autostart";
@@ -28,6 +28,7 @@ fn read_minimize<R: Runtime>(app: &AppHandle<R>) -> bool {
 }
 
 /// 这次是不是开机时系统拉起来的。
+#[cfg(desktop)]
 pub fn launched_at_login() -> bool {
     std::env::args().any(|a| a == AUTOSTART_ARG)
 }
@@ -47,11 +48,14 @@ pub fn autostart_minimize_set<R: Runtime>(app: AppHandle<R>, on: bool) -> Result
     std::fs::write(&p, serde_json::json!({ KEY: on }).to_string()).map_err(|e| e.to_string())
 }
 
-static MINIMIZED: AtomicBool = AtomicBool::new(false);
+#[cfg(desktop)]
+static MINIMIZED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// 主窗口页面第一次加载完时调：开机自启 + 要最小化 → 最小化一次（之后刷新页面不再管）。
+/// 只在桌面编译：手机的 Window 没有 minimize（v0.2.0-alpha.1 安卓构建因此失败）。
+#[cfg(desktop)]
 pub fn on_main_loaded<R: Runtime>(window: &tauri::Window<R>) {
-    if window.label() != "main" || MINIMIZED.swap(true, Ordering::SeqCst) {
+    if window.label() != "main" || MINIMIZED.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return;
     }
     if launched_at_login() && read_minimize(window.app_handle()) {
