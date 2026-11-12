@@ -5,6 +5,7 @@ import { detectPlatform, layoutForWidth, MAC_OVERLAY_CLASS, resolveSkin, usesMac
 
 import { tr } from './i18n';
 import type { StartPage } from './start-page';
+import type { ToastPosition } from './toast-position';
 import { onRelay, relay } from './window-relay';
 import { isTauri } from '../store/sqlite-tauri';
 export interface Settings {
@@ -98,6 +99,11 @@ export interface Settings {
    * 只记在本机，不同步（手机和电脑常想停在不同的页）。读写经 lib/start-page（启动时在 main.tsx 里、渲染前读一次）。
    */
   startPage: StartPage;
+  /**
+   * 提示（toast）显示在哪儿（Rei 2026-11-13 06:16，设置 → 提醒 →「通知位置」）：顶部 / 底部 / 右上角 / 右下角，默认底部（和以前一样）。
+   * 只记在本机，不同步（各台设备屏幕不一样）。手机布局右上 / 右下按顶部 / 底部居中。读写经 lib/toast-position。
+   */
+  toastPosition: ToastPosition;
 }
 
 export type ColorLevel = 'plain' | 'standard' | 'vivid';
@@ -107,7 +113,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', pinnedLibraryStyle: 'list', categoryViewStyle: 'list', startPage: 'myday' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', pinnedLibraryStyle: 'list', categoryViewStyle: 'list', startPage: 'myday', toastPosition: 'bottom' };
 const KEY = 'mindough:settings';
 
 /** 不经 React 读本机设置（迁移老设置用，如 lib/calendar-view）。 */

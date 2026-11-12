@@ -8,6 +8,7 @@ import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
 import { useSettings } from './lib/settings';
+import { effectiveToastPosition } from './lib/toast-position';
 import { useUi } from './lib/ui';
 import { getAccount } from './lib/account';
 import { getSyncView, syncNow } from './lib/sync';
@@ -784,8 +785,11 @@ function PinnedScope({ items, children }: { items: NavItem[]; children: ReactNod
 
 export function Toasts() {
   const ui = useUi();
+  // 位置在设置 → 提醒 →「通知位置」，只存本机；手机右上 / 右下按顶部 / 底部居中（lib/toast-position）
+  const { settings, layout } = useSettings();
+  const pos = effectiveToastPosition(settings.toastPosition, layout);
   return (
-    <div className="toasts" role="status" aria-live="polite">
+    <div className="toasts" data-pos={pos} role="status" aria-live="polite">
       {ui.toasts.map((t) => (
         <div key={t.id} className={`toast toast-${t.tone ?? 'info'}`}>
           <span className="toast-msg">{t.message}</span>

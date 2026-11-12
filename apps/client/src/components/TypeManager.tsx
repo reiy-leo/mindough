@@ -81,6 +81,7 @@ import { sidebarToggleLabel } from '../lib/library-sidebar';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { imeBusy } from '../lib/ime';
+import { clipName } from '../lib/toast-text';
 
 const KIND_ICON: Record<FieldKind, LucideIcon> = {
   text: TypeGlyph,
@@ -166,7 +167,7 @@ function useArchive() {
   return (t: TaskType) => {
     store.archiveType(t.id);
     ui.toast({
-      message: tr('已归档「{name}」', { name: dataLabel(t.name) }),
+      message: tr('已归档「{name}」', { name: clipName(dataLabel(t.name)) }),
       actions: [{ label: tr('撤销'), onPress: () => store.unarchiveType(t.id) }],
     });
   };
@@ -191,7 +192,7 @@ function useDeleteType(onDeleted?: () => void): [ReactNode, (t: TaskType) => voi
         store.deleteType(target.id);
         setTarget(null);
         onDeleted?.();
-        ui.toast({ message: tr('已删除「{name}」', { name }) }, 2500);
+        ui.toast({ message: tr('已删除「{name}」', { name: clipName(name) }) }, 2500);
       }}
     />
   );

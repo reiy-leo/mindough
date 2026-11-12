@@ -15,6 +15,7 @@ import { titleOf } from '../lib/view';
 import { useReorderGuard } from '../lib/drag-guard';
 
 import { tr } from '../lib/i18n';
+import { clipName } from '../lib/toast-text';
 export function BacklogPage() {
   const store = useStore();
   const ui = useUi();
@@ -77,7 +78,7 @@ export function BacklogPage() {
                         onChange={(d) => {
                           store.updateTask(t.id, { scheduled_date: d });
                           close();
-                          if (d) ui.toast({ message: tr('已安排到日历：「{titleOf}」', { titleOf: titleOf(store, t) }) }, 2500);
+                          if (d) ui.toast({ message: tr('已安排到日历：「{titleOf}」', { titleOf: clipName(titleOf(store, t)) }) }, 2500);
                         }}
                       />
                     )}

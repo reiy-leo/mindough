@@ -37,6 +37,7 @@ import { createDateDraftTask } from '../lib/blank-task';
 import { titleOf } from '../lib/view';
 import { intlLocale, tr, trc } from '../lib/i18n';
 import '../styles/calendar.css';
+import { clipName } from '../lib/toast-text';
 
 interface TaskItem {
   kind: 'task';
@@ -169,7 +170,7 @@ export function CalendarPage() {
     ui.toast(
       {
         tone: 'info',
-        message: tr('已把「{title}」改到{date}', { title: titleOf(store, next) || tr('无标题'), date: formatDateRange(start, end && end !== start ? end : null, today) }),
+        message: tr('已把「{title}」改到{date}', { title: clipName(titleOf(store, next)) || tr('无标题'), date: formatDateRange(start, end && end !== start ? end : null, today) }),
         actions: [{ label: tr('撤销'), onPress: () => store.updateTask(id, undo) }],
       },
       6000,

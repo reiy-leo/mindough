@@ -10,6 +10,7 @@ import { viewOf } from '../lib/view';
 import { tr } from '../lib/i18n';
 import { StickyHead } from '../components/StickyHead';
 import { SearchHitRow, SearchTaskRow, openSearchHit, useRecentTasks, useSearchHits } from '../components/SearchResults';
+import { clipName } from '../lib/toast-text';
 
 /**
  * 搜索页（Rei 2026-11-12 01:21「手机端任何页面都不显示搜索按钮……搜索改成单独的一页」）：#/search，手机从「更多」页第一行进。
@@ -42,7 +43,7 @@ export function SearchPage() {
   const createFromQuery = () => {
     const t = store.createTask({ body_md: plainTitleMarkdown(trim) });
     store.addToMyDay(t.id);
-    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim }) }, 3000);
+    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(trim) }) }, 3000);
     ime.reset('');
   };
 

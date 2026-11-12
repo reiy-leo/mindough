@@ -7,6 +7,7 @@ import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { tr } from '../lib/i18n';
 import { requestJournalCompose } from '../lib/journal-compose';
+import { clipName } from '../lib/toast-text';
 
 export function ReminderHost() {
   const store = useStore();
@@ -29,7 +30,7 @@ export function ReminderHost() {
                 <span className="reminder-toast">
                   <Bell size={15} aria-hidden className="reminder-toast-icon" />
                   <span>
-                    <strong>{title}</strong>
+                    <strong>{clipName(title)}</strong>
                     <span className="muted"> · {body}</span>
                   </span>
                 </span>

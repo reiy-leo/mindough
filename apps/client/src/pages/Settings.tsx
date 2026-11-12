@@ -13,6 +13,7 @@ import { isTauri } from '../store/sqlite-tauri';
 import { useUi } from '../lib/ui';
 import { autostartEnabled, autostartSupported, minimizeOnAutostart, setAutostart, setMinimizeOnAutostart } from '../lib/autostart';
 import { normalizeStartPage, START_PAGES, type StartPage } from '../lib/start-page';
+import { normalizeToastPosition, TOAST_POSITIONS, type ToastPosition } from '../lib/toast-position';
 import { addDays, DATE_DISPLAYS, formatTaskDate, isChineseLocale, resetSyncState, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
 import { Button, Section, Segmented, Select, Switch } from '../ui/primitives';
 import { DAY_START_PREF, JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
@@ -42,7 +43,7 @@ import type { LocalePref } from '../lib/i18n';
  * - 账户：登录、同步状态、数据怎么走
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
- * - 提醒：提醒通知开关（这台设备）、什么时候提醒
+ * - 提醒：提醒通知开关（这台设备）、什么时候提醒、通知位置（app 里的提示放哪儿，只存本机，Rei 2026-11-13）
  * - 时间：一天从几点开始（Rei 2026-11-13 01:16 从「日记」挪过来，全局生效：我的一天、过期积压、日历、项目、打卡、倒数日、日记的「今天」都按它算）
  * - 系统：开机时启动、开机自启时最小化应用（这两项只在 macOS / Windows 桌面 App 有）、启动时打开哪一页（Rei 2026-11-13，都只记在本机）
  * - 任务：我的一天（显示建议、默认日期：今天）、新建任务（新建后光标）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
@@ -59,7 +60,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'account', icon: CircleUser, label: () => tr('账户'), hint: () => tr('登录与同步') },
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
-  { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
+  { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知、通知位置') },
   { id: 'time', icon: Clock, label: () => trc('设置分区', '时间'), hint: () => tr('一天从几点开始，「今天」都按它算') },
   { id: 'system', icon: MonitorCog, label: () => trc('设置分区', '系统'), hint: () => (autostartSupported(currentPlatform()) ? tr('开机时启动、启动时打开哪一页') : tr('启动时打开哪一页')) },
   { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、新建任务、严格模式、日期显示') },
@@ -1145,6 +1146,33 @@ function ReminderSection() {
             <div className="setting-hint">{tr('在任务上设「提醒」时间：有日期的那天、倒数日的目标日、定期打卡的每个要打卡的日子。计时有目标时长的，到点总会提醒。')}</div>
           </div>
         </div>
+        <ToastPositionSetting />
+    </div>
+  );
+}
+
+/** 通知位置（Rei 2026-11-13 06:16）：app 里弹的提示放在哪儿。只存本机；手机屏幕窄，右上 / 右下按顶部 / 底部居中。 */
+function ToastPositionSetting() {
+  const { settings, set } = useSettings();
+  const label: Record<ToastPosition, string> = {
+    top: trc('通知位置', '顶部'),
+    bottom: trc('通知位置', '底部'),
+    'top-right': trc('通知位置', '右上角'),
+    'bottom-right': trc('通知位置', '右下角'),
+  };
+  return (
+    <div className="setting">
+      <div className="setting-text">
+        <div className="setting-name">{tr('通知位置')}</div>
+        <div className="setting-hint">{tr('念头团里弹出的提示放在哪儿。手机屏幕窄，选右上角、右下角时放在顶部、底部正中。只在这台设备上生效。')}</div>
+      </div>
+      <Select
+        label={tr('通知位置')}
+        className="setting-select"
+        value={normalizeToastPosition(settings.toastPosition)}
+        onChange={(v) => set('toastPosition', normalizeToastPosition(v))}
+        options={TOAST_POSITIONS.map((p) => ({ id: p, label: label[p] }))}
+      />
     </div>
   );
 }

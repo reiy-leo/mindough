@@ -9,6 +9,7 @@ import { useStore } from '../store/StoreProvider';
 import { isTauri } from '../store/sqlite-tauri';
 import { tr } from '../lib/i18n';
 import { requestJournalCompose } from '../lib/journal-compose';
+import { clipName } from '../lib/toast-text';
 
 type Ui = ReturnType<typeof useUi>;
 
@@ -25,8 +26,6 @@ async function focusMainWindow() {
     /* 拉不到前面也不要紧 */
   }
 }
-
-const shortTitle = (s: string) => (s.length > 24 ? `${s.slice(0, 24)}…` : s);
 
 /** 执行一个深链接。做事的（new / checkin）不确认，直接做，提示里可以撤销。 */
 export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
@@ -72,7 +71,7 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
       ui.toast(
         {
           tone: 'success',
-          message: tr('已新建「{title}」', { title: shortTitle(titleOf(store, t)) }),
+          message: tr('已新建「{title}」', { title: clipName(titleOf(store, t)) }),
           actions: [
             { label: tr('打开'), onPress: () => ui.openEditor(t.id) },
             { label: tr('撤销'), onPress: () => store.deleteTask(t.id) },
@@ -85,7 +84,7 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
     case 'checkin': {
       const t = store.get('task', a.id);
       if (!t) return ui.toast({ tone: 'error', message: tr('找不到这件任务') });
-      const title = shortTitle(titleOf(store, t));
+      const title = clipName(titleOf(store, t));
       // 计时、倒数日没法「打一下卡」：打开任务让人自己点
       if (t.completion_mode !== 'once' && t.completion_mode !== 'count') {
         ui.openEditor(t.id);

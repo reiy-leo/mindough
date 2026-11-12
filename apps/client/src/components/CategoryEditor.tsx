@@ -24,6 +24,7 @@ import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { dataLabel, tr, trc } from '../lib/i18n';
 import { imeBusy } from '../lib/ime';
+import { clipName } from '../lib/toast-text';
 
 /** 每个类型挂了多少件任务 + 项目（没删的；顺着合并算到留下的那个）。 */
 export function categoryUsage(store: Store): Map<string, number> {
@@ -78,7 +79,7 @@ export function useCategoryActions() {
     if (!c || store.isCategoryLocked(c.id)) return;
     const prev = store.setCategoryState(id, state);
     if (prev === state) return;
-    const name = dataLabel(c.name);
+    const name = clipName(dataLabel(c.name));
     const message =
       state === 'frequent' ? tr('已把「{name}」设成常用', { name }) : state === 'hidden' ? tr('已把「{name}」设成不显示', { name }) : tr('已把「{name}」设成普通', { name });
     ui.toast({ message, actions: [{ label: tr('撤销'), onPress: () => store.setCategoryState(id, prev) }] }, 5000);
@@ -89,7 +90,7 @@ export function useCategoryActions() {
     const prev = store.categoryGroup(id);
     if (prev === group) return;
     store.setCategoryGroup(id, group);
-    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: dataLabel(c.name), group: categoryGroupLabel(group, store) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] }, 5000);
+    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: clipName(dataLabel(c.name)), group: clipName(categoryGroupLabel(group, store)) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] }, 5000);
   };
   return { setState, setGroup };
 }
@@ -183,7 +184,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
     const c = store.createCategory(name);
     setQ('');
     onOpen(c.id);
-    if (!taken) ui.toast({ tone: 'success', message: tr('已新建「{name}」', { name: dataLabel(c.name) }) }, 3000);
+    if (!taken) ui.toast({ tone: 'success', message: tr('已新建「{name}」', { name: clipName(dataLabel(c.name)) }) }, 3000);
   };
   const press = (r: Row) => (r.kind === 'cat' ? onOpen(r.c.id) : create(r.name));
 

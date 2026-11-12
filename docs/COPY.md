@@ -173,6 +173,7 @@
 | 开源组件 | 第三方库 / 致谢 / 开源许可 / 鸣谢 | 设置 → 关于里默认收起的一节（Rei 2026-11-09），说明「桌面和手机 app 用 Tauri 打包。还用到这些开源库，感谢作者们：」；库名和许可证照原文，不翻译。英文 Open-Source Components |
 | 未完成 / 已完成（我的一天的段） | 待办 / 进行中 / 已做完 / 完成的任务 | 我的一天分两段（Rei 2026-11-08）。段标题「未完成 3」「已完成 2」（数字是 .count 灰字）；已完成那段标题是能点的开关，左边 › 展开时转成 ⌄。两段列表的读屏名「今天的任务」「今天做完的任务」。只有一段时不放标题。英文 Not completed / Completed、Today’s tasks / Tasks done today |
 | 一天从几点开始 | 日界线 / 换日时间 / 逻辑日 | 设置 → 时间（默认 5:00；2026-11-13 从「日记」挪过来，全局生效）：说明「还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。」英文 Day Starts At |
+| 通知位置 | 提示位置 / 弹窗位置 / Toast 位置 | 设置 → 提醒 里的下拉（Rei 2026-11-13）：顶部 / 底部 / 右上角 / 右下角（`trc('通知位置', …)`），默认底部；说明「念头团里弹出的提示放在哪儿。手机屏幕窄，选右上角、右下角时放在顶部、底部正中。只在这台设备上生效。」；设置列表里「提醒」的说明「任务提醒的通知、通知位置」。提示里嵌的名字超过 20 个字截成前 20 个 +「...」（`lib/toast-text` 的 `clipName`） |
 | 每天提醒写日记 | 日记闹钟 | 设置 → 日记（默认开、21:00）：说明「每天 21:00 提醒，写没写都会响。」/「关着：不提醒写日记。」/「这台设备的「提醒通知」关着，开了才会响。」；到点通知标题「日记」、正文「今天过得怎么样？写几句吧」，点了打开今天的日记 |
 | 另一台设备上同时写的 · 10-17 20:30 | 冲突 / 合并冲突 / 副本 | 两台设备同时改了同一天的日记：输掉的那版收进日记末尾的折叠块，标题这样写（时间是那版写下的时刻） |
 | 没有日期 / {n} 天后 / {n} 天前 | 未设日期 / +5 / -1 | 任务详情顶栏左边的日期按钮（Rei 2026-10-29；2026-11-08 改成按日期换图标）：没日期、今天只有图标；以后 / 以前在图标旁写纯数字天数（「5」「1」，不带 +/-）。悬停提示是含义加日期文字，「5 天后 · 11月13日 周五」「今天 · 10月26日 – 30日」，两者一样时只留一个（「今天」）；没日期提示「没有日期」。读屏「日期：5 天后 · 11月13日 周五」，没日期读「没有日期」。点开和「日期」胶囊同一个面板 |
@@ -198,6 +199,7 @@
 - 把属性说成人话的函数在 `packages/core/src/describe.ts`（`describeCompletion`、`countdownPhrase`、`friendlyDate`、`formatTarget`）；`describeRecurrence` 在 `recurrence.ts`。
 - 站点编号（IMDb / 豆瓣）的占位与提示、常见网站的显示名在 `packages/core/src/links.ts`（`SITES`、`detectLinkLabel`）；币种中文名与符号在 `money.ts`（`CURRENCIES`）；季集的显示在 `episode.ts`（`formatEpisode`）。
 - 资料库的叫法（库名、短名、选择框占位、量词）在 `packages/core/src/library.ts` 的 `LIBRARY_COPY` / `libraryCopy()`，界面从这里取。
+- 提示（toast）文案里插任务名、项目名、打卡名和类型 / 资料 / 人物 / 附件名时，一律先过 `apps/client/src/lib/toast-text.ts` 的 `clipName()`：超过 20 个字（按字素数）截成前 20 个 +「...」（Rei 2026-11-13）。
 - 内部的枚举值（`once` / `timer` / `count` / `countdown`，状态 `待办` / `进行中` / `完成` / `关闭`，派生状态 `可开始` / `被阻塞`）不随文案改。
 - 界面语言：代码里都写 `tr('中文原文')`（`trx` 带元素的整句，`trc('语境', '中文')` 同一个词在不同位置英文不同时用）；英文在 `packages/core/src/i18n-en.ts`（core 的说法）与 `apps/client/src/i18n/en.ts`（界面）。内置数据（资料库名、字段名、选项、单位、正文模板、27 个打卡分类、网站名）存中文原样，显示时 `dataLabel()` 换成英文（`i18n-data-en.ts`），用户改过的名字照用户写的。`apps/client/src/i18n/i18n.test.ts` 检查：没有漏翻的中文、每个 key 有英文、每个内置名字有英文。
 
@@ -214,6 +216,7 @@
 | 中文 | English | 备注 |
 |---|---|---|
 | 念头团 | Mindough | app 名字（Rei 2026-10-25；10-24 曾定「思想团」）；英文界面一律 Mindough，`appName()` 随语言换 |
+| 通知位置 · 顶部 / 底部 / 右上角 / 右下角 | Notification Position · Top / Bottom / Top Right / Bottom Right | 设置 → 提醒（Rei 2026-11-13）；说明“Where pop-up messages appear in Mindough. Phone screens are narrow, so Top Right and Bottom Right show centered at the top or bottom. Only on this device.”；提醒一项的说明“Task reminder notifications, notification position” |
 | 我的一天 | My Day | |
 | 日期快捷按钮提示 | Today · Tomorrow · This Weekend / Next Weekend · Next Monday | 图标按钮的悬停提示 / 读屏名（Title Case，2026-10-25） |
 | 详情日期按钮 | No Date · In 5 days · 1 day ago · Today | 详情顶栏日期按钮的悬停提示 / 读屏名（2026-11-08），提示后面跟日期文字（In 5 days · Fri, Nov 13） |

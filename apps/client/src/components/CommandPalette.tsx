@@ -10,6 +10,7 @@ import { navigate } from '../lib/router';
 import { viewOf } from '../lib/view';
 import { tr } from '../lib/i18n';
 import { SearchHitRow, SearchTaskRow, openSearchHit, useRecentTasks, useSearchHits } from './SearchResults';
+import { clipName } from '../lib/toast-text';
 
 /** ⌘K / Ctrl+K 全局搜索：搜正文、类型字段、人物、组；结果直接“加入我的一天”。 */
 export function CommandPalette() {
@@ -50,7 +51,7 @@ export function CommandPalette() {
   const createFromQuery = () => {
     const t = store.createTask({ body_md: plainTitleMarkdown(q.trim()) });
     store.addToMyDay(t.id);
-    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: q.trim() }) }, 3000);
+    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(q) }) }, 3000);
     close();
   };
   const openHit = (h: SearchHit) => {

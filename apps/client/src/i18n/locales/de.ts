@@ -1642,7 +1642,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "点一下复制版本号": "Klicken, um die Version zu kopieren",
   "版本 {version}，点一下复制": "Version {version}, zum Kopieren klicken",
   "版本、数据来源": "Version, Datenquellen",
-  "任务提醒的通知": "Mitteilungen für Aufgabenerinnerungen",
+  "任务提醒的通知、通知位置": "Mitteilungen für Aufgabenerinnerungen, Position der Hinweise",
   "日期显示": "Datumsanzeige",
   "相对时间": "Relativ",
   "年月日": "Datum",
@@ -1827,6 +1827,12 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡描述": "Beschreibung",
   "添加打卡描述…": "Beschreibung hinzufügen…",
   "没有打卡描述": "Keine Beschreibung",
+  "通知位置": "Position der Hinweise",
+  "通知位置|顶部": "Oben",
+  "通知位置|底部": "Unten",
+  "通知位置|右上角": "Oben rechts",
+  "通知位置|右下角": "Unten rechts",
+  "念头团里弹出的提示放在哪儿。手机屏幕窄，选右上角、右下角时放在顶部、底部正中。只在这台设备上生效。": "Wo Hinweise in Mindough erscheinen. Auf dem Handy ist der Bildschirm schmal, daher erscheinen „Oben rechts“ und „Unten rechts“ oben bzw. unten mittig. Nur auf diesem Gerät.",
 };
 
 export const DATA: Record<string, string> = {

@@ -52,6 +52,7 @@ import { FileIcon } from './FileIcon';
 import { Lightbox } from './Lightbox';
 import { TextPreview } from './TextPreview';
 import { tr } from '../../lib/i18n';
+import { clipName } from '../../lib/toast-text';
 
 export interface AttachmentOwner {
   type: AttachmentOwnerType;
@@ -212,7 +213,7 @@ export function Attachments({ owner, disabled, bare, readOnly = false }: { owner
       // 云端文件可能已经清掉了：本机有就补传，没有就显示「文件已删除」
       if (back) void checkAttachment(store, back, true);
     };
-    ui.toast({ message: tr('已删除「{name}」', { name: a.file_name }), actions: [{ label: tr('撤销'), onPress: undo }] }, 6000);
+    ui.toast({ message: tr('已删除「{name}」', { name: clipName(a.file_name) }), actions: [{ label: tr('撤销'), onPress: undo }] }, 6000);
   };
   const goneHint = () => ui.toast({ tone: 'error', message: tr('云端的文件已经删了，这台设备上也没有副本') }, 5000);
   const download = async (a: Attachment) => {
@@ -226,12 +227,12 @@ export function Attachments({ owner, disabled, bare, readOnly = false }: { owner
     downloadToast(ui, a, r);
   };
   const cache = async (a: Attachment) => {
-    if (await cacheAttachment(a)) ui.toast({ tone: 'success', message: tr('已缓存「{name}」，24 小时后自动清除', { name: a.file_name }) }, 4000);
+    if (await cacheAttachment(a)) ui.toast({ tone: 'success', message: tr('已缓存「{name}」，24 小时后自动清除', { name: clipName(a.file_name) }) }, 4000);
     else ui.toast({ tone: 'error', message: tr('没缓存成功，稍后再试') }, 4000);
   };
   const uncache = async (a: Attachment) => {
     await uncacheAttachment(a);
-    ui.toast({ message: tr('已删除「{name}」的本机缓存', { name: a.file_name }) }, 3000);
+    ui.toast({ message: tr('已删除「{name}」的本机缓存', { name: clipName(a.file_name) }) }, 3000);
   };
   const offlineHint = () => ui.toast({ message: tr('离线中，没缓存的附件下载不了，联网后再试') }, 4000);
   const check = (a: Attachment, fresh?: boolean) => void checkAttachment(store, a, fresh);
@@ -312,7 +313,7 @@ type Toaster = ReturnType<typeof useUi>;
 function downloadToast(ui: Toaster, a: Attachment, r: DownloadResult) {
   if (r.ok && r.path) {
     const path = r.path;
-    const name = path.split(/[\\/]/).pop() ?? a.file_name;
+    const name = clipName(path.split(/[\\/]/).pop() ?? a.file_name);
     ui.toast(
       { tone: 'success', message: r.folder === 'chosen' ? tr('已保存：{name}', { name }) : tr('已存到「下载」：{name}', { name }), actions: [{ label: tr('在文件夹中显示'), onPress: () => void revealDownloaded(path) }] },
       6000,

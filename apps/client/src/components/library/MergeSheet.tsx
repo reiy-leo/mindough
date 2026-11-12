@@ -28,6 +28,7 @@ import { Button, Sheet } from '../../ui/primitives';
 import { ItemArt, LibraryPicker, artShape } from './Library';
 
 import { dataLabel, tr } from '../../lib/i18n';
+import { clipName } from '../../lib/toast-text';
 
 interface Candidate {
   id: string;
@@ -120,7 +121,7 @@ export function MergeSheet({
     try {
       const r = person ? store.mergePeople(targetId, others, choices) : store.mergeLibraryItems(targetId, others, choices);
       const name = (person ? store.get('person', targetId)?.name : store.get('library_item', targetId)?.name) ?? target.name;
-      ui.toast({ message: tr('已合并到「{name}」', { name }), actions: [{ label: tr('撤销'), onPress: () => store.undoMerge(r.undo) }] }, 6000);
+      ui.toast({ message: tr('已合并到「{name}」', { name: clipName(name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoMerge(r.undo) }] }, 6000);
       onMerged?.(r);
       if (!stayOpen) onClose();
     } catch (e) {

@@ -59,6 +59,7 @@ import { markdownHelp } from '../Markdown';
 import { dataLabel, tr, trc } from '../../lib/i18n';
 import { trx } from '../../lib/trx';
 import { GroupIcon } from '../project/GroupIcon';
+import { clipName } from '../../lib/toast-text';
 interface Draft extends CompletionValue {
   body: string;
   typeData: Record<string, FieldValue>;
@@ -275,7 +276,7 @@ function Composer() {
     const toMyDay = shouldJoinMyDay({ fromMyDay: !!req.myDay, recurring, date: d.date, today });
     if (toMyDay) store.addToMyDay(t.id);
     ui.closeQuickCreate();
-    const name = titleOf(store, store.get('task', t.id) ?? t);
+    const name = clipName(titleOf(store, store.get('task', t.id) ?? t));
     ui.toast(
       {
         tone: 'success',

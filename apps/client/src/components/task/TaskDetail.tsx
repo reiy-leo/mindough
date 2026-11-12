@@ -36,6 +36,7 @@ import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '..
 import { MakeupButton } from '../MakeupButton';
 
 import { dataLabel, tr, trc } from '../../lib/i18n';
+import { clipName } from '../../lib/toast-text';
 /**
  * 任务详情怎么摆（Rei 2026-10-23「任务链不要再弹窗了，任务详情如果不弹窗最好了，最好做成三列布局」）：
  * - pane：桌面 / 平板的右列（侧边栏 | 列表 | 详情），外框在 components/task/DetailPane.tsx；
@@ -229,7 +230,7 @@ export function Body({ store, task, placeholder, readOnly = false }: { store: St
       store.updateTask(task.id, { type_data: { ...cur.type_data, [ep.key]: m.value } });
       ui.toast(
         {
-          message: tr('已识别 {formatEpisode}，填进了「{label}」', { formatEpisode: formatEpisode(m.value), label: dataLabel(ep.label) }),
+          message: tr('已识别 {formatEpisode}，填进了「{label}」', { formatEpisode: formatEpisode(m.value), label: clipName(dataLabel(ep.label)) }),
           actions: [
             {
               label: tr('撤销'),
@@ -613,7 +614,7 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
         onCreate={(text) => {
           const created = store.createTask({ body_md: plainTitleMarkdown(text), group_id: task.group_id });
           connect(created.id);
-          ui.toast({ message: tr('已新建「{text}」', { text }), actions: [{ label: tr('查看'), onPress: () => ui.openEditor(created.id) }] });
+          ui.toast({ message: tr('已新建「{text}」', { text: clipName(text) }), actions: [{ label: tr('查看'), onPress: () => ui.openEditor(created.id) }] });
           onClose();
         }}
       />
@@ -742,7 +743,7 @@ function RefsSection({ store, task, today }: { store: Store; task: Task; today: 
     store.toggleTaskRef(task.id, e, false);
     ui.toast(
       {
-        message: tr('已不再关联「{name}」', { name: e.name }),
+        message: tr('已不再关联「{name}」', { name: clipName(e.name) }),
         actions: [{ label: tr('撤销'), onPress: () => (e.kind === 'person' ? store.linkPerson(task.id, e.id) : store.setTaskItems(task.id, items)) }],
       },
       5000,
