@@ -1182,7 +1182,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "{done}/{length} 完成": "Сделано {done}/{length}",
   "{blocked} 件还不能开始": "Пока нельзя начать: {blocked, plural, one {# задача} few {# задачи} many {# задач} other {# задачи}}",
   // 项目卡片第二行（Rei 2026-11-12，待母语者看）
-  "{n} 件待办": "Осталось: {n, plural, one {# задача} few {# задачи} many {# задач} other {# задачи}}",
+  "{n} 件待办": "{n, plural, one {# задача} few {# задачи} many {# задач} other {# задачи}}",
   "都做完了": "Всё сделано",
   "找不到这个项目": "Проект не найден",
   "可能已经删除了": "Возможно, он удалён",

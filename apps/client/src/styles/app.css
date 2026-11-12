@@ -1343,14 +1343,16 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
 }
 /* 项目卡片（Rei 2026-11-04 紧凑；2026-11-12 07:51「好难看，不协调」重排）：每张一样高，两行结构固定——
    第一行图标块 + 名字（一行，长了省略），第二行灰色小字（还剩几件 / 还不能开始 / 没有任务，右边类型），和名字左对齐。
-   卡片只留一层细边，不叠阴影；悬停换浅底。高度 = 上下内边距 12 × 2 + 图标块 26 + 行距 6 + 第二行 16 = 72 */
+   卡片只留一层细边，不叠阴影；悬停换浅底。内容高固定 48（图标块 26 + 行距 6 + 第二行 16），content-box 写死，
+   加上下内边距 12 × 2 是 72，Apple、WinUI 再加 1px 细边 = 74，Material 没边 = 72；同一皮肤里每张一样高 */
 .group-card {
   --group-tile: 26px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
-  height: 72px;
+  box-sizing: content-box;
+  height: 48px;
   padding: var(--space-3) 14px;
   text-align: left;
   cursor: pointer;
@@ -1399,18 +1401,35 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   color: var(--text-2);
   min-width: 0;
 }
+/* 放不下时先省略「N 件待办」和右边的类型，「还不能开始」最后才省略（外语长，比如俄语） */
 .group-count {
-  flex: 1;
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.group-open,
+.group-blocked {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.group-open {
+  flex: 0 1 auto;
+}
+.group-blocked {
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 .group-stats-sep {
+  flex: none;
+  white-space: pre;
   color: var(--text-3);
 }
 .group-cat {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 12px;
   max-width: 45%;
   display: inline-flex;
   color: var(--text-2);

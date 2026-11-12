@@ -64,13 +64,13 @@ function GroupCard({ group: g }: { group: Group }) {
               tr('都做完了')
             ) : (
               <>
-                {tr('{n} 件待办', { n: open })}
+                <span className="group-open">{tr('{n} 件待办', { n: open })}</span>
                 {blocked > 0 && (
                   <>
                     <span className="group-stats-sep" aria-hidden>
                       {' · '}
                     </span>
-                    <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>
+                    <span className="state-blocked group-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>
                   </>
                 )}
               </>
