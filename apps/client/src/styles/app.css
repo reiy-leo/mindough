@@ -1338,7 +1338,8 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* 最窄 280：中等宽度（900 左右）排两列，不挤成三列窄卡片把第二行全省略掉 */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-3);
 }
 /* 项目卡片（Rei 2026-11-04 紧凑；2026-11-12 07:51「好难看，不协调」重排）：每张一样高，两行结构固定——
@@ -1402,7 +1403,7 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   color: var(--text-2);
   min-width: 0;
 }
-/* 放不下时先省略「N 件待办」和右边的类型，「还不能开始」最后才省略（外语长，比如俄语） */
+/* 放不下时先把右边的类型缩成只剩图标（flex-shrink 100），再省略「N 件待办」，「还不能开始」最后才省略（外语长，比如俄语） */
 .group-count {
   flex: 1 1 auto;
   display: flex;
@@ -1429,7 +1430,7 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   color: var(--text-3);
 }
 .group-cat {
-  flex: 0 1 auto;
+  flex: 0 100 auto;
   min-width: 12px;
   max-width: 45%;
   display: inline-flex;
