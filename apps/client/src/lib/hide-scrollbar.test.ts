@@ -40,7 +40,7 @@ describe('滚动条不显示', () => {
     expect(page.indexOf('heatmap-card')).toBeGreaterThan(sticky);
     expect(page.indexOf("tr('今天要打卡')")).toBeGreaterThan(page.indexOf('heatmap-card'));
   });
-  it('资料库列表 / 资料详情 / 人物详情 / 已完成：顶部一块 sticky、不透明底，页面上边距挪进固定块（Rei 2026-11-11）', () => {
+  it('资料库列表 / 资料详情 / 人物详情：顶部一块 sticky、不透明底，页面上边距挪进固定块（Rei 2026-11-11）', () => {
     expect(ruleHas('.sticky-head', /position:\s*sticky/)).toBe(true);
     expect(ruleHas('.sticky-head', /top:\s*0/)).toBe(true);
     expect(ruleHas('.sticky-head', /background:\s*var\(--bg\)/)).toBe(true);
@@ -58,10 +58,13 @@ describe('滚动条不显示', () => {
     // 详情页：返回一行固定
     expect(lib).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
     expect(read('../pages/People.tsx')).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
-    // 已完成：宽屏页头固定（手机不放页头，按钮在顶栏，2026-11-12），任务列表在后面
+  });
+  it('已完成：没有页头、没有分区按钮，固定按日期分段；只留读屏 h1，第一段不叠上外边距（Rei 2026-11-12 10:19）', () => {
     const done = read('../pages/Done.tsx');
-    expect(done).toMatch(/<StickyHead>\{header\}<\/StickyHead>/);
-    expect(done.indexOf('<PageHeader')).toBeLessThan(done.indexOf('<StickyHead>{header}'));
-    expect(done.indexOf('task-list')).toBeGreaterThan(-1);
+    for (const s of ['<PageHeader', '<StickyHead', 'SectionMenu', 'useListView', 'has-sticky-head', 'TopbarActions']) expect(done.includes(s), s).toBe(false);
+    expect(done).toMatch(/<h1 className="sr-only">\{trc\('导航', '已完成'\)\}<\/h1>/);
+    expect(done.indexOf('<Section ')).toBeGreaterThan(done.indexOf('<h1 className="sr-only">'));
+    expect(ruleHas('.done-page > .sr-only:first-child + .section', /margin-top:\s*0/)).toBe(true);
+    expect(ruleHas('.app-mobile .done-page > .sr-only:first-child + .section', /margin-top:\s*var\(--space-3\)/)).toBe(true);
   });
 });

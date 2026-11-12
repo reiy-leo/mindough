@@ -4646,7 +4646,7 @@ html[data-layout='mobile'] .project-archived-banner .btn {
   margin-top: var(--space-2);
 }
 
-/* 资料库列表页、资料详情页、人物详情页、已完成页：顶部固定，只滚下面的内容（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」，08:11 追加已完成页）。
+/* 资料库列表页、资料详情页、人物详情页：顶部固定，只滚下面的内容（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」；已完成页 08:11 追加，2026-11-12 10:19 去掉页头后不再用）。
    组件 components/StickyHead；做法同 .checkin-head-sticky：整块 sticky、不透明页面底（var(--bg)，彩色档位 / WinUI 的底图照画）、左右多铺一点盖住行的悬停底色、滚动后底下一条细线。
    滚的还是 .main（macOS 无标题栏时 .main-scroll），手机触屏、返回手势、安全区不受影响；页面加 has-sticky-head，上边距挪进固定块，免得一开始滚页头先跟着走一截。 */
 .sticky-head {
@@ -5047,3 +5047,12 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   min-width: 36px;
 }
 
+/* 已完成：没有页头（Rei 2026-11-12 10:19「已完成页：去掉header」），最上面直接是第一段日期标题。
+   顶部到标题字上沿和我的一天添加框到「未完成」、打卡页工具行到「今天要打卡」一样是 26.6px（同 .checkin-head-sticky + .section 的思路）：
+   页面上内边距 + 这里的上外边距凑 20px，再加 32px 段头里字的上沿 6.6px。宽屏页面上内边距已是 20，不再叠 .section 的 20；手机页面上内边距 8，补 12。 */
+.done-page > .sr-only:first-child + .section {
+  margin-top: 0;
+}
+.app-mobile .done-page > .sr-only:first-child + .section {
+  margin-top: var(--space-3);
+}

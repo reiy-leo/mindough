@@ -66,7 +66,7 @@ export interface Settings {
   strictMode: boolean;
   /**
    * 别的列表页的分区 / 排序（Rei 2026-11-08「我的一天、项目中 右上角功能区添加一个分区」「所有列表支持不分区」）：
-   * 页名（myday / doable / done）→ { section, sort, collapsed }。只记在本机，不同步（同 projectViews）。读写经 lib/list-views。
+   * 页名（myday / doable）→ { section, sort, collapsed }；已完成 2026-11-12 起固定按日期、不再存（旧的 done 键留着不读）。只记在本机，不同步（同 projectViews）。读写经 lib/list-views。
    */
   listViews: Record<string, unknown>;
   /**

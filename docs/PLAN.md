@@ -2223,3 +2223,12 @@ Rei 2026-11-12 09:39（安卓 Material 截图）：「顶部"我的一天"换成
 - **更多**：页头换成 `h1.sr-only`。**设置分区页**：只留「‹ 设置」返回，大标题 `.settings-push-title` 换成 `h1.sr-only`（样式删了）。
 - **没动**：项目 / 人物 / 资料详情页（标题是这一条的名字，项目还能点名字改名、点图标换图标）、日记、搜索页（本来就没有顶栏）；宽屏全部不变。
 - **测试**：`lib/mobile-topbar.test.ts` 改成 bar / none；`lib/hide-scrollbar.test.ts` 已完成那条改成宽屏 `<StickyHead>{header}</StickyHead>`。自查 `work/myday-head/survey.mjs`（三皮肤 × 亮暗 × 390，每页量顶栏、页头、添加框、字形间距并截顶部 300px），截图 `work/shots-d1112-mydayhead/before`、`after`。
+
+### 已完成页去掉页头和分区按钮，固定按日期分段 ✅（2026-11-12）
+Rei 2026-11-12 10:19：「已完成页：去掉header，也去掉分区按钮切换功能，默认按照日期分区，不能修改。」
+
+- **页面**（`pages/Done.tsx`）：去掉 `PageHeader`（标题、图标）和包它的 `StickyHead`，只留 `h1.sr-only`；手机上原来 `PageHeader` 送到顶栏右格的分区按钮也没了，顶栏两格都空，收成状态栏那一截。页面不再加 `has-sticky-head`，改 `done-page`；第一段日期标题：`.done-page > .sr-only:first-child + .section` 宽屏上外边距 0、手机 12px（页面上内边距宽屏 20、手机 8，凑成 20），顶部到标题字上沿 26.6px，和我的一天添加框到「未完成」、打卡页工具行到「今天要打卡」（210cf96）一样。
+- **分区**：`SectionMenu`、`useListView('done')` 不用了，固定按天分段。`lib/list-views` 删掉 `DateSection` / `DATE_SECTIONS`，`ListPage` 去掉 `done`，积压的 section 一律是 `date`；本机设置里旧的 `listViews.done` 留着不读，不迁移。设置页本来就没有这一项。
+- **文案**：「按日期」只给已完成的分区菜单用，九种语言一起删（`SECTION_LABEL` 去掉 `date`）。
+- **测试**：`lib/hide-scrollbar.test.ts` 已完成那条改成「没有页头 / 分区按钮 / StickyHead、有读屏 h1、第一段不叠外边距」；`lib/sections.test.ts` 积压那条改成固定按日期。自查 `work/done-page-hdr/`，截图 `work/shots-d1112-donehdr/`。
+

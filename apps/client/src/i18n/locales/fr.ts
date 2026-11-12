@@ -270,7 +270,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "按类型筛选": "Filtrer par catégorie",
   "按类型": "Par catégorie",
   "这个类型下还没有重复任务": "Aucune tâche récurrente dans cette catégorie pour l’instant",
-  "按日期": "Par date",
   "把相关的任务放在一起": "Des tâches liées, réunies au même endroit",
   "改项目的类型": "Changer la catégorie du projet",
   "设类型": "Choisir une catégorie",

@@ -105,10 +105,10 @@ describe('列表视图设置', () => {
     expect(normalizeListView('myday', { section: 'project' }).section).toBe('project');
     expect(normalizeListView('myday', { section: 'type' }).section).toBe('type');
   });
-  it('积压、已完成：默认按日期，能选不分区', () => {
+  it('积压：固定按日期，存过别的也不认', () => {
     expect(normalizeListView('doable', undefined).section).toBe('date');
-    expect(normalizeListView('done', { section: 'none' }).section).toBe('none');
-    expect(normalizeListView('done', { section: 'mood' }).section).toBe('date');
+    expect(normalizeListView('doable', { section: 'none' }).section).toBe('date');
+    expect(normalizeListView('doable', { section: 'mood' }).section).toBe('date');
   });
   it('项目页：分区不认按项目；排序能按心情，没心情的正序倒序都最后', () => {
     expect(normalizePrefs({ section: 'project' }).section).toBe('none');

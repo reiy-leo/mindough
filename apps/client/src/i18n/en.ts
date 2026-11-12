@@ -219,7 +219,6 @@ export const EN: Record<string, EnValue> = {
   "按类型筛选": "Filter by category",
   "按类型": "By category",
   "这个类型下还没有重复任务": "No recurring tasks in this category yet",
-  "按日期": "By date",
   "把相关的任务放在一起": "Related tasks, kept together",
   "改项目的类型": "Change project category",
   "设类型": "Set category",
