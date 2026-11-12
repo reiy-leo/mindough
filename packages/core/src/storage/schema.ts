@@ -43,6 +43,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     pinned_at: 'text?',
     mood: 'text?',
     lib_via: 'text?',
+    checkin_note: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -396,6 +397,14 @@ CREATE TABLE IF NOT EXISTS "calendar_sub" (
   "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,
   "name" TEXT NOT NULL, "url" TEXT NOT NULL, "color" TEXT NOT NULL, "sort" REAL NOT NULL DEFAULT 0, "created_at" TEXT NOT NULL
 );
+`,
+  },
+  {
+    // Rei 2026-11-13：打卡描述（task.checkin_note，纯文字，只给打卡）。可空，老行是空（没写）。
+    version: 23,
+    name: '打卡描述（task.checkin_note）',
+    sql: `
+ALTER TABLE "task" ADD COLUMN "checkin_note" TEXT;
 `,
   },
 ];

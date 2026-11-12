@@ -1536,4 +1536,8 @@ export const EN: Record<string, EnValue> = {
   "详情标题末尾": "End of Title in Details",
   "不放光标": "Nowhere",
   "在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。": "Where the cursor goes after you press Enter in the add field on My Day, Inbox, or a project. Stay in the add field to keep adding; with Nowhere, the phone keyboard closes. Syncs with your account.",
+  "打卡完成了，正文存进了「{title}」": "Checked in. Notes moved to “{title}”",
+  "打卡描述": "Check-in Description",
+  "添加打卡描述…": "Add a description…",
+  "没有打卡描述": "No description",
 };

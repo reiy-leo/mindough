@@ -14,7 +14,8 @@ import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
 import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
-import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
+import { capCheckIn, CheckInMetError, computeProgress, isHabit, periodKeyForTask, type Progress } from './checkin';
+import { MAX_ARCHIVES_PER_NODE, archiveBody, checkInArchiveDepId, checkInArchiveId, restoreCheckInBody, splitCheckInBody } from './checkin-archive';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
 import { BUILTIN_TASK_TYPES, BUILTIN_TYPE_IDS, BUILTIN_TYPES_REVISION, PLAIN_TYPE_ID, isBuiltinStamp, withNewBuiltinFields } from './seed/builtin-types';
 import {
@@ -79,6 +80,8 @@ export interface CheckInResult {
   completed: CompleteResult | null;
   /** 这次记下的事件（撤销用 store.undoCheckIn(event.id)）。 */
   event: TableMap['check_in'];
+  /** 打卡这次达标、正文标题下面有内容时，内容存成的那条已完成任务（Rei 2026-11-13，见 checkin-archive.ts）；没有是 null。 */
+  archived: Task | null;
 }
 
 type Tables = { [K in TableName]: Map<string, TableMap[K]> };
@@ -378,6 +381,8 @@ export class Store {
       if (c.table === 'task') (row as Task).refs_mirror = refsMirrorOf(row as Task);
       // 项目关联资料库：任务行总带着 lib_via（空也写上），老客户端推上来的行没有这个键，靠它认出来
       if (c.table === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
+      // 打卡描述（v23）同理，空也写上，和重开后读回的样子一致
+      if (c.table === 'task' && (row as Task).checkin_note === undefined) (row as Task).checkin_note = null;
       // 资料 / 人物总带着 merged_into（没合并过 = null），和重开后读回的样子一致
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
       (this.tables[c.table] as Map<string, BaseRow>).set(row.id, row);
@@ -502,6 +507,8 @@ export class Store {
         if (t.pinned_at === undefined) t.pinned_at = null;
         // 心情（v19）同理：老客户端的行当没记
         if (t.mood === undefined) t.mood = null;
+        // 打卡描述（v23）：老客户端推上来的行没有这一列，沿用本机的值，别冲掉
+        if (t.checkin_note === undefined) t.checkin_note = (cur as Task | undefined)?.checkin_note ?? null;
         if (!isPlainObject(t.count_config)) t.count_config = {};
         // 老客户端推上来的任务没有 lib_via（v21）：项目没变就沿用本机的；项目变了按手动挪动算（各设备算的一样，不进 outbox）
         if (t.lib_via === undefined) {
@@ -1503,6 +1510,7 @@ export class Store {
       card_color: input.card_color ?? null,
       pinned_at: input.pinned_at ?? null,
       mood: input.mood ?? null,
+      checkin_note: input.checkin_note ?? null,
       sort: input.sort ?? maxSort + 1,
       created_at: input.created_at ?? now.toISOString(),
       ...(input.id ? { id: input.id } : {}),
@@ -2143,6 +2151,17 @@ export class Store {
     return !!t && !!this.pinnedAt(t);
   };
 
+  /**
+   * 打卡描述（Rei 2026-11-13 05:09）：只给打卡（重复、不是倒数日），别的任务不写。去掉首尾空白，空 = null；没变不写。
+   */
+  setCheckInNote(id: string, note: string | null): Task | undefined {
+    const t = this.get('task', id);
+    if (!t || !isHabit(t)) return t;
+    const next = (note ?? '').trim() || null;
+    if ((t.checkin_note ?? null) === next) return t;
+    return this.updateTask(id, { checkin_note: next });
+  }
+
   /** 倒数日卡片的背景色（Rei 2026-11-02）：预设色的名字，null = 默认。名字不认识的当默认存成 null。 */
   setCardColor(id: string, color: string | null): Task | undefined {
     const t = this.get('task', id);
@@ -2365,6 +2384,7 @@ export class Store {
    * 非重复任务达标后自动标“完成”（并解锁后续）；重复任务只记录周期进度。
    */
   checkIn(taskId: string, kind: CheckInKind, amount = 0, date: string = this.today()): CheckInResult {
+    this.beforeCheckIn?.(taskId);
     const task = this.get('task', taskId);
     if (!task) throw new Error(tr('任务不存在'));
     const period_key = periodKeyForTask(task, date);
@@ -2378,7 +2398,93 @@ export class Store {
     let completed: CompleteResult | null = null;
     if (!task.recurrence && progress.met && !before?.met && task.status !== '完成') completed = this.completeTask(taskId);
     else if (!task.recurrence && kind === 'start' && task.status === '待办') this.updateTask(taskId, { status: '进行中' });
-    return { progress, completed, event };
+    // 打卡这个节点刚达标：正文标题下面的内容存成一条已完成的前置任务（Rei 2026-11-13 05:01）；改小数值退回没达标：撤回刚生成、没动过的那条
+    let archived: Task | null = null;
+    if (isHabit(task) && progress.met && !before?.met) archived = this.archiveCheckInBody(taskId, period_key);
+    else if (isHabit(task) && before?.met && !progress.met) this.retractCheckInArchive(taskId, period_key);
+    return { progress, completed, event, archived };
+  }
+
+  /**
+   * 打卡、撤销打卡之前调（客户端设：把详情里还没存的正文先存下来，免得存档拿到的是旧正文、编辑器之后又把旧正文写回去）。
+   */
+  beforeCheckIn: ((taskId: string) => void) | null = null;
+
+  /** 本机这次打开后刚生成的存档任务 → 生成完时任务行的 updated_at（撤回只认没被改过的）。 */
+  private freshArchives = new Map<string, string>();
+
+  /**
+   * 打卡正文存档（Rei 2026-11-13 05:01，checkin-archive.ts）：打卡 taskId 的节点 node 刚达标时调。
+   * 正文标题下面有内容（空行、空段落不算）或挂着附件：新建一条普通任务，状态「完成」、完成时间是现在，
+   * 正文 = 「标题 · 节点日期」+ 原来标题下面的内容，附件跟着挪过去；项目、类型（内置的置顶 / 收藏 / 紧急 / 重要不抄）、心情照抄；
+   * 用 FS 前后关系挂成打卡的前置（前置已完成，打卡照常可开始）。打卡正文只留标题行。没内容什么都不做，返回 null。
+   * id 由「打卡 + 节点 + 序号」算（两台设备各自生成也是同一行）；严格模式下打卡锁着就不动。
+   */
+  private archiveCheckInBody(taskId: string, node: string): Task | null {
+    const task = this.get('task', taskId);
+    if (!task || this.isLocked(task)) return null;
+    const { title, rest } = splitCheckInBody(task.body_md);
+    const atts = this.attachmentsOf('task', task.id);
+    if (!rest && !atts.length) return null;
+    let id = '';
+    for (let n = 1; n <= MAX_ARCHIVES_PER_NODE; n++) {
+      const cand = checkInArchiveId(task.id, node, n);
+      const cur = this.tables.task.get(cand);
+      if (!cur || cur.deleted) {
+        id = cand;
+        break;
+      }
+    }
+    if (!id) return null;
+    const doneAt = this.now().toISOString();
+    this.batch(() => {
+      // 先建成待办：严格模式下完成的任务不能再挂类型、前后关系、附件，最后一步才标完成
+      this.createTask(
+        { id, body_md: archiveBody(title, node, rest), status: '待办', group_id: task.group_id, type_id: null, completion_mode: 'once', mood: task.mood ?? null, created_at: doneAt },
+        { joinMyDay: false },
+      );
+      const cats = this.categoryIdsOfTask(task.id).filter((c) => !isMarkerCategory(c));
+      this.setTaskCategories(id, cats);
+      const depId = checkInArchiveDepId(id);
+      const dep = this.tables.dependency.get(depId);
+      this.write([{ table: 'dependency', row: { ...(dep ?? {}), id: depId, pred_id: id, succ_id: task.id, type: 'FS', lag: 0, deleted: false, updated_at: '' } as BaseRow }]);
+      if (atts.length) this.write(atts.map((a) => ({ table: 'attachment' as const, row: { ...a, owner_id: id } as BaseRow })));
+      this.updateTask(task.id, { body_md: title });
+      this.updateTask(id, { status: '完成', done_at: doneAt });
+    });
+    const out = this.tables.task.get(id) ?? null;
+    if (out) this.freshArchives.set(id, out.updated_at);
+    return out;
+  }
+
+  /**
+   * 节点达标被撤销（撤销上一次、改小数值）时调：这个节点最后生成的那条存档，要是本机刚生成、之后没被改过，
+   * 就撤回——内容接回打卡正文末尾、附件挪回去、那条任务和前后关系删掉。改过的、别的设备生成的、重新打开过的都不动。
+   */
+  private retractCheckInArchive(taskId: string, node: string): void {
+    let last: Task | undefined;
+    for (let n = 1; n <= MAX_ARCHIVES_PER_NODE; n++) {
+      const cur = this.tables.task.get(checkInArchiveId(taskId, node, n));
+      if (!cur) break;
+      if (!cur.deleted) last = cur;
+    }
+    if (!last || this.freshArchives.get(last.id) !== last.updated_at) return;
+    const archive = last;
+    const task = this.get('task', taskId);
+    if (!task || this.isLocked(task)) return;
+    const { rest } = splitCheckInBody(archive.body_md);
+    this.batch(() => {
+      // 任务行的墓碑先写：严格模式下它是完成的（锁着），删掉以后挂在它身上的行才能动
+      this.remove('task', archive.id);
+      this.remove('dependency', checkInArchiveDepId(archive.id));
+      this.setTaskCategories(archive.id, []);
+      const atts = this.attachmentsOf('task', archive.id);
+      if (atts.length) this.write(atts.map((a) => ({ table: 'attachment' as const, row: { ...a, owner_id: taskId } as BaseRow })));
+      const cur = this.get('task', taskId)!;
+      const body = restoreCheckInBody(cur.body_md, rest);
+      if (body !== cur.body_md) this.updateTask(taskId, { body_md: body });
+    });
+    this.freshArchives.delete(archive.id);
   }
 
   /**
@@ -2404,12 +2510,16 @@ export class Store {
   undoCheckIn(eventId: string): Progress | null {
     const e = this.get('check_in', eventId);
     if (!e) return null;
+    this.beforeCheckIn?.(e.task_id);
     const task = this.get('task', e.task_id);
+    const of = () => this.list('check_in').filter((x) => x.task_id === e.task_id && x.period_key === e.period_key);
+    const wasMet = task ? computeProgress(task, of(), this.now()).met : false;
     this.remove('check_in', eventId);
     if (!task) return null;
-    const all = this.list('check_in').filter((x) => x.task_id === task.id && x.period_key === e.period_key);
-    const progress = computeProgress(task, all, this.now());
+    const progress = computeProgress(task, of(), this.now());
     if (!task.recurrence && task.status === '完成' && !progress.met) this.reopenTask(task.id);
+    // 打卡退回没达标：刚生成、没动过的正文存档撤回（Rei 2026-11-13，见 retractCheckInArchive）
+    if (isHabit(task) && wasMet && !progress.met) this.retractCheckInArchive(task.id, e.period_key);
     return progress;
   }
 

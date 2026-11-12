@@ -188,6 +188,12 @@ export interface Task extends BaseRow {
    * 老客户端不认这一列，推上来的行没有它：项目没变就沿用本机的值，项目变了按手动挪动算（见 Store.applyRemote）。SQLite 迁移 v21。
    */
   lib_via?: string | null;
+  /**
+   * 打卡描述（Rei 2026-11-13 05:09「打卡任务 添加一个新属性"打卡描述"。只有打卡任务能添加。打卡描述显示在任务编辑器底部，打卡任务一直显示。」）：
+   * 纯文字，空 = 没写。只给打卡（重复、不是倒数日）；打卡达标把正文存档时它不动（checkin-archive.ts）。
+   * 老客户端不认这一列，推上来的行没有它：沿用本机的值（见 Store.applyRemote）。SQLite 迁移 v23。
+   */
+  checkin_note?: string | null;
   sort: number;
   created_at: Timestamp;
 }

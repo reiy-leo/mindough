@@ -1823,6 +1823,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "详情标题末尾": "Fim do título nos detalhes",
   "不放光标": "Em lugar nenhum",
   "在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。": "Para onde vai o cursor depois de pressionar Enter no campo de adicionar de Meu dia, Entrada ou de um projeto. Ficando no campo, dá para continuar adicionando; com Em lugar nenhum, o teclado do celular fecha. Sincroniza com sua conta.",
+  "打卡完成了，正文存进了「{title}」": "Registrado. As notas foram para “{title}”",
+  "打卡描述": "Descrição do hábito",
+  "添加打卡描述…": "Adicionar descrição…",
+  "没有打卡描述": "Sem descrição",
 };
 
 export const DATA: Record<string, string> = {

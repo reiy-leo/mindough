@@ -2242,3 +2242,33 @@ html[data-layout='mobile'] .date-panel .date-clear {
   white-space: nowrap;
   animation: fade 0.12s var(--ease);
 }
+
+/* 打卡描述（Rei 2026-11-13 05:09）：正文下面一块，打卡一直显示 */
+.checkin-note {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+.checkin-note-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.checkin-note-input,
+.checkin-note-text {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.checkin-note-input {
+  cursor: text;
+}
+.checkin-note-text.is-empty {
+  color: var(--text-3);
+}

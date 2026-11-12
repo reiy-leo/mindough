@@ -11,7 +11,7 @@ import { Plus, Undo2 } from 'lucide-react';
 import { CheckInMetError, formatAmount, formatDelta, parseCountInput, quickAmounts, type Store, type Task } from '@mindough/core';
 import { Button } from '../ui/primitives';
 import { useUi } from '../lib/ui';
-import { announceComplete } from '../lib/actions';
+import { announceComplete, checkInMetMessage } from '../lib/actions';
 
 import { tr } from '../lib/i18n';
 
@@ -49,7 +49,7 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
     }
     const message =
       r.progress.met && task.recurrence
-        ? tr('今天的打卡完成了 🎉')
+        ? checkInMetMessage(store, r, tr('今天的打卡完成了 🎉'))
         : how === 'set'
           ? tr('改成了 {amount}', { amount: amountText(r.progress.value, task.unit) })
           : amount < 0

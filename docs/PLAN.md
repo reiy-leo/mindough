@@ -2273,3 +2273,10 @@ Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「�
 - **没动**：素净档（`color-level.css` 那几段照旧）；其它皮肤；用户自己给类型选的颜色（列表里还会有紫，那是数据）；心情河流空状态那一股淡紫（三个皮肤共用）。没加 color-mix。
 - **对比度**：亮色 #007aff 上的白字是 4.02:1，#007aff 当字放在浅底上是 3.6–4.0:1，和 Apple 皮肤一样，达不到 4.5:1，留给 Rei 定。
 - **测试**：新加 `lib/material-blue.test.ts`（强调色和 Apple 一致、没有 M3 紫、正文 / 容器字 / 暗色强调色上的字 ≥ 4.5:1、两段色板不用 color-mix）；`lib/list-surface.test.ts` 页面底改成 #f9f9ff。自查 `work/m3-blue/m3.mjs`（Material 亮暗 × 1366 / 390 × 我的一天、详情、日历、打卡、设置、日期选择器，量真实元素的字色和底色，扫一遍紫），截图 `work/shots-d1113-m3blue/`。
+
+### 打卡完成时存正文、打卡描述 ✅（2026-11-13）
+- Rei 05:01：打卡每次达标，正文标题下面有内容就新建一条已完成的前置任务，内容挪过去，打卡只留标题。05:09：打卡加「打卡描述」，正文下面一直显示，存正文时不动。
+- core `checkin-archive.ts`（拆正文、什么算内容、存档正文、确定 id），写入在 `Store.checkIn` / `undoCheckIn`（archiveCheckInBody / retractCheckInArchive），`CheckInResult.archived`。触发只在本机打卡这条路径，applyRemote 不碰，所以别的设备不会再生成。
+- 定下来的几件事（Rei 没说，我定的）：标题后加「 · YYYY-MM-DD」（补打卡写被补的那天）；附件算内容、跟着挪；关系用 FS（前置已完成不锁打卡）；撤回只认「本机这次打开后刚生成、没改过」（内存里记生成时的 updated_at），其余不动；严格模式先建待办再标完成。
+- 打卡描述存 task.checkin_note（迁移 v23），纯文字 AutoTextarea；老客户端推上来的行没有这一列时沿用本机值。
+- 客户端 `lib/body-flush.ts`：Store.beforeCheckIn 打卡前把详情里没存的正文 / 描述先存，避免存档拿旧正文、编辑器又把旧正文写回。

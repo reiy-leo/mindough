@@ -4,6 +4,7 @@ import { drainDeepLinks, enqueueDeepLink, onDeepLink, parseHashLink, type DeepLi
 import { navigate } from '../lib/router';
 import { useUi } from '../lib/ui';
 import { titleOf } from '../lib/view';
+import { checkInMetMessage } from '../lib/actions';
 import { useStore } from '../store/StoreProvider';
 import { isTauri } from '../store/sqlite-tauri';
 import { tr } from '../lib/i18n';
@@ -99,7 +100,8 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
       const r = store.checkIn(t.id, 'add', t.completion_mode === 'once' ? 1 : a.amount, today);
       const added = store.checkInsOf(t.id).find((c) => !seen.has(c.id));
       const undo = () => {
-        if (added) store.remove('check_in', added.id);
+        // 走 undoCheckIn：打卡退回没达标时，刚存档的正文也撤回（Rei 2026-11-13）
+        if (added) store.undoCheckIn(added.id);
         if (store.get('task', t.id)?.status !== prevStatus) store.setStatus(t.id, prevStatus);
       };
       const p = r.progress;
@@ -109,7 +111,8 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
           : r.completed
             ? tr('已完成「{title}」', { title })
             : tr('「{title}」打卡了', { title });
-      ui.toast({ tone: 'success', message, actions: [{ label: tr('撤销'), onPress: undo }] }, 6000);
+      const full = r.archived ? `${message} · ${checkInMetMessage(store, r, '')}` : message;
+      ui.toast({ tone: 'success', message: full, actions: [{ label: tr('撤销'), onPress: undo }] }, 6000);
       return;
     }
   }

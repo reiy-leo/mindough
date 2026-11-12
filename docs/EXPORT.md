@@ -91,6 +91,7 @@ checkins:
 | `time_zone` | time_zone | 任务时区，IANA 名（如 America/New_York），没设不写；导入时不认识的当没设（2026-10-25） |
 | `pinned` | pinned_at | 置顶时间（ISO 8601），置顶了才写；没有就是没置顶（2026-11-08，v18） |
 | `mood` | mood | 心情 id（happy、tired…，同日记），记了才写；导入时认不出的值当没记（2026-11-08，v19） |
+| `checkin_note` | checkin_note | 打卡描述（纯文字，可多行），写了才写；只有打卡有（2026-11-13，v23） |
 | `sort` | sort | |
 | `people` | task_person | 人物 id 列表 |
 | `after` | dependency（FS） | **先做完这些**：前置任务的 id；后续不用写，从对方文件的 after 推出来 |

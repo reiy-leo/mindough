@@ -10,10 +10,12 @@ import { useNow, useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
 import { useSettings } from '../../lib/settings';
 import { useDateDisplay } from '../../lib/date-display';
-import { announceComplete, archiveHabit, closeTask, toggleCheckIn, toggleMyDay, togglePin, tryAddDependency, tryLinkTasks } from '../../lib/actions';
+import { announceComplete, archiveHabit, checkInMetMessage, closeTask, toggleCheckIn, toggleMyDay, togglePin, tryAddDependency, tryLinkTasks } from '../../lib/actions';
 import { TaskSearch, taskStateText } from './TaskSearch';
 import { imageUrl, titleOf } from '../../lib/view';
 import { typeIcon } from '../../lib/icons';
+import { CheckInNote } from './CheckInNote';
+import { registerTaskFlush } from '../../lib/body-flush';
 import { AutoTextarea, Button, ConfirmDialog, OverflowMenu, PopoverPanel, ProgressRing, Sheet, Tip, type MenuAction } from '../../ui/primitives';
 import { Markdown } from '../Markdown';
 import { FieldInput, MODE_ICON, TypeFields } from './pickers';
@@ -181,6 +183,17 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
     },
     [store, task.id],
   );
+  // 打卡前先把没存的正文存下来（Rei 2026-11-13 打卡正文存档，lib/body-flush）
+  useEffect(
+    () =>
+      registerTaskFlush(store, task.id, () => {
+        if (!editing.current) return;
+        editing.current = false;
+        const cur = store.get('task', task.id);
+        if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
+      }),
+    [store, task.id],
+  );
   const ui = useUi();
   const commit = () => {
     editing.current = false;
@@ -276,7 +289,7 @@ function useActions(store: Store, task: Task, done: () => void) {
     if (r.completed) {
       announceComplete(store, ui, r.completed, prev);
       done();
-    } else if (r.progress.met && recurring && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: tr('今天的打卡完成了') }, 2500);
+    } else if (r.progress.met && recurring && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了')) }, r.archived ? 4000 : 2500);
   };
   const complete = () => {
     const prev = task.status;
@@ -979,6 +992,8 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
               </div>
             )}
             <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} readOnly={locked} />
+            {/* 打卡描述（Rei 2026-11-13 05:09）：只有打卡有，一直显示在正文下面 */}
+            {isHabit(task) && <CheckInNote store={store} task={task} readOnly={locked} />}
             {!lib && typed && type && (
               <Disclosure className="type-disclosure" defaultExpanded={!hasPrimary}>
                 <Heading level={3} className="disclosure-head">

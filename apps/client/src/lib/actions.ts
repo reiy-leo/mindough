@@ -1,4 +1,4 @@
-import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, formatDate, isFinished, type CompleteResult, type Store, type TaskStatus } from '@mindough/core';
+import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, formatDate, isFinished, type CompleteResult, type Store, type Task, type TaskStatus } from '@mindough/core';
 import type { useUi } from './ui';
 import { titleOf as taskTitleOf } from './view';
 
@@ -8,6 +8,13 @@ type Ui = ReturnType<typeof useUi>;
 function titleOf(store: Store, id: string) {
   const t = store.get('task', id);
   return t ? taskTitleOf(store, t) : tr('任务');
+}
+
+/**
+ * 打卡达标的提示文字（Rei 2026-11-13 05:01）：正文标题下面的内容存成了一条已完成的任务时说存到了哪条，否则是 fallback。
+ */
+export function checkInMetMessage(store: Store, r: { archived: Task | null }, fallback: string): string {
+  return r.archived ? tr('打卡完成了，正文存进了「{title}」', { title: taskTitleOf(store, r.archived) }) : fallback;
 }
 
 /** 结束（完成 / 关闭）后的提示：解锁了哪些后续 + “然后呢？”一键新建后续 + 撤销。 */
@@ -58,6 +65,8 @@ export function toggleCheckIn(store: Store, ui: Ui, taskId: string, date: string
   try {
     const r = store.checkIn(taskId, 'add', 1, date);
     if (r.completed) announceComplete(store, ui, r.completed, t.status);
+    // 勾一下本来不弹提示；正文存档了说一声（Rei 2026-11-13）
+    else if (r.archived) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, '') }, 4000);
   } catch (e) {
     if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
     throw e;

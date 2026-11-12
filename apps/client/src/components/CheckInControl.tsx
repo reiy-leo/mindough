@@ -4,7 +4,7 @@ import { CountQuickButtons, useCountAdd } from './CountControls';
 import { HoverTip } from '../ui/HoverTip';
 import { Button, ProgressRing } from '../ui/primitives';
 import { useUiStable } from '../lib/ui';
-import { announceComplete, toggleCheckIn } from '../lib/actions';
+import { announceComplete, checkInMetMessage, toggleCheckIn } from '../lib/actions';
 import { Checkbox } from 'react-aria-components';
 import { useNow } from '../store/StoreProvider';
 
@@ -30,7 +30,7 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
       throw e;
     }
     if (r.completed) announceComplete(store, ui, r.completed, prev);
-    else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: tr('今天的打卡完成了 🎉') }, 2500);
+    else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了 🎉')) }, r.archived ? 4000 : 2500);
   };
 
   // 目标 1 的计数打卡当勾选完成（core checkInMode，Rei 2026-11-09）
