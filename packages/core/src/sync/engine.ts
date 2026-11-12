@@ -222,6 +222,8 @@ export class SyncEngine {
     await this.pullFrom(Number((await this.store.adapter.getMeta(this.key('cursor'))) ?? 0));
     // 项目关联资料库：拉完了再按关联把任务挪到该在的项目（拉到一半时数据不全，别挪）。挪了的是本机写入，照常进 outbox 排推送
     this.store.settleAfterSync();
+    // 打卡正文一次性补存（Rei 2026-11-13 05:30）：新设备空库打开时没做，第一次拉完在这里做；做过的设备只看一眼标记
+    await this.store.backfillCheckInArchivesOnce('sync');
     await this.store.flush();
   }
 

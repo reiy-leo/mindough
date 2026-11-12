@@ -14,7 +14,9 @@ import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
 import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
-import { capCheckIn, CheckInMetError, computeProgress, isHabit, periodKeyForTask, type Progress } from './checkin';
+import { capCheckIn, CheckInMetError, computeProgress, habitRule, isHabit, periodKeyForTask, type Progress } from './checkin';
+import { periodKeyFor } from './recurrence';
+import { addDays } from './dates';
 import { MAX_ARCHIVES_PER_NODE, archiveBody, checkInArchiveDepId, checkInArchiveId, restoreCheckInBody, splitCheckInBody } from './checkin-archive';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
 import { BUILTIN_TASK_TYPES, BUILTIN_TYPE_IDS, BUILTIN_TYPES_REVISION, PLAIN_TYPE_ID, isBuiltinStamp, withNewBuiltinFields } from './seed/builtin-types';
@@ -121,6 +123,9 @@ export interface MergeResult {
 export class MergeError extends Error {
   override name = 'MergeError';
 }
+
+/** 打卡正文一次性补存做过了（本机 meta，不同步）。 */
+export const CHECKIN_BACKFILL_META = 'checkin_backfill_v1';
 
 export type NewTaskInput = Partial<Omit<Task, 'id' | 'updated_at' | 'deleted'>> & { id?: string };
 
@@ -245,6 +250,8 @@ export class Store {
     // 打开时的整理写入不触发项目关联资料库的整理（本机数据可能是同步到一半的样子）；之后本机写入才触发
     store.libsReady = true;
     await store.flush();
+    // 打卡正文一次性补存（Rei 2026-11-13 05:30）：本机还没做过、而且已经有打卡时做；新设备空库等第一次同步拉完再做（SyncEngine）
+    await store.backfillCheckInArchivesOnce('open');
     return store;
   }
 
@@ -2420,14 +2427,20 @@ export class Store {
    * 用 FS 前后关系挂成打卡的前置（前置已完成，打卡照常可开始）。打卡正文只留标题行。没内容什么都不做，返回 null。
    * id 由「打卡 + 节点 + 序号」算（两台设备各自生成也是同一行）；严格模式下打卡锁着就不动。
    */
-  private archiveCheckInBody(taskId: string, node: string): Task | null {
+  private archiveCheckInBody(taskId: string, node: string, opts: { doneAt?: string; firstOnly?: boolean } = {}): Task | null {
     const task = this.get('task', taskId);
     if (!task || this.isLocked(task)) return null;
     const { title, rest } = splitCheckInBody(task.body_md);
     const atts = this.attachmentsOf('task', task.id);
     if (!rest && !atts.length) return null;
     let id = '';
-    for (let n = 1; n <= MAX_ARCHIVES_PER_NODE; n++) {
+    // 补存只用第 1 条：这个节点已经有过存档（含删掉的墓碑）就不补
+    if (opts.firstOnly) {
+      const first = checkInArchiveId(task.id, node, 1);
+      if (this.tables.task.has(first)) return null;
+      id = first;
+    }
+    for (let n = 1; !id && n <= MAX_ARCHIVES_PER_NODE; n++) {
       const cand = checkInArchiveId(task.id, node, n);
       const cur = this.tables.task.get(cand);
       if (!cur || cur.deleted) {
@@ -2436,7 +2449,7 @@ export class Store {
       }
     }
     if (!id) return null;
-    const doneAt = this.now().toISOString();
+    const doneAt = opts.doneAt ?? this.now().toISOString();
     this.batch(() => {
       // 先建成待办：严格模式下完成的任务不能再挂类型、前后关系、附件，最后一步才标完成
       this.createTask(
@@ -2453,8 +2466,66 @@ export class Store {
       this.updateTask(id, { status: '完成', done_at: doneAt });
     });
     const out = this.tables.task.get(id) ?? null;
-    if (out) this.freshArchives.set(id, out.updated_at);
+    if (out && !opts.firstOnly) this.freshArchives.set(id, out.updated_at);
     return out;
+  }
+
+  /**
+   * 打卡正文一次性补存（Rei 2026-11-13 05:30「做一次性补存迁移」）：存档功能上线前，打卡正文里攒着的内容按同样规则补存一次。
+   * 每件打卡（没删、没「不再打卡」/ 完成；归档的也算）：最近的节点（今天所在的周期）达标了就存到它，
+   * 没达标就看上一个节点（例：每周五打卡，今天周五还没打，上周五打了，就存成上周五那条），达标了存到上一个节点；都没达标不动，等下次达标再搬。
+   * 完成时间 = 那个节点达标那一刻（按打卡记录重放），算不出来用节点那天中午。打卡正文清到只剩标题；打卡描述不动。
+   * 存档 id 用这个节点的第 1 条（确定 id）：这个节点已经有存档（含删掉的）就不补，多台设备各补一次也是同一行。补的不算「刚生成」，撤销打卡不会撤回它。
+   * 返回补出来的任务。只该跑一次：见 backfillCheckInArchivesOnce。
+   */
+  backfillCheckInArchives(): Task[] {
+    const out: Task[] = [];
+    const today = this.today();
+    const now = this.now();
+    this.batch(() => {
+      for (const t of [...this.tables.task.values()]) {
+        if (t.deleted || !isHabit(t) || isFinished(t.status) || this.drafts.has(t.id)) continue;
+        const r = habitRule(t);
+        if (!r) continue;
+        const { rest } = splitCheckInBody(t.body_md);
+        if (!rest && !this.attachmentsOf('task', t.id).length) continue;
+        const events = this.checkInsOf(t.id);
+        const cur = periodKeyForTask(t, today);
+        const prev = periodKeyFor(r, addDays(cur, -1));
+        const nodes = prev && prev !== cur ? [cur, prev] : [cur];
+        for (const node of nodes) {
+          const evs = events.filter((e) => e.period_key === node).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.id < b.id ? -1 : 1));
+          if (!evs.length || !computeProgress(t, evs, now).met) continue;
+          // 达标那一刻：重放到第几条时第一次达标
+          let metAt: string | null = null;
+          for (let i = 0; i < evs.length && !metAt; i++) if (computeProgress(t, evs.slice(0, i + 1), new Date(evs[i]!.at)).met) metAt = evs[i]!.at;
+          const a = this.archiveCheckInBody(t.id, node, { doneAt: metAt ?? recordDoneAt(node), firstOnly: true });
+          if (a) out.push(a);
+          break;
+        }
+      }
+    });
+    return out;
+  }
+
+  /**
+   * 补存只做一次（本机标记 meta `checkin_backfill_v1`）。trigger = 'open'：打开时，本机一件打卡都没有（新设备空库）就先不做、不记标记，
+   * 等 'sync'：同步拉完一轮后（SyncEngine 调）再做。做完记下标记，以后都不再做（之后打卡正文里写的是下一个节点的内容）。
+   */
+  async backfillCheckInArchivesOnce(trigger: 'open' | 'sync'): Promise<number> {
+    if (await this.adapter.getMeta(CHECKIN_BACKFILL_META)) return 0;
+    const hasHabit = [...this.tables.task.values()].some((t) => !t.deleted && isHabit(t));
+    if (trigger === 'open' && !hasHabit) return 0;
+    let n = 0;
+    try {
+      n = this.backfillCheckInArchives().length;
+    } catch {
+      // 补存失败（严格模式等）不挡打开 / 同步；不记标记，下次再试
+      return 0;
+    }
+    await this.adapter.setMeta(CHECKIN_BACKFILL_META, new Date().toISOString());
+    await this.flush();
+    return n;
   }
 
   /**

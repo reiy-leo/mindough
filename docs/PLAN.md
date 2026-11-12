@@ -2280,3 +2280,4 @@ Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「�
 - 定下来的几件事（Rei 没说，我定的）：标题后加「 · YYYY-MM-DD」（补打卡写被补的那天）；附件算内容、跟着挪；关系用 FS（前置已完成不锁打卡）；撤回只认「本机这次打开后刚生成、没改过」（内存里记生成时的 updated_at），其余不动；严格模式先建待办再标完成。
 - 打卡描述存 task.checkin_note（迁移 v23），纯文字 AutoTextarea；老客户端推上来的行没有这一列时沿用本机值。
 - 客户端 `lib/body-flush.ts`：Store.beforeCheckIn 打卡前把详情里没存的正文 / 描述先存，避免存档拿旧正文、编辑器又把旧正文写回。
+- 05:30 加一次性补存：`Store.backfillCheckInArchives` / `backfillCheckInArchivesOnce`（本机 meta `checkin_backfill_v1`），Store.open 末尾（有打卡才做）和 SyncEngine 拉完一轮后（新设备空库）各调一次；节点 = 今天所在周期达标就用它，否则上一个周期；id 固定用第 1 条。

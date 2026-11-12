@@ -295,3 +295,119 @@ describe('打卡描述（Rei 2026-11-13 05:09）', () => {
     expect(dst.store.get('task', h.id)!.checkin_note).toBe('每天 30 页\n睡前读');
   });
 });
+
+describe('一次性补存（Rei 2026-11-13 05:30）', () => {
+  const FRI = 'FREQ=WEEKLY;BYDAY=FR';
+  /** 模拟老版本：直接写打卡记录（不经过 checkIn，不会存档）。 */
+  const oldCheckIn = (store: Store, taskId: string, node: string, amount: number) =>
+    store.insert('check_in', { task_id: taskId, period_key: node, kind: 'add', amount, at: store.now().toISOString() });
+  async function reopen(adapter: MemoryAdapter, t: number, deviceId = 'dev1') {
+    return Store.open(adapter, { deviceId, now: () => new Date(t) });
+  }
+
+  it('每周五打卡：上周五打了、正文有内容，今天周五还没打——补存成上周五那条，完成时间是上周五打卡那刻；今天达标再存今天的', async () => {
+    const adapter = new MemoryAdapter();
+    const { store, advance } = await open(local(2026, 11, 6, 20).getTime(), adapter); // 上周五 20:00
+    const h = store.createTask({ body_md: '周报\n\n本周做了 A、B', completion_mode: 'once', recurrence: FRI });
+    store.setCheckInNote(h.id, '每周五写');
+    const ev = oldCheckIn(store, h.id, '2026-11-06', 1);
+    await store.flush();
+    const t = advance(7 * DAY - 11 * 3600_000); // 今天周五 09:00
+    const s2 = await reopen(adapter, t);
+    const a = s2.get('task', checkInArchiveId(h.id, '2026-11-06'))!;
+    expect(a.body_md).toBe('周报 · 2026-11-06\n\n本周做了 A、B');
+    expect(a.status).toBe('完成');
+    expect(a.done_at).toBe(ev.at);
+    expect(s2.edges().some((e) => e.pred_id === a.id && e.succ_id === h.id)).toBe(true);
+    expect(s2.get('task', h.id)!.body_md).toBe('周报');
+    expect(s2.get('task', h.id)!.checkin_note).toBe('每周五写');
+    // 今天写了新内容、打卡：存今天的
+    s2.updateTask(h.id, { body_md: '周报\n\n这周做了 C' });
+    const b = s2.checkIn(h.id, 'add', 1).archived!;
+    expect(b.body_md).toBe('周报 · 2026-11-13\n\n这周做了 C');
+  });
+
+  it('上一个节点没达标：不动，内容等下次达标再搬', async () => {
+    const adapter = new MemoryAdapter();
+    const { store, advance } = await open(local(2026, 11, 6, 9).getTime(), adapter);
+    const h = store.createTask({ body_md: '跑步\n\n路线', completion_mode: 'count', target_value: 3, recurrence: FRI });
+    oldCheckIn(store, h.id, '2026-11-06', 1); // 1/3 没达标
+    await store.flush();
+    const s2 = await reopen(adapter, advance(7 * DAY));
+    expect(s2.get('task', h.id)!.body_md).toBe('跑步\n\n路线');
+    expect(s2.list('task').filter((t) => t.body_md.startsWith('跑步 · '))).toEqual([]);
+    expect(await adapter.getMeta('checkin_backfill_v1')).toBeTruthy();
+  });
+
+  it('今天的节点已经达标（升级前打的）：存到今天；不是节点的日子看最近那次', async () => {
+    const adapter = new MemoryAdapter();
+    const { store, advance } = await open(local(2026, 11, 2, 9).getTime(), adapter);
+    const d = store.createTask({ body_md: '喝水\n\n记录', completion_mode: 'once', recurrence: 'FREQ=DAILY' });
+    const w = store.createTask({ body_md: '周报\n\n内容', completion_mode: 'once', recurrence: FRI });
+    advance(4 * DAY); // 周五 11-06
+    oldCheckIn(store, w.id, '2026-11-06', 1);
+    advance(DAY); // 周六 11-07
+    oldCheckIn(store, d.id, '2026-11-07', 1);
+    await store.flush();
+    const s2 = await reopen(adapter, store.now().getTime());
+    expect(s2.get('task', checkInArchiveId(d.id, '2026-11-07'))!.body_md).toBe('喝水 · 2026-11-07\n\n记录');
+    // 周六不是周五节点：最近一次是 11-06
+    expect(s2.get('task', checkInArchiveId(w.id, '2026-11-06'))!.body_md).toBe('周报 · 2026-11-06\n\n内容');
+  });
+
+  it('只做一次：补完以后再写的内容、再打开都不会被补到上一个节点', async () => {
+    const adapter = new MemoryAdapter();
+    const { store, advance } = await open(local(2026, 11, 6, 9).getTime(), adapter);
+    const h = store.createTask({ body_md: '周报', completion_mode: 'once', recurrence: FRI });
+    oldCheckIn(store, h.id, '2026-11-06', 1);
+    await store.flush();
+    const t = advance(DAY);
+    const s2 = await reopen(adapter, t); // 正文没内容：什么都不补，但记下标记
+    expect(await adapter.getMeta('checkin_backfill_v1')).toBeTruthy();
+    s2.updateTask(h.id, { body_md: '周报\n\n下周的计划' });
+    await s2.flush();
+    const s3 = await reopen(adapter, t + 3600_000);
+    expect(s3.get('task', h.id)!.body_md).toBe('周报\n\n下周的计划');
+    expect(s3.get('task', checkInArchiveId(h.id, '2026-11-06'))).toBeUndefined();
+  });
+
+  it('这个节点已经有存档（含删掉的）就不补；完成 / 不再打卡的不补', async () => {
+    const adapter = new MemoryAdapter();
+    const { store, advance } = await open(local(2026, 11, 6, 9).getTime(), adapter);
+    const h = store.createTask({ body_md: '周报\n\n第一版', completion_mode: 'once', recurrence: FRI });
+    const a = store.checkIn(h.id, 'add', 1).archived!; // 新版本已经存过
+    store.remove('task', a.id);
+    store.updateTask(h.id, { body_md: '周报\n\n后来又写的' });
+    const c = store.createTask({ body_md: '旧习惯\n\n内容', completion_mode: 'once', recurrence: FRI });
+    oldCheckIn(store, c.id, '2026-11-06', 1);
+    store.closeTask(c.id);
+    await store.flush();
+    const s2 = await reopen(adapter, advance(DAY));
+    expect(s2.get('task', h.id)!.body_md).toBe('周报\n\n后来又写的');
+    expect(s2.get('task', c.id)!.body_md).toBe('旧习惯\n\n内容');
+  });
+
+  it('新设备空库：打开时不做也不记标记，第一次同步拉完再做；和老设备补出来的是同一行', async () => {
+    const adA = new MemoryAdapter();
+    const A = await open(local(2026, 11, 6, 9).getTime(), adA, 'devA');
+    const h = A.store.createTask({ body_md: '周报\n\n内容', completion_mode: 'once', recurrence: FRI });
+    oldCheckIn(A.store, h.id, '2026-11-06', 1);
+    await A.store.flush();
+    const t = A.advance(DAY);
+    const a2 = await reopen(adA, t, 'devA');
+    const fromA = a2.get('task', checkInArchiveId(h.id, '2026-11-06'))!;
+    expect(fromA).toBeTruthy();
+    // B：空库打开
+    const adB = new MemoryAdapter();
+    const B = await reopen(adB, t, 'devB');
+    expect(await adB.getMeta('checkin_backfill_v1')).toBeNull();
+    // B 先只收到老版本的行（A 补存之前的样子），第一次同步拉完补存
+    B.applyRemote([
+      { table: 'task', row: { ...A.store.listAll('task').find((x) => x.id === h.id)! } },
+      ...A.store.listAll('check_in').map((row) => ({ table: 'check_in' as const, row })),
+    ] as never);
+    expect(await B.backfillCheckInArchivesOnce('sync')).toBe(1);
+    expect(B.get('task', fromA.id)!.body_md).toBe(fromA.body_md);
+    expect(await B.backfillCheckInArchivesOnce('sync')).toBe(0);
+  });
+});
