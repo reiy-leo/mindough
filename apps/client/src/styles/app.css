@@ -4639,6 +4639,12 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .checkin-head-sticky > .heatmap-card {
   margin-top: var(--space-4);
 }
+/* 固定块下面第一个分区不再加 .section 的 20px 上外边距（Rei 2026-11-12 10:16「打卡页的顶部行下方空白好大」）：
+   页头去掉后固定块自己已有 12px 下内边距，两样叠起来工具行到「今天要打卡」字上沿有 38.6px；
+   改成 8px，和我的一天添加框到「未完成」一样是 26.6px（三皮肤、宽屏 / 手机都同）。 */
+.checkin-head-sticky + .section {
+  margin-top: var(--space-2);
+}
 
 /* 资料库列表页、资料详情页、人物详情页、已完成页：顶部固定，只滚下面的内容（Rei 2026-11-11「资料库页面中只有内容部分滚动，顶部固定」，08:11 追加已完成页）。
    组件 components/StickyHead；做法同 .checkin-head-sticky：整块 sticky、不透明页面底（var(--bg)，彩色档位 / WinUI 的底图照画）、左右多铺一点盖住行的悬停底色、滚动后底下一条细线。
