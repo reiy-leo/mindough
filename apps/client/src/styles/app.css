@@ -356,13 +356,18 @@ button {
   height: calc(48px + env(safe-area-inset-top));
 }
 /* 我的一天：添加框上面、下面的空白一样大（Rei 2026-11-12 09:39「下方和输入框之间留白太多，保持输入框上下留白均衡」）。
-   以下面为准（添加框下沿到「未完成」字上沿，三皮肤都约 27px），上面从顶栏日期字的下沿量起：
-   原来 Apple / WinUI 约 28px（顶栏 48）、Material 约 36px（顶栏 64），往上提 2 / 12px。日期字号三皮肤一样（17px），差在顶栏高度 */
+   以下面为准（添加框下沿到「未完成」字上沿约 26.6px，三皮肤一样），上面从顶栏日期字的下沿量起：
+   原来 Apple / WinUI 约 28px（顶栏 48）、Material 约 36px（顶栏 64）。日期字号三皮肤一样（17px），差在顶栏高度。
+   添加框那块是 sticky（top 0），用负外边距往上提会被卡在滚动区顶上、只把下面的列表拉上去，所以改内边距：
+   页面上内边距 8 → 0，固定块上内边距 8 → 15（Apple / WinUI）/ 7（Material） */
+.app-mobile .page.myday-page {
+  padding-top: 0;
+}
 .app-mobile .myday-page > .add-bar-sticky {
-  margin-top: -2px;
+  padding-top: 15px;
 }
 [data-skin='material'] .app-mobile .myday-page > .add-bar-sticky {
-  margin-top: -12px;
+  padding-top: 7px;
 }
 /* 两格都空（没日期、没按钮）：收成只剩状态栏那一截，同 .topbar-inset，顶上不空出一行 */
 .topbar.is-empty {

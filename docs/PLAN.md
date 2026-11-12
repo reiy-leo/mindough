@@ -2217,7 +2217,7 @@ Rei 2026-11-12 07:51：「这个项目列表看上去好难看，不协调，优
 Rei 2026-11-12 09:39（安卓 Material 截图）：「顶部"我的一天"换成今天的日期（和PC端保持一致），下方和输入框之间留白太多，保持输入框上下留白均衡」；09:41：「为什么手机端的每一页的顶部都有header，没有删除。例如打卡页，顶部还会显示"打卡"这两个字，页面都不用header，优化一下」。
 
 - **顶栏**（`App.tsx` `MobileTopbarRow`，`lib/mobile-topbar.ts` 档名 `title` 改 `bar`）：不再画 `.topbar-title`，只剩左格 `#topbar-lead` 和右格 `#topbar-actions`，页面用 `lib/topbar-slot.tsx` 的 `TopbarLead` / `TopbarActions`（portal）填。MutationObserver 看两格：两格都空加 `is-empty`，高度只剩 `env(safe-area-inset-top)`（同 `.topbar-inset`，网页版 0），不留空行；只有右格加 `no-lead`，44px（Material 48px）一行。读屏页名放顶栏里的 `sr-only`。状态栏留白、返回手势没动。
-- **我的一天**：日期 + 农历抽成 `components/MyDayTitle.tsx`（`formatDateZh` 跟界面语言 + `LunarLine`），宽屏 `.myday-head` 和手机顶栏左格用同一个；手机里 17px / 600，农历 13px 跟在后面，放不下省略。上下留白：以下面为准（添加框下沿到「未完成」字上沿 26.6px，三皮肤一样），上面从顶栏日期字下沿量，原来 Apple / WinUI 28.3、Material 36.3（顶栏 64），`.app-mobile .myday-page > .add-bar-sticky` 上提 2px、Material 12px，改后上下 27 / 26.6（Apple、WinUI）、26 / 26（Material，差在小数取整）。
+- **我的一天**：日期 + 农历抽成 `components/MyDayTitle.tsx`（`formatDateZh` 跟界面语言 + `LunarLine`），宽屏 `.myday-head` 和手机顶栏左格用同一个；手机里 17px / 600，农历 13px 跟在后面，放不下省略。上下留白：以下面为准（添加框下沿到「未完成」字上沿 26.6px，三皮肤一样），上面从顶栏日期字下沿量，原来 Apple / WinUI 28.3、Material 36.3（顶栏 64），添加框那块是 sticky，负外边距会被卡在滚动区顶上（只把下面列表拉上去），所以改内边距：`.myday-page` 上内边距 8 → 0，`.add-bar-sticky` 上内边距 8 → 15（Apple / WinUI）/ 7（Material）。
 - **已完成**：`PageHeader`（非 compact）在手机上只出读屏 h1，`actions` 送顶栏右格；`Done.tsx` 手机不再包 `StickyHead`（顶栏本来固定）。设置首页也走这条（没有按钮，顶栏收起）。
 - **更多**：页头换成 `h1.sr-only`。**设置分区页**：只留「‹ 设置」返回，大标题 `.settings-push-title` 换成 `h1.sr-only`（样式删了）。
 - **没动**：项目 / 人物 / 资料详情页（标题是这一条的名字，项目还能点名字改名、点图标换图标）、日记、搜索页（本来就没有顶栏）；宽屏全部不变。
