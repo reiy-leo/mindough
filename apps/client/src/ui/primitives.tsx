@@ -336,10 +336,12 @@ export function MenuAt({ at, label, heading, items, onClose }: { at: { x: number
  * 长按打开后，接下来那次点按要忽略：点击处理里先看 consumeLongPress()。
  */
 /**
- * 右键 / 长按出菜单。`longPress: false`：手指长按不出这个菜单，留给系统（比如发出的日记正文长按出拷贝），
- * 菜单从「···」按钮进；鼠标右键照常。
+ * 右键 / 长按出菜单。`longPress: false`：手指长按不出这个菜单，鼠标右键照常。
+ * 这时手指发的 contextmenu 默认不拦，留给系统（比如发出的日记正文长按出拷贝）；`systemTouchMenu: false` 连系统那层也拦掉，
+ * 长按什么也不做（任务卡片，Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」）：照样计时认出长按，
+ * 只是不开菜单，好让 consumeLongPress() 吞掉松手那次点按，不顺手打开详情。
  */
-export function useContextMenuAt({ longPress = true }: { longPress?: boolean } = {}) {
+export function useContextMenuAt({ longPress = true, systemTouchMenu = !longPress }: { longPress?: boolean; systemTouchMenu?: boolean } = {}) {
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const lastPointer = useRef<string | null>(null);
   const press = useRef<{ x: number; y: number; at: number; timer: number } | null>(null);
@@ -352,8 +354,8 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
     onContextMenu: (e: ReactMouseEvent<HTMLElement>) => {
       // 手指发的 contextmenu（Android 长按、滑动时也会发，Rei 2026-11-05）：不开菜单，手指长按只认下面自己的计时（lib/long-press）
       if (isTouchContextMenu(e, lastPointer.current)) {
-        // 不接长按时不拦，让系统选字和拷贝出来
-        if (longPress) e.preventDefault();
+        // 不接长按时默认不拦，让系统选字和拷贝出来；systemTouchMenu: false 时也拦
+        if (longPress || !systemTouchMenu) e.preventDefault();
         return;
       }
       e.preventDefault();
@@ -371,7 +373,8 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
     onPointerDownCapture: (e: ReactPointerEvent<HTMLElement>) => {
       long.current = false;
       lastPointer.current = e.pointerType;
-      if (e.pointerType !== 'touch' || !longPress) return;
+      // 长按什么也不做（systemTouchMenu: false）时也计时：只为认出长按，松手不算点
+      if (e.pointerType !== 'touch' || (!longPress && systemTouchMenu)) return;
       installLongPressGuard();
       const x = e.clientX;
       const y = e.clientY;
@@ -386,7 +389,7 @@ export function useContextMenuAt({ longPress = true }: { longPress?: boolean } =
           // 按下以后列表滚过、或刚滚完：是在滑，不是长按
           if (!longPressStillValid(pressedAt)) return;
           long.current = true;
-          setAt({ x, y });
+          if (longPress) setAt({ x, y });
         }, 480),
       };
     },

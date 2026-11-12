@@ -4,7 +4,7 @@ import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import { canHaveMood, composerChipOrder, type ComposerChipId } from '../../lib/prop-chips';
-import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, toDateKey, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
+import { PLAIN_TYPE_ID, canRemind, findEpisode, firstLine, formatEpisode, formatTaskDate, formatTaskDateRange, formatTaskTime, normalizeRange, shouldJoinMyDay, hasLibrary, isPersonLibrary, taskFieldsFor, type CompletionMode, type FieldDef, type FieldValue, type LibraryEntry, type NewTaskInput, type Store, type Task, type TaskType } from '@mindough/core';
 import { itemTaskBody, moodLabel, newCountConfig, normalizeCountdownRepeat, shownFields } from '@mindough/core';
 import { useStore } from '../../store/StoreProvider';
 import { useUi } from '../../lib/ui';
@@ -164,7 +164,7 @@ function Composer() {
     },
     [store],
   );
-  const today = toDateKey(store.now());
+  const today = store.today();
   const dateMode = useDateDisplay();
   const group = store.get('group', d.groupId);
   // 项目的默认资料库（或打开时指定的库）：资料面板先打开它，它的任务字段也先列出来

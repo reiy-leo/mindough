@@ -1531,7 +1531,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已导出 {n} 件任务、{j} 条日记": "{n, plural, one {# tarefa exportada} other {# tarefas exportadas}} e {j, plural, one {# entrada do diário} other {# entradas do diário}}",
   "；{m} 张网上的图片没取到，照原链接写着": "; {m, plural, one {# imagem online não pôde ser baixada e manteve o link} other {# imagens online não puderam ser baixadas e mantiveram os links}}",
   "一天从几点开始": "O dia começa às",
-  "还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。": "Antes desta hora, “Entrada de hoje” ainda é a do dia anterior (escrever às 3 da manhã conta como ontem). Vale só para o diário.",
   "每天提醒写日记": "Lembrete diário do diário",
   "关着：不提醒写日记。": "Desativado: sem lembretes do diário.",
   "每天 {time} 提醒，写没写都会响。": "Lembra você todo dia às {time}, tendo escrito ou não.",
@@ -1649,7 +1648,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "年月日": "Data",
   "年月日+时区": "Data + fuso horário",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Como as datas aparecem em listas de tarefas, detalhes, lembretes, contagens regressivas, cadeias de tarefas e linhas do tempo de projetos. Fica salvo só neste dispositivo.",
-  "一天从几点开始、每天提醒写日记": "Quando o dia começa, lembrete diário do diário",
   "菜单|设置…": "Ajustes…",
   "这次的打卡已经达标了，不能再加": "A meta deste registro já foi atingida; não dá para adicionar mais",
   "今天要打的都打完了": "Todos os registros de hoje estão feitos",
@@ -1816,6 +1814,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "没能设置开机时启动": "Não foi possível ativar «Abrir ao iniciar sessão»",
   "没能取消开机时启动": "Não foi possível desativar «Abrir ao iniciar sessão»",
   "没能保存这个设置": "Não foi possível guardar esta definição",
+  "设置分区|时间": "Horário",
+  "一天从几点开始，「今天」都按它算": "Quando o dia começa — o “hoje” segue isso em todo lugar",
+  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Antes deste horário ainda conta como o dia anterior: às 3 da manhã, Meu dia, Atrasadas, Calendário, Projetos, Hábitos, Contagens regressivas e Diário ainda mostram ontem. Os lembretes seguem o horário real.",
 };
 
 export const DATA: Record<string, string> = {

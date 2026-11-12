@@ -1,7 +1,7 @@
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Header, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator } from 'react-aria-components';
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, ChevronDown, Hourglass, LayoutGrid, LayoutList, Paintbrush, PanelRight, Repeat } from 'lucide-react';
-import { cardColorOf, describeRecurrence, formatDateZh, formatTaskDate, parseRecurrence, toDateKey, weekStartsOn, type Task } from '@mindough/core';
+import { logicalToday, cardColorOf, describeRecurrence, formatDateZh, formatTaskDate, parseRecurrence, weekStartsOn, type Task } from '@mindough/core';
 import { useLunarUi } from '../lib/lunar';
 import { useDateDisplay } from '../lib/date-display';
 import { useNow, useStore } from '../store/StoreProvider';
@@ -33,10 +33,14 @@ import { createBlankTask } from '../lib/blank-task';
  * 视图、排序、分区本机记住（lib/countdown-view.ts），默认 卡片、到期日期正序、不分区，和原来一样。手机上页名在顶栏（lib/mobile-topbar）。
  */
 
-/** 一条倒数日的菜单（卡片、列表行共用）：右键 / 长按 / ··· 出「查看详情 ｜ 颜色…」，颜色弹层挂在外框上。 */
+/**
+ * 一条倒数日的菜单（卡片、列表行共用）：右键 / ··· 出「查看详情 ｜ 颜色…」，颜色弹层挂在外框上。
+ * 手机长按不出（Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」），系统菜单也不出；
+ * 卡片右上角有 ···，列表行没有，颜色在详情的「卡片颜色」里改。
+ */
 function useCountdownMenu(t: Task) {
   const ui = useUi();
-  const menu = useContextMenuAt();
+  const menu = useContextMenuAt({ longPress: false, systemTouchMenu: false });
   const [picking, setPicking] = useState(false);
   const items: MenuAction[] = [
     { id: 'open', label: tr('查看详情'), icon: <PanelRight size={16} />, onAction: () => ui.openEditor(t.id) },
@@ -77,7 +81,7 @@ function DaysText({ n }: { n: number }) {
 }
 
 /**
- * 一张倒数日卡片：点了打开详情；右键 / 长按 / 右上角 ··· 出菜单「查看详情 ｜ 颜色…」。
+ * 一张倒数日卡片：点了打开详情；右键 / 右上角 ··· 出菜单（手机长按不出）「查看详情 ｜ 颜色…」。
  * 背景色（Rei 2026-11-02「倒数日的card可以设置不同的颜色背景」）存在 task.card_color，字色按对比度挑黑或白（lib/card-colors.ts）。
  */
 function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat: boolean }) {
@@ -85,7 +89,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
   const ui = useUi();
   const { theme } = useSettings();
   const colorLevel = useColorLevel();
-  const today = toDateKey(useNow());
+  const today = logicalToday(useNow());
   const dateMode = useDateDisplay();
   const { menu, items, picking, setPicking } = useCountdownMenu(t);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -124,7 +128,7 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
 
 /**
  * 列表视图的一行（Rei 2026-11-12「像任务列表那样一行一个，标题在左、倒数天数在右」）：
- * 行首一个小色点 = 卡片颜色（没设颜色、素净档不画，留同宽的空位让标题对齐）；点了开详情，右键 / 长按同卡片的菜单。
+ * 行首一个小色点 = 卡片颜色（没设颜色、素净档不画，留同宽的空位让标题对齐）；点了开详情，右键出同卡片的菜单（手机长按不出）。
  */
 function CountdownRow({ task: t, n }: { task: Task; n: number }) {
   const store = useStore();
@@ -152,7 +156,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
         <span className={`countdown-dot${dot ? '' : ' is-none'}`} style={dot ? ({ '--cd-dot': dot } as CSSProperties) : undefined} aria-hidden />
         {type && type.layout !== 'text' && <Icon size={14} className="countdown-row-icon" style={{ color: type.color }} aria-hidden />}
         <span className={`row-title countdown-row-title${store.titleMark(t) ? ` is-mark-${store.titleMark(t)}` : ''}${store.isPinned(t) ? ' is-pinned' : ''}`}>{titleOf(store, t)}</span>
-        <RepeatMark task={t} today={toDateKey(new Date())} />
+        <RepeatMark task={t} today={logicalToday()} />
         <span className={`countdown-row-days${t.target_date ? '' : ' is-undated'}`}>{t.target_date ? <DaysText n={n} /> : tr('还没选日期')}</span>
       </RacButton>
       <MenuAt at={menu.at} label={tr('倒数日操作')} items={items} onClose={menu.close} />
@@ -310,7 +314,7 @@ export function CountdownsPage() {
   const store = useStore();
   const ui = useUi();
   const now = useNow();
-  const today = toDateKey(now);
+  const today = logicalToday(now);
   const [prefs, setPrefs] = useCountdownPrefs();
   const daysOf = (t: Task) => store.progress(t.id, today)?.value ?? 0;
   // 归档了的项目里的倒数日不列（Rei 2026-11-05）

@@ -33,16 +33,6 @@ describe('任务详情「…」菜单（关闭挪进菜单，Rei 2026-10-17）',
   });
 });
 
-describe('任务列表行的右键 / 长按菜单（Rei 2026-10-25）', () => {
-  it('查看详情 | 加入 / 移出我的一天', async () => {
-    const { rowMenu } = await import('./task-menu');
-    expect(rowMenu(false).map((e) => (e.separator ? `|${e.id}` : e.id)).join(' ')).toBe('open |myday pin');
-    expect(rowMenu(false)[1]!.label).toBe('加入我的一天');
-    expect(rowMenu(true)[1]!.label).toBe('移出我的一天');
-    expect(rowMenu(true)[0]!.label).toBe('查看详情');
-  });
-});
-
 describe('打卡归档（Rei 2026-11-02）', () => {
   it('归档了的打卡：只有「取消归档」和删除，不再给我的一天、不再打卡', () => {
     const m = detailMenu({ status: '待办', recurrence: 'FREQ=DAILY', completion_mode: 'once', archived_at: '2026-11-02T01:00:00.000Z' }, false);
@@ -74,9 +64,8 @@ describe('任务置顶（Rei 2026-11-08）', () => {
   it('做完了的置顶任务照样能取消置顶', () => {
     expect(line(detailMenu({ status: '完成', recurrence: null, completion_mode: 'once', pinned_at: '2026-11-08T01:00:00.000Z' }, false))).toBe('unpin |reopen |delete');
   });
-  it('行菜单、打卡行菜单', async () => {
-    const { rowMenu, habitMenu } = await import('./task-menu');
-    expect(line(rowMenu(true, true))).toBe('open |unpin');
+  it('打卡行菜单（电脑右键）', async () => {
+    const { habitMenu } = await import('./task-menu');
     expect(line(habitMenu(false, false, true))).toBe('open |unpin |archive');
     // 归档了的打卡不给置顶
     expect(line(habitMenu(true, false, true))).toBe('open |unarchive');

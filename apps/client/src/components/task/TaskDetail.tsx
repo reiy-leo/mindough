@@ -1,35 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type TouchEvent, type ReactNode, type RefObject } from 'react';
 import { Autocomplete, Button as RacButton, Disclosure, DisclosurePanel, Heading, Input, ListBox, ListBoxItem, SearchField, useFilter } from 'react-aria-components';
 import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
-import {
-  PLAIN_TYPE_ID,
-  countdownPhrase,
-  findEpisode,
-  firstLine,
-  formatEpisode,
-  formatAmount,
-  formatDuration,
-  formatTarget,
-  formatTaskDate,
-  type DateDisplay,
-  isFinished,
-  predecessorsOf,
-  wouldCreateCycle,
-  successorsOf,
-  taskStreak,
-  hasLibrary,
-  isPersonLibrary,
-  libraryCopy,
-  taskFieldsFor,
-  isMovieItem,
-  toDateKey,
-  type FieldDef,
-  type FieldValue,
-  type LibraryEntry,
-  type Store,
-  type Task,
-  type TaskType,
-} from '@mindough/core';
+import { logicalToday, PLAIN_TYPE_ID, countdownPhrase, findEpisode, firstLine, formatEpisode, formatAmount, formatDuration, formatTarget, formatTaskDate, type DateDisplay, isFinished, predecessorsOf, wouldCreateCycle, successorsOf, taskStreak, hasLibrary, isPersonLibrary, libraryCopy, taskFieldsFor, isMovieItem, type FieldDef, type FieldValue, type LibraryEntry, type Store, type Task, type TaskType } from '@mindough/core';
 import { CheckInMetError, checkInMode, isHabit, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
@@ -287,7 +259,7 @@ function useActions(store: Store, task: Task, done: () => void) {
   const ui = useUi();
   const running = store.progress(task.id)?.running ?? false;
   const now = useNow(running ? 1000 : 30_000);
-  const today = toDateKey(now);
+  const today = logicalToday(now);
   const p = store.progress(task.id, today);
   const recurring = isHabit(task); // 打卡（重复的倒数日不算，Rei 2026-11-12）
   const record = (kind: Parameters<Store['checkIn']>[1], amount = 0) => {
