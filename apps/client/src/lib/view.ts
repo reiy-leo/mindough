@@ -1,4 +1,4 @@
-import { fieldText, mediaFieldKey, taskTitle, type DerivedStatus, type FieldDef, type FieldValue, type Group, type Person, type Store, type Task, type TaskType } from '@mindough/core';
+import { fieldText, mediaFieldKey, type DerivedStatus, type FieldDef, type FieldValue, type Group, type Person, type Store, type Task, type TaskType } from '@mindough/core';
 
 /** 图片字段值：外链 / data URL 直接用，否则当作 asset id。 */
 export function imageUrl(store: Store, v: FieldValue | undefined | null): string | null {
@@ -22,10 +22,11 @@ export function dataOf(store: Store, task: Task) {
 
 /**
  * 任务标题：正文第一行（Rei 2026-11-03「任何任务的第一行都是标题」，挂了资料也一样，资料名不当标题）。
- * 所有界面都从这里取（或 core 的 taskTitle），别自己拼。
+ * 所有界面都从这里取（或 core 的 taskTitle / store.titleOfTask），别自己拼。
  */
-export function titleOf(_store: Store, task: Task): string {
-  return taskTitle(task);
+export function titleOf(store: Store, task: Task): string {
+  // 没标题时带编号的占位「未命名倒数日2」「未提供描述3」（Rei 2026-11-12 09:33 / 09:34，只显示不入库）
+  return store.titleOfTask(task);
 }
 
 export interface TaskView {
@@ -62,7 +63,7 @@ export function viewOf(store: Store, task: Task): TaskView {
   } else if (key) media = imageUrl(store, data[key]);
   return {
     task,
-    title: taskTitle(task),
+    title: store.titleOfTask(task),
     data,
     thumbLayout: (item ? store.get('task_type', item.type_id)?.layout : undefined) ?? type?.layout ?? 'text',
     hasItem: !!item,

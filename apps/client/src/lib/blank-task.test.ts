@@ -101,11 +101,64 @@ describe('createDateDraftTask：日历「+」（Rei 2026-11-12 06:52）', () => 
     expect(sweepBlankTasks(store, null)).toEqual([]);
     expect(alive(store, t.id)).toBe(true);
   });
-  it('只改了日期、正文还空着关：删掉（已落盘，写墓碑）', async () => {
+  it('只改了日期、正文还空着关：留下（改过属性就不算空白，Rei 2026-11-12 09:22）', async () => {
     const { store, open } = await setup();
     const t = createDateDraftTask(store, open, '2026-11-20');
     store.updateTask(t.id, { scheduled_date: '2026-11-21' });
+    expect(sweepBlankTasks(store, null)).toEqual([]);
+    expect(alive(store, t.id)).toBe(true);
+    expect(store.isDraftTask(t.id)).toBe(false);
+  });
+  it('写了字又删光、属性没动：删掉（已落盘，写墓碑）', async () => {
+    const { store, open } = await setup();
+    const t = createDateDraftTask(store, open, '2026-11-20');
+    store.updateTask(t.id, { body_md: '看' });
+    store.updateTask(t.id, { body_md: '' });
     expect(sweepBlankTasks(store, null)).toEqual([t.id]);
     expect(alive(store, t.id)).toBe(false);
+  });
+});
+
+describe('改过属性就留下（Rei 2026-11-12 09:22「用户改过任何属性（颜色、日期、循环等）就不算空白任务、不删」）', () => {
+  it('倒数日只选了卡片颜色、没写标题，切到别的：留下', async () => {
+    const { store, open } = await setup();
+    const t = createBlankTask(store, open, 'countdown');
+    store.setCardColor(t.id, 'pink');
+    expect(sweepBlankTasks(store, 'other')).toEqual([]);
+    expect(alive(store, t.id)).toBe(true);
+    // 留下之后不再归清理管：再离开也不删
+    expect(sweepBlankTasks(store, null)).toEqual([]);
+    expect(alive(store, t.id)).toBe(true);
+  });
+  it('倒数日只选了日子 / 只加了重复：留下', async () => {
+    const { store, open } = await setup();
+    const a = createBlankTask(store, open, 'countdown');
+    store.updateTask(a.id, { target_date: '2026-12-01' });
+    const b = createBlankTask(store, open, 'countdown');
+    store.updateTask(b.id, { target_date: '2026-12-02', recurrence: 'FREQ=YEARLY' });
+    expect(sweepBlankTasks(store, null)).toEqual([]);
+    expect(alive(store, a.id) && alive(store, b.id)).toBe(true);
+  });
+  it('挂了类型（另一张表）：留下', async () => {
+    const { store, open } = await setup();
+    const c = store.createCategory('纪念日');
+    const t = createBlankTask(store, open, 'checkin');
+    store.updateTask(t.id, { category_id: c.id });
+    expect(sweepBlankTasks(store, null)).toEqual([]);
+    expect(alive(store, t.id)).toBe(true);
+  });
+  it('什么都没改：照旧删；只有我的一天行变了不算改', async () => {
+    const { store, open } = await setup();
+    const t = createBlankTask(store, open, 'countdown');
+    store.addToMyDay(t.id);
+    expect(sweepBlankTasks(store, null)).toEqual([t.id]);
+    expect(alive(store, t.id)).toBe(false);
+  });
+  it('旧会话只记了 id、没记签名：照原规则正文空就删', async () => {
+    const { store, open } = await setup();
+    const t = createBlankTask(store, open, 'countdown');
+    store.setCardColor(t.id, 'pink');
+    sessionStorage.removeItem('mindough:blank-sigs');
+    expect(sweepBlankTasks(store, null)).toEqual([t.id]);
   });
 });

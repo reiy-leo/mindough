@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Category, Task } from '@mindough/core';
-import { DEFAULT_COUNTDOWN_PREFS, normalizeCountdownPrefs, sectionCountdowns, sortCountdowns } from './countdown-view';
+import { DEFAULT_COUNTDOWN_PREFS, normalizeCountdownPrefs, sectionCountdowns, sortCountdowns, withUndated } from './countdown-view';
 
 let k = 0;
 const t = (o: Partial<Task> = {}): Task =>
@@ -99,5 +99,22 @@ describe('倒数日分区（规则同我的一天、项目页）', () => {
     const z = t({ mood: 'happy' });
     const s = sectionCountdowns([x, y, z], 'mood')!;
     expect(s.map((s1) => s1.key)).toEqual(['happy', 'tired', 'none']);
+  });
+});
+
+describe('还没选日期的倒数日（Rei 2026-11-12 09:23「新建的立刻显示在列表里」）', () => {
+  it('排在最前，新建的在上；有日期的顺序不变', () => {
+    const a = t({ target_date: '2026-11-20', created_at: '2026-11-01' });
+    const b = t({ target_date: '2026-11-15', created_at: '2026-11-02' });
+    const u1 = t({ created_at: '2026-11-12T01:00' });
+    const u2 = t({ created_at: '2026-11-12T02:00' });
+    const sorted = sortCountdowns([{ t: a, n: 9 }, { t: b, n: 4 }], 'target', 'asc');
+    const out = withUndated(sorted, [u1, u2]);
+    expect(out.map((e) => e.t.id)).toEqual([u2.id, u1.id, b.id, a.id]);
+    expect(out[0]!.n).toBe(0);
+  });
+  it('没有没选日期的：原样', () => {
+    const a = t({ target_date: '2026-11-20' });
+    expect(withUndated([{ t: a, n: 9 }], []).map((e) => e.t.id)).toEqual([a.id]);
   });
 });

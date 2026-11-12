@@ -141,7 +141,7 @@ export function paintMention(el: HTMLElement, id: string, label: string) {
   else if (info.ended) el.appendChild(icon('ended'));
   const title = document.createElement('span');
   title.className = 'task-mention-title';
-  title.textContent = info.title || tr('空白任务');
+  title.textContent = info.title || tr('未提供描述');
   el.appendChild(title);
   if (info.suffix) {
     const s = document.createElement('span');

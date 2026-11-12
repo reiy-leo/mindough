@@ -84,6 +84,21 @@ export function sortCountdowns<E extends CountdownEntry<Pick<Task, 'id' | 'creat
 }
 
 /**
+ * 还没选日期的倒数日（Rei 2026-11-12 09:23：新建的一点就要在列表里）：排在已排好的前面，新建的在上；天数记 0，界面看 target_date 空写「还没选日期」。
+ */
+export function withUndated<T extends Pick<Task, 'id' | 'created_at' | 'target_date'>>(sorted: readonly CountdownEntry<T>[], undated: readonly T[]): CountdownEntry<T>[] {
+  const top = [...undated]
+    .map((t, i) => [t, i] as const)
+    .sort(([a, i], [b, j]) => {
+      const x = a.created_at ?? '';
+      const y = b.created_at ?? '';
+      return x < y ? 1 : x > y ? -1 : i - j;
+    })
+    .map(([t]) => ({ t, n: 0 }));
+  return [...top, ...sorted];
+}
+
+/**
  * 分区：sectionTasks 同一套规则；按目标日期时拿 target_date 当任务日期。section = none 返回 null。
  */
 export function sectionCountdowns<T extends Task>(

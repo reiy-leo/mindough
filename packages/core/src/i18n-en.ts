@@ -277,6 +277,10 @@ export const CORE_EN: Record<string, V> = {
   同名: 'Same name',
   '{label} 编号相同': 'Same {label} ID',
   空白任务: 'Untitled',
+  未命名倒数日: 'Untitled countdown',
+  '未命名倒数日{n}': 'Untitled countdown {n}',
+  未提供描述: 'No description',
+  '未提供描述{n}': 'No description {n}',
   '属性|项目': 'Project',
 
   // ── 重复 ──

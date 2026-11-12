@@ -60,9 +60,22 @@ export function mediaFieldKey(type: Pick<TaskType, 'fields'> | null | undefined)
   return type?.fields.find((f) => f.media)?.key ?? null;
 }
 
-/** 任务标题：正文第一行（去掉 markdown 记号）→「空白任务」。列表、详情、⌘K、搜索、提醒、小组件都用它。 */
-export function taskTitle(task: Pick<Task, 'body_md'>): string {
-  return firstLine(task.body_md) || tr('空白任务');
+/**
+ * 没标题（正文第一行空）时显示的占位，只显示、不写进正文（Rei 2026-11-12 09:33 / 09:34）：
+ * 倒数日「未命名倒数日」，别的任务「未提供描述」；同一类里有好几条时按创建时间编号，第一条不带数字，后面「…2」「…3」。
+ * 编号由 Store.titleOfTask 算（要看全部任务）；这里 n 不给就是不带数字的那个。
+ */
+export function untitledLabel(countdown: boolean, n = 1): string {
+  if (countdown) return n > 1 ? tr('未命名倒数日{n}', { n }) : tr('未命名倒数日');
+  return n > 1 ? tr('未提供描述{n}', { n }) : tr('未提供描述');
+}
+
+/**
+ * 任务标题：正文第一行（去掉 markdown 记号）→ 没有就是占位（untitledLabel，不带编号）。
+ * 界面上要带编号的用 Store.titleOfTask；core 的搜索、提醒等不带编号的地方用它。
+ */
+export function taskTitle(task: Pick<Task, 'body_md'> & Partial<Pick<Task, 'completion_mode'>>): string {
+  return firstLine(task.body_md) || untitledLabel(task.completion_mode === 'countdown');
 }
 
 /**

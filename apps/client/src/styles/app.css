@@ -1883,6 +1883,15 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   font-size: 12px;
   color: var(--text-3);
 }
+/* 还没选日期（Rei 2026-11-12 09:23 新建的立刻列出）：天数位写「还没选日期」，高度和有数字的一样，卡片不变矮 */
+.countdown-num.is-undated {
+  min-height: 44px;
+  align-items: center;
+  color: var(--text-3);
+}
+.countdown-date.is-undated {
+  min-height: 1.5em;
+}
 
 /* ───────── 弹层 ───────── */
 .overlay {
@@ -4102,6 +4111,9 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   color: var(--text-2);
   font-size: 13px;
   white-space: nowrap;
+}
+.countdown-row-days.is-undated {
+  color: var(--text-3);
 }
 .countdown-row-days b {
   font-size: 17px;

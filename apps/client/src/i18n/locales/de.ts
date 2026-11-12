@@ -6,6 +6,11 @@
 import type { MessageValue } from '@mindough/core';
 
 export const MESSAGES: Record<string, MessageValue> = {
+  // ── 没标题的占位（Rei 2026-11-12 09:33 / 09:34，待母语者看）──
+  "未命名倒数日": "Unbenannter Countdown",
+  "未命名倒数日{n}": "Unbenannter Countdown {n}",
+  "未提供描述": "Keine Beschreibung",
+  "未提供描述{n}": "Keine Beschreibung {n}",
   // ── 重复的倒数日（Rei 2026-11-12，待母语者看）──
   "只这一次": "Nur dieses Mal",
   "循环倒数": "Countdown wiederholen",

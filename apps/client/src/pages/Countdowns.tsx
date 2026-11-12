@@ -15,7 +15,7 @@ import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/Catego
 import { SectionedList } from '../components/SectionedList';
 import { SECTION_LABEL } from '../components/project/ProjectMenus';
 import { categorySectionOrder, type SectionBy } from '../lib/sections';
-import { COUNTDOWN_SECTIONS, COUNTDOWN_SORTS, COUNTDOWN_VIEWS, sectionCountdowns, sortCountdowns, useCountdownPrefs, type CountdownDir, type CountdownSort, type CountdownView } from '../lib/countdown-view';
+import { COUNTDOWN_SECTIONS, COUNTDOWN_SORTS, COUNTDOWN_VIEWS, sectionCountdowns, withUndated, sortCountdowns, useCountdownPrefs, type CountdownDir, type CountdownSort, type CountdownView } from '../lib/countdown-view';
 import { titleOf } from '../lib/view';
 import { typeIcon } from '../lib/icons';
 import { tr } from '../lib/i18n';
@@ -108,11 +108,9 @@ function CountdownCard({ task: t, n, withCat }: { task: Task; n: number; withCat
           {type && type.layout !== 'text' && <Icon size={14} style={vars ? undefined : { color: type.color }} />}
           {titleOf(store, t)}
         </span>
-        <span className="countdown-num">
-          <DaysText n={n} />
-        </span>
-        <span className="countdown-date">
-          {dateMode === 'auto' ? formatDateZh(t.target_date!) : formatTaskDate(t.target_date!, { mode: dateMode, today })}
+        <span className={`countdown-num${t.target_date ? '' : ' is-undated'}`}>{t.target_date ? <DaysText n={n} /> : tr('还没选日期')}</span>
+        <span className={`countdown-date${t.target_date ? '' : ' is-undated'}`}>
+          {t.target_date ? (dateMode === 'auto' ? formatDateZh(t.target_date) : formatTaskDate(t.target_date, { mode: dateMode, today })) : null}
           <RepeatMark task={t} today={today} />
           {c && <CategoryLabels cats={store.categoriesOfTask(t)} size={12} />}
         </span>
@@ -141,7 +139,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
   const dot = cc ? cardColorStyle(cc, theme).bg : null;
   const selected = ui.editingId === t.id;
   return (
-    <div ref={wrapRef} className={`task-row countdown-row${selected ? ' is-selected' : ''}${n < 0 ? ' is-past' : ''}`} {...menu.props}>
+    <div ref={wrapRef} className={`task-row countdown-row${selected ? ' is-selected' : ''}${t.target_date && n < 0 ? ' is-past' : ''}`} {...menu.props}>
       <RacButton
         className="row-main countdown-row-main"
         data-task-id={t.id}
@@ -155,9 +153,7 @@ function CountdownRow({ task: t, n }: { task: Task; n: number }) {
         {type && type.layout !== 'text' && <Icon size={14} className="countdown-row-icon" style={{ color: type.color }} aria-hidden />}
         <span className={`row-title countdown-row-title${store.titleMark(t) ? ` is-mark-${store.titleMark(t)}` : ''}${store.isPinned(t) ? ' is-pinned' : ''}`}>{titleOf(store, t)}</span>
         <RepeatMark task={t} today={toDateKey(new Date())} />
-        <span className="countdown-row-days">
-          <DaysText n={n} />
-        </span>
+        <span className={`countdown-row-days${t.target_date ? '' : ' is-undated'}`}>{t.target_date ? <DaysText n={n} /> : tr('还没选日期')}</span>
       </RacButton>
       <MenuAt at={menu.at} label={tr('倒数日操作')} items={items} onClose={menu.close} />
       {picking && <ColorPopover task={t} anchor={wrapRef} onClose={() => setPicking(false)} />}
@@ -318,13 +314,16 @@ export function CountdownsPage() {
   const [prefs, setPrefs] = useCountdownPrefs();
   const daysOf = (t: Task) => store.progress(t.id, today)?.value ?? 0;
   // 归档了的项目里的倒数日不列（Rei 2026-11-05）
-  const countdowns = sortCountdowns(
-    store
-      .activeTasks()
-      .filter((t) => t.completion_mode === 'countdown' && t.target_date && t.status !== '关闭')
-      .map((t) => ({ t, n: daysOf(t) })),
-    prefs.sort,
-    prefs.dir,
+  // 还没选日期的也列（Rei 2026-11-12 09:23「倒数日页新建的、还没标题的任务，从一开始就要立刻显示在列表里」）：
+  // 「新建」一点就在列表里（标题位「未命名倒数日」，多条编号「未命名倒数日2」…，只显示不入库；天数位「还没选日期」），排在最前、新建的在上（lib/countdown-view withUndated）
+  const all = store.activeTasks().filter((t) => t.completion_mode === 'countdown' && t.status !== '关闭');
+  const countdowns = withUndated(
+    sortCountdowns(
+      all.filter((t) => t.target_date).map((t) => ({ t, n: daysOf(t) })),
+      prefs.sort,
+      prefs.dir,
+    ),
+    all.filter((t) => !t.target_date),
   );
   const [cat, setCat] = useState<string>('all');
   const catOf = (t: Task) => store.categoryOf(t);

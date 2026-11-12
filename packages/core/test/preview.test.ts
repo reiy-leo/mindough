@@ -22,10 +22,11 @@ describe('预览', () => {
     expect(firstLine('<kbd>K</kbd>')).toBe('<kbd>K</kbd>');
   });
 
-  it('标题：任何任务都是正文首行（Rei 2026-11-03），资料名不当标题；没有就是“空白任务”', () => {
+  it('标题：任何任务都是正文首行（Rei 2026-11-03），资料名不当标题；没有就是占位（Rei 2026-11-12 09:33 / 09:34）', () => {
     expect(taskTitle(mkTask('a', { body_md: '周末去看', type_data: { title: '沙丘' } }))).toBe('周末去看');
     expect(taskTitle(mkTask('a', { body_md: '想看', type_data: {} }))).toBe('想看');
-    expect(taskTitle(mkTask('a', { body_md: '' }))).toBe('空白任务');
+    expect(taskTitle(mkTask('a', { body_md: '' }))).toBe('未提供描述');
+    expect(taskTitle(mkTask('a', { body_md: '', completion_mode: 'countdown' }))).toBe('未命名倒数日');
   });
 
   it('itemTitleOf：以前的标题来源（主字段的值），人物字段走解析器', () => {

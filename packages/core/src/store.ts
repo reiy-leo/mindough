@@ -52,7 +52,7 @@ import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type 
 import type { Change, StorageAdapter } from './storage/adapter';
 
 import { dataLabel, tr } from './i18n';
-import { fieldText, itemTitleOf, needsTitleLine, withTitleLine } from './preview';
+import { fieldText, firstLine, itemTitleOf, needsTitleLine, untitledLabel, withTitleLine } from './preview';
 import { parseHlc } from './hlc';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, normalizeDayStart, type MoodId } from './journal';
 import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
@@ -164,6 +164,7 @@ export class Store {
   private draftCapture: Change[] | null = null;
   private derivedCache: { version: number; value: Map<string, DerivedStatus> } | null = null;
   private relatedCache: { version: number; value: Map<string, string[]> } | null = null;
+  private untitledCache: { version: number; value: Map<string, number> } | null = null;
   private edgeCache: { version: number; accepted: Edge[]; conflicts: ConflictEdge[] } | null = null;
   private localWriteListeners = new Set<(changes: readonly Change[]) => void>();
   /** 项目关联资料库：打开完成后才在本机写入时整理；整理自己写的时候不再触发；batch 里攒着；拉下来的行等拉完再整理。 */
@@ -1641,6 +1642,29 @@ export class Store {
     if (!this.tables.dependency.has(depId) && this.tables.task.get(id) && !this.tables.task.get(id)!.deleted) {
       this.insert('dependency', { id: depId, pred_id: id, succ_id: task.id, type: 'FS', lag: 0 });
     }
+  }
+
+  /**
+   * 没标题的任务在同一类（倒数日 / 别的任务）里的序号（1 起），按创建时间、再按 id 排；删掉的不算。有标题的返回 0。
+   * 只用来显示占位「未命名倒数日2」「未提供描述3」（Rei 2026-11-12 09:33 / 09:34），不写进数据。
+   */
+  untitledOrdinal(id: string): number {
+    if (this.untitledCache?.version !== this._version) {
+      const value = new Map<string, number>();
+      const pools: [Task[], Task[]] = [[], []];
+      for (const t of this.tables.task.values()) if (!t.deleted && !firstLine(t.body_md)) pools[t.completion_mode === 'countdown' ? 0 : 1].push(t);
+      for (const pool of pools) {
+        pool.sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+        pool.forEach((t, i) => value.set(t.id, i + 1));
+      }
+      this.untitledCache = { version: this._version, value };
+    }
+    return this.untitledCache.value.get(id) ?? 0;
+  }
+
+  /** 界面上的任务标题：正文第一行；没有就是带编号的占位（untitledLabel）。 */
+  titleOfTask(task: Task): string {
+    return firstLine(task.body_md) || untitledLabel(task.completion_mode === 'countdown', this.untitledOrdinal(task.id));
   }
 
   /** 删除任务：任务与它的依赖边、相关任务、我的一天条目、人物关联一起打墓碑。草稿任务直接丢掉，不写墓碑。 */
