@@ -4,6 +4,7 @@ import { applyMaterialClass, syncWindowMaterial } from './vibrancy';
 import { detectPlatform, layoutForWidth, MAC_OVERLAY_CLASS, resolveSkin, usesMacOverlayTitlebar, type LayoutKind, type Platform, type Skin, type SkinPref, type ThemePref } from '../skin/platform';
 
 import { tr } from './i18n';
+import type { StartPage } from './start-page';
 import { onRelay, relay } from './window-relay';
 import { isTauri } from '../store/sqlite-tauri';
 export interface Settings {
@@ -89,6 +90,11 @@ export interface Settings {
    * 只记在本机，不同步；所有分组一起切。入口是类型页页头右边的 ···（components/PinnedStyleMenu 的 DisplayStyleMenu）。读写经 lib/category-view。
    */
   categoryViewStyle: 'list' | 'icons';
+  /**
+   * 启动时打开哪一页（Rei 2026-11-13，设置 → 系统）：侧栏各页或「上次打开的页面」，默认我的一天。
+   * 只记在本机，不同步（手机和电脑常想停在不同的页）。读写经 lib/start-page（启动时在 main.tsx 里、渲染前读一次）。
+   */
+  startPage: StartPage;
 }
 
 export type ColorLevel = 'plain' | 'standard' | 'vivid';
@@ -98,7 +104,7 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
   return v === 'plain' || v === 'vivid' ? v : 'standard';
 }
 
-const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', pinnedLibraryStyle: 'list', categoryViewStyle: 'list' };
+const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', pinnedLibraryStyle: 'list', categoryViewStyle: 'list', startPage: 'myday' };
 const KEY = 'mindough:settings';
 
 function load(): Settings {

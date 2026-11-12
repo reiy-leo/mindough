@@ -18,6 +18,7 @@ import { installNoLinkDrag } from './lib/no-link-drag';
 import { installRootScrollGuard } from './lib/root-scroll';
 import { installBackspaceGuard } from './lib/backspace-guard';
 import { installBackLayers } from './lib/back-layers';
+import { installStartPage } from './lib/start-page';
 import { installAndroidBackground } from './lib/android-bg';
 import { applyLocalePref, initialLocalePref, loadLocale, resolveLocale } from './lib/i18n';
 import { LocaleRoot } from './lib/locale';
@@ -64,6 +65,8 @@ installNoLinkDrag();
 installRootScrollGuard();
 // 退格不返回上一页：WebKit 默认在不能打字的地方按退格就 history.back()（Rei 2026-11-08，lib/backspace-guard.ts）
 installBackspaceGuard();
+// 启动时打开哪一页（设置 → 系统，Rei 2026-11-13）：地址里没页面才换，要在返回层和渲染之前（lib/start-page.ts）
+if (!isAuxWindow()) installStartPage();
 // 系统返回 / 返回手势先关弹窗、菜单，没有弹层时才照原来退页面（Rei 2026-11-10，lib/back-layers.ts）
 installBackLayers();
 // 安卓 App：界面底色告诉原生，WebView 和窗口后面那几层跟着换（选字变黑的兜底，lib/android-bg.ts、scripts/android-webview.sh）

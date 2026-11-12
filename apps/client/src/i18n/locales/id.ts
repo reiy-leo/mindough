@@ -1800,6 +1800,22 @@ export const MESSAGES: Record<string, MessageValue> = {
   "账户还在连接，稍后再试": "Masih menghubungkan ke akun. Coba lagi sebentar lagi.",
   "同步失败：{error}": "Sinkronisasi gagal: {error}",
   "去设置": "Pengaturan",
+  // ── 设置 → 系统（Rei 2026-11-13，待母语者看）──
+  "设置分区|系统": "Sistem",
+  "开机时启动、启动时打开哪一页": "Buka saat masuk, halaman awal",
+  "启动时打开哪一页": "Halaman yang dibuka saat memulai",
+  "开机时启动": "Buka saat masuk",
+  "登录电脑后自动打开。": "Terbuka otomatis saat kamu masuk ke komputer.",
+  "开机自启时最小化应用": "Minimalkan saat dibuka otomatis",
+  "自动打开时收进程序坞，不挡在前面。": "Saat terbuka otomatis, langsung masuk ke Dock dan tidak menutupi layar.",
+  "自动打开时收进任务栏，不挡在前面。": "Saat terbuka otomatis, langsung masuk ke taskbar dan tidak menutupi layar.",
+  "先打开「开机时启动」。": "Nyalakan dulu “Buka saat masuk”.",
+  "启动时打开": "Buka saat memulai",
+  "打开 App 时先进这一页；从链接打开的照链接走。只在这台设备上生效。": "Halaman pertama saat aplikasi dibuka. Tautan tetap membuka tujuannya. Hanya berlaku di perangkat ini.",
+  "上次打开的页面": "Halaman terakhir dibuka",
+  "没能设置开机时启动": "Gagal menyalakan Buka saat masuk",
+  "没能取消开机时启动": "Gagal mematikan Buka saat masuk",
+  "没能保存这个设置": "Gagal menyimpan pengaturan ini",
 };
 
 export const DATA: Record<string, string> = {

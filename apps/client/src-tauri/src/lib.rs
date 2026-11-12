@@ -7,8 +7,10 @@
 //! - widget：主屏小组件读的 JSON 快照（widget-snapshot.json）；设置窗口是前端开的（label settings）
 //! - menu：桌面菜单栏 File → Import → Dida365、「设置…」（文字由前端按界面语言传来，点了发 mindough:menu 给主窗口）
 //! - clipboard：剪贴板里的文件 / 图片（clipboard_peek、clipboard_read_file；图片内容走 clipboard-manager 插件的 readImage）
+//! - autostart：开机时启动（桌面，tauri-plugin-autostart，带 --autostart 参数），「开机自启时最小化应用」存 launch.json（src/autostart.rs）
 //! - vibrancy：窗口材质（macOS 侧边栏毛玻璃、Windows 11 Mica），前端问 window_material 决定背景透不透明
 
+mod autostart;
 mod clipboard;
 mod db;
 mod files;
@@ -34,6 +36,17 @@ pub fn run() {
             }
         }));
         builder = builder.on_menu_event(|app, event| menu::on_event(app, event.id().as_ref()));
+        // 开机时启动（设置 → 系统）：系统登录时带 --autostart 拉起来
+        builder = builder.plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![autostart::AUTOSTART_ARG]),
+        ));
+        // 开机自己起来、又要最小化：主窗口第一次加载完就收起来
+        builder = builder.on_page_load(|webview, payload| {
+            if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished) {
+                autostart::on_main_loaded(&webview.window());
+            }
+        });
     }
 
     builder
@@ -59,7 +72,7 @@ pub fn run() {
             Ok(())
         })
         .manage(db::Db::new())
-        .invoke_handler(tauri::generate_handler![db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file])
+        .invoke_handler(tauri::generate_handler![db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file, autostart::autostart_minimize_get, autostart::autostart_minimize_set])
         .run(tauri::generate_context!())
         .expect("启动 Mindough 失败");
 }

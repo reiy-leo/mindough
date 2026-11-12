@@ -1800,6 +1800,22 @@ export const MESSAGES: Record<string, MessageValue> = {
   "账户还在连接，稍后再试": "Connexion au compte en cours. Réessayez dans un instant.",
   "同步失败：{error}": "Échec de la synchronisation : {error}",
   "去设置": "Réglages",
+  // ── 设置 → 系统（Rei 2026-11-13，待母语者看）──
+  "设置分区|系统": "Système",
+  "开机时启动、启动时打开哪一页": "Ouvrir à la connexion, page de démarrage",
+  "启动时打开哪一页": "Page ouverte au démarrage",
+  "开机时启动": "Ouvrir à la connexion",
+  "登录电脑后自动打开。": "S’ouvre automatiquement quand vous vous connectez à l’ordinateur.",
+  "开机自启时最小化应用": "Réduire à l’ouverture automatique",
+  "自动打开时收进程序坞，不挡在前面。": "À l’ouverture automatique, l’app va dans le Dock au lieu de passer au premier plan.",
+  "自动打开时收进任务栏，不挡在前面。": "À l’ouverture automatique, l’app va dans la barre des tâches au lieu de passer au premier plan.",
+  "先打开「开机时启动」。": "Activez d’abord « Ouvrir à la connexion ».",
+  "启动时打开": "Ouvrir au démarrage",
+  "打开 App 时先进这一页；从链接打开的照链接走。只在这台设备上生效。": "La page affichée à l’ouverture de l’app. Les liens ouvrent toujours leur cible. Uniquement sur cet appareil.",
+  "上次打开的页面": "Dernière page ouverte",
+  "没能设置开机时启动": "Impossible d’activer « Ouvrir à la connexion »",
+  "没能取消开机时启动": "Impossible de désactiver « Ouvrir à la connexion »",
+  "没能保存这个设置": "Impossible d’enregistrer ce réglage",
 };
 
 export const DATA: Record<string, string> = {

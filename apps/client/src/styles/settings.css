@@ -348,3 +348,8 @@ html:has(.settings-window) #root {
     text-align: left;
   }
 }
+
+/* 设置 → 系统：「开机自启时最小化应用」在「开机时启动」关着时整行置灰（开关自己 skins.css 里 0.45） */
+.setting.is-disabled .setting-text {
+  opacity: 0.5;
+}

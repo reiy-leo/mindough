@@ -1800,6 +1800,22 @@ export const MESSAGES: Record<string, MessageValue> = {
   "账户还在连接，稍后再试": "Ainda conectando à sua conta. Tente de novo em instantes.",
   "同步失败：{error}": "Falha na sincronização: {error}",
   "去设置": "Configurações",
+  // ── 设置 → 系统（Rei 2026-11-13，待母语者看）──
+  "设置分区|系统": "Sistema",
+  "开机时启动、启动时打开哪一页": "Abrir ao iniciar sessão, página inicial",
+  "启动时打开哪一页": "Que página abrir ao iniciar",
+  "开机时启动": "Abrir ao iniciar sessão",
+  "登录电脑后自动打开。": "Abre automaticamente quando inicia sessão no computador.",
+  "开机自启时最小化应用": "Minimizar ao abrir no início de sessão",
+  "自动打开时收进程序坞，不挡在前面。": "Ao abrir no início de sessão, vai direto para o Dock em vez de ficar à frente.",
+  "自动打开时收进任务栏，不挡在前面。": "Ao abrir no início de sessão, vai direto para a barra de tarefas em vez de ficar à frente.",
+  "先打开「开机时启动」。": "Ative primeiro «Abrir ao iniciar sessão».",
+  "启动时打开": "Abrir ao iniciar",
+  "打开 App 时先进这一页；从链接打开的照链接走。只在这台设备上生效。": "A página que aparece ao abrir a app. Os links continuam a abrir o seu destino. Só neste dispositivo.",
+  "上次打开的页面": "Última página aberta",
+  "没能设置开机时启动": "Não foi possível ativar «Abrir ao iniciar sessão»",
+  "没能取消开机时启动": "Não foi possível desativar «Abrir ao iniciar sessão»",
+  "没能保存这个设置": "Não foi possível guardar esta definição",
 };
 
 export const DATA: Record<string, string> = {

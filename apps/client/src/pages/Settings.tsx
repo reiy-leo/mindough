@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
-import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorCog, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
 import { focusMainWindow, isSettingsWindow, SETTINGS_NAV_EVENT } from '../lib/windows';
 import { relay } from '../lib/window-relay';
@@ -11,6 +11,8 @@ import { cloudStorageName, useCloudStorage, type CloudStorage } from '../lib/clo
 import { startNativeLogin } from '../lib/native-login';
 import { isTauri } from '../store/sqlite-tauri';
 import { useUi } from '../lib/ui';
+import { autostartEnabled, autostartSupported, minimizeOnAutostart, setAutostart, setMinimizeOnAutostart } from '../lib/autostart';
+import { normalizeStartPage, START_PAGES, type StartPage } from '../lib/start-page';
 import { addDays, DATE_DISPLAYS, formatTaskDate, isChineseLocale, resetSyncState, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
 import { Button, Section, Segmented, Select, Switch } from '../ui/primitives';
 import { JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
@@ -20,7 +22,7 @@ import { PageHeader } from '../components/PageHeader';
 import { CalendarSettings } from '../components/CalendarSettings';
 import { normalizeColorLevel, useSettings, type Settings } from '../lib/settings';
 import { suggestionsOn } from '../lib/myday-suggest';
-import { PLATFORM_LABEL, SKIN_LABEL, skinForPlatform } from '../skin/platform';
+import { detectPlatform, PLATFORM_LABEL, SKIN_LABEL, skinForPlatform, type Platform } from '../skin/platform';
 import { storageInfo, useNow, useStore } from '../store/StoreProvider';
 
 import { appName, getLocale, LOCALE_NAMES, LOCALES, tr, trc } from '../lib/i18n';
@@ -34,19 +36,20 @@ const ArchiveImportSheet = lazy(() => import('../components/ArchiveImport').then
 import type { LocalePref } from '../lib/i18n';
 
 /**
- * 设置分成八项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
+ * 设置分成十项（Rei 2026-10-26「设置在桌面端做成一个单独的窗口，设置窗口侧边栏：账户、外观」，补充「数据、提醒、任务」，
  * 又说「农历、类型、日记这三个可以放在一个」；同一天又说「这个页面的底部的关于念头团的说明，可以放在一个单独的选项卡：关于」「设置中日记单独一个tab」）：
  * - 账户：登录、同步状态、数据怎么走
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
  * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
+ * - 系统：开机时启动、开机自启时最小化应用（这两项只在 macOS / Windows 桌面 App 有）、启动时打开哪一页（Rei 2026-11-13，都只记在本机）
  * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
  * - 日历：节假日（显示开关 + 节假日订阅）、农历开关、日历订阅（Rei 2026-11-10，农历从「任务」挪过来，docs/CALENDAR.md）
  * - 打卡：在打卡页顶部显示活动图（Rei 2026-11-10 加）
  * - 日记：一天从几点开始、每天提醒写日记
  * - 关于：图标、名字、版本号、一句说明、第三方数据署名（TMDB）
  * 桌面 app（Tauri）里设置是单独的窗口（SettingsWindow，?window=settings）；Web 和手机是页面：
- * 宽屏左边一列八项、右边内容；窄屏先列出八项，点进去整页推入，左上角返回。
+ * 宽屏左边一列十项、右边内容；窄屏先列出十项，点进去整页推入，左上角返回。
  */
 type SettingsItem = { id: SettingsSection; icon: LucideIcon; label: () => string; hint: () => string };
 
@@ -55,6 +58,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'appearance', icon: Palette, label: () => tr('外观'), hint: () => tr('皮肤、语言、明暗、色彩、布局') },
   { id: 'data', icon: Database, label: () => tr('数据'), hint: () => tr('导入导出、本机存储') },
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
+  { id: 'system', icon: MonitorCog, label: () => trc('设置分区', '系统'), hint: () => (autostartSupported(currentPlatform()) ? tr('开机时启动、启动时打开哪一页') : tr('启动时打开哪一页')) },
   { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、严格模式、日期显示') },
   { id: 'calendar', icon: CalendarIcon, label: () => trc('设置分区', '日历'), hint: () => (isChineseLocale() ? tr('节假日、农历、日历订阅') : tr('节假日、日历订阅')) },
   { id: 'checkin', icon: CalendarCheck2, label: () => trc('导航', '打卡'), hint: () => tr('打卡页顶部的活动图') },
@@ -90,6 +94,8 @@ function SectionBody({ id }: { id: SettingsSection }) {
       return <DataSection />;
     case 'reminders':
       return <ReminderSection />;
+    case 'system':
+      return <SystemSection />;
     case 'tasks':
       return (
         <>
@@ -500,6 +506,121 @@ function MyDaySection() {
  * 打卡（Rei 2026-11-10 08:30「设置里新增「打卡」选项卡，里面一个开关「在打卡页顶部显示活动图」」）：
  * 开 = 打卡页顶部显示「过去一年」的活动图，关 = 不显示；默认关，只存本机（同「默认日期：今天」）。
  */
+/** 列表里的说明要在 SettingsProvider 外也能算：先看 <html data-platform>（SettingsProvider 挂的，Tauri 下是 os 插件给的准值），没有再看 UA。 */
+function currentPlatform(): Platform {
+  const p = document.documentElement.dataset.platform;
+  if (p === 'macos' || p === 'ios' || p === 'windows' || p === 'android' || p === 'linux') return p;
+  return detectPlatform(navigator as Navigator & { userAgentData?: { platform?: string } });
+}
+
+/** 「启动时打开」的选项名：侧栏各页用侧栏上的名字。 */
+function startPageLabel(p: StartPage): string {
+  switch (p) {
+    case 'myday':
+      return tr('我的一天');
+    case 'backlog':
+      return tr('等待安排');
+    case 'doable':
+      return tr('过期积压');
+    case 'agenda':
+      return trc('导航', '日历');
+    case 'groups':
+      return trc('导航', '项目');
+    case 'checkin':
+      return trc('导航', '打卡');
+    case 'countdown':
+      return tr('倒数日');
+    case 'journal':
+      return tr('日记');
+    case 'library':
+      return tr('资料库');
+    case 'types':
+      return trc('分类', '类型');
+    case 'done':
+      return trc('导航', '已完成');
+    case 'last':
+      return tr('上次打开的页面');
+  }
+}
+
+/**
+ * 系统（Rei 2026-11-13「设置里加"系统"选项卡」）：
+ * - 开机时启动：tauri-plugin-autostart（lib/autostart.ts），开没开以系统登记的为准，每次进来去问；
+ * - 开机自启时最小化应用：上一项关着时置灰；存 Rust 那边的 launch.json（启动时要先读到）；
+ * - 启动时打开：本机设置 startPage（lib/start-page.ts），所有平台都有。
+ * 前两项只在 macOS / Windows 桌面 App 显示；网页、安卓、iOS 只有「启动时打开」。三项都只管这台设备，不同步。
+ */
+function SystemSection() {
+  const { settings, set, platform } = useSettings();
+  const { toast } = useUi();
+  const desktop = autostartSupported(platform);
+  // null = 还在问系统
+  const [auto, setAuto] = useState<boolean | null>(null);
+  const [minimize, setMinimize] = useState(false);
+  useEffect(() => {
+    if (!desktop) return;
+    let dead = false;
+    void Promise.all([autostartEnabled().catch(() => false), minimizeOnAutostart().catch(() => false)]).then(([a, m]) => {
+      if (dead) return;
+      setAuto(a);
+      setMinimize(m);
+    });
+    return () => {
+      dead = true;
+    };
+  }, [desktop]);
+  const changeAuto = (on: boolean) => {
+    setAuto(on);
+    setAutostart(on).catch(() => {
+      setAuto(!on);
+      toast({ tone: 'error', message: on ? tr('没能设置开机时启动') : tr('没能取消开机时启动') });
+    });
+  };
+  const changeMinimize = (on: boolean) => {
+    setMinimize(on);
+    setMinimizeOnAutostart(on).catch(() => {
+      setMinimize(!on);
+      toast({ tone: 'error', message: tr('没能保存这个设置') });
+    });
+  };
+  const startPage = normalizeStartPage(settings.startPage);
+  return (
+    <div className="card settings-card">
+      {desktop && (
+        <>
+          <div className="setting">
+            <div className="setting-text">
+              <div className="setting-name">{tr('开机时启动')}</div>
+              <div className="setting-hint">{tr('登录电脑后自动打开。')}</div>
+            </div>
+            <Switch label={tr('开机时启动')} isSelected={auto === true} isDisabled={auto === null} onChange={changeAuto} />
+          </div>
+          <div className={`setting${auto ? '' : ' is-disabled'}`}>
+            <div className="setting-text">
+              <div className="setting-name">{tr('开机自启时最小化应用')}</div>
+              <div className="setting-hint">{auto ? (platform === 'macos' ? tr('自动打开时收进程序坞，不挡在前面。') : tr('自动打开时收进任务栏，不挡在前面。')) : tr('先打开「开机时启动」。')}</div>
+            </div>
+            <Switch label={tr('开机自启时最小化应用')} isSelected={auto === true && minimize} isDisabled={!auto} onChange={changeMinimize} />
+          </div>
+        </>
+      )}
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('启动时打开')}</div>
+          <div className="setting-hint">{tr('打开 App 时先进这一页；从链接打开的照链接走。只在这台设备上生效。')}</div>
+        </div>
+        <Select
+          label={tr('启动时打开')}
+          className="setting-select"
+          value={startPage}
+          onChange={(v) => set('startPage', normalizeStartPage(v))}
+          options={START_PAGES.map((p) => ({ id: p, label: startPageLabel(p) }))}
+        />
+      </div>
+    </div>
+  );
+}
+
 function CheckInSection() {
   const { settings, set } = useSettings();
   return (

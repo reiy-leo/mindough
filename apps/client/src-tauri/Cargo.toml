@@ -37,6 +37,8 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 # 桌面端：deep link 打开时交给已经开着的那个窗口（Windows / Linux 会新起进程带上链接）
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+# 开机时启动（Rei 2026-11-13，设置 → 系统）：macOS 写 LaunchAgent，Windows 写注册表 Run 项，Linux 写 ~/.config/autostart；手机不做
+tauri-plugin-autostart = "2"
 # 剪贴板里的文件列表（file_list 从 3.6 起三个桌面平台都有）和图片签名
 arboard = { version = "3.6", default-features = false, features = ["image-data"] }
 
