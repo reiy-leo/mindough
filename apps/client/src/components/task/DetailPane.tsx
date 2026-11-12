@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, 
 import { ErrorBoundary } from '../ErrorBoundary';
 import { MousePointerClick } from 'lucide-react';
 import { useUi } from '../../lib/ui';
-import { clampDetailWidth, DETAIL_W_DEFAULT, DETAIL_W_KEY, loadDetailWidth, nextTaskId } from '../../lib/detail-pane';
+import { clampDetailWidth, DETAIL_W_DEFAULT, DETAIL_W_KEY, LIST_MIN, loadDetailWidth, nextTaskId } from '../../lib/detail-pane';
 import { TaskDetail, useSelectedTask } from './TaskDetail';
 import { tr } from '../../lib/i18n';
 import { scrollIntoContainer } from '../../lib/root-scroll';
@@ -29,8 +29,8 @@ function visibleTaskIds(): string[] {
   return ids;
 }
 
-/** 右列宽度：可拖，记在本机（localStorage，不同步）。 */
-function useDetailWidth() {
+/** 右列宽度：可拖，记在本机（localStorage，不同步）。listMin 是这一页中间列至少要留的宽度（日记页更宽，lib/detail-pane listMinFor）。 */
+function useDetailWidth(listMin: number) {
   const [w, setW] = useState(() => loadDetailWidth(localStorage.getItem(DETAIL_W_KEY), window.innerWidth));
   // 窗口变窄时收一收，别把列表挤没
   useEffect(() => {
@@ -39,11 +39,12 @@ function useDetailWidth() {
     return () => window.removeEventListener('resize', on);
   }, []);
   const save = (v: number) => {
-    const next = clampDetailWidth(v, window.innerWidth);
+    const next = clampDetailWidth(v, window.innerWidth, listMin);
     setW(next);
     localStorage.setItem(DETAIL_W_KEY, String(next));
   };
-  return [w, setW, save] as const;
+  // 记的宽度不改，显示时按这一页收一收：从日记页回到别的页，右列还是原来那么宽
+  return [clampDetailWidth(w, window.innerWidth, listMin), setW, save] as const;
 }
 
 /**
@@ -51,10 +52,10 @@ function useDetailWidth() {
  * 点列表里一件任务就在这里显示，没选时是安静的空状态；左边的分隔条拖动调宽（双击恢复默认），
  * Esc 或右上角关闭取消选中，↑ ↓ 在列表里换一件（不在输入框里时）。中等宽度没选中时整列收起，见 styles/app.css。
  */
-export function DetailPane() {
+export function DetailPane({ listMin = LIST_MIN }: { listMin?: number }) {
   const ui = useUi();
   const task = useSelectedTask();
-  const [width, setWidth, saveWidth] = useDetailWidth();
+  const [width, setWidth, saveWidth] = useDetailWidth(listMin);
   const drag = useRef<{ x: number; w: number } | null>(null);
 
   // 键盘：Esc 取消选中、↑ ↓ 换一件
@@ -96,7 +97,7 @@ export function DetailPane() {
     const d = drag.current;
     if (!d) return;
     // 分隔条在右列左边：往左拖变宽
-    setWidth(clampDetailWidth(d.w + (d.x - e.clientX), window.innerWidth));
+    setWidth(clampDetailWidth(d.w + (d.x - e.clientX), window.innerWidth, listMin));
   };
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!drag.current) return;
@@ -122,8 +123,8 @@ export function DetailPane() {
         aria-orientation="vertical"
         aria-label={tr('调整详情宽度')}
         aria-valuenow={width}
-        aria-valuemin={clampDetailWidth(0, window.innerWidth)}
-        aria-valuemax={clampDetailWidth(9999, window.innerWidth)}
+        aria-valuemin={clampDetailWidth(0, window.innerWidth, listMin)}
+        aria-valuemax={clampDetailWidth(9999, window.innerWidth, listMin)}
         tabIndex={0}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

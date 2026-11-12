@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampDetailWidth, detailInModal, DETAIL_W_DEFAULT, DETAIL_W_MAX, DETAIL_W_MIN, loadDetailWidth, nextTaskId } from './detail-pane';
+import { clampDetailWidth, detailInModal, DETAIL_W_DEFAULT, DETAIL_W_MAX, DETAIL_W_MIN, JOURNAL_MIN, LIST_MIN, listMinFor, loadDetailWidth, nextTaskId, paneFits } from './detail-pane';
 import { hashWithTask, parseHash, taskInHash } from './router';
 
 describe('三列布局：选中的任务写在 hash 上', () => {
@@ -81,5 +81,39 @@ describe('看板视图的详情用浮层，不占右列（Rei 2026-11-09）', ()
   it('只看当前这个项目的视图；别的页面不管', () => {
     expect(detailInModal({ page: 'group', id: 'g2' }, { g1: { view: 'board' } })).toBe(false);
     expect(detailInModal({ page: 'myday' }, { g1: { view: 'board' } })).toBe(false);
+  });
+});
+
+describe('日记页打开任务不挤日记（Rei 2026-11-13 01:21）', () => {
+  it('日记页中间列要留左栏 320 + 右栏 360', () => {
+    expect(JOURNAL_MIN).toBe(680);
+    expect(listMinFor('journal')).toBe(JOURNAL_MIN);
+    expect(listMinFor('myday')).toBe(LIST_MIN);
+    expect(listMinFor('library')).toBe(LIST_MIN);
+  });
+  it('右列宽度按这一页收：1366 宽日记页最多 1366 - 248 - 680 = 438，别的页照旧 720', () => {
+    expect(clampDetailWidth(720, 1366, JOURNAL_MIN)).toBe(438);
+    expect(clampDetailWidth(400, 1366, JOURNAL_MIN)).toBe(400);
+    expect(clampDetailWidth(720, 1366)).toBe(720);
+  });
+  it('放得下才并排：宽屏要 248 + 680 + 320 = 1248，图标栏要 64 + 680 + 320 = 1064', () => {
+    expect(paneFits(1248, JOURNAL_MIN)).toBe(true);
+    expect(paneFits(1247, JOURNAL_MIN)).toBe(false);
+    expect(paneFits(1100, JOURNAL_MIN)).toBe(false);
+    expect(paneFits(1099, JOURNAL_MIN)).toBe(true);
+    expect(paneFits(1064, JOURNAL_MIN)).toBe(true);
+    expect(paneFits(1063, JOURNAL_MIN)).toBe(false);
+    expect(paneFits(900, JOURNAL_MIN)).toBe(false);
+    // 别的页 761 宽也放得下（64 + 360 + 320 = 744）
+    expect(paneFits(761)).toBe(true);
+  });
+  it('日记页放不下用浮层，放得下用右列；不传宽度当作够宽', () => {
+    expect(detailInModal({ page: 'journal' }, {}, 1366)).toBe(false);
+    expect(detailInModal({ page: 'journal' }, {}, 1100)).toBe(true);
+    expect(detailInModal({ page: 'journal' }, {}, 900)).toBe(true);
+    expect(detailInModal({ page: 'journal' }, {})).toBe(false);
+    // 别的页不看宽度
+    expect(detailInModal({ page: 'myday' }, {}, 900)).toBe(false);
+    expect(detailInModal({ page: 'library' }, {}, 900)).toBe(false);
   });
 });

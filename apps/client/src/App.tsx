@@ -35,7 +35,7 @@ import { SearchPage } from './pages/Search';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
 import { useMentionSource } from './lib/task-mention';
-import { detailInModal, WIDE_MIN } from './lib/detail-pane';
+import { detailInModal, JOURNAL_MIN, listMinFor, paneFits, WIDE_MIN } from './lib/detail-pane';
 import { DetailModal } from './components/task/DetailModal';
 import { DeepLinks } from './components/DeepLinks';
 import { TaskComposer } from './components/task/TaskComposer';
@@ -224,6 +224,17 @@ function useNarrow(): boolean {
     return () => m.removeEventListener('change', on);
   }, [query]);
   return match;
+}
+
+/** 日记页右列放不放得下（lib/detail-pane paneFits，看窗口宽度）；只在跨过分界时重渲染。 */
+function useJournalPaneFits(): boolean {
+  const [fits, setFits] = useState(() => paneFits(window.innerWidth, JOURNAL_MIN));
+  useEffect(() => {
+    const on = () => setFits(paneFits(window.innerWidth, JOURNAL_MIN));
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return fits;
 }
 
 function NavLink({ item, active, badge, onOpen, compact, rail }: { item: NavItem; active: boolean; badge?: number; onOpen?: () => void; compact?: boolean; rail?: boolean }) {
@@ -878,12 +889,18 @@ export function App() {
   const selected = !!store.get('task', ui.editingId);
   // 项目页看板视图、侧栏日历页、项目总览页：不要右列，详情用浮层（Rei 2026-11-09 00:28「切换到看板视图后，不要显示侧边的详情column」、2026-11-10 时间轴「点击任务不显示详情侧边栏」、2026-11-11「项目列表页 不显示任务详情侧边栏」，lib/detail-pane detailInModal）。
   // 切进看板那一下把开着的详情收起来；切回列表右列照旧（空状态或之后点开的任务）。
-  const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews);
+  // 日记页：右列放上去日记还剩 JOURNAL_MIN 才并排，不然详情用浮层盖在日记上，不挤日记（Rei 2026-11-13 01:21「正确应该不要挤压」）。
+  const journalFits = useJournalPaneFits();
+  const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews, journalFits ? Infinity : 0);
   const wasBoardModal = useRef(boardModal);
+  const wasJournalFits = useRef(journalFits);
   useEffect(() => {
-    if (boardModal && !wasBoardModal.current) ui.openEditor(null);
+    // 只是拉窗口让日记页在右列和浮层之间切换时，开着的那件照样开着；换页、切看板才收起
+    const byResize = route.page === 'journal' && journalFits !== wasJournalFits.current;
+    if (boardModal && !wasBoardModal.current && !byResize) ui.openEditor(null);
     wasBoardModal.current = boardModal;
-  }, [boardModal, ui]);
+    wasJournalFits.current = journalFits;
+  }, [boardModal, journalFits, route.page, ui]);
   // 右下角浮动的新建按钮整个去掉了（Rei 2026-11-08 23:00 任务列表页、23:35「上面那些页的「+」都去掉」打卡、倒数日、资料库、人物、类型、设置、手机「更多」）。
   // 各页用自己的入口：任务列表顶上的添加框、打卡 / 倒数日页头按钮、资料库「添加」、资料详情「用它新建任务」、人物「新建相关任务」、类型搜索框里新建；N 照常开新建面板。
 
@@ -932,7 +949,7 @@ export function App() {
             </div>
           </main>
         </div>
-        {boardModal ? <DetailModal /> : <DetailPane />}
+        {boardModal ? <DetailModal /> : <DetailPane listMin={listMinFor(route.page)} />}
       </div>
     );
   } else {
