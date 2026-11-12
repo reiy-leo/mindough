@@ -862,17 +862,32 @@
 html[data-layout='mobile'] .popover.popover-panel.is-sheet .date-panel {
   width: 100%;
 }
-/* 2026-11-13 收紧后：格子 40（原 42 / 农历 50），点的地方都不小于 36 */
+/* 2026-11-13 收紧后：格子 40（原 42 / 农历 50），点的地方都不小于 36。
+   同天再压（Rei 02:07「再压12px」）：块间距 10 → 8、快捷按钮 40 → 36、格子 40 → 38、星期行 22 → 20、标题行下边距和底部分隔线上边距各少 2，面板内容 449 → 421 */
 html[data-layout='mobile'] .date-panel {
-  gap: 10px;
+  gap: 8px;
 }
 html[data-layout='mobile'] .date-panel .date-quick-item {
-  height: 40px;
+  height: 36px;
+}
+html[data-layout='mobile'] .date-panel .calendar-head {
+  margin-bottom: 0;
+}
+html[data-layout='mobile'] .date-panel .calendar-dow {
+  height: 20px;
 }
 html[data-layout='mobile'] .date-panel .calendar-cell {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   font-size: 15px;
+}
+html[data-layout='mobile'] .date-panel .date-foot {
+  padding-top: 4px;
+}
+/* 手机上日期弹层固定贴在屏幕底部，但 React Aria 仍按触发按钮下面剩的空间写行内 max-height（Apple 新建面板里只剩 437），
+   内容不长也要滚。贴底时用回 .is-sheet 的 78vh */
+html[data-layout='mobile'] .popover.popover-panel.is-sheet:has(.date-panel) {
+  max-height: 78vh !important;
 }
 html[data-layout='mobile'] .date-panel .calendar-head .icon-btn {
   width: 36px;
