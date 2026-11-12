@@ -1795,6 +1795,11 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Cartes",
   "到期日期": "Date d’échéance",
   "添加日期": "Date d’ajout",
+  "还没登录，登录后才能同步": "Vous n’êtes pas connecté. Connectez-vous pour synchroniser.",
+  "同步暂不可用：{reason}": "Synchronisation indisponible : {reason}",
+  "账户还在连接，稍后再试": "Connexion au compte en cours. Réessayez dans un instant.",
+  "同步失败：{error}": "Échec de la synchronisation : {error}",
+  "去设置": "Réglages",
 };
 
 export const DATA: Record<string, string> = {

@@ -1507,4 +1507,10 @@ export const EN: Record<string, EnValue> = {
   "只这一次": "Just this once",
   "循环倒数": "Repeat countdown",
   "过了这天自动换成下一次；过去的每一次各留一条倒数日，连在它前面。": "After the day passes, it moves to the next one. Each past one stays as its own countdown, linked before it.",
+  // ── 手机双击「我的一天」同步（Rei 2026-11-13）──
+  "还没登录，登录后才能同步": "Not signed in. Sign in to sync.",
+  "同步暂不可用：{reason}": "Sync isn’t available: {reason}",
+  "账户还在连接，稍后再试": "Still connecting to your account. Try again in a moment.",
+  "同步失败：{error}": "Sync failed: {error}",
+  "去设置": "Settings",
 };

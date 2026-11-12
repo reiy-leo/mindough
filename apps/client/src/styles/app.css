@@ -416,6 +416,27 @@ button {
   align-items: center;
   justify-content: center;
 }
+/* 双击「我的一天」同步中：图标轻轻一明一暗（lib/tab-sync）；双击不选字、不缩放 */
+.tab-item {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.is-syncing .tab-icon {
+  animation: tab-sync-pulse 0.9s ease-in-out infinite;
+}
+@keyframes tab-sync-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-item.is-syncing .tab-icon {
+    animation: none;
+    opacity: 0.5;
+  }
+}
 .hide-mobile {
 }
 [data-layout='mobile'] .hide-mobile {

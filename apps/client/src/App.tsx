@@ -9,6 +9,9 @@ import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
 import { useSettings } from './lib/settings';
 import { useUi } from './lib/ui';
+import { getAccount } from './lib/account';
+import { getSyncView, syncNow } from './lib/sync';
+import { createDoubleTap, tapSyncGate, tapSyncResult, type TapSyncToast } from './lib/tab-sync';
 import { useStore } from './store/StoreProvider';
 import { MyDayPage } from './pages/MyDay';
 import { CalendarPage } from './pages/Calendar';
@@ -838,6 +841,28 @@ export function App() {
   const { toast: uiToast, openEditor: uiOpenEditor } = ui;
   const mentionNotFound = useCallback(() => uiToast({ tone: 'error', message: tr('找不到这件任务') }), [uiToast]);
   useMentionSource(store, uiOpenEditor, mentionNotFound);
+  // 手机标签栏双击「我的一天」立即同步（Rei 2026-11-13，lib/tab-sync）：单击照常切页，300ms 内第二下才同步，结果用 toast 说
+  const [tapSyncing, setTapSyncing] = useState(false);
+  const tapBusy = useRef(false);
+  const myDayTap = useRef(createDoubleTap());
+  const onMyDayTap = useCallback(
+    (e: { timeStamp: number }) => {
+      if (!myDayTap.current(e.timeStamp)) return;
+      const show = (t: TapSyncToast) =>
+        uiToast({ tone: t.tone, message: t.message, actions: t.toSettings ? [{ label: tr('去设置'), onPress: () => navigate({ page: 'settings', section: 'account' }) }] : undefined }, t.tone === 'error' ? 5000 : 2500);
+      const gate = tapSyncGate(getAccount(), getSyncView(), navigator.onLine !== false, tapBusy.current);
+      if (gate) return show(gate);
+      tapBusy.current = true;
+      setTapSyncing(true);
+      navigator.vibrate?.(10);
+      void syncNow().then(() => {
+        tapBusy.current = false;
+        setTapSyncing(false);
+        show(tapSyncResult(getSyncView()));
+      });
+    },
+    [uiToast],
+  );
   const { setDidaImportOpen } = ui;
   const { layout, platform, settings } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面
@@ -954,6 +979,7 @@ export function App() {
     );
   } else {
     const tabs = mobileTabItems(NAV);
+    // 双击「我的一天」立即同步（lib/tab-sync）：单击不拦，照常切页
     const moreActive = !tabs.some(isActive);
     const topbar = mobileTopbar(route.page);
     shell = (
@@ -973,8 +999,16 @@ export function App() {
         <nav className="tabbar" aria-label={tr('主导航')}>
           {tabs.map((n) => {
             const Icon = n.icon;
+            const myday = n.page === 'myday';
             return (
-              <a key={n.page} href={href({ page: n.page } as Route)} draggable={false} className={`tab-item${isActive(n) ? ' is-active' : ''}`} aria-current={isActive(n) ? 'page' : undefined}>
+              <a
+                key={n.page}
+                href={href({ page: n.page } as Route)}
+                draggable={false}
+                className={`tab-item${isActive(n) ? ' is-active' : ''}${myday && tapSyncing ? ' is-syncing' : ''}`}
+                aria-current={isActive(n) ? 'page' : undefined}
+                onClick={myday ? onMyDayTap : undefined}
+              >
                 <span className="tab-icon">
                   <Icon size={20} />
                 </span>

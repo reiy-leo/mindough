@@ -1795,6 +1795,11 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Kartu",
   "到期日期": "Tanggal jatuh tempo",
   "添加日期": "Tanggal ditambahkan",
+  "还没登录，登录后才能同步": "Belum masuk. Masuk untuk menyinkronkan.",
+  "同步暂不可用：{reason}": "Sinkronisasi tidak tersedia: {reason}",
+  "账户还在连接，稍后再试": "Masih menghubungkan ke akun. Coba lagi sebentar lagi.",
+  "同步失败：{error}": "Sinkronisasi gagal: {error}",
+  "去设置": "Pengaturan",
 };
 
 export const DATA: Record<string, string> = {
