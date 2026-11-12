@@ -2,13 +2,14 @@
  * 列表页顶部的快速添加（Rei 2026-10-26「从这里添加任务后立即打开任务」；我的一天、待安排、可做都用，组件见 components/QuickAddBar）：
  * 回车建一件任务、放到这一页该放的地方（我的一天放进今天，待安排、可做进待安排），马上选中它——和点列表里一行一样（三列在右列、中等宽度两栏、手机整页推入，hash 写 ?task=id）。
  *
- * 焦点：照详情打开的老规矩，打开详情不抢焦点，也不把光标塞进正文。
- * - 宽屏 / 中等宽度：光标留在添加框里，可以接着写下一件；连着加几件，详情显示最后一件。
- * - 手机：详情整页盖住列表，添加框收起焦点，软键盘随之落下；要写正文再点正文。
+ * 焦点：回车以后光标去哪，看设置 → 任务 →「新建后光标」（Rei 2026-11-13 03:31，电脑和手机一样，取代原来电脑留在框里、手机收键盘的规则）：
+ * - input「留在添加框」：可以接着写下一件，连着加几件，详情显示最后一件；手机上键盘也不收。
+ * - title「详情标题末尾」（默认）：详情打开、动画放完，光标放到详情第一行（标题）末尾，不全选。
+ * - none「不放光标」：添加框交出焦点，详情照常打开、不抢焦点，手机键盘收起。
+ * 存在同步的偏好 tasks.new_task_focus（跟着账户走，各设备一样）。
  * 新任务滚到看得见的地方；连着加时只滚最后一件。
  */
-import { plainTitleMarkdown } from '@mindough/core';
-import type { LayoutKind } from '../skin/platform';
+import { plainTitleMarkdown, type FieldValue } from '@mindough/core';
 
 export interface QuickAddDeps {
   createTask: (input: { body_md: string; scheduled_date?: string }) => { id: string };
@@ -51,14 +52,57 @@ export function todayDefaults(on: boolean, today: string): { scheduled_date?: st
   return on ? { scheduled_date: today } : {};
 }
 
+/** 「新建后光标」的三种（Rei 2026-11-13 03:31）。 */
+export const NEW_TASK_FOCUS = ['input', 'title', 'none'] as const;
+export type NewTaskFocus = (typeof NEW_TASK_FOCUS)[number];
+/** 同步偏好的键；没设过就是默认「详情标题末尾」。 */
+export const NEW_TASK_FOCUS_PREF = 'tasks.new_task_focus';
+export const NEW_TASK_FOCUS_DEFAULT: NewTaskFocus = 'title';
+
+export function normalizeNewTaskFocus(v: FieldValue | undefined): NewTaskFocus {
+  return typeof v === 'string' && (NEW_TASK_FOCUS as readonly string[]).includes(v) ? (v as NewTaskFocus) : NEW_TASK_FOCUS_DEFAULT;
+}
+
+// 光标进详情标题末尾：回车那一下记住 id，详情的正文编辑器挂上时取（3 秒内有效：编辑器第一次要按需加载，React 严格模式重复挂载也认）
+let titleReq: { id: string; at: number } | null = null;
+
+export function wantsTitleFocus(id: string): boolean {
+  return !!titleReq && titleReq.id === id && Date.now() - titleReq.at < 3000;
+}
+
+/**
+ * 等 el 外面（含它自己）正在放的动画放完：手机详情整页推入（page-push 0.26s）、详情浮层升起（rise 0.2s）。
+ * 宽屏右列没有动画，马上就好。最多等 maxMs，动画被取消也算完。
+ */
+export function waitForMotion(el: Element, maxMs = 800): Promise<void> {
+  const doc = el.ownerDocument;
+  const all = typeof doc.getAnimations === 'function' ? doc.getAnimations() : [];
+  const mine = all.filter((a) => {
+    const t = (a.effect as KeyframeEffect | null)?.target;
+    return !!t && a.playState === 'running' && (t === el || t.contains(el));
+  });
+  if (!mine.length) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, maxMs);
+    void Promise.all(mine.map((a) => a.finished.catch(() => undefined))).then(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 let scrollToken = 0;
 
 /**
- * 加完以后的收尾：手机上让添加框交出焦点（收起软键盘），再把新行滚进视野。
+ * 加完以后的收尾：按「新建后光标」放焦点，再把新行滚进视野。
+ * - input：什么都不动，焦点本来就在添加框；
+ * - title：记下要把光标放进这件的详情标题末尾（TaskDetail 读 wantsTitleFocus）；焦点先留在添加框，详情编辑器拿走时手机键盘不会先收再弹；
+ * - none：添加框交出焦点（手机收起软键盘）。
  * 列表要等下一帧才渲染出新行，所以放到 requestAnimationFrame 里；连着加时旧的那次作废。
  */
-export function afterQuickAdd(taskId: string, input: HTMLElement | null, layout: LayoutKind, root: ParentNode = document): void {
-  if (layout === 'mobile') input?.blur();
+export function afterQuickAdd(taskId: string, input: HTMLElement | null, focus: NewTaskFocus, root: ParentNode = document): void {
+  if (focus === 'none') input?.blur();
+  titleReq = focus === 'title' ? { id: taskId, at: Date.now() } : null;
   const token = ++scrollToken;
   const scroll = (tries: number) => {
     if (token !== scrollToken) return;

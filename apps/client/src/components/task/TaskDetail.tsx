@@ -19,6 +19,7 @@ import { Markdown } from '../Markdown';
 import { FieldInput, MODE_ICON, TypeFields } from './pickers';
 import { LazyMdEditor } from '../editor/LazyMdEditor';
 import { wantsBodyFocus } from '../../lib/blank-task';
+import { wantsTitleFocus } from '../../lib/quick-add';
 import { detailMenu, type DetailMenuId } from '../../lib/task-menu';
 import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachments/Attachments';
 import { ChainToggle, TaskChainInline } from './TaskChain';
@@ -219,8 +220,9 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
       <LazyMdEditor
         // 任务的第一行是标题，只能是纯文字（Rei 2026-11-03，挂了资料的任务也一样）
         plainTitle
-        // 打卡 / 倒数日页「新建」的空任务：光标直接进正文第一行（lib/blank-task）
-        autoFocus={!readOnly && wantsBodyFocus(task.id)}
+        // 打卡 / 倒数日页「新建」的空任务：光标直接进正文第一行（lib/blank-task）；
+        // 添加框回车新建、设置「新建后光标」是「详情标题末尾」：等详情的动画放完，光标放到第一行末尾（lib/quick-add）
+        autoFocus={readOnly ? false : wantsBodyFocus(task.id) ? true : wantsTitleFocus(task.id) ? 'title-end' : false}
         className="detail-md"
         // 打 @ 提到别的普通任务（Rei 2026-11-10），不列自己
         mention={{ scope: 'task', selfId: task.id }}

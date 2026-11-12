@@ -22,6 +22,7 @@ import { PageHeader } from '../components/PageHeader';
 import { CalendarSettings } from '../components/CalendarSettings';
 import { normalizeColorLevel, useSettings, type Settings } from '../lib/settings';
 import { suggestionsOn } from '../lib/myday-suggest';
+import { NEW_TASK_FOCUS, NEW_TASK_FOCUS_PREF, normalizeNewTaskFocus, type NewTaskFocus } from '../lib/quick-add';
 import { detectPlatform, PLATFORM_LABEL, SKIN_LABEL, skinForPlatform, type Platform } from '../skin/platform';
 import { storageInfo, useNow, useStore } from '../store/StoreProvider';
 
@@ -44,7 +45,7 @@ import type { LocalePref } from '../lib/i18n';
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒
  * - 时间：一天从几点开始（Rei 2026-11-13 01:16 从「日记」挪过来，全局生效：我的一天、过期积压、日历、项目、打卡、倒数日、日记的「今天」都按它算）
  * - 系统：开机时启动、开机自启时最小化应用（这两项只在 macOS / Windows 桌面 App 有）、启动时打开哪一页（Rei 2026-11-13，都只记在本机）
- * - 任务：我的一天（显示建议、默认日期：今天）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
+ * - 任务：我的一天（显示建议、默认日期：今天）、新建任务（新建后光标）、严格模式、日期显示（资料库入口 2026-11-09 删了，从侧栏「管理」进）
  * - 日历：节假日（显示开关 + 节假日订阅）、农历开关、日历订阅（Rei 2026-11-10，农历从「任务」挪过来，docs/CALENDAR.md）
  * - 打卡：在打卡页顶部显示活动图（Rei 2026-11-10 加）
  * - 日记：每天提醒写日记
@@ -61,7 +62,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
   { id: 'reminders', icon: Bell, label: () => trc('设置分区', '提醒'), hint: () => tr('任务提醒的通知') },
   { id: 'time', icon: Clock, label: () => trc('设置分区', '时间'), hint: () => tr('一天从几点开始，「今天」都按它算') },
   { id: 'system', icon: MonitorCog, label: () => trc('设置分区', '系统'), hint: () => (autostartSupported(currentPlatform()) ? tr('开机时启动、启动时打开哪一页') : tr('启动时打开哪一页')) },
-  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、严格模式、日期显示') },
+  { id: 'tasks', icon: ListTodo, label: () => trc('设置分区', '任务'), hint: () => tr('我的一天、新建任务、严格模式、日期显示') },
   { id: 'calendar', icon: CalendarIcon, label: () => trc('设置分区', '日历'), hint: () => (isChineseLocale() ? tr('节假日、农历、日历订阅') : tr('节假日、日历订阅')) },
   { id: 'checkin', icon: CalendarCheck2, label: () => trc('导航', '打卡'), hint: () => tr('打卡页顶部的活动图') },
   { id: 'journal', icon: NotebookPen, label: () => tr('日记'), hint: () => tr('每天提醒写日记') },
@@ -104,6 +105,7 @@ function SectionBody({ id }: { id: SettingsSection }) {
       return (
         <>
           <MyDaySection />
+          <NewTaskSection />
           <StrictSection />
           <DateDisplaySection />
         </>
@@ -500,6 +502,40 @@ function MyDaySection() {
             <div className="setting-hint">{tr('在我的一天里新建的任务，日期自动填今天。只在这台设备上生效。')}</div>
           </div>
           <Switch label={tr('默认日期：今天')} isSelected={settings.myDayDefaultToday} onChange={(v) => set('myDayDefaultToday', v)} />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * 新建任务（Rei 2026-11-13 03:31「设置→任务里加一个下拉，控制回车新建后光标去哪」）：
+ * 我的一天、等待安排、项目详情的添加框按回车新建以后，光标留在添加框 / 放到详情标题末尾（默认）/ 不放。
+ * 电脑和手机都按它；存同步的偏好 tasks.new_task_focus，换设备也一样（lib/quick-add）。日历「+」、打卡 / 倒数日「新建」不归它管。
+ */
+const NEW_TASK_FOCUS_LABEL: Record<NewTaskFocus, () => string> = {
+  input: () => tr('留在添加框'),
+  title: () => tr('详情标题末尾'),
+  none: () => tr('不放光标'),
+};
+function NewTaskSection() {
+  const store = useStore();
+  const focus = normalizeNewTaskFocus(store.pref(NEW_TASK_FOCUS_PREF));
+  return (
+    <Section title={tr('新建任务')}>
+      <div className="card settings-card">
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('新建后光标')}</div>
+            <div className="setting-hint">{tr('在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。')}</div>
+          </div>
+          <Select
+            label={tr('新建后光标')}
+            className="setting-select"
+            value={focus}
+            onChange={(v) => store.setPref(NEW_TASK_FOCUS_PREF, normalizeNewTaskFocus(v))}
+            options={NEW_TASK_FOCUS.map((f) => ({ id: f, label: NEW_TASK_FOCUS_LABEL[f]() }))}
+          />
         </div>
       </div>
     </Section>

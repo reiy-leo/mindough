@@ -1530,4 +1530,10 @@ export const EN: Record<string, EnValue> = {
   "设置分区|时间": "Time",
   "一天从几点开始，「今天」都按它算": "When the day starts — “today” follows it everywhere",
   "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Before this hour it still counts as the previous day: at 3 AM, My Day, Overdue, Calendar, Projects, Check-ins, Countdowns and Journal all still show yesterday. Reminders follow the real clock.",
+  "我的一天、新建任务、严格模式、日期显示": "My Day, new tasks, strict mode, date display",
+  "新建后光标": "Cursor After Adding",
+  "留在添加框": "Stay in Add Field",
+  "详情标题末尾": "End of Title in Details",
+  "不放光标": "Nowhere",
+  "在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。": "Where the cursor goes after you press Enter in the add field on My Day, Inbox, or a project. Stay in the add field to keep adding; with Nowhere, the phone keyboard closes. Syncs with your account.",
 };

@@ -1817,6 +1817,12 @@ export const MESSAGES: Record<string, MessageValue> = {
   "设置分区|时间": "Waktu",
   "一天从几点开始，「今天」都按它算": "Kapan hari dimulai — “hari ini” di semua tempat mengikutinya",
   "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Sebelum jam ini masih dihitung hari sebelumnya: pukul 3 dini hari, Hari Saya, Terlambat, Kalender, Proyek, Kebiasaan, Hitung mundur, dan Jurnal masih menampilkan kemarin. Pengingat tetap mengikuti jam sebenarnya.",
+  "我的一天、新建任务、严格模式、日期显示": "Hari Saya, tugas baru, mode ketat, tampilan tanggal",
+  "新建后光标": "Kursor setelah menambah",
+  "留在添加框": "Tetap di kolom tambah",
+  "详情标题末尾": "Akhir judul di detail",
+  "不放光标": "Tidak di mana pun",
+  "在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。": "Ke mana kursor setelah kamu menekan Enter di kolom tambah Hari Saya, Kotak Masuk, atau proyek. Tetap di kolom tambah agar bisa terus menambah; dengan Tidak di mana pun, keyboard ponsel tertutup. Disinkronkan dengan akunmu.",
 };
 
 export const DATA: Record<string, string> = {

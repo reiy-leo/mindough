@@ -3,12 +3,12 @@ import { Form, TextField } from 'react-aria-components';
 import { WrapInput, stripNewlines } from './WrapInput';
 import { Plus } from 'lucide-react';
 import { useUiStable } from '../lib/ui';
-import { useSettings } from '../lib/settings';
-import { afterQuickAdd, quickAdd } from '../lib/quick-add';
+import { useStore } from '../store/StoreProvider';
+import { afterQuickAdd, NEW_TASK_FOCUS_PREF, normalizeNewTaskFocus, quickAdd } from '../lib/quick-add';
 
 /**
  * 列表页最上面的快速添加框（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）。
- * 回车建任务，马上打开它（「从这里添加任务后立即打开任务」）；焦点、滚动见 lib/quick-add。
+ * 回车建任务，马上打开它（「从这里添加任务后立即打开任务」）；之后光标去哪按设置「新建后光标」，焦点、滚动见 lib/quick-add。
  * create 负责建任务并放到对的地方（今天 / 待安排），返回新任务的 id。
  * trailing：输入框行尾的小图标按钮。
  * meta：框下面那行小字（日期、件数），和框一起固定。
@@ -35,7 +35,7 @@ export function useStuck() {
 
 export function QuickAddBar({ placeholder, label, create, trailing, meta, head }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode; head?: ReactNode }) {
   const ui = useUiStable();
-  const { layout } = useSettings();
+  const store = useStore();
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLTextAreaElement>(null);
   const { sentinel, stuck } = useStuck();
@@ -43,7 +43,8 @@ export function QuickAddBar({ placeholder, label, create, trailing, meta, head }
     const id = quickAdd({ create, openEditor: ui.openEditor }, draft);
     if (!id) return;
     setDraft('');
-    afterQuickAdd(id, input.current, layout);
+    // 光标去哪看设置「新建后光标」（同步偏好，电脑和手机一样，Rei 2026-11-13）
+    afterQuickAdd(id, input.current, normalizeNewTaskFocus(store.pref(NEW_TASK_FOCUS_PREF)));
   };
   return (
     <>

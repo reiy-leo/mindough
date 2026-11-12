@@ -1817,6 +1817,12 @@ export const MESSAGES: Record<string, MessageValue> = {
   "设置分区|时间": "Heure",
   "一天从几点开始，「今天」都按它算": "Début de la journée : « aujourd’hui » le suit partout",
   "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Avant cette heure, c’est encore la veille : à 3 h du matin, Ma journée, En retard, Calendrier, Projets, Habitudes, Comptes à rebours et Journal affichent encore hier. Les rappels suivent l’heure réelle.",
+  "我的一天、新建任务、严格模式、日期显示": "Ma journée, nouvelles tâches, mode strict, affichage des dates",
+  "新建后光标": "Curseur après l’ajout",
+  "留在添加框": "Rester dans le champ d’ajout",
+  "详情标题末尾": "Fin du titre dans les détails",
+  "不放光标": "Nulle part",
+  "在我的一天、等待安排、项目的添加框里按回车新建以后，光标放在哪。留在添加框能接着新建；不放光标时手机键盘收起。跟着账户同步。": "Où va le curseur quand vous appuyez sur Entrée dans le champ d’ajout de Ma journée, Réception ou d’un projet. S’il reste dans le champ, vous pouvez continuer à ajouter ; avec « Nulle part », le clavier du téléphone se ferme. Synchronisé avec votre compte.",
 };
 
 export const DATA: Record<string, string> = {

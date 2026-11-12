@@ -28,6 +28,7 @@
  */
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { waitForMotion } from '../../lib/quick-add';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
 import { Calendar, Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
@@ -53,7 +54,8 @@ export interface MdEditorProps {
   onChange: (md: string) => void;
   label: string;
   placeholder?: string;
-  autoFocus?: boolean;
+  /** true：挂上就把光标放到最后；'title-end'：等外面的动画（详情推入 / 浮层升起）放完，光标放到第一行末尾（添加框新建，Rei 2026-11-13）。 */
+  autoFocus?: boolean | 'title-end';
   onBlur?: () => void;
   onEscape?: () => void;
   className?: string;
@@ -278,11 +280,23 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     if (handleRef) handleRef.current = handle.current;
     // 自动聚焦等编辑器挂到页面上再做（这一刻 view 可能还没挂，直接 commands.focus 会抛「reading 'commands' of null」，2026-11-09）
     let focusTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
     const tryFocus = (left: number) => {
       focusTimer = undefined;
       try {
         if (editor.isDestroyed) return;
-        if (editor.view.dom.isConnected) return void editor.commands.focus('end', { scrollIntoView: false });
+        if (editor.view.dom.isConnected) {
+          if (autoFocus !== 'title-end') return void editor.commands.focus('end', { scrollIntoView: false });
+          const dom = editor.view.dom;
+          void waitForMotion(dom).then(() => {
+            if (cancelled || editor.isDestroyed || !dom.isConnected) return;
+            // 第一行（标题）末尾，光标不全选：第一个块里最后一个字后面
+            const first = editor.state.doc.firstChild;
+            const pos = first ? Math.max(1, first.nodeSize - 1) : 1;
+            editor.commands.focus(pos, { scrollIntoView: false });
+          });
+          return;
+        }
       } catch {
         /* 还没挂上：下面再等等 */
       }
@@ -290,6 +304,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     };
     if (autoFocus && !readOnly) focusTimer = setTimeout(() => tryFocus(10), 0);
     return () => {
+      cancelled = true;
       if (focusTimer) clearTimeout(focusTimer);
       handle.current = null;
       if (handleRef) handleRef.current = null;
