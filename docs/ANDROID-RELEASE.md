@@ -43,7 +43,7 @@ GitHub 仓库的 Actions secrets：
 ## CI 怎么做（`.github/workflows/build.yml`）
 
 1. **android 任务**：`pnpm tauri android build --apk --target aarch64` 打未签名的 release 包，`zipalign` 后用 `apksigner` 签（v2 / v3 签名），再核证书指纹，和 workflow 里写死的 `ANDROID_CERT_SHA256` 对不上就失败。图标、显示名、WebView 不缩放、版本号这几步照旧。产物叫 `Mindough-<版本>-android-arm64.apk`，artifact 名 `mindough-android-release`。
-2. **release-android 任务**（推标签）：把这个 APK 挂到 Release 草稿。
+2. **release-android 任务**（推标签）：把这个 APK 挂到 Release 草稿。正式版标签（比如 `v0.1.0`，不带 `-alpha` 之类）挂完后直接发布，不留草稿、不算预发布。
 3. **fdroid 任务**（推标签，或手动触发时勾选 `fdroid_test`）：用 pip 装最新的 fdroidserver（Ubuntu 源里的 2.2.1 带的 androguard 太旧，读新版 AGP 打的包会报 `res1 must be zero!`），跑 `scripts/fdroid/publish.sh`：
    - 把源里已有的 APK 下载回来，放进新的 APK；
    - `fdroid update` 重建索引（index-v1、index-v2、entry.jar），用源钥匙签名；最新 3 个版本放 `repo/`，更早的挪进 `archive/`；

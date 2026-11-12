@@ -1,5 +1,5 @@
 # 打原生安装包：macOS（universal）、Windows（msi / nsis）、Linux（AppImage / deb）未签名；Android 是用固定钥匙签名的 release APK（docs/ANDROID-RELEASE.md）。
-# 手动触发，或推 v* 标签；版本号按标签填（scripts/app-version.mjs：macOS「0.1.0 (13)」、msi 0.1.0.13、APK 0.1.0-alpha.13），手动触发是 0.1.0-dev+短哈希；产物上传为 Actions artifacts，推标签时另建 Release 草稿（alpha 也建，预发布），APK 一并挂上，同时发到自建 F-Droid 源 https://fdroid.rei8t.dev/repo；iOS 见 ios.yml（手动）。
+# 手动触发，或推 v* 标签；版本号按标签填（scripts/app-version.mjs：macOS「0.1.0 (13)」、msi 0.1.0.13、APK 0.1.0-alpha.13），手动触发是 0.1.0-dev+短哈希；产物上传为 Actions artifacts，推标签时另建 Release 草稿（alpha 也建，预发布；正式版标签最后自动发布），APK 一并挂上，同时发到自建 F-Droid 源 https://fdroid.rei8t.dev/repo；iOS 见 ios.yml（手动）。
 name: Build apps
 
 on:
@@ -239,6 +239,13 @@ jobs:
             gh api "repos/$GITHUB_REPOSITORY/git/tags/$(echo "$ref" | jq -r .object.sha)" --jq .message > notes.md
             gh release edit "$GITHUB_REF_NAME" --notes-file notes.md -R "$GITHUB_REPOSITORY"
           fi
+      # 正式版（标签不带 -alpha / -beta / -rc，比如 v0.1.0）最后直接发布：去掉草稿和预发布，标成最新（Rei 2026-11-13 发第一个正式版）。
+      # 预发布标签照旧留草稿 + 预发布
+      - name: 正式版直接发布
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease=false --latest -R "$GITHUB_REPOSITORY"
 
   # 发到自建 F-Droid 源（docs/ANDROID-RELEASE.md）：推标签时发正式源；手动触发勾了 fdroid_test 就发到试跑目录 _test/
   fdroid:
