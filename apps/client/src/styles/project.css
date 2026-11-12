@@ -250,7 +250,7 @@
   --tl-base: #202020;
 }
 [data-skin='material'][data-theme='dark'] .timeline {
-  --tl-base: #141218;
+  --tl-base: #111318;
 }
 [data-layout='mobile'] .timeline {
   --tl-name-w: 112px;

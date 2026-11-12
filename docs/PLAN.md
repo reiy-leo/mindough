@@ -1819,9 +1819,9 @@ Rei 2026-11-09：设置 → 外观加「色彩」，三段，默认标准，只�
 
 - **设置**：`settings.colorLevel`（`plain | standard | vivid`，认不出来当 standard），本机，不同步。`SettingsProvider` 渲染时直接把 `<html data-color-level>` 挂好（心情河流、日记热力图在子组件的 layout effect 里读 CSS 变量，比 provider 的 effect 早）。URL 加 `?color=plain|vivid` 能临时切（截图用）。读档位用 `lib/color-level` 的 `useColorLevel()`（没有 provider 时当标准）。
 - **样式**：`styles/color-level.css`，在 skins.css 后面引入，选择器带 `:root` 盖过皮肤令牌。标准档在样式里一条都没有。
-  - 素净：亮暗各一套中性强调色（`--accent` 近黑 / 近白，`--accent-contrast` 反过来），`--danger`（亮 #6e6e73、暗 #aeaeb2，对卡片底都过 4.5:1；WinUI 亮色素净档 `--text-3` 加深到 0.58，暗色热力图 1 号数字换深字）、`--success`、`--warning`、`--state-*`、`--heat-color`、`--alert-*`、12 个 `--mood-*` 换成深浅灰；Material 的中性色换纯灰，WinUI 不画 Mica 渐变。行内 style 带颜色的（`--chip-color`、`--heat-color-local`、`.meta-type` / `.thumb-icon` / 打卡行首类型图标的 color）用 `!important` 盖成中性色；`.icon-tile` 去掉底色、图标用 `--text-2`；类型筛选胶囊 `--chip-*` 换灰底细描边；资料的按名字渐变占位 `grayscale(1)`；写死颜色的太阳、火苗、调色板「加」、Apple 开关的绿、Material 提示条的紫都换掉。过期（`.meta-date.is-overdue`、`.chain-when.is-overdue`）用 `--danger` 加粗 + `::before` 一个 Lucide circle-alert（mask）。暗色下实心删除按钮换深字。
+  - 素净：亮暗各一套中性强调色（`--accent` 近黑 / 近白，`--accent-contrast` 反过来），`--danger`（亮 #6e6e73、暗 #aeaeb2，对卡片底都过 4.5:1；WinUI 亮色素净档 `--text-3` 加深到 0.58，暗色热力图 1 号数字换深字）、`--success`、`--warning`、`--state-*`、`--heat-color`、`--alert-*`、12 个 `--mood-*` 换成深浅灰；Material 的中性色（2026-11-13 起带蓝，以前带紫）换纯灰，WinUI 不画 Mica 渐变。行内 style 带颜色的（`--chip-color`、`--heat-color-local`、`.meta-type` / `.thumb-icon` / 打卡行首类型图标的 color）用 `!important` 盖成中性色；`.icon-tile` 去掉底色、图标用 `--text-2`；类型筛选胶囊 `--chip-*` 换灰底细描边；资料的按名字渐变占位 `grayscale(1)`；写死颜色的太阳、火苗、调色板「加」、Apple 开关的绿、Material 提示条的紫都换掉。过期（`.meta-date.is-overdue`、`.chain-when.is-overdue`）用 `--danger` 加粗 + `::before` 一个 Lucide circle-alert（mask）。暗色下实心删除按钮换深字。
   - 多彩：`.section-title.is-tinted` 用 `color-mix(心情 / 项目色 65%, --text)`；项目页 `.main[data-project-tint]` 下看板卡片 `border-top: 3px`、时间轴条 `inset 0 3px 0` 项目色；`--detail-tint`（App 里 `useDetailTint` 挂在 `<html>` 上，右列、手机整页、看板浮层都继承）给 `.pane-detail` 顶部 120px 的 16% 淡色渐变；`.ci-ring .ring-fill` 用 `--ci-color`（TaskRow 打卡行、打卡页行上挂类型色）；置顶资料库 `.nav-icon` 用 `--vivid-color`。
-- **JS 里算颜色的地方**：`cardColorVars(task, theme, level)` 素净档一律用 core 的 gray（亮 #e0e0e3）；`useProjectTint(g)` 素净不铺、多彩宽屏也铺（`groupColor` 兜底默认色）、标准照旧；TaskRow 多彩档的类型名、项目名用 `readableTint`（往黑 / 白靠，直到对白和 Material 最暗的 #ece6f0、暗色对 #242426 和 #3a3a3c 都 ≥ 4.5:1）；分区标题 `SectionedList` 多彩档不画色点；心情河流空状态那股素净档不带紫。
+- **JS 里算颜色的地方**：`cardColorVars(task, theme, level)` 素净档一律用 core 的 gray（亮 #e0e0e3）；`useProjectTint(g)` 素净不铺、多彩宽屏也铺（`groupColor` 兜底默认色）、标准照旧；TaskRow 多彩档的类型名、项目名用 `readableTint`（往黑 / 白靠，直到对白和 Material 最暗的 #e8e7ee（2026-11-13 前是 #ece6f0）、暗色对 #242426 和 #3a3a3c 都 ≥ 4.5:1）；分区标题 `SectionedList` 多彩档不画色点；心情河流空状态那股素净档不带紫。
 - **没做**：老数据里的 emoji 图标本身有颜色，素净档照样显示；选颜色的色板（项目 / 类型 / 倒数日）保持彩色；图片、海报、头像不去色。
 - 新文案 6 条（色彩、素净、标准、多彩、说明、外观小字改成「皮肤、语言、明暗、色彩、布局」）9 种语言，7 种待母语者看。测试：client `lib/color-level.test.ts` 12 项。截图脚本 `work/cl-tool/cl.mjs`（LightVela ~/cl-tool）。
 
@@ -2232,3 +2232,20 @@ Rei 2026-11-12 10:19：「已完成页：去掉header，也去掉分区按钮切
 - **文案**：「按日期」只给已完成的分区菜单用，九种语言一起删（`SECTION_LABEL` 去掉 `date`）。
 - **测试**：`lib/hide-scrollbar.test.ts` 已完成那条改成「没有页头 / 分区按钮 / StickyHead、有读屏 h1、第一段不叠外边距」；`lib/sections.test.ts` 积压那条改成固定按日期。自查 `work/done-page-hdr/`，截图 `work/shots-d1112-donehdr/`。
 
+
+### Material 皮肤紫换蓝 ✅（2026-11-13）
+Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「换成和 Apple 皮肤一样的蓝」。
+
+- **强调色**：`--accent` 亮 #007aff、暗 #0a84ff，和 Apple 皮肤一样；`--accent-hover` 也用 Apple 的（#0068d9 / #409cff）；`--heat-color` 跟强调色，热力图的两档淡色照旧由它和 `--heat-empty` 混出来。
+- **派生色**：按 M3 Tonal Spot 从 #007aff 推（`@material/material-color-utilities`，脚本 `work/m3-blue/gen.mjs`），一一对应原来紫的那一档：
+  - 淡底和上面的字：`--accent-soft` / `--nav-active-bg` 亮 #dbe2f9（secondary 90）配 #141b2c（13.3:1），暗 #3f4759（secondary 30）配 #dbe2f9（7.2:1）。选中行、导航选中、选中的胶囊、分段按钮、图标格子都走这一对。
+  - 暗色强调色上的字 `--accent-contrast` 从 #381e72 换成 #001a41（primary 10），在 #0a84ff 上 4.7:1；白字只有 3.65:1，所以没跟 Apple 用白字。亮色还是白字。
+  - 焦点圈：亮 `rgba(0, 122, 255, 0.4)`，暗色单独一条 `rgba(10, 132, 255, 0.5)`；选中文字底亮 0.22、暗 0.35。
+  - 中性色（页面底、卡片、描边、正文、第二三级文字）换成带一点蓝的 neutral / neutral-variant：亮 #f9f9ff / #f3f3fa / #ededf4 / #e8e7ee，描边 #c4c6d0 / #74777f，字 #1a1b20 / #44474f / #565e71；暗 #111318 / #1a1b20 / #1e1f25 / #282a2f，描边 #44474f / #8e9099，字 #e2e2e9 / #c4c6d0 / #a9abb4。第三级文字在最深的卡片底上亮 5.3:1、暗 6.3:1。
+  - 提示条（toast）：亮色底 #2f3036、动作按钮 #adc6ff（7.7:1）；暗色底 #e2e2e9、动作按钮 #0058c4（5.1:1，#007aff 在浅底上只有 3.1:1）。
+  - 时间轴垫底 `--tl-base` 暗色 #111318；`readableTint` 的亮色最暗卡片底改成 #e8e7ee。
+- **分类色**：提示块「重要」`--alert-important` 和视频附件 `--file-video` 用 Apple 皮肤同款紫（亮 #8944ab、暗 #bf5af2），和「注意」的蓝（#0061a4 / #9ecaff）、文档的蓝分开；其他文件附件 `--file-file` 换成中性灰 #5c5e66 / #c4c6d0。
+- **安卓原生层**：仓库里只有 `scripts/android-webview.sh` 写死了 WebView 和窗口的不透明底（跟 Material 的 `--bg`），改成 0xFFF9F9FF / 0xFF111318。启动图标背景 `ic_launcher_background` 本来就是蓝（#2BA4FB）；主题、状态栏、colors.xml 是 CI 里 `tauri android init` 现生成的，仓库里没有，也没有脚本去改，这次不动。下次发版生效。
+- **没动**：素净档（`color-level.css` 那几段照旧）；其它皮肤；用户自己给类型选的颜色（列表里还会有紫，那是数据）；心情河流空状态那一股淡紫（三个皮肤共用）。没加 color-mix。
+- **对比度**：亮色 #007aff 上的白字是 4.02:1，#007aff 当字放在浅底上是 3.6–4.0:1，和 Apple 皮肤一样，达不到 4.5:1，留给 Rei 定。
+- **测试**：新加 `lib/material-blue.test.ts`（强调色和 Apple 一致、没有 M3 紫、正文 / 容器字 / 暗色强调色上的字 ≥ 4.5:1、两段色板不用 color-mix）；`lib/list-surface.test.ts` 页面底改成 #f9f9ff。自查 `work/m3-blue/m3.mjs`（Material 亮暗 × 1366 / 390 × 我的一天、详情、日历、打卡、设置、日期选择器，量真实元素的字色和底色，扫一遍紫），截图 `work/shots-d1113-m3blue/`。

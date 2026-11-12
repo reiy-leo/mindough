@@ -1,6 +1,6 @@
 /**
  * Material 亮色任务列表的底（Rei 2026-11-10「安卓端亮色主题下，任务列表的背景灰蒙蒙的」）：
- * 原来列表用 --surface（#f7f2fa），比页面底 #fef7ff 还深一档，整片发灰。
+ * 原来列表用 --surface（当时 #f7f2fa），比页面底（当时 #fef7ff）还深一档，整片发灰。2026-11-13 紫换蓝后页面底是 #f9f9ff。
  * 改成 --list-surface：亮色 #ffffff（M3 surface-container-lowest），暗色等于原来的 --surface（不变）。
  */
 import { readFileSync } from 'node:fs';
@@ -24,7 +24,7 @@ describe('Material 列表底色', () => {
 
   it('亮色列表是白底，比页面底亮', () => {
     expect(prop(light, '--list-surface')).toBe('#ffffff');
-    expect(prop(light, '--bg')).toBe('#fef7ff');
+    expect(prop(light, '--bg')).toBe('#f9f9ff');
   });
 
   it('暗色列表底不变（等于暗色 --surface）', () => {

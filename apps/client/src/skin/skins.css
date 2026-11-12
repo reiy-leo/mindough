@@ -447,20 +447,21 @@
   background: transparent;
 }
 [data-skin='material'] .toast {
-  background: #322f35;
-  color: #f5eff7;
+  background: #2f3036;
+  color: #f0f0f7;
   border: 0;
   border-radius: 4px;
 }
+/* 动作按钮：亮色 M3 inverse-primary（蓝 P80）7.7:1；暗色浅底上用 Apple 的深一档蓝 #0058c4（5.1:1，#007aff 只有 3.1:1） */
 [data-skin='material'] .toast .toast-action {
-  color: #d0bcff;
+  color: #adc6ff;
 }
 [data-skin='material'][data-theme='dark'] .toast {
-  background: #e6e0e9;
-  color: #322f35;
+  background: #e2e2e9;
+  color: #2f3036;
 }
 [data-skin='material'][data-theme='dark'] .toast .toast-action {
-  color: #6750a4;
+  color: #0058c4;
 }
 [data-skin='material'] .heat-cell {
   border-radius: 3px;

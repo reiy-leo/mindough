@@ -5,7 +5,7 @@
 # 页面自己有亮暗两套颜色（color-scheme: light dark），不要系统再算一遍。API 33+ setAlgorithmicDarkeningAllowed(false)；
 # 29–32 settings.forceDark = FORCE_DARK_OFF；View 本身 isForceDarkAllowed = false。targetSdk ≥ 33 时前两条本来就是默认关，写明白防老 WebView。
 # 再加不透明底（2026-11-11，alpha.22 装上后 Rei 05:27「还是在 select text 时就会背景变黑」）：WebView 自己的底色、窗口底色
-# 先按系统深浅色设成和 Material 皮肤一样的不透明色（亮 #fef7ff、暗 #141218），再挂 window.MindoughAndroid.setBackground('#rrggbb')，
+# 先按系统深浅色设成和 Material 皮肤一样的不透明色（亮 #f9f9ff、暗 #111318；2026-11-13 紫换蓝后的值），再挂 window.MindoughAndroid.setBackground('#rrggbb')，
 # 网页那边（apps/client/src/lib/android-bg.ts）换皮肤、深浅色时把 body 的底色发过来。哪一帧露出 WebView 后面，也是界面的颜色。
 # tauri.conf.json 没写 backgroundColor / transparent，wry 不会在 onWebViewCreate 之后再改 WebView 底色（wry 0.57 main_pipe.rs）。
 # proguard-rules.pro 里保住桥接方法，release 包混淆后 JS 照样调得到。
@@ -60,10 +60,10 @@ block = f'''
     webView.addJavascriptInterface(MindoughBgBridge(this, webView), "MindoughAndroid")
   }}
 
-  // 和 Material 皮肤的 --bg 一样（skin/tokens.css）：亮 #fef7ff、暗 #141218
+  // 和 Material 皮肤的 --bg 一样（skin/tokens.css）：亮 #f9f9ff、暗 #111318
   private fun mindoughDefaultBackground(): Int {{
     val mode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-    return if (mode == android.content.res.Configuration.UI_MODE_NIGHT_YES) 0xFF141218.toInt() else 0xFFFEF7FF.toInt()
+    return if (mode == android.content.res.Configuration.UI_MODE_NIGHT_YES) 0xFF111318.toInt() else 0xFFF9F9FF.toInt()
   }}
 
   fun mindoughApplyBackground(webView: android.webkit.WebView, color: Int) {{

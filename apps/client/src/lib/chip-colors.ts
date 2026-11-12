@@ -90,8 +90,8 @@ export function chipColors(color: string | null | undefined, theme: ChipTheme): 
 export function readableTint(color: string | null | undefined, theme: ChipTheme): string | null {
   const c = parseHex(color);
   if (!c) return null;
-  // 三种皮肤的卡片底不一样：亮色最暗的是 Material 的 #ece6f0、暗色最亮的是 Apple 的 #3a3a3c，两头都要够
-  const bases: Rgb[] = theme === 'light' ? [BASE.light, [236, 230, 240]] : [BASE.dark, [58, 58, 60]];
+  // 三种皮肤的卡片底不一样：亮色最暗的是 Material 的 #e8e7ee（2026-11-13 紫换蓝，原 #ece6f0）、暗色最亮的是 Apple 的 #3a3a3c，两头都要够
+  const bases: Rgb[] = theme === 'light' ? [BASE.light, [232, 231, 238]] : [BASE.dark, [58, 58, 60]];
   const toward: Rgb = theme === 'light' ? BLACK : INK_LIGHT;
   for (let t = 0; t <= 1; t += 0.05) {
     const ink = mix(toward, c, t);

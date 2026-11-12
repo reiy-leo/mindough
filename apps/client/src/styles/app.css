@@ -116,10 +116,10 @@ img:not([draggable='true']) {
   background-color: rgba(96, 205, 255, 0.3);
 }
 [data-skin='material'] ::selection {
-  background-color: rgba(103, 80, 164, 0.22);
+  background-color: rgba(0, 122, 255, 0.22);
 }
 [data-skin='material'][data-theme='dark'] ::selection {
-  background-color: rgba(208, 188, 255, 0.3);
+  background-color: rgba(10, 132, 255, 0.35);
 }
 /* 上面几条比 Tiptap 自带的 .ProseMirror-hideselection *::selection 更具体，这里压回去：选中图片等节点时不画文字选区 */
 html .ProseMirror.ProseMirror-hideselection ::selection,

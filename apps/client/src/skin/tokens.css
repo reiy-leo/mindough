@@ -253,89 +253,92 @@
   --nav-h: 56px;
   --nav-radius: 28px;
 
-  /* M3 基线色板（以后接 Android 动态取色） */
-  --bg: #fef7ff;
+  /* M3 色板，种子色是 Apple 皮肤的蓝 #007aff（Rei 2026-11-13「换成和 Apple 皮肤一样的蓝」）：
+     强调色亮 #007aff、暗 #0a84ff 直接用 Apple 的值；容器、中性色按 M3 Tonal Spot 从这个蓝推出（material-color-utilities），
+     原来 M3 基准紫 #6750a4 那一套不再用。以后接 Android 动态取色 */
+  --bg: #f9f9ff;
   --bg-image: none;
-  --sidebar-bg: #f7f2fa;
+  --sidebar-bg: #f3f3fa;
   --sidebar-blur: none;
-  --surface: #f7f2fa;
-  --surface-2: #f3edf7;
-  --surface-3: #ece6f0;
-  /* 任务列表的底（Rei 2026-11-10「安卓亮色任务列表背景灰蒙蒙的」）：M3 surface-container-lowest，白卡片放在 #fef7ff 页面底上；
-     原来用 --surface（surface-container-low #f7f2fa），比页面底还深一档，整片列表发灰 */
+  --surface: #f3f3fa;
+  --surface-2: #ededf4;
+  --surface-3: #e8e7ee;
+  /* 任务列表的底（Rei 2026-11-10「安卓亮色任务列表背景灰蒙蒙的」）：M3 surface-container-lowest，白卡片放在 #f9f9ff 页面底上；
+     原来用 --surface（surface-container-low，现在 #f3f3fa），比页面底还深一档，整片列表发灰 */
   --list-surface: #ffffff;
-  --surface-hover: rgba(29, 27, 32, 0.08);
-  --border: #cac4d0;
-  --border-strong: #79747e;
-  --text: #1d1b20;
-  --text-2: #49454f;
-  --text-3: #625b71;
-  --accent: #6750a4;
-  --accent-hover: #5b4697;
+  --surface-hover: rgba(26, 27, 32, 0.08);
+  --border: #c4c6d0;
+  --border-strong: #74777f;
+  --text: #1a1b20;
+  --text-2: #44474f;
+  --text-3: #565e71;
+  --accent: #007aff;
+  --accent-hover: #0068d9;
   --accent-contrast: #ffffff;
-  --accent-soft: #e8def8;
-  --accent-soft-text: #1d192b;
-  --nav-active-bg: #e8def8;
-  --nav-active-text: #1d192b;
-  --nav-active-icon: #1d192b;
+  --accent-soft: #dbe2f9;
+  --accent-soft-text: #141b2c;
+  --nav-active-bg: #dbe2f9;
+  --nav-active-text: #141b2c;
+  --nav-active-icon: #141b2c;
   --danger: #b3261e;
   --success: #386a20;
   --warning: #7d5700;
   --shadow-card: none;
   --shadow-pop: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
-  --focus: 0 0 0 3px rgba(103, 80, 164, 0.4);
-  --tabbar-bg: #f3edf7;
-  --heat-empty: #e7e0ec;
-  --heat-cell-empty: rgba(29, 27, 32, 0.1);
-  --heat-cell-free: rgba(29, 27, 32, 0.05);
-  --heat-color: #6750a4;
+  --focus: 0 0 0 3px rgba(0, 122, 255, 0.4);
+  --tabbar-bg: #ededf4;
+  --heat-empty: #e1e2ec;
+  --heat-cell-empty: rgba(26, 27, 32, 0.1);
+  --heat-cell-free: rgba(26, 27, 32, 0.05);
+  --heat-color: #007aff;
   --state-done: #386a20;
   --state-blocked: #ba6100;
   --overlay: rgba(0, 0, 0, 0.32);
   /* GitHub 提示块（> [!NOTE] 等）：注意 / 提示 / 重要 / 警告 / 小心 */
   --alert-note: #0061a4;
   --alert-tip: #386a20;
-  --alert-important: #6750a4;
+  --alert-important: #8944ab; /* 「重要」用 Apple 皮肤同款紫，和「注意」的蓝、强调色的蓝分开 */
   --alert-warning: #7d5700;
   --alert-caution: #b3261e;
 }
 
 [data-skin='material'][data-theme='dark'] {
-  --bg: #141218;
-  --sidebar-bg: #1d1b20;
-  --surface: #1d1b20;
-  --list-surface: #1d1b20; /* 暗色不变：同 --surface */
-  --surface-2: #211f26;
-  --surface-3: #2b2930;
-  --surface-hover: rgba(230, 224, 233, 0.08);
-  --border: #49454f;
-  --border-strong: #938f99;
-  --text: #e6e0e9;
-  --text-2: #cac4d0;
-  --text-3: #b0a7c0;
-  --accent: #d0bcff;
-  --accent-hover: #ddd0ff;
-  --accent-contrast: #381e72;
-  --accent-soft: #4a4458;
-  --accent-soft-text: #e8def8;
-  --nav-active-bg: #4a4458;
-  --nav-active-text: #e8def8;
-  --nav-active-icon: #e8def8;
+  --bg: #111318;
+  --sidebar-bg: #1a1b20;
+  --surface: #1a1b20;
+  --list-surface: #1a1b20; /* 暗色不变：同 --surface */
+  --surface-2: #1e1f25;
+  --surface-3: #282a2f;
+  --surface-hover: rgba(226, 226, 233, 0.08);
+  --border: #44474f;
+  --border-strong: #8e9099;
+  --text: #e2e2e9;
+  --text-2: #c4c6d0;
+  --text-3: #a9abb4;
+  --accent: #0a84ff;
+  --accent-hover: #409cff;
+  --accent-contrast: #001a41;
+  --accent-soft: #3f4759;
+  --accent-soft-text: #dbe2f9;
+  --nav-active-bg: #3f4759;
+  --nav-active-text: #dbe2f9;
+  --nav-active-icon: #dbe2f9;
   --danger: #f2b8b5;
   --success: #9cd67d;
   --warning: #f5bd5c;
-  --tabbar-bg: #211f26;
-  --heat-empty: #2b2930;
-  --heat-cell-empty: rgba(230, 224, 233, 0.11);
-  --heat-cell-free: rgba(230, 224, 233, 0.055);
-  --heat-color: #d0bcff;
+  --focus: 0 0 0 3px rgba(10, 132, 255, 0.5);
+  --tabbar-bg: #1e1f25;
+  --heat-empty: #282a2f;
+  --heat-cell-empty: rgba(226, 226, 233, 0.11);
+  --heat-cell-free: rgba(226, 226, 233, 0.055);
+  --heat-color: #0a84ff;
   --state-done: #9cd67d;
   --state-blocked: #f5bd5c;
   --overlay: rgba(0, 0, 0, 0.5);
   /* GitHub 提示块（> [!NOTE] 等）：注意 / 提示 / 重要 / 警告 / 小心 */
   --alert-note: #9ecaff;
   --alert-tip: #9cd67d;
-  --alert-important: #d0bcff;
+  --alert-important: #bf5af2;
   --alert-warning: #f5bd5c;
   --alert-caution: #f2b8b5;
 }
@@ -494,9 +497,9 @@
   --file-slides: #b3261e;
   --file-archive: #7d5700;
   --file-audio: #984061;
-  --file-video: #6750a4;
+  --file-video: #8944ab; /* 分类色：视频用 Apple 皮肤同款紫，和文档蓝分开 */
   --file-code: #006a6a;
-  --file-file: #625b71;
+  --file-file: #5c5e66;
 }
 [data-skin='material'][data-theme='dark'] {
   --file-image: #9cd67d;
@@ -506,7 +509,7 @@
   --file-slides: #f2b8b5;
   --file-archive: #f5bd48;
   --file-audio: #ffb0c8;
-  --file-video: #d0bcff;
+  --file-video: #bf5af2;
   --file-code: #4cdada;
-  --file-file: #ccc2dc;
+  --file-file: #c4c6d0;
 }
