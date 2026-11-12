@@ -854,6 +854,9 @@ export const EN: Record<string, EnValue> = {
   '项目用来装一批相关任务，比如“搬家”“开发某个功能”': 'Use a project for a set of related tasks, like “Moving” or “Build a feature”',
   '{done}/{length} 完成': '{done}/{length} done',
   '{blocked} 件还不能开始': (p) => `${n(p.blocked, 'task', 'tasks')} not ready`,
+  // 项目卡片第二行（Rei 2026-11-12）
+  '{n} 件待办': (p) => `${p.n} to do`,
+  都做完了: 'All done',
   找不到这个项目: 'Project Not Found',
   可能已经删除了: 'It may have been deleted',
   ' · 默认资料库：{name}': ' · Default collection: {name}',

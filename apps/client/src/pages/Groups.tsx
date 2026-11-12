@@ -29,11 +29,15 @@ import { dataLabel, tr, trc } from '../lib/i18n';
 /**
  * 项目列表里的一张卡片：点了打开项目；右键 / 长按出菜单「在侧边栏显示 / 取消在侧边栏显示」（Rei 2026-10-28）。
  * 卡片是 react-aria 的按钮，右键和长按挂在外面一层（display: contents，不影响网格）。
+ * 每张卡片一样高（Rei 2026-11-12 07:51「这个项目列表看上去好难看，不协调」）：第一行图标 + 名字（一行，长了省略），
+ * 第二行一直有，灰色小字写还没做完的任务数，有卡住的再跟一段橙色「N 件还不能开始」，没任务写「没有任务」、都做完写「都做完了」；
+ * 项目的类型也挪到第二行右边，灰色，不再用类型自己的颜色（图标块已经有颜色了，两种颜色打架）。
  */
 function GroupCard({ group: g }: { group: Group }) {
   const store = useStore();
   const menu = useContextMenuAt();
   const tasks = store.tasks().filter((t) => t.group_id === g.id);
+  const open = tasks.filter((t) => !isFinished(t.status)).length;
   const blocked = tasks.filter((t) => store.derived().get(t.id)?.state === '被阻塞').length;
   const c = store.category(g.category_id);
   const actions = useProjectActions(store, g);
@@ -49,15 +53,35 @@ function GroupCard({ group: g }: { group: Group }) {
         <div className="group-card-head">
           <GroupIcon group={g} size={26} className="group-icon" />
           <span className="group-name">{g.name}</span>
-          {c && <CategoryLabel c={c} size={12} />}
         </div>
         {/* 不显示项目时间段（Rei 2026-11-10「项目列表中 不显示项目时间段」） */}
-        {/* 卡片不显示进度（Rei 2026-11-04「项目列表中item紧凑一点，进度不显示」） */}
-        {blocked > 0 && (
-          <div className="group-stats">
-            <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>
-          </div>
-        )}
+        {/* 卡片不显示进度（Rei 2026-11-04「项目列表中item紧凑一点，进度不显示」）：第二行只写还剩几件，不写完成比例 */}
+        <div className="group-stats">
+          <span className="group-count">
+            {tasks.length === 0 ? (
+              tr('没有任务')
+            ) : open === 0 ? (
+              tr('都做完了')
+            ) : (
+              <>
+                {tr('{n} 件待办', { n: open })}
+                {blocked > 0 && (
+                  <>
+                    <span className="group-stats-sep" aria-hidden>
+                      {' · '}
+                    </span>
+                    <span className="state-blocked">{tr('{blocked} 件还不能开始', { blocked })}</span>
+                  </>
+                )}
+              </>
+            )}
+          </span>
+          {c && (
+            <span className="group-cat">
+              <CategoryLabel c={c} size={12} plain />
+            </span>
+          )}
+        </div>
       </RacButton>
       <OverflowMenu label={tr('项目操作')} items={actions.items} className="group-card-more" />
       <MenuAt at={menu.at} label={tr('项目操作')} items={actions.items} onClose={menu.close} />

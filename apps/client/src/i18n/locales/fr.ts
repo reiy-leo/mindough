@@ -1181,6 +1181,9 @@ export const MESSAGES: Record<string, MessageValue> = {
   "项目用来装一批相关任务，比如“搬家”“开发某个功能”": "Un projet regroupe des tâches liées, comme « Déménagement » ou « Créer une fonctionnalité »",
   "{done}/{length} 完成": "{done}/{length} faites",
   "{blocked} 件还不能开始": "{blocked, plural, one {# tâche pas encore prête} other {# tâches pas encore prêtes}}",
+  // 项目卡片第二行（Rei 2026-11-12，待母语者看）
+  "{n} 件待办": "{n} à faire",
+  "都做完了": "Tout est fait",
   "找不到这个项目": "Projet introuvable",
   "可能已经删除了": "Il a peut-être été supprimé",
   " · 默认资料库：{name}": " · Collection par défaut : {name}",
