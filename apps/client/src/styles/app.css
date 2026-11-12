@@ -5047,8 +5047,3 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   min-width: 36px;
 }
 
-/* 过期积压：没有添加框（Rei 2026-11-12 02:03），件数小字自己固定在顶上；.list-meta 原来贴在添加框下面带负上边距，这里归零 */
-.doable-head .list-meta {
-  margin: 0 var(--space-1);
-  min-height: 20px;
-}

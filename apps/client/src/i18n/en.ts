@@ -790,7 +790,6 @@ export const EN: Record<string, EnValue> = {
   // ── 过期积压（原「可做」→「积压」2026-11-04 →「过期积压」2026-11-10）──
   过期积压: 'Overdue',
   已过期: 'Overdue',
-  '{n} 件已过期': (p) => `${p.n} overdue`,
   没有过期的任务: 'Nothing overdue',
 
   // ── 可做 ──

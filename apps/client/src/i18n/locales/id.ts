@@ -1780,7 +1780,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "节假日、日历订阅": "Hari libur, langganan",
   "同步成功，{n} 个事件": "Tersinkron: {n} acara",
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Tersinkron: {n} acara (terlalu banyak, hanya yang awal disimpan)",
-  "{n} 件已过期": "{n} terlambat",
   "没有过期的任务": "Tidak ada yang terlambat",
   "「{name}」的更多操作": "Tindakan lain untuk “{name}”",
   "季 {length}": "Musim · {length}",

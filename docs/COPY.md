@@ -217,7 +217,7 @@
 | 中国农历 | Chinese Lunar Calendar | 设置开关；英文界面不显示整个农历小节，译文备用（2026-10-25） |
 | 每年 · 下次 2027年9月15日 | Yearly · next Sep 15, 2027 | 农历界面隐藏时每年农历重复的说法 |
 | 等待安排 | Inbox | 新建默认进这里（同 Things 的 Inbox）；2026-11-10 中文由「待安排」改名，各语言译名没变（意思一样） |
-| 过期积压 | Overdue | 侧栏页名（2026-11-10 由「积压」改名，原译 Backlog）。按日期分区段标题：昨天 Yesterday / 过去 7 天 Past 7 Days / 过去一个月 Past Month / 过去一年 Past Year / 超过一年 Over a Year Ago（2026-11-10 由「更远 Earlier」改，意思是过期超过一年）。2026-11-11 起只列已过期的，原来最后一段「还没到期 Not Due Yet」去掉了。小字「{n} 件已过期 / {n} overdue」，空状态「没有过期的任务 / Nothing overdue」。没有分区按钮 |
+| 过期积压 | Overdue | 侧栏页名（2026-11-10 由「积压」改名，原译 Backlog）。按日期分区段标题：昨天 Yesterday / 过去 7 天 Past 7 Days / 过去一个月 Past Month / 过去一年 Past Year / 超过一年 Over a Year Ago（2026-11-10 由「更远 Earlier」改，意思是过期超过一年）。2026-11-11 起只列已过期的，原来最后一段「还没到期 Not Due Yet」去掉了。顶上小字「{n} 件已过期 / {n} overdue」2026-11-12 去掉（词条已删），空状态「没有过期的任务 / Nothing overdue」。没有分区按钮 |
 | 打卡（导航 / 页面） | Check-ins | 按钮上的「打卡」是 Check In |
 | 持续（导航小节） | Ongoing | 打卡、倒数日、日记这一节（2026-10-26） |
 | 已完成（导航 / 页面） | Completed | 侧栏「管理」最下面（2026-11-08）；空状态 Nothing completed yet；没有时间的那段 Earlier |

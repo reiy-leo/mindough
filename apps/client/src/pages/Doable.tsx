@@ -2,7 +2,6 @@ import { toDateKey, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { Empty } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
-import { StickyHead } from '../components/StickyHead';
 import { SectionedList } from '../components/SectionedList';
 import { useListView } from '../lib/list-views';
 import { backlogSections } from '../lib/sections';
@@ -20,6 +19,7 @@ import { tr } from '../lib/i18n';
  * 只有这一种模式（Rei 2026-11-10「过期积压不显示分区按钮，只有按日期分区这一种模式」）：右上角没有分区按钮，也没有「不分区」。
  * 段标题点一下收起 / 展开（SectionedList，和我的一天、项目页分区一样），收起了哪几段记在本机 settings.listViews.doable.collapsed。
  * 页名 Rei 2026-11-10 改成「过期积压」（原「积压」），路由不变。
+ * 顶上没有件数小字（Rei 2026-11-12 10:20 去掉「N 件已过期」），也就没有固定在顶上的那一块。
  */
 export function DoablePage() {
   const store = useStore();
@@ -36,15 +36,11 @@ export function DoablePage() {
     </div>
   );
   return (
-    <div className="page has-sticky-head">
+    <div className="page">
       {/* 没有添加框（Rei 2026-11-12 02:03：过期积压不应有新的 / 未来的任务，电脑和手机都去掉）；新建走 N（新建面板，建好进等待安排）或别的页。
-          也不放页头（2026-10-26 起中间列不放、2026-11-12 01:56 手机也不放）：读屏 h1 + 件数小字固定在顶上，同资料库 / 已完成页的 StickyHead */}
-      <StickyHead className="doable-head">
-        <div className="list-meta">
-          <h1 className="sr-only">{tr('过期积压')}</h1>
-          {overdue.length > 0 && <span className="list-meta-text">{tr('{n} 件已过期', { n: overdue.length })}</span>}
-        </div>
-      </StickyHead>
+          也不放页头（2026-10-26 起中间列不放、2026-11-12 01:56 手机也不放），顶上也不写「N 件已过期」（Rei 2026-11-12 10:20「顶部不显示"125件已过期"这种统计信息」，
+          电脑和手机都去掉）：只留读屏 h1，最上面直接是第一段（昨天 / 过去 7 天…）。 */}
+      <h1 className="sr-only">{tr('过期积压')}</h1>
       {overdue.length === 0 && <Empty title={tr('没有过期的任务')} />}
       <SectionedList
         sections={backlogSections(overdue, now, today)}

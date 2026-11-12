@@ -1780,7 +1780,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "节假日、日历订阅": "Feriados, assinaturas",
   "同步成功，{n} 个事件": "Sincronizado: {n, plural, one {# evento} other {# eventos}}",
   "同步成功，{n} 个事件（太多了，只留前面这些）": "Sincronizado: {n, plural, one {# evento} other {# eventos}} (muitos, só os primeiros foram mantidos)",
-  "{n} 件已过期": "{n} atrasadas",
   "没有过期的任务": "Nada atrasado",
   "「{name}」的更多操作": "Mais ações para “{name}”",
   "季 {length}": "Temporadas · {length}",
