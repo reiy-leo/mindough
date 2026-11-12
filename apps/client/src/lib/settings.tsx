@@ -24,7 +24,10 @@ export interface Settings {
    * 数据来自节假日订阅（lib/lunar.ts）。只记在本机，不同步。不分界面语言。
    */
   holidays: boolean;
-  /** 日历页的视图（docs/CALENDAR.md）：core CalView，读写经 core normalizeCalView。只记在本机。 */
+  /**
+   * 日历页的视图（docs/CALENDAR.md）：core CalView。2026-11-13 起改存同步的偏好 calendar.view / view_days / view_weeks（lib/calendar-view），
+   * 这里的老值只用来迁移：账户里还没有时当初始值写上去，没登录时读它。不再写。
+   */
   calendarView: unknown;
   /**
    * 打卡页哪几张卡片展开了活动图（Rei 2026-10-25「check-ins 中的任务活动图，不要显示在列表中，而是左上角一个圆点，toggle 全宽显示活动图」）：
@@ -106,6 +109,9 @@ export function normalizeColorLevel(v: unknown): ColorLevel {
 
 const DEFAULTS: Settings = { skin: 'auto', theme: 'system', layout: 'auto', monthMarker: 'auto', taskChain: false, chineseLunar: false, holidays: true, calendarView: null, habitHeatmapOpen: [], projectViews: {}, dateDisplay: 'auto', myDaySuggestions: true, myDayDefaultToday: false, myDayDoneOpen: true, checkInsDoneOpen: true, checkInsYearHeatmap: false, strictMode: false, listViews: {}, colorLevel: 'standard', pinnedGroupStyle: 'list', pinnedLibraryStyle: 'list', categoryViewStyle: 'list', startPage: 'myday' };
 const KEY = 'mindough:settings';
+
+/** 不经 React 读本机设置（迁移老设置用，如 lib/calendar-view）。 */
+export const readLocalSettings = (): Settings => load();
 
 function load(): Settings {
   try {

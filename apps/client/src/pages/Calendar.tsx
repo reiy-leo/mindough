@@ -1,6 +1,8 @@
 /**
  * 日历（Rei 2026-11-10「侧边栏时间轴换成"日历"」，方案 docs/CALENDAR.md）：路由仍是 agenda（#/calendar，旧 #/agenda 也行）。
- * - 视图下拉：周、月、年、多日（2–14 天）、多周（1–6 周）；每台设备记住上次的视图和参数（settings.calendarView），没记过的默认周（Rei 2026-11-11）。
+ * - 视图下拉：周、月、年、多日（2–14 天）、多周（1–6 周）；没选过的默认周（Rei 2026-11-11）。
+ *   视图和天数、周数跟着账户同步（Rei 2026-11-13 06:00，lib/calendar-view：偏好 calendar.view / view_days / view_weeks），各设备一样；
+ *   看到哪一段（翻到哪个月）不同步。手机五种视图都能用，不用回落。
  * - 任务：有日期、没结束、不重复的，按日期 / 日期段画进格子（core layoutRow 排道），只写标题；宽屏点开是居中浮层（lib/detail-pane），手机整页。
  * - 倒数日：没结束的，画在目标日那天（Rei 2026-11-11 月视图「当天有倒数日时优先显示倒数日」）。
  * - 宽屏周、多日、多周、月（Rei 2026-11-11 01:10）：格子列出当天全部条目，没有「还有 N 件」，格子按内容撑高（页面滚）；
@@ -20,13 +22,14 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { ChevronLeft, ChevronRight, Hourglass, Minus, Plus, MapPin } from 'lucide-react';
-import { logicalToday, CAL_VIEW_KINDS, DAYS_MAX, DAYS_MIN, WEEKS_MAX, WEEKS_MIN, calItemTier, calRange, calDropPatch, calPatchStart, calShiftPatch, calUndoPatch, type CalDatePatch, dayCount, compareDateKey, dueToday, formatDateRange, isFinished, itemsOnDay, layoutRow, normalizeCalView, normalizeSubColor, parseRecurrence, parseDateKey, sortDayItems, stepCalAnchor, addDays, taskEndDate, weekday, weekdayLabel, weekStartsOn, yearMonths, type CalView, type CalViewKind, type DateKey, type Task } from '@mindough/core';
+import { logicalToday, CAL_VIEW_KINDS, DAYS_MAX, DAYS_MIN, WEEKS_MAX, WEEKS_MIN, calItemTier, calRange, calDropPatch, calPatchStart, calShiftPatch, calUndoPatch, type CalDatePatch, dayCount, compareDateKey, dueToday, formatDateRange, isFinished, itemsOnDay, layoutRow, normalizeSubColor, parseRecurrence, parseDateKey, sortDayItems, stepCalAnchor, addDays, taskEndDate, weekday, weekdayLabel, weekStartsOn, yearMonths, type CalView, type CalViewKind, type DateKey, type Task } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button, IconButton, InlineNumber, Select, Sheet } from '../ui/primitives';
 import { LunarMark } from '../components/task/DateGrid';
 import { useLunar } from '../lib/lunar';
 import { useCalendarEvents, type CalEvent } from '../lib/calendar-subs';
 import { useSettings } from '../lib/settings';
+import { setSyncedCalView, syncedCalView } from '../lib/calendar-view';
 import { calItemColors } from '../lib/cal-item-color';
 import { calDragSuppressed, useCalDrag, type CalDragRole } from '../lib/cal-drag';
 import { useUi } from '../lib/ui';
@@ -71,10 +74,10 @@ export function CalendarPage() {
   const store = useStore();
   const now = useNow();
   const today = logicalToday(now);
-  const { settings, set, layout } = useSettings();
+  const { settings, layout } = useSettings();
   const mobile = layout === 'mobile';
-  const view = normalizeCalView(settings.calendarView);
-  const setView = (v: CalView) => set('calendarView', v);
+  const view = syncedCalView((k) => store.pref(k), settings.calendarView);
+  const setView = (v: CalView) => setSyncedCalView(store, v);
   const [anchor, setAnchor] = useState<DateKey>(today);
   const [picked, setPicked] = useState<DateKey>(today);
   const [openEvent, setOpenEvent] = useState<CalEvent | null>(null);

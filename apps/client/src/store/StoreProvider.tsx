@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { DEMO_STAMP_META, SqlAdapter, Store, TABLES, WebStorageAdapter, migrateStorage, seedDemo, type BaseRow, type StorageAdapter } from '@mindough/core';
 import { bindSync } from '../lib/sync';
+import { installCalViewMigration } from '../lib/calendar-view';
 import { installUploader } from '../lib/attachments';
 import { installAttachmentCache } from '../lib/attachment-cache';
 import { installWindowSync, isAuxWindow } from '../lib/windows';
@@ -118,6 +119,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // 登录后多设备同步；退出登录就停（本机数据不动）
   // 同步只在主窗口跑（设置窗口的写入经窗口事件交给主窗口，主窗口照常推）
   useEffect(() => (store && !isAuxWindow() ? bindSync(store) : undefined), [store]);
+  // 日历视图改成同步偏好（Rei 2026-11-13）：登录后第一次同步完，账户里还没有就把本机老设置写上去
+  useEffect(() => (store && !isAuxWindow() ? installCalViewMigration(store) : undefined), [store]);
   useEffect(() => (store ? installWindowSync(store) : undefined), [store]);
   useEffect(() => (store ? installWidgetSnapshot(store) : undefined), [store]);
   // 附件上传队列：只在主窗口跑（和同步一样）

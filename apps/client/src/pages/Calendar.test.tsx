@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * 日历（Rei 2026-11-10，docs/CALENDAR.md）：完成、关闭、重复的不画进格子；任务、倒数日、订阅事件画进格子；
- * 视图从本机设置读，没记过默认周（Rei 2026-11-11）；周、多日、多周、月都列出当天全部条目，没有「还有 N 件」，每天倒数日 → 任务 → 订阅事件（Rei 2026-11-11 01:10）；月视图日期旁数任务 + 打卡 + 倒数日；打卡只算个数，格子和列表都不列（Rei 01:08）；手机月视图下面是选中那天的列表。
+ * 视图读同步的偏好 calendar.view / view_days / view_weeks，账户里没有的用本机老设置，都没有默认周（Rei 2026-11-11、2026-11-13）；周、多日、多周、月都列出当天全部条目，没有「还有 N 件」，每天倒数日 → 任务 → 订阅事件（Rei 2026-11-11 01:10）；月视图日期旁数任务 + 打卡 + 倒数日；打卡只算个数，格子和列表都不列（Rei 01:08）；手机月视图下面是选中那天的列表。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
@@ -17,7 +17,9 @@ const openEditor = vi.fn();
 const openQuickCreate = vi.fn();
 const setSetting = vi.fn();
 const createDraftTask = vi.fn((input: { scheduled_date: string }) => ({ id: `draft-${input.scheduled_date}`, body_md: '', ...input }));
-const store = { activeTasks: () => tasks, createTask: vi.fn(), createDraftTask, version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
+const prefs = new Map<string, unknown>();
+const setPref = vi.fn((k: string, v: unknown) => void prefs.set(k, v));
+const store = { pref: (k: string) => prefs.get(k), setPref, activeTasks: () => tasks, createTask: vi.fn(), createDraftTask, version: 1, isLocked: () => false, get: () => undefined, updateTask: vi.fn() };
 vi.mock('../store/StoreProvider', () => ({ useStore: () => store, useNow: () => now }));
 vi.mock('../lib/settings', () => ({ useSettings: () => ({ settings: settings.value, set: setSetting, layout: settings.layout }) }));
 vi.mock('../lib/ui', () => ({ useUi: () => ({ openEditor, openQuickCreate, editingId: null }), useUiStable: () => ({ openEditor, openQuickCreate, editingId: null }), useIsEditing: () => false }));
@@ -49,7 +51,12 @@ afterEach(() => {
   openEditor.mockClear();
   createDraftTask.mockClear();
   store.createTask.mockClear();
+  prefs.clear();
+  setPref.mockClear();
 });
+/** 改视图后写进同步偏好的三项。 */
+const view = () => ({ kind: prefs.get('calendar.view'), days: prefs.get('calendar.view_days'), weeks: prefs.get('calendar.view_weeks') });
+
 /** 点了「+」：建了那天的草稿任务、在详情（宽屏浮层 / 手机整页）里打开，没弹新建面板（Rei 2026-11-12 06:52）。 */
 const expectDraft = (date: string) => {
   expect(createDraftTask).toHaveBeenCalledWith({ body_md: '', scheduled_date: date });
@@ -151,6 +158,14 @@ describe('日历', () => {
     expect(host.querySelector('.cal-item-time')).not.toBeNull();
   });
 
+  it('视图跟着账户同步（Rei 2026-11-13）：账户里的偏好优先于本机老设置', () => {
+    settings.value = { calendarView: { kind: 'month', days: 3, weeks: 2 } };
+    prefs.set('calendar.view', 'days');
+    prefs.set('calendar.view_days', 5);
+    act(() => root.render(<CalendarPage />));
+    expect(host.querySelectorAll('.cal-cell').length).toBe(5);
+  });
+
   it('多日视图按设置的天数画', () => {
     settings.value = { calendarView: { kind: 'days', days: 4, weeks: 2 } };
     act(() => root.render(<CalendarPage />));
@@ -171,12 +186,14 @@ describe('日历', () => {
     expect(btn('多一天').disabled).toBe(true);
     expect(btn('少一天').disabled).toBe(false);
     act(() => btn('少一天').click());
-    expect(setSetting).toHaveBeenLastCalledWith('calendarView', { kind: 'days', days: 13, weeks: 1 });
+    expect(view()).toEqual({ kind: 'days', days: 13, weeks: 1 });
+    expect(setSetting).not.toHaveBeenCalled();
+    prefs.clear();
     settings.value = { calendarView: { kind: 'weeks', days: 3, weeks: 1 } };
     act(() => root.render(<CalendarPage key="w" />));
     expect(btn('少一周').disabled).toBe(true);
     act(() => btn('多一周').click());
-    expect(setSetting).toHaveBeenLastCalledWith('calendarView', { kind: 'weeks', days: 3, weeks: 2 });
+    expect(view()).toEqual({ kind: 'weeks', days: 3, weeks: 2 });
   });
 
   it('手机月视图：小月历写个数（含打卡）+ 当天列表（倒数日 → 任务 → 事件，不列打卡）', () => {
