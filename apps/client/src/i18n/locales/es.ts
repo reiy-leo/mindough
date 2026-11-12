@@ -1531,6 +1531,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已导出 {n} 件任务、{j} 条日记": "Se exportaron {n, plural, one {# tarea} other {# tareas}} y {j, plural, one {# entrada del diario} other {# entradas del diario}}",
   "；{m} 张网上的图片没取到，照原链接写着": "; {m, plural, one {# imagen en línea no se pudo obtener y conservó} other {# imágenes en línea no se pudieron obtener y conservaron}} su enlace",
   "一天从几点开始": "El día empieza a las",
+  "还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。": "Antes de esta hora, «Entrada de hoy» sigue siendo la del día anterior (escribir a las 3 de la madrugada cuenta como ayer). Solo afecta al diario.",
   "每天提醒写日记": "Recordatorio diario del diario",
   "关着：不提醒写日记。": "Desactivado: sin recordatorios del diario.",
   "每天 {time} 提醒，写没写都会响。": "Te avisa cada día a las {time}, hayas escrito o no.",
@@ -1648,6 +1649,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "年月日": "Fecha",
   "年月日+时区": "Fecha + zona horaria",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Cómo se muestran las fechas en las listas de tareas, detalles, recordatorios, cuentas atrás, cadenas de tareas y líneas de tiempo de proyectos. Solo se guarda en este dispositivo.",
+  "一天从几点开始、每天提醒写日记": "Cuándo empieza el día, recordatorio diario del diario",
   "菜单|设置…": "Ajustes…",
   "这次的打卡已经达标了，不能再加": "Ya alcanzaste la meta de este registro; no puedes añadir más",
   "今天要打的都打完了": "Ya completaste todos los registros de hoy",
@@ -1793,9 +1795,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Tarjetas",
   "到期日期": "Fecha de vencimiento",
   "添加日期": "Fecha de creación",
-  "设置分区|时间": "Hora",
-  "一天从几点开始，「今天」都按它算": "Cuándo empieza el día: «hoy» lo sigue en toda la app",
-  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Antes de esta hora sigue contando como el día anterior: a las 3 de la madrugada, Mi día, Atrasadas, Calendario, Proyectos, Hábitos, Cuentas atrás y Diario siguen mostrando ayer. Los recordatorios siguen la hora real.",
 };
 
 export const DATA: Record<string, string> = {

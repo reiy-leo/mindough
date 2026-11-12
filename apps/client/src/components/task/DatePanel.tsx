@@ -35,7 +35,8 @@ const QUICK_ICON: Record<QuickDateKind, LucideIcon> = { today: Sun, tomorrow: Su
  * 2. 已选胶囊：单日「10月29日 周四 · 九月二十」+「+ 结束日」；日期段「10月29日 周四 → 11月8日 周日 ×」+「11 天」；
  * 3. 月历（DateGrid）：点一天就存；点过「+ 结束日」后点的那天是结束日；桌面还能拖选、Shift 点；
  *    农历界面显示时（useLunar().show）格子下有农历小字，标题右边「农历」开关把月历换成按农历月翻页（记在本机 LUNAR_PICK_KEY）；
- * 4. 时区、不设日期。
+ * 4. 时区、不设日期（同一行，时区展开时「不设日期」换到下一行）。
+ * 2026-11-13 收紧（Rei「参考图二，让date的popup更紧凑一点」，docs/DATE-PICKER.md「紧凑版」）：快捷按钮无边框、格子行距收小、标题行加「回到今天」。
  * 存法不变：按农历选的也存公历；每年按农历重复在「重复」里。
  */
 export function DatePanel({
@@ -127,7 +128,7 @@ export function DatePanel({
             const on = quickSelected(q.date);
             return (
               <TipButton key={q.kind} tip={q.label} isPressed={on} className={`date-quick-item${on ? ' is-selected' : ''}`} onPress={() => pickQuick(q.date)}>
-                <Icon size={16} aria-hidden />
+                <Icon size={18} aria-hidden />
               </TipButton>
             );
           })}

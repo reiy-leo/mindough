@@ -5,11 +5,11 @@
  * 再加上今天要打的打卡（Rei 2026-11-09 01:27「打卡任务，如果今天有节点，也要显示在我的一天中」，core checkInDayItems）：虚拟行，
  * 排在手动加的后面；达标了进「已完成」段；用户移出当天（my_day 墓碑）就不再出现。
  */
-import { logicalToday, checkInDayItems, makeupDayItems, myDayItems, pinnedDayItems, withPinned, type MyDayItem, type Store } from '@mindough/core';
+import { checkInDayItems, makeupDayItems, myDayItems, pinnedDayItems, toDateKey, withPinned, type MyDayItem, type Store } from '@mindough/core';
 import { visibleDayEntries } from './project-archive';
 
 export function dayItems(store: Store, now: Date = store.now()): MyDayItem[] {
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   const tasks = store.list('task');
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const checkIns = store.list('check_in');

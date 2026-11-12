@@ -98,6 +98,25 @@ describe('日期面板：一张月历，点一下就生效', () => {
     expect(document.activeElement).toBe(cell('2026-11-30'));
   });
 
+  it('「回到今天」（2026-11-13 收紧时加的 ○）：翻走了点它回到今天那个月、焦点落在今天，不改已选的日子', () => {
+    render('2026-11-20');
+    key('PageDown');
+    key('PageDown');
+    expect($('.calendar-title')!.textContent).toBe('2027年1月');
+    const back = $('[aria-label="回到今天"]')!;
+    expect(back.closest('.calendar-head')).not.toBeNull();
+    click(back);
+    expect($('.calendar-title')!.textContent).toBe('2026年10月');
+    expect(document.activeElement).toBe(cell(TODAY));
+    expect(onRange).not.toHaveBeenCalled();
+    // 农历页也一样：回到今天所在的农历月
+    click($('.lunar-toggle')!);
+    key('PageDown');
+    click($('[aria-label="回到今天"]')!);
+    expect($('.calendar-title')!.textContent).toBe('九月丙午年（2026）');
+    expect(document.activeElement).toBe(cell(TODAY));
+  });
+
   it('「农历」开关：按农历月翻页，大字农历、小字公历，记在本机', () => {
     render('2026-10-29');
     const toggle = $('.lunar-toggle')!;

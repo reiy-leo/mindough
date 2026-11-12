@@ -6,6 +6,7 @@ import { isStrictLocked, StrictModeError, violatesStrict } from './strict';
 import { HlcClock } from './hlc';
 import { uuidv7 } from './uuid';
 import { normalizeIconColor } from './icon-color';
+import { toDateKey } from './dates';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
 import { overdueBacklogTasks } from './overdue-backlog';
@@ -53,8 +54,7 @@ import type { Change, StorageAdapter } from './storage/adapter';
 import { dataLabel, tr } from './i18n';
 import { fieldText, firstLine, itemTitleOf, needsTitleLine, untitledLabel, withTitleLine } from './preview';
 import { parseHlc } from './hlc';
-import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, type MoodId } from './journal';
-import { DAY_START_PREF, bindDayStart, dayOf, logicalToday, normalizeDayStart } from './day-start';
+import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, normalizeDayStart, type MoodId } from './journal';
 import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
 import { groupIconFromPicker, isGroupArchived, normalizeGroupName, type GroupRemovalResult, type GroupRemovalUndo } from './group';
 import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './journal-feed';
@@ -193,8 +193,6 @@ export class Store {
       await adapter.setMeta('device_id', deviceId);
     }
     const store = new Store(adapter, deviceId, opts);
-    // 「一天从几点开始」全局生效（Rei 2026-11-13）：纯函数（打卡、补打卡、我的一天…）的「今天」都从这里取
-    bindDayStart(() => store.dayStart());
     const snap = await adapter.loadAll();
     for (const t of TABLES) {
       const map = store.tables[t] as Map<string, BaseRow>;
@@ -331,7 +329,7 @@ export class Store {
     return this.list('check_in').filter((c) => c.task_id === taskId);
   }
 
-  progress(taskId: string, date: string = this.today()): Progress | null {
+  progress(taskId: string, date: string = toDateKey(this.now())): Progress | null {
     const task = this.get('task', taskId);
     if (!task) return null;
     const key = periodKeyForTask(task, date);
@@ -1470,7 +1468,7 @@ export class Store {
     if (input.completion_mode === 'countdown') input = { ...input, ...fillCountdownTarget(null, input) };
     // 重复的倒数日（Rei 2026-11-12）：规则落到目标日上，目标日是过去的就换成规则的下一次（countdown-repeat.ts）
     if (input.completion_mode === 'countdown' && input.recurrence && input.target_date) {
-      const today = taskToday({ time_zone: input.time_zone ?? null }, now, this.today(now));
+      const today = taskToday({ time_zone: input.time_zone ?? null }, now, toDateKey(now));
       input = { ...input, ...normalizeCountdownRepeat({ completion_mode: 'countdown', recurrence: input.recurrence, target_date: null }, { target_date: input.target_date }, today) };
     }
     const type = this.get('task_type', input.type_id ?? null);
@@ -1532,7 +1530,7 @@ export class Store {
     // 重复的倒数日（Rei 2026-11-12）：改了目标日，规则跟着落到那天；改了规则或选了过去的日子，目标日换成规则的下一次
     if ('target_date' in patch || 'recurrence' in patch || 'completion_mode' in patch) {
       const cur = this.tables.task.get(id);
-      if (cur) patch = { ...patch, ...normalizeCountdownRepeat(cur, patch, taskToday(cur, this.now(), this.today())) };
+      if (cur) patch = { ...patch, ...normalizeCountdownRepeat(cur, patch, taskToday(cur, this.now(), toDateKey(this.now()))) };
     }
     // 用户把日期改成不是今天：从今天的我的一天移出（Rei 2026-11-08）。墓碑让自动加当天不再加回来。
     // 只在这里（本机写入）判断；同步拉下来的走 applyRemote，不经过这里，别的设备不会再移一次。
@@ -1541,7 +1539,7 @@ export class Store {
     const task = this.update('task', id, patch);
     const dateChanged = was !== null && 'scheduled_date' in patch && was !== `${task.scheduled_date ?? ''}|${task.end_date ?? ''}`;
     if (dateChanged && task.scheduled_date) {
-      const deviceToday = this.today();
+      const deviceToday = toDateKey(this.now());
       if (this.isInMyDay(id, deviceToday) && !keepsMyDayAfterDate(task.scheduled_date, task.end_date ?? null, [deviceToday, taskToday(task, this.now(), deviceToday)])) this.removeFromMyDay(id, deviceToday);
     }
     // 反过来：日期改成今天（或日期段变成含今天），放进今天的我的一天（Rei 2026-11-08「如果日期设置的今天，自动添加到我的一天」）
@@ -1560,7 +1558,7 @@ export class Store {
     if (task.deleted || !task.scheduled_date || task.recurrence) return;
     if (isFinished(task.status) || this.pinnedAt(task) || task.archived_at || this.inArchivedGroup(task)) return;
     const now = this.now();
-    const deviceToday = this.today(now);
+    const deviceToday = toDateKey(now);
     const covers = (t: Task) => !!t.scheduled_date && keepsMyDayAfterDate(t.scheduled_date, t.end_date ?? null, [deviceToday, taskToday(t, now, deviceToday)]);
     if (!covers(task) || (before && covers(before))) return;
     if (this.isInMyDay(task.id, deviceToday)) return;
@@ -1576,7 +1574,7 @@ export class Store {
   rollRecurringCountdowns(): number {
     this.repairCountdownDates();
     const now = this.now();
-    const deviceToday = this.today(now);
+    const deviceToday = toDateKey(now);
     const plans: Array<{ task: Task; past: DateKey[]; next: DateKey }> = [];
     for (const t of this.tables.task.values()) {
       if (t.deleted || t.completion_mode !== 'countdown' || !t.recurrence || !t.target_date) continue;
@@ -2077,7 +2075,7 @@ export class Store {
   archiveTask(id: string): Task | undefined {
     const t = this.get('task', id);
     if (!t || t.archived_at) return t;
-    const today = this.today();
+    const today = toDateKey(this.now());
     const inDay = this.list('my_day').some((e) => e.task_id === id && e.date === today);
     const task = this.updateTask(id, { archived_at: this.now().toISOString() });
     if (inDay) this.removeFromMyDay(id, today);
@@ -2224,7 +2222,7 @@ export class Store {
   // ───────────── 我的一天 ─────────────
 
   /** 加进那天的我的一天（排最上面）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。 */
-  addToMyDay(taskId: string, date: string = this.today()): TableMap['my_day'] {
+  addToMyDay(taskId: string, date: string = toDateKey(this.now())): TableMap['my_day'] {
     const existing = this.list('my_day').find((e) => e.task_id === taskId && e.date === date);
     if (existing) return existing;
     // 新加的排最上面（Rei 2026-11-08，见 myday.ts topSort）
@@ -2238,7 +2236,7 @@ export class Store {
    * 移出那天的我的一天。除了给活着的行打墓碑，算出来的那一行（myDayEntryId）没有的话也写一条墓碑：
    * 这样别的设备离线时自动加的那行（时间戳最早，见 AUTO_MY_DAY_HLC）同步后会被它盖掉，当天不会再冒出来。
    */
-  removeFromMyDay(taskId: string, date: string = this.today()): void {
+  removeFromMyDay(taskId: string, date: string = toDateKey(this.now())): void {
     const id = myDayEntryId(taskId, date);
     const rows: Array<{ table: TableName; row: BaseRow }> = [];
     for (const e of this.list('my_day')) if (e.task_id === taskId && e.date === date) rows.push({ table: 'my_day', row: { ...e, deleted: true } });
@@ -2256,7 +2254,7 @@ export class Store {
    * 进 outbox 推上去，别的设备同一行不会重复；用户移出的墓碑总比它新。不看「显示建议」开关。
    * 重复调用没有副作用（没东西要加就不写）。返回加了几件。
    */
-  syncAutoMyDay(today: string = this.today()): number {
+  syncAutoMyDay(today: string = toDateKey(this.now())): number {
     const now = this.now();
     const tasks = this.list('task');
     const seen = new Set<string>();
@@ -2285,7 +2283,7 @@ export class Store {
     return stamped.length;
   }
 
-  isInMyDay(taskId: string, date: string = this.today()): boolean {
+  isInMyDay(taskId: string, date: string = toDateKey(this.now())): boolean {
     if (this.list('my_day').some((e) => e.task_id === taskId && e.date === date)) return true;
     // 今天要打的打卡是虚拟行（Rei 2026-11-09，myday.ts checkInDayItems）：没移出过就算在
     const t = this.get('task', taskId);
@@ -2296,7 +2294,7 @@ export class Store {
   }
 
   /** 这件打卡今天能补哪个节点（Rei 2026-11-09 01:52，见 makeup.ts makeupNode）；不能补 null。严格模式不管这里，界面上不给按钮。 */
-  makeupNode(taskId: string, date: string = this.today()): string | null {
+  makeupNode(taskId: string, date: string = toDateKey(this.now())): string | null {
     const t = this.get('task', taskId);
     return t ? makeupNodeOf(t, this.checkInsOf(taskId), date, this.now()) : null;
   }
@@ -2305,7 +2303,7 @@ export class Store {
    * 点补打卡：放进今天的我的一天（真行，排最上面）。之后在我的一天里打卡，Store.checkIn 按今天算出的周期键就是被补的节点。
    * 没东西可补时什么都不做，返回 null；否则返回被补的节点。
    */
-  startMakeup(taskId: string, date: string = this.today()): string | null {
+  startMakeup(taskId: string, date: string = toDateKey(this.now())): string | null {
     const node = this.makeupNode(taskId, date);
     if (!node) return null;
     this.addToMyDay(taskId, date);
@@ -2333,14 +2331,14 @@ export class Store {
   // ───────────── 待安排 ─────────────
 
   /** 待安排：没结束、只做一次、没日期、今天的我的一天里没有的任务（见 backlog.ts）。 */
-  backlog(today: string = this.today()): Task[] {
+  backlog(today: string = toDateKey(this.now())): Task[] {
     // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
     // 置顶的任务每天都在我的一天里，不进待安排（Rei 2026-11-08）
     return backlogTasks(this.activeTasks().filter((t) => !this.pinnedAt(t)), this.list('my_day'), today);
   }
 
   /** 过期积压：定了日期、没做完、已经过期的任务，最近过期在上；没到期的不放（见 overdue-backlog.ts，Rei 2026-11-11）。 */
-  overdueBacklog(now: Date = this.now(), deviceToday: string = this.today(now)): Task[] {
+  overdueBacklog(now: Date = this.now(), deviceToday: string = toDateKey(now)): Task[] {
     // 归档了的项目里的任务不算（Rei 2026-11-05）
     return overdueBacklogTasks(this.activeTasks(), now, deviceToday);
   }
@@ -2364,7 +2362,7 @@ export class Store {
    * 记一条打卡事件。周期键按任务的重复规则从 date 算出。
    * 非重复任务达标后自动标“完成”（并解锁后续）；重复任务只记录周期进度。
    */
-  checkIn(taskId: string, kind: CheckInKind, amount = 0, date: string = this.today()): CheckInResult {
+  checkIn(taskId: string, kind: CheckInKind, amount = 0, date: string = toDateKey(this.now())): CheckInResult {
     const task = this.get('task', taskId);
     if (!task) throw new Error(tr('任务不存在'));
     const period_key = periodKeyForTask(task, date);
@@ -2385,7 +2383,7 @@ export class Store {
    * 计数里最后一次加量（这个周期、没撤销过的 add 事件）；没有是 undefined。
    * 「撤销上一次」用它。
    */
-  lastCountAdd(taskId: string, date: string = this.today()): TableMap['check_in'] | undefined {
+  lastCountAdd(taskId: string, date: string = toDateKey(this.now())): TableMap['check_in'] | undefined {
     const task = this.get('task', taskId);
     if (!task) return undefined;
     const key = periodKeyForTask(task, date);
@@ -2458,28 +2456,11 @@ export class Store {
     else this.insert('pref', { id, key, value });
   }
 
-  // ───────────── 一天从几点开始 ─────────────
-
-  /** 「一天从几点开始」（同步的偏好 journal.day_start，默认 5 点；Rei 2026-11-13 起全局生效）。 */
-  dayStart(): number {
-    return normalizeDayStart(this.pref(DAY_START_PREF));
-  }
-
-  /** 逻辑今天：还没到开始时间就算前一天。我的一天、过期、日历、项目、打卡、倒数日、日记都用它。 */
-  today(now: Date = this.now()): string {
-    return logicalToday(now, null, this.dayStart());
-  }
-
-  /** 某个时刻算哪一天（按开始时间）。 */
-  dayOf(at: Date | number | string): string {
-    return dayOf(at, null, this.dayStart());
-  }
-
   // ───────────── 日记 ─────────────
 
-  /** 「一天从几点开始」（旧名，同 dayStart）。 */
+  /** 「一天从几点开始」（同步的偏好，默认 5 点）。 */
   journalDayStart(): number {
-    return this.dayStart();
+    return normalizeDayStart(this.pref(JOURNAL_PREFS.dayStart));
   }
 
   /** 「今天的日记」是哪天（按「一天从几点开始」）。 */

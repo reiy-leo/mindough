@@ -3,7 +3,7 @@
  * 数据一变（防抖 2 秒）就把 我的一天 + 今天要打卡 写成 JSON，交给 src-tauri/src/widget.rs 存进 app 数据目录。
  * 只在手机 app 里写（桌面和网页没有小组件）。
  */
-import { logicalToday, dueToday, type Store } from '@mindough/core';
+import { dueToday, toDateKey, type Store } from '@mindough/core';
 import { isTauri } from '../store/sqlite-tauri';
 import { titleOf } from './view';
 import { dayItems } from './myday-items';
@@ -18,7 +18,7 @@ export interface WidgetSnapshot {
 }
 
 export function buildWidgetSnapshot(store: Store, now = store.now()): WidgetSnapshot {
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   // 置顶的任务也算（Rei 2026-11-08，lib/myday-items）
   const items = dayItems(store, now);
   const inDay = new Set(items.map((i) => i.task.id));

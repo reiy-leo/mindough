@@ -20,7 +20,44 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { ChevronLeft, ChevronRight, Hourglass, Minus, Plus, MapPin } from 'lucide-react';
-import { logicalToday, CAL_VIEW_KINDS, DAYS_MAX, DAYS_MIN, WEEKS_MAX, WEEKS_MIN, calItemTier, calRange, calDropPatch, calPatchStart, calShiftPatch, calUndoPatch, type CalDatePatch, dayCount, compareDateKey, dueToday, formatDateRange, isFinished, itemsOnDay, layoutRow, normalizeCalView, normalizeSubColor, parseRecurrence, parseDateKey, sortDayItems, stepCalAnchor, addDays, taskEndDate, weekday, weekdayLabel, weekStartsOn, yearMonths, type CalView, type CalViewKind, type DateKey, type Task } from '@mindough/core';
+import {
+  CAL_VIEW_KINDS,
+  DAYS_MAX,
+  DAYS_MIN,
+  WEEKS_MAX,
+  WEEKS_MIN,
+  calItemTier,
+  calRange,
+  calDropPatch,
+  calPatchStart,
+  calShiftPatch,
+  calUndoPatch,
+  type CalDatePatch,
+  dayCount,
+  compareDateKey,
+  dueToday,
+  formatDateRange,
+  isFinished,
+  itemsOnDay,
+  layoutRow,
+  normalizeCalView,
+  normalizeSubColor,
+  parseRecurrence,
+  parseDateKey,
+  sortDayItems,
+  stepCalAnchor,
+  addDays,
+  taskEndDate,
+  toDateKey,
+  weekday,
+  weekdayLabel,
+  weekStartsOn,
+  yearMonths,
+  type CalView,
+  type CalViewKind,
+  type DateKey,
+  type Task,
+} from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { Button, IconButton, InlineNumber, Select, Sheet } from '../ui/primitives';
 import { LunarMark } from '../components/task/DateGrid';
@@ -70,7 +107,7 @@ function rangeTitle(view: CalView, from: DateKey, to: DateKey, coreFrom: DateKey
 export function CalendarPage() {
   const store = useStore();
   const now = useNow();
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   const { settings, set, layout } = useSettings();
   const mobile = layout === 'mobile';
   const view = normalizeCalView(settings.calendarView);
@@ -493,7 +530,7 @@ const nextDay = (d: DateKey) => {
 };
 
 function EventSheet({ event, onClose }: { event: CalEvent | null; onClose: () => void }) {
-  const today = logicalToday();
+  const today = toDateKey(new Date());
   let when = '';
   if (event) {
     if (event.allDay) when = `${formatDateRange(event.startDate, event.endDate === event.startDate ? null : event.endDate, today)} · ${tr('全天')}`;

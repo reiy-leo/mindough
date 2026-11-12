@@ -1,8 +1,7 @@
 /**
  * 我的一天：按本机日期的清单。零点后自动换一天；没做完的不顺延，放进“昨天没做完”。
  */
-import { dayOf } from './day-start';
-import { addDays } from './dates';
+import { addDays, toDateKey } from './dates';
 import { dueToday, isHabit, progressOn } from './checkin';
 import type { DerivedStatus } from './dag';
 import { inArchivedGroup, isGroupArchived } from './group';
@@ -98,7 +97,7 @@ export function pinnedDayItems(
     if (!pin || task.deleted || task.archived_at || inArchivedGroup(task, gm)) continue;
     const done = isDoneOn(task, checkIns, date, now);
     // 只做一次的做完了：只留做完那天
-    if (done && !task.recurrence && (!task.done_at || dayOf(task.done_at) !== date)) continue;
+    if (done && !task.recurrence && (!task.done_at || toDateKey(new Date(task.done_at)) !== date)) continue;
     const entry: MyDayEntry = { id: PINNED_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: -Infinity, added_at: pin };
     out.push({ entry, task, done, pin });
   }
@@ -200,7 +199,7 @@ export function makeupDayItems(
     const st = makeupState(task, checkIns, date, now);
     if (!st || !makeupStarted(task.id, list, st.node, addDays(date, -1))) continue;
     // 补完了：只在补完那天（有这一天记的事件）留在「已完成」段，之后不再出现
-    if (st.met && !st.events.some((e) => dayOf(e.at) === date)) continue;
+    if (st.met && !st.events.some((e) => toDateKey(new Date(e.at)) === date)) continue;
     const entry: MyDayEntry = { id: MAKEUP_ENTRY_PREFIX + task.id, updated_at: '', deleted: false, task_id: task.id, date, sort: Infinity, added_at: `${date}T00:00:00.000Z` };
     out.push({ entry, task, done: st.met });
   }

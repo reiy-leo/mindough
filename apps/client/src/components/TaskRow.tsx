@@ -1,11 +1,12 @@
-import { useRef, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
-import { Button as RacButton, Checkbox } from 'react-aria-components';
-import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
+import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
+import { Button as RacButton, Checkbox, Menu, MenuItem, Popover, Separator } from 'react-aria-components';
+import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, PanelRight, Pin, PinOff, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
-import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, type Store, type Task } from '@mindough/core';
+import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, toDateKey, type Store, type Task } from '@mindough/core';
 import { useIsEditing, useUiStable } from '../lib/ui';
-import { toggleCheckIn, toggleDone, toggleMyDay } from '../lib/actions';
+import { toggleCheckIn, toggleDone, toggleMyDay, togglePin } from '../lib/actions';
 import { STATE_CLASS, viewOf } from '../lib/view';
+import { rowMenu } from '../lib/task-menu';
 import { useLocked } from '../lib/strict';
 import { MoodIcon } from './journal/MoodIcon';
 import { isMoodId, moodLabel } from '@mindough/core';
@@ -71,7 +72,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   // 不订阅整个 UI 状态（2026-11-12 看板卡顿）：选中只看自己这件，别的行选中 / 取消时不重渲染
   const ui = useUiStable();
   const v = viewOf(store, task);
-  const today = store.today();
+  const today = toDateKey(store.now());
   const lunarUi = useLunarUi();
   const tzBadge = timeZoneBadge(task, task.scheduled_date);
   const checkIn = isCheckInTask(task);
@@ -106,10 +107,12 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const { theme } = useSettings();
   const typeTint = (c: string | null | undefined) => vividText(colorLevel, c, theme) ?? c ?? undefined;
 
-  // 长按不出菜单（Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」）：手机上长按什么也不做，
-  // 能拖的列表长按照常拿起拖动（React Aria）；原来菜单里的 查看详情 / 我的一天 / 置顶 都在详情里（点行、顶栏太阳、「…」）。
-  // 计时还留着，只为认出长按：按满 500ms 再松手不算点开（不然长按松手会打开详情）；挪动、滚动过照旧作废（lib/long-press）。
-  // 右键也不开菜单（Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）：onContextMenu 只 preventDefault，不落回浏览器 / 系统菜单。
+  // 行的长按菜单（手机）：查看详情 ｜ 加入 / 移出我的一天、置顶。
+  // 右键不再开菜单（Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）：onContextMenu 只 preventDefault，也不落回浏览器 / 系统菜单。
+  // 菜单里的事详情都能做：顶栏太阳、「…」里的我的一天和置顶；点行本身就是查看详情。
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);
   const longPressed = useRef(false);
   const onContextMenu = (e: MouseEvent) => e.preventDefault();
@@ -129,7 +132,10 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       y,
       timer: window.setTimeout(() => {
         press.current = null;
-        if (longPressStillValid(pressedAt)) longPressed.current = true;
+        // 按下以后列表滚过、或刚滚完：是在滑，不是长按
+        if (!longPressStillValid(pressedAt)) return;
+        longPressed.current = true;
+        setMenuAt({ x, y });
       }, 500),
     };
   };
@@ -146,6 +152,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
 
   return (
     <div
+      ref={rowRef}
       className={`task-row ${STATE_CLASS[state ?? ''] ? `row-${STATE_CLASS[state!]}` : ''}${done ? ' is-done' : ''}${closed ? ' is-closed' : ''}${selected ? ' is-selected' : ''}`}
       data-task-id={task.id}
       style={isCheckInRow ? vividVar(colorLevel, cats[0]?.color ?? v.type?.color, '--ci-color') : undefined}
@@ -175,7 +182,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
       )}
       <TaskThumb media={v.media} layout={v.thumbLayout} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} hasItem={v.hasItem} />
       <RacButton className="row-main" aria-current={selected ? 'true' : undefined} onPress={() => {
-          // 长按松手不算点开（长按什么也不做）
+          // 长按出菜单后松手不算点开
           if (longPressed.current) {
             longPressed.current = false;
             return;
@@ -295,6 +302,39 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
         >
           {inDay ? <Sun size={17} /> : <SunDim size={17} />}
         </RacButton>
+      )}
+      {menuAt && (
+        <>
+          <span ref={anchorRef} className="row-menu-anchor" style={{ left: menuAt.x, top: menuAt.y }} aria-hidden />
+          <Popover
+            triggerRef={anchorRef}
+            isOpen
+            onOpenChange={(open) => !open && setMenuAt(null)}
+            className="popover menu-popover"
+            placement="bottom start"
+            offset={2}
+          >
+            <Menu
+              className="menu"
+              aria-label={tr('任务操作')}
+              autoFocus="first"
+              onAction={(k) => {
+                setMenuAt(null);
+                if (k === 'open') ui.openEditor(task.id);
+                else if (k === 'myday') toggleMyDay(store, ui, task.id);
+                else if (k === 'pin' || k === 'unpin') togglePin(store, ui, task.id);
+              }}
+            >
+              {rowMenu(inDay, pinned, store.pinEnabled()).filter((i) => !locked || i.id === 'open').flatMap((i, n) => [
+                ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
+                <MenuItem key={i.id} id={i.id} className="menu-item" textValue={i.label}>
+                  {i.id === 'open' ? <PanelRight size={16} /> : i.id === 'pin' ? <Pin size={16} /> : i.id === 'unpin' ? <PinOff size={16} /> : inDay ? <Sun size={16} /> : <SunDim size={16} />}
+                  <span>{i.label}</span>
+                </MenuItem>,
+              ])}
+            </Menu>
+          </Popover>
+        </>
       )}
     </div>
   );

@@ -3,9 +3,10 @@
  * - 排格子、翻页、点格子的规则都在 core date-grid.ts，这里只管画、键盘、指针。
  * - role="grid"：方向键换天，PageUp / PageDown 换月（农历页换农历月），加 Shift 换年，Home / End 到这周头尾，Enter / 空格选中，Shift+Enter 设成结束日。
  * - 桌面鼠标：按住拖过几天 = 一段；Shift 点 = 和开始日连成一段。手机只走「+ 结束日」。
+ * - 标题行右边 ‹ ○ ›（Rei 2026-11-13 参照滴答清单）：○ =「回到今天」，翻回今天那个月，焦点落在今天，不改已选的日子。
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Circle } from 'lucide-react';
 import { Button as RacButton } from 'react-aria-components';
 import {
   addDays,
@@ -30,6 +31,7 @@ import {
   type MonthView,
 } from '@mindough/core';
 import { tr } from '../../lib/i18n';
+import { TipButton } from '../../ui/primitives';
 import type { DayLunar } from '../../lib/lunar';
 
 /** 悬停用的完整说法：「农历九月十四 · 霜降 · 国庆节（休）」。 */
@@ -179,6 +181,9 @@ export function DateGrid(p: DateGridProps) {
         <RacButton className="icon-btn" aria-label={tr('上个月')} isDisabled={!canStep(view, -1)} onPress={() => p.onViewChange(stepView(view, -1)!)}>
           <ChevronLeft size={16} />
         </RacButton>
+        <TipButton tip={tr('回到今天')} className="icon-btn calendar-today-btn" onPress={() => moveFocus(today, viewOf(today, view.kind))}>
+          <Circle size={11} strokeWidth={2.25} aria-hidden />
+        </TipButton>
         <RacButton className="icon-btn" aria-label={tr('下个月')} isDisabled={!canStep(view, 1)} onPress={() => p.onViewChange(stepView(view, 1)!)}>
           <ChevronRight size={16} />
         </RacButton>

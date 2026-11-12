@@ -4,7 +4,7 @@
  */
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
 import { CalendarPlus, Inbox, Plus } from 'lucide-react';
-import {  } from '@mindough/core';
+import { toDateKey } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, PopoverPanel } from '../ui/primitives';
@@ -18,7 +18,7 @@ import { tr } from '../lib/i18n';
 export function BacklogPage() {
   const store = useStore();
   const ui = useUi();
-  const today = store.today();
+  const today = toDateKey(store.now());
   const list = store.backlog(today);
 
   // 拖完不留高亮、不选中被拖的行（lib/drag-guard）

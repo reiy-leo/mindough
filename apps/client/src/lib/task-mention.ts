@@ -10,7 +10,7 @@
  * 数据从这里的「来源」取：App 挂上 Store 和打开详情的办法（useMentionSource）。编辑器不用一层层传 store。
  */
 import { useEffect, useSyncExternalStore } from 'react';
-import { countdownPhrase, isFinished, mentionCandidates, mentionKind, type MentionCandidate, type MentionKind, type MentionScope, type Store } from '@mindough/core';
+import { countdownPhrase, isFinished, mentionCandidates, mentionKind, toDateKey, type MentionCandidate, type MentionKind, type MentionScope, type Store } from '@mindough/core';
 import { titleOf } from './view';
 import { tr } from './i18n';
 
@@ -73,7 +73,7 @@ export function mentionInfo(id: string, label: string): MentionInfo {
   const t = source?.store.get('task', id);
   if (!source || !t) return { missing: true, title: label, kind: 'task', ended: false, suffix: '' };
   const kind = mentionKind(t) === 'countdown' ? 'countdown' : 'task';
-  const suffix = kind === 'countdown' && t.target_date ? countdownPhrase(t.target_date, source.store.today()) : '';
+  const suffix = kind === 'countdown' && t.target_date ? countdownPhrase(t.target_date, toDateKey(source.store.now())) : '';
   return { missing: false, title: titleOf(source.store, t), kind, ended: isFinished(t.status), suffix };
 }
 

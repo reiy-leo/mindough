@@ -1,42 +1,18 @@
 /* ───────── 农历（Rei 2026-10-17）：日期格子下的农历小字、放假 / 补班角标、农历月历、日期标题、设置里的订阅区 ───────── */
 /* 只用令牌变量；三皮肤的形状差异写在 skin/skins.css 末尾「农历」一节 */
 
-/* 日期面板：开了农历，格子变成竖排（数字 + 小字），圆形改圆角方块 */
-.date-panel.has-lunar {
-  width: 304px;
-}
+/* 日期面板：开了农历（或节假日），格子变成竖排（数字 + 小字）。
+   2026-11-13 收紧（参照滴答清单）：格子 30×30 圆形，和不开农历一样大，行距 44 → 30；小字可以比圆宽（td 有 40），不截字 */
 .date-panel.has-lunar .calendar-cell {
-  position: relative;
-  width: 100%;
-  max-width: 40px;
-  height: 42px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  border-radius: var(--radius-md);
-  line-height: 1.1;
-}
-.date-panel.has-lunar .calendar-td.is-range-start {
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-.date-panel.has-lunar .calendar-td.is-range-end {
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-.date-panel.has-lunar .calendar-td.is-range-end:first-child,
-.date-panel.has-lunar .calendar-td.is-range-start:last-child {
-  border-radius: var(--radius-md);
-}
-.date-panel.has-lunar .calendar-cell.is-range-middle {
-  border-radius: 0;
-}
-/* 段里的格子撑满 td，浅色带两边不露缝 */
-.date-panel.has-lunar .calendar-td.in-range .calendar-cell {
-  max-width: none;
+  gap: 0;
+  line-height: 1.05;
 }
 .calendar-num {
-  font-size: 14px;
+  font-size: 13.5px;
 }
 /* 农历页：大字是农历日子 */
 .is-lunar-page .calendar-num {
@@ -44,11 +20,11 @@
   letter-spacing: -0.02em;
 }
 .lunar-text {
-  max-width: 100%;
+  max-width: 40px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 400;
   color: var(--text-3);
   letter-spacing: -0.02em;
@@ -62,35 +38,35 @@
   color: var(--text-2);
 }
 .calendar-cell.is-selected .lunar-text,
-.calendar-cell.is-range-middle .lunar-text,
-.calendar-cell.is-range-middle .lunar-badge {
+.calendar-cell.is-range-middle .lunar-text {
   color: inherit;
   opacity: 0.85;
 }
 .lunar-badge {
+  /* 休 / 班：右上角实心小圆（参照滴答清单），压在格子圆的边上 */
   position: absolute;
-  top: 1px;
-  right: 2px;
-  font-size: 8.5px;
+  top: -3px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 8px;
   line-height: 1;
   font-weight: 600;
-  color: var(--success);
+  color: #fff;
+  background: var(--success);
 }
 .lunar-badge.is-work {
-  color: var(--danger);
-}
-.calendar-cell.is-selected .lunar-badge {
-  color: inherit;
-}
-html[data-layout='mobile'] .date-panel.has-lunar .calendar-cell {
-  max-width: 50px;
-  height: 50px;
+  background: var(--danger);
 }
 html[data-layout='mobile'] .date-panel.has-lunar .calendar-num {
-  font-size: 16px;
+  font-size: 15px;
 }
 html[data-layout='mobile'] .date-panel.has-lunar .lunar-text {
-  font-size: 10.5px;
+  max-width: 48px;
+  font-size: 10px;
 }
 
 /* 日期标题（我的一天副标题、列表每天的标题）：农历 + 订阅的节日 */

@@ -1,5 +1,5 @@
 import { Check, Pause, Play, Square } from 'lucide-react';
-import { logicalToday, CheckInMetError, checkInMode, formatAmount, formatDuration, type Store, type Task } from '@mindough/core';
+import { CheckInMetError, checkInMode, formatAmount, formatDuration, toDateKey, type Store, type Task } from '@mindough/core';
 import { CountQuickButtons, useCountAdd } from './CountControls';
 import { HoverTip } from '../ui/HoverTip';
 import { Button, ProgressRing } from '../ui/primitives';
@@ -15,7 +15,7 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
   const ui = useUiStable();
   const running = store.progress(task.id)?.running ?? false;
   const now = useNow(running ? 1000 : 30_000);
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   const p = store.progress(task.id, today);
   if (!p) return null;
 

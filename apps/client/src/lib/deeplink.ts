@@ -5,7 +5,7 @@
  *
  * Web 端同样的东西走 hash：#/task/{id}、#/new?text=…、#/checkin-now/{id}（打卡页 #/checkin 已占用）。
  */
-import { logicalToday, addDays, BUILTIN_TYPE_IDS, type DateKey } from '@mindough/core';
+import { addDays, BUILTIN_TYPE_IDS, toDateKey, type DateKey } from '@mindough/core';
 import { isSettingsSection, type Route } from './router';
 
 export type DeepLinkAction =
@@ -57,7 +57,7 @@ function typeIdOf(name: string | null): string | null {
 /** date=today / tomorrow / 2026-10-20。认不出就当没写（进待安排）。 */
 export function parseLinkDate(v: string | null, now: Date): DateKey | null {
   if (!v) return null;
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   const s = v.trim().toLowerCase();
   if (s === 'today') return today;
   if (s === 'tomorrow') return addDays(today, 1);

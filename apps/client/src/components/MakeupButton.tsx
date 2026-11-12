@@ -4,7 +4,7 @@
  * 点了放进今天的我的一天（lib/actions startMakeup）；已经在里面了按钮是按下的样子。
  */
 import { History } from 'lucide-react';
-import { logicalToday, formatDate, type Store, type Task } from '@mindough/core';
+import { formatDate, toDateKey, type Store, type Task } from '@mindough/core';
 import { useNow } from '../store/StoreProvider';
 import { useUiStable } from '../lib/ui';
 import { useSettings } from '../lib/settings';
@@ -17,7 +17,7 @@ export function MakeupButton({ store, task, className }: { store: Store; task: T
   const now = useNow();
   const { settings } = useSettings();
   if (settings.strictMode) return null;
-  const node = store.makeupNode(task.id, logicalToday(now));
+  const node = store.makeupNode(task.id, toDateKey(now));
   if (!node) return null;
   const inDay = store.isInMyDay(task.id);
   const when = formatDate(node, { weekday: true });

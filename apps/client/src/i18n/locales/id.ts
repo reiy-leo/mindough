@@ -1531,6 +1531,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "已导出 {n} 件任务、{j} 条日记": "{n} tugas dan {j} entri jurnal diekspor",
   "；{m} 张网上的图片没取到，照原链接写着": "; {m} gambar online tidak bisa diambil dan tetap memakai tautannya",
   "一天从几点开始": "Hari dimulai pukul",
+  "还没到这个点，「今天的日记」还是前一天那篇（比如凌晨 3 点写的算昨天）。只用于日记。": "Sebelum jam ini, “Entri hari ini” masih milik hari sebelumnya (menulis pukul 3 pagi dihitung kemarin). Hanya berlaku untuk jurnal.",
   "每天提醒写日记": "Pengingat jurnal harian",
   "关着：不提醒写日记。": "Mati: tidak ada pengingat jurnal.",
   "每天 {time} 提醒，写没写都会响。": "Mengingatkan setiap hari pukul {time}, sudah menulis atau belum.",
@@ -1648,6 +1649,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "年月日": "Tanggal",
   "年月日+时区": "Tanggal + zona waktu",
   "任务列表、详情、提醒、倒数日、任务链、项目时间轴里的日期怎么写。只存在这台设备上。": "Cara tanggal ditampilkan di daftar tugas, detail, pengingat, hitung mundur, rantai tugas, dan linimasa proyek. Hanya disimpan di perangkat ini.",
+  "一天从几点开始、每天提醒写日记": "Kapan hari dimulai, pengingat jurnal harian",
   "菜单|设置…": "Pengaturan…",
   "这次的打卡已经达标了，不能再加": "Target check-in ini sudah tercapai, tidak bisa ditambah lagi",
   "今天要打的都打完了": "Semua check-in hari ini sudah selesai",
@@ -1793,9 +1795,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "卡片": "Kartu",
   "到期日期": "Tanggal jatuh tempo",
   "添加日期": "Tanggal ditambahkan",
-  "设置分区|时间": "Waktu",
-  "一天从几点开始，「今天」都按它算": "Kapan hari dimulai — “hari ini” di semua tempat mengikutinya",
-  "还没到这个点就算前一天：凌晨 3 点打开，我的一天、过期积压、日历、项目、打卡、倒数日、日记都还是昨天。提醒照实际时间响。": "Sebelum jam ini masih dihitung hari sebelumnya: pukul 3 dini hari, Hari Saya, Terlambat, Kalender, Proyek, Kebiasaan, Hitung mundur, dan Jurnal masih menampilkan kemarin. Pengingat tetap mengikuti jam sebenarnya.",
 };
 
 export const DATA: Record<string, string> = {

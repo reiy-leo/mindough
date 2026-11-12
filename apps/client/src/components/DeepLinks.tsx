@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { canWriteJournal, isArchivedType, isDateKey, isFinished, shouldJoinMyDay, type Store } from '@mindough/core';
+import { canWriteJournal, isArchivedType, isDateKey, isFinished, shouldJoinMyDay, toDateKey, type Store } from '@mindough/core';
 import { drainDeepLinks, enqueueDeepLink, onDeepLink, parseHashLink, type DeepLinkAction } from '../lib/deeplink';
 import { navigate } from '../lib/router';
 import { useUi } from '../lib/ui';
@@ -29,7 +29,7 @@ const shortTitle = (s: string) => (s.length > 24 ? `${s.slice(0, 24)}…` : s);
 
 /** 执行一个深链接。做事的（new / checkin）不确认，直接做，提示里可以撤销。 */
 export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
-  const today = store.today();
+  const today = toDateKey(store.now());
   switch (a.kind) {
     case 'invalid':
       ui.toast({ tone: 'error', message: tr('这个链接打不开：{url}', { url: a.url }) });

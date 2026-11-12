@@ -2,8 +2,7 @@
  * 打卡进度：一律由 check_in 事件折叠得出，不存进度字段。
  * 多端合并时两台设备各点一次 +1，就是两条事件，不会丢。
  */
-import { dayOf, logicalToday } from './day-start';
-import { diffDays } from './dates';
+import { diffDays, toDateKey } from './dates';
 import { ONCE_PERIOD, isDueOn, parseRecurrence, periodKeyFor, computeStreak, type Recurrence, type Streak } from './recurrence';
 import { isFinished, type CheckIn, type CheckInKind, type CompletionMode, type DateKey, type Task } from './types';
 
@@ -117,7 +116,7 @@ export function computeProgress(task: ProgressTask, events: readonly CheckIn[], 
       };
     }
     case 'countdown': {
-      const today = logicalToday(now);
+      const today = toDateKey(now);
       const remaining = task.target_date ? diffDays(today, task.target_date) : 0;
       const manual = events.some((e) => !e.deleted && (e.kind === 'stop' || e.kind === 'add'));
       const met = manual || (task.target_date !== null && remaining <= 0);
@@ -199,8 +198,8 @@ export type StreakTask = ProgressTask & Pick<Task, 'created_at'>;
 export function taskStreak(task: StreakTask, events: readonly CheckIn[], now: Date): Streak | null {
   const r = habitRule(task);
   if (!r) return null;
-  const since = dayOf(task.created_at);
-  return computeStreak(r, metPeriods(task, events, now), logicalToday(now), since);
+  const since = toDateKey(new Date(task.created_at));
+  return computeStreak(r, metPeriods(task, events, now), toDateKey(now), since);
 }
 
 /**
@@ -220,7 +219,7 @@ export function isCheckInTask(task: Pick<Task, 'completion_mode' | 'recurrence'>
 
 /** 重复任务从哪天起不再算应打卡日：结束（完成 / 关闭）那天或归档那天，取早的；都没有就是 null。 */
 function endOfDue(t: Pick<Task, 'status' | 'done_at' | 'archived_at'>): DateKey | null {
-  const ends = [isFinished(t.status) && t.done_at ? dayOf(t.done_at) : null, t.archived_at ? dayOf(t.archived_at) : null].filter((d): d is DateKey => !!d);
+  const ends = [isFinished(t.status) && t.done_at ? toDateKey(new Date(t.done_at)) : null, t.archived_at ? toDateKey(new Date(t.archived_at)) : null].filter((d): d is DateKey => !!d);
   return ends.length ? ends.sort()[0]! : null;
 }
 
@@ -229,7 +228,7 @@ export function dueToday(task: Pick<Task, 'recurrence' | 'deleted' | 'status' | 
   if (task.deleted || isFinished(task.status) || task.archived_at) return false;
   const r = habitRule(task);
   if (!r) return false;
-  if (dayOf(task.created_at) > date) return false;
+  if (toDateKey(new Date(task.created_at)) > date) return false;
   return isDueOn(r, date);
 }
 
@@ -281,7 +280,7 @@ export function buildRatioIndex(tasks: readonly Task[], checkIns: readonly Check
       {
         task: t,
         rule: habitRule(t),
-        since: dayOf(t.created_at),
+        since: toDateKey(new Date(t.created_at)),
         until: endOfDue(t),
       },
     ]),

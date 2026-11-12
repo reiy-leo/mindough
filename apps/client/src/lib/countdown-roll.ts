@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { logicalToday, type Store } from '@mindough/core';
+import { toDateKey, type Store } from '@mindough/core';
 import { useNow } from '../store/StoreProvider';
 
 /**
@@ -8,7 +8,7 @@ import { useNow } from '../store/StoreProvider';
  * 严格模式的开关要先告诉 Store（useStrictSync 在前面），严格模式下只滚目标日、不生成记录。
  */
 export function useCountdownRoll(store: Store): void {
-  const today = logicalToday(useNow(60_000));
+  const today = toDateKey(useNow(60_000));
   const version = store.version;
   useEffect(() => {
     try {

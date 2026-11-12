@@ -864,14 +864,14 @@ export function App() {
       } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'n' && !typingKey(e) && !ui.paletteOpen && !ui.quickCreate) {
         e.preventDefault();
         if (route.page === 'checkin' || route.page === 'countdown') createBlankTask(store, ui.openEditor, route.page);
-        else ui.openQuickCreate(newTaskDefaults(route, store, settings.myDayDefaultToday, store.today()), { myDay: route.page === 'myday' });
+        else ui.openQuickCreate(newTaskDefaults(route, store, settings.myDayDefaultToday, toDateKey(store.now())), { myDay: route.page === 'myday' });
       }
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
   }, [ui, store, route, settingsInWindow, openSettings, settings.myDayDefaultToday]);
 
-  const backlogCount = store.backlog(store.today()).length;
+  const backlogCount = store.backlog(toDateKey(store.now())).length;
   const current = [...nav, SETTINGS].find(isActive);
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();

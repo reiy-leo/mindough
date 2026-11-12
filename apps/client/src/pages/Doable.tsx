@@ -1,4 +1,4 @@
-import { logicalToday, type Task } from '@mindough/core';
+import { toDateKey, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { Empty } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
@@ -24,7 +24,7 @@ import { tr } from '../lib/i18n';
 export function DoablePage() {
   const store = useStore();
   const now = store.now();
-  const today = logicalToday(now);
+  const today = toDateKey(now);
   // 归档了的项目里的任务不算（Rei 2026-11-05）；最近过期在上
   const overdue = store.overdueBacklog(now, today);
   const [view, setView] = useListView('doable');

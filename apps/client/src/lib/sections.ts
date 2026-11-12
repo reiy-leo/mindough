@@ -13,7 +13,7 @@
  *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
-import { isMarkerCategory, logicalToday, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
+import { isMarkerCategory, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
 import { dataLabel, tr, trc } from './i18n';
 
 export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
@@ -193,7 +193,7 @@ export function sectionTasks<T extends Task>(
     push('none', trc('列表分区', '没有类型'), byCat.get('none') ?? []);
   } else {
     const now = ctx.now ?? new Date();
-    const today = ctx.today ?? logicalToday(now);
+    const today = ctx.today ?? now.toISOString().slice(0, 10);
     const ws = ctx.weekStart ?? 1;
     const byBucket = new Map<DueBucket, T[]>();
     for (const t of tasks) {

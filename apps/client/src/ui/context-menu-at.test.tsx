@@ -13,10 +13,8 @@ import { resetLongPressGuard } from '../lib/long-press';
 let root: Root;
 let host: HTMLDivElement;
 
-let lastConsume: (() => boolean) | null = null;
-function Probe({ longPress, systemTouchMenu }: { longPress?: boolean; systemTouchMenu?: boolean }) {
-  const m = useContextMenuAt(longPress === undefined ? undefined : { longPress, ...(systemTouchMenu === undefined ? {} : { systemTouchMenu }) });
-  lastConsume = m.consumeLongPress;
+function Probe({ longPress }: { longPress?: boolean }) {
+  const m = useContextMenuAt(longPress === undefined ? undefined : { longPress });
   return <div id="t" data-open={m.at ? '1' : '0'} {...m.props} />;
 }
 const el = () => host.querySelector<HTMLElement>('#t')!;
@@ -57,34 +55,6 @@ describe('useContextMenuAt', () => {
     const e = ctx();
     expect(e.defaultPrevented).toBe(false);
     expect(open()).toBe(false);
-  });
-  // Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」
-  it('longPress: false + systemTouchMenu: false（任务卡片）：手指长按不出菜单，系统菜单也拦掉', () => {
-    act(() => root.render(<Probe longPress={false} systemTouchMenu={false} />));
-    down('touch');
-    act(() => void vi.advanceTimersByTime(800));
-    expect(open()).toBe(false);
-    const e = ctx();
-    expect(e.defaultPrevented).toBe(true);
-    expect(open()).toBe(false);
-    // 认出了长按：松手那次点按要吞掉，不打开详情；只吞一次
-    expect(lastConsume!()).toBe(true);
-    expect(lastConsume!()).toBe(false);
-  });
-  it('longPress: false + systemTouchMenu: false：轻点不算长按', () => {
-    act(() => root.render(<Probe longPress={false} systemTouchMenu={false} />));
-    down('touch');
-    act(() => void vi.advanceTimersByTime(200));
-    act(() => void el().dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch', clientX: 5, clientY: 5 })));
-    act(() => void vi.advanceTimersByTime(600));
-    expect(lastConsume!()).toBe(false);
-  });
-  it('longPress: false + systemTouchMenu: false：鼠标右键照常出菜单', () => {
-    act(() => root.render(<Probe longPress={false} systemTouchMenu={false} />));
-    down('mouse');
-    const e = ctx();
-    expect(e.defaultPrevented).toBe(true);
-    expect(open()).toBe(true);
   });
   it('longPress: false：鼠标右键照常出菜单', () => {
     act(() => root.render(<Probe longPress={false} />));

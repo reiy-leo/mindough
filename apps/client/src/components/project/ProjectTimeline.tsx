@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { formatDate, formatTaskDate, monthShort, parseDateKey, weekStartsOn, type Store, type Task } from '@mindough/core';
+import { formatDate, formatTaskDate, monthShort, parseDateKey, todayKey, weekStartsOn, type Store, type Task } from '@mindough/core';
 import { useDateDisplay } from '../../lib/date-display';
 import { useUi } from '../../lib/ui';
 import { timelineLayout, type TimelineScale } from '../../lib/project-view';
@@ -20,7 +20,7 @@ const ROW_H = 36;
 
 export function ProjectTimeline({ store, tasks, scale, onScale }: { store: Store; tasks: Task[]; scale: TimelineScale; onScale: (s: TimelineScale) => void }) {
   const ui = useUi();
-  const today = store.today();
+  const today = todayKey(store.now());
   const dateMode = useDateDisplay();
   // 横条上的日期按设置 → 任务 →「日期显示」写；刻度（像日历表头）不跟着变
   const barDate = (d: string) => (dateMode === 'auto' ? formatDate(d) : formatTaskDate(d, { mode: dateMode, today }));

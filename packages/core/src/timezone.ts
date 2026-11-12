@@ -8,7 +8,6 @@
  * - 偏移一律按「那天」算（夏令时）：offsetMinutesOn(tz, date) 取那天当地正午的偏移。
  */
 import { toDateKey } from './dates';
-import { logicalToday } from './day-start';
 import type { DateKey, Task } from './types';
 import { getLocale, tr } from './i18n';
 import { CITY_ZH } from './timezone-names';
@@ -159,14 +158,14 @@ export function taskTimeZone(task: Pick<Task, 'time_zone'>, device: string = dev
  */
 export function taskToday(task: Pick<Task, 'time_zone'>, now: Date, deviceToday?: DateKey): DateKey {
   const tz = normalizeTimeZone(task.time_zone);
-  if (!tz) return deviceToday ?? logicalToday(now);
-  return logicalToday(now, tz);
+  if (!tz) return deviceToday ?? dateKeyInZone(now.getTime());
+  return dateKeyInZone(now.getTime(), tz);
 }
 
 /** 某个时区的今天（快捷按钮「今天 / 明天」按所选时区算）。tz 空 = 设备。 */
 export function todayIn(tz: string | null | undefined, now: Date): DateKey {
   const z = normalizeTimeZone(tz);
-  return logicalToday(now, z);
+  return z ? dateKeyInZone(now.getTime(), z) : dateKeyInZone(now.getTime());
 }
 
 /** 任务的日期过期了没有（按任务时区的今天）。日期段看结束日（Rei 2026-10-26 日期段）：还在段里不算过期。 */

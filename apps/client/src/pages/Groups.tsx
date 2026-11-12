@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { Archive, ArchiveRestore, ChevronRight, CircleCheck } from 'lucide-react';
-import { isFinished, groupColor, normalizeIconColor, weekStartsOn, type Group, type Task } from '@mindough/core';
+import { isFinished, groupColor, normalizeIconColor, toDateKey, weekStartsOn, type Group, type Task } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { navigate } from '../lib/router';
 import { Button, ChipPicker, Empty, MenuAt, NewButton, OverflowMenu, PopoverPanel, useContextMenuAt } from '../ui/primitives';
@@ -179,7 +179,7 @@ export function GroupDetailPage({ id }: { id: string }) {
   );
   // 回车建到本项目（带项目的默认类型），马上打开；看板里新任务是「待办」，自然在待办列
   // 项目开着「默认日期：今天」（Rei 2026-11-09）：日期填今天
-  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id, ...todayDefaults(g.default_date_today === true, store.today()) }).id;
+  const create = (text: string) => store.createTask({ body_md: text, group_id: g.id, ...todayDefaults(g.default_date_today === true, toDateKey(store.now())) }).id;
   return <GroupDetail g={g} tasks={tasks} prefs={prefs} setPrefs={setPrefs} create={create} />;
 }
 
@@ -232,7 +232,7 @@ function GroupDetail({
   // 分区只分没结束的；「已结束」那段照旧单独在下面（Rei 2026-11-08）
   const sections = prefs.view === 'list' ? sectionTasks(open, prefs.section, {
           now: store.now(),
-          today: store.today(),
+          today: toDateKey(store.now()),
           weekStart: weekStartsOn(),
           ...(prefs.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
         }) : null;

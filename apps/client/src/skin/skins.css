@@ -1540,8 +1540,12 @@
 [data-skin='winui'] .date-panel.has-lunar .calendar-td.is-range-end {
   border-radius: 0;
 }
+/* WinUI 开农历时格子是 4px 圆角方块（2026-11-13 收紧后 30×30；Apple / Material 收紧后开农历也是圆） */
 [data-skin='winui'] .date-panel.has-lunar .calendar-cell {
   border-radius: 4px;
+}
+[data-skin='winui'] .date-panel.has-lunar .calendar-cell.is-range-middle {
+  border-radius: 0;
 }
 [data-skin='winui'] .calendar-cell:focus-visible {
   position: relative;
@@ -1574,14 +1578,7 @@
   color: var(--accent-soft-text);
   font-weight: 600;
 }
-html[data-layout='mobile'][data-skin='material'] .date-panel .calendar-cell {
-  width: 48px;
-  height: 48px;
-}
-html[data-layout='mobile'][data-skin='material'] .date-panel.has-lunar .calendar-cell {
-  width: 100%;
-  height: 50px;
-}
+/* 手机 Material 原来 48dp 圆，2026-11-13 收紧后和另两套一样 40（点的地方 ≥36） */
 
 /* ═════════════ 图标选择（2026-11-02 重做，三种皮肤各自的格子） ═════════════ */
 /* Apple：像 SF Symbols / 提醒事项的图标选择——圆角 8，悬停浅灰填充，选中是系统强调色实心 + 白色图标 */

@@ -4,11 +4,11 @@
  * 不看「显示建议」开关（这不是建议）。项目关了「出现在我的一天」的不加，见 group.my_day_auto。
  */
 import { useEffect } from 'react';
-import { logicalToday, type Store } from '@mindough/core';
+import { toDateKey, type Store } from '@mindough/core';
 import { useNow } from '../store/StoreProvider';
 
 export function useAutoMyDay(store: Store): void {
-  const today = logicalToday(useNow(60_000));
+  const today = toDateKey(useNow(60_000));
   const version = store.version;
   useEffect(() => {
     store.syncAutoMyDay(today);

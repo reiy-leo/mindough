@@ -1,5 +1,5 @@
 import { CircleCheck } from 'lucide-react';
-import { doneDayLabel, doneDays } from '@mindough/core';
+import { doneDayLabel, doneDays, toDateKey } from '@mindough/core';
 import { useStore } from '../store/StoreProvider';
 import { Empty, Section } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
@@ -14,7 +14,7 @@ import { tr, trc } from '../lib/i18n';
  */
 export function DonePage() {
   const store = useStore();
-  const today = store.today();
+  const today = toDateKey(store.now());
   const days = doneDays(store.activeTasks());
   return (
     <div className="page done-page">
