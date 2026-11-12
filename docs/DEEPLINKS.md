@@ -7,7 +7,7 @@
 | host | 写法 | 示例 | 用途 |
 |---|---|---|---|
 | task | mindough://task/{任务id} | mindough://task/0199f2a4-7c1e-7000-8000-1a2b3c4d5e6f | 打开某件任务的详情（通知、小组件、别的 app 里的链接）；2026-10-23 起，桌面上在当前页面的右列打开，手机上整页推入 |
-| view | mindough://view/{页面} | mindough://view/myday、mindough://view/inbox | 打开某个页面。页面名：myday 我的一天、inbox 待安排、calendar 日历（2026-11-10 起；旧的 timeline 照样打开日历，Web 是 `#/calendar`，旧 `#/agenda` 也行）、groups 项目、available 可做、checkin 打卡、countdown 倒数日（2026-10-26 起单独一页）、journal 日记、library 资料库、people 人物（侧栏 2026-10-26 起没有人物入口，深链照旧能用）、done 已完成（2026-11-08 加，别名 completed；Web 是 `#/done`）、types 类型（2026-10-26 加，别名 categories；Web 是 `#/types`，`#/types/{id}` 看某个类型挂了哪些任务和项目）、settings 设置。设置可以带一项直接打开（Rei 2026-10-26）：`view/settings/account`、`appearance`、`data`、`reminders`、`tasks`、`calendar`（节假日、农历、日历订阅，2026-11-10 加）、`checkin`（2026-11-10 加）、`journal`、`about`（后两项 2026-10-26 加），`library` 是 `tasks` 的别名（资料库在「任务」那项里，2026-10-26 加）；`view/settings/types` 2026-10-28 起打开类型页（设置里不再有类型）；认不得的项当作 `view/settings`；桌面 app 里打开的是设置窗口 |
+| view | mindough://view/{页面} | mindough://view/myday、mindough://view/inbox | 打开某个页面。页面名：myday 我的一天、inbox 待安排、calendar 日历（2026-11-10 起；旧的 timeline 照样打开日历，Web 是 `#/calendar`，旧 `#/agenda` 也行）、groups 项目、available 可做、checkin 打卡、countdown 倒数日（2026-10-26 起单独一页）、journal 日记、library 资料库、people 人物（侧栏 2026-10-26 起没有人物入口，深链照旧能用）、done 已完成（2026-11-08 加，别名 completed；Web 是 `#/done`）、types 类型（2026-10-26 加，别名 categories；Web 是 `#/types`，`#/types/{id}` 看某个类型挂了哪些任务和项目）、settings 设置。设置可以带一项直接打开（Rei 2026-10-26）：`view/settings/account`、`appearance`、`data`、`reminders`、`tasks`、`calendar`（节假日、农历、日历订阅，2026-11-10 加）、`checkin`（2026-11-10 加）、`system`（开机时启动、启动时打开哪一页，2026-11-13 加）、`journal`、`about`（后两项 2026-10-26 加），`library` 是 `tasks` 的别名（资料库在「任务」那项里，2026-10-26 加）；`view/settings/types` 2026-10-28 起打开类型页（设置里不再有类型）；认不得的项当作 `view/settings`；桌面 app 里打开的是设置窗口 |
 | group | mindough://group/{项目id} | mindough://group/0199f2a4-… | 打开某个组 |
 | library | mindough://library/{资料库}/{资料id} | mindough://library/movie/0199f2a4-…；mindough://library/book | 打开某条资料；不带 id 就是这个资料库。资料库用英文短名：movie、book、game、project、course、travel、shopping、restaurant、meal |
 | person | mindough://person/{人物id} | mindough://person/0199f2a4-… | 打开某个人 |
@@ -35,6 +35,7 @@
 
 - id 都用任务 / 资料本来的 uuid；找不到就打开 app，提示「找不到这件任务」，不报错。
 - app 没开时点链接：先启动 app，等数据库打开再执行。
+- 深链比「启动时打开」优先（设置 → 系统，2026-11-13）：app 没开时点链接，先按「启动时打开」进那一页，链接一到就跳到链接指的地方；Web 地址里带了页面（`#/checkin`、`#/task/{id}`，或刷新）就照地址走，只有根地址才进「启动时打开」选的那页。
 - Web 端用同样的路径，写成 https://app.mindough.rei8t.dev/#/task/{id} 这样的 hash 路由。旧地址 https://mindough.rei8t.dev/#/… 的链接还能点：介绍页会跳到 app 域名的同一路径（2026-10-26 起）。以后要做 Universal Links / App Links（点 https 链接直接打开 app），到时再单独审。
 - 中文参数要 URL 编码（快捷指令会自动做）。
 - 正文里的 @ 提及（2026-11-10）就是 `[标题](mindough://task/{任务id})` 这条 task 深链：新客户端显示成胶囊、点了就地打开详情（不经过系统的深链）；老客户端、别的 Markdown 工具看到的是普通链接，桌面 App 里点了交给系统，系统按 mindough:// 深链打开念头团的那件任务（按代码推断，没实测）。
