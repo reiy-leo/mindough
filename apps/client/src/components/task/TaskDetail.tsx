@@ -29,7 +29,7 @@ import { ChainToggle, TaskChainInline } from './TaskChain';
 import { PropChips } from './PropChips';
 import { DateQuickButton } from './TaskDatePicker';
 import { MoodQuickButton } from './MoodQuickButton';
-import { canHaveMood } from '../../lib/prop-chips';
+import { canHaveMood, checkInNoteShown } from '../../lib/prop-chips';
 import { useLocked } from '../../lib/strict';
 import { ClipboardButton } from '../attachments/ClipboardButton';
 import { CountNumber, CountQuickButtons, CountUndoButton, useCountAdd } from '../CountControls';
@@ -914,11 +914,27 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     .filter((e) => !locked || !(e.id === 'myday' || e.id === 'pin' || e.id === 'unpin'))
     .map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));
 
+  // 打卡描述框（Rei 2026-11-13 07:25）：写了就显示；没写时只在从「+」打开 / 正在里面打字时显示。换任务就不算打开。
+  const [note, setNote] = useState<{ id: string; open: boolean; focus: boolean }>({ id: task.id, open: false, focus: false });
+  const noteState = note.id === task.id ? note : { id: task.id, open: false, focus: false };
+  const noteShown = isHabit(task) && (locked ? !!task.checkin_note?.trim() : checkInNoteShown(task.checkin_note, noteState.open));
+  const noteAddable = isHabit(task) && !locked && !noteShown;
+
   // 属性：单值属性收成一行胶囊（Rei 2026-10-25 方案 A），资料行和任务字段仍是卡片里的行。
   // 附件紧跟在胶囊下面、资料卡片上面（Rei 2026-10-25「显示在属性块下方」）：从「+」加的附件就出现在「+」旁边。
   const props = (
     <div className="detail-props">
-      <PropChips store={store} task={task} today={today} {...(locked ? {} : { onAttach: addFiles })} />
+      <PropChips store={store} task={task} today={today} {...(locked ? {} : { onAttach: addFiles })} {...(noteAddable ? { onAddNote: () => setNote({ id: task.id, open: true, focus: true }) } : {})} />
+      {/* 打卡描述（Rei 2026-11-13 07:25 改成属性）：胶囊下面、附件上面一个框；写了一直显示，没写时从「+」打开 */}
+      {noteShown && (
+        <CheckInNote
+          store={store}
+          task={task}
+          readOnly={locked}
+          autoFocus={noteState.focus}
+          onOpenChange={(open) => setNote((s) => (s.id === task.id && s.open === open && !s.focus ? s : { id: task.id, open, focus: false }))}
+        />
+      )}
       <Attachments owner={owner} bare readOnly={locked} />
       <RefsSection store={store} task={task} today={today} />
     </div>
@@ -958,18 +974,22 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
         footer={
           finished ? (
             <>
-              <span className="foot-note">{task.status === '完成' ? tr('这件事已经做完了。') : tr('这件事已关闭，不用再做了。')}</span>
+              {/* 右边只剩一个图标按钮，手机上这行字也和它并排（is-inline），不再自己占一行 */}
+              <span className="foot-note is-inline">{task.status === '完成' ? tr('这件事已经做完了。') : tr('这件事已关闭，不用再做了。')}</span>
               <span className="grow" />
-              <Button
-                variant="secondary"
-                onPress={() => {
-                  store.reopenTask(task.id);
-                  ui.toast({ message: tr('已重新打开') }, 2500);
-                }}
-              >
-                <RotateCcw size={16} />
-                {recurring ? tr('恢复打卡') : tr('重新打开')}
-              </Button>
+              {/* 「重新打开」只放图标（Rei 2026-11-13 07:27「重新打开也icon btn」）：同「完成」的 .icon-btn 32×32；不是主操作，图标用默认的次要色；悬停提示、读屏名照旧 */}
+              <Tip content={recurring ? tr('恢复打卡') : tr('重新打开')}>
+                <RacButton
+                  className="icon-btn reopen-icon-btn"
+                  aria-label={recurring ? tr('恢复打卡') : tr('重新打开')}
+                  onPress={() => {
+                    store.reopenTask(task.id);
+                    ui.toast({ message: tr('已重新打开') }, 2500);
+                  }}
+                >
+                  <RotateCcw size={18} aria-hidden />
+                </RacButton>
+              </Tip>
             </>
           ) : counting ? (
             <>
@@ -1024,8 +1044,6 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
               </div>
             )}
             <Body store={store} task={task} placeholder={typed ? tr('添加笔记…') : tr('写点什么…')} readOnly={locked} />
-            {/* 打卡描述（Rei 2026-11-13 05:09）：只有打卡有，一直显示在正文下面 */}
-            {isHabit(task) && <CheckInNote store={store} task={task} readOnly={locked} />}
             {!lib && typed && type && (
               <Disclosure className="type-disclosure" defaultExpanded={!hasPrimary}>
                 <Heading level={3} className="disclosure-head">

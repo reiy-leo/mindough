@@ -1826,7 +1826,6 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打卡完成了，正文存进了「{title}」": "Abgehakt. Notizen nach „{title}“ verschoben",
   "打卡描述": "Beschreibung",
   "添加打卡描述…": "Beschreibung hinzufügen…",
-  "没有打卡描述": "Keine Beschreibung",
   "通知位置": "Position der Hinweise",
   "通知位置|顶部": "Oben",
   "通知位置|底部": "Unten",

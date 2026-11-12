@@ -500,6 +500,7 @@ export function AutoTextarea({
   className,
   minRows = 2,
   onBlur,
+  onFocus,
   onKeyDown,
 }: {
   label: string;
@@ -510,6 +511,7 @@ export function AutoTextarea({
   className?: string;
   minRows?: number;
   onBlur?: () => void;
+  onFocus?: () => void;
   onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -536,6 +538,7 @@ export function AutoTextarea({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
+      onFocus={onFocus}
       onKeyDown={onKeyDown}
     />
   );

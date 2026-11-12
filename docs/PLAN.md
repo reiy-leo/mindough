@@ -2285,3 +2285,12 @@ Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「�
 - 打卡描述存 task.checkin_note（迁移 v23），纯文字 AutoTextarea；老客户端推上来的行没有这一列时沿用本机值。
 - 客户端 `lib/body-flush.ts`：Store.beforeCheckIn 打卡前把详情里没存的正文 / 描述先存，避免存档拿旧正文、编辑器又把旧正文写回。
 - 05:30 加一次性补存：`Store.backfillCheckInArchives` / `backfillCheckInArchivesOnce`（本机 meta `checkin_backfill_v1`），Store.open 末尾（有打卡才做）和 SyncEngine 拉完一轮后（新设备空库）各调一次；节点 = 今天所在周期达标就用它，否则上一个周期；id 固定用第 1 条。
+
+### 打卡描述改成属性、显示成框；「重新打开」只放图标 ✅（2026-11-13）
+- Rei 07:25「打卡描述做成属性，在属性dropdown中放在心情、附件一组。打卡显示成一个box,背景略深，统一圆角」；07:27「重新打开也icon btn」。
+- `lib/prop-chips`：`AddMenuId` 加 `checkin_note`，第 3 组按 心情、打卡描述、附件、卡片颜色 排；`addMenuItems / addMenuSections` 第 4 个参数 canAddNote；`checkInNoteShown(note, opened)`。
+- `TaskDetail`：框从正文下面挪到 `.detail-props` 里胶囊和附件中间；本组件记「打开着」（换任务就清），打卡、没锁、框没显示时给 PropChips `onAddNote`。
+- `CheckInNote`：`autoFocus`、`onOpenChange`（聚焦 true；删空后失焦 / Esc、点 × 时 false）；× 走 `setCheckInNote(null)` + 撤销提示。删了只读空态「没有打卡描述」（九语言词条一并删）。
+- 样式：`.checkin-note` 圆角 `--radius-lg`（同属性卡片）；底色半透明黑叠在详情底上（亮 0.045、暗 0.24），三皮肤亮暗都比详情底深一点。原想照属性卡片用 `--surface-2`，实测 WinUI 亮色手机和各皮肤暗色下它比详情底还亮，不是「略深」，所以没用；没用 color-mix。
+- 判断：「打卡 box」理解成打卡描述这个框（同一句话前半句说的就是它），打卡快捷按钮、进度区没动。「重新打开」用 rotate-ccw、默认灰色图标按钮，「这件事已经做完了。」那行留着。
+

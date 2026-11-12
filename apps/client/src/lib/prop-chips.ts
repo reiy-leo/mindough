@@ -25,7 +25,7 @@ export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind'
  */
 export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'group', 'refs', 'category', 'mood', 'color'];
 
-/** 「+」菜单里每项属于第几组（组和组之间画分隔线）。项目在第 2 组第一个；附件在第 3 组，紧跟心情。 */
+/** 「+」菜单里每项属于第几组（组和组之间画分隔线）。项目在第 2 组第一个；第 3 组是心情、打卡描述、附件、卡片颜色。 */
 export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
   date: 1,
   mode: 1,
@@ -35,6 +35,7 @@ export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
   refs: 2,
   category: 2,
   mood: 3,
+  checkin_note: 3,
   attachment: 3,
   color: 3,
 };
@@ -125,8 +126,17 @@ export function canHaveMood(t: Pick<Task, 'recurrence' | 'completion_mode'>): bo
   return !t.recurrence && t.completion_mode !== 'countdown';
 }
 
-/** 「+」菜单的一项：没设的属性，或者「附件」。 */
-export type AddMenuId = PropId | 'attachment';
+/**
+ * 「+」菜单的一项：没设的属性、「打卡描述」或者「附件」。
+ * 打卡描述（Rei 2026-11-13 07:25「打卡描述做成属性，在属性dropdown中放在心情、附件一组」）不是胶囊，是胶囊下面一个框：
+ * 只有打卡有；没写、也没从菜单打开时在菜单里，写了（或正打开着）就不在。
+ */
+export type AddMenuId = PropId | 'attachment' | 'checkin_note';
+
+/** 打卡描述那个框显示吗：写了字（首尾空白不算）就一直显示；没写时只有从「+」打开、或正在里面打字才显示。 */
+export function checkInNoteShown(note: string | null | undefined, opened: boolean): boolean {
+  return !!note?.trim() || opened;
+}
 
 /**
  * 「+」菜单要列的项（Rei 2026-10-25「附件也收到这个下拉列表，但附件可以添加多个，添加后下拉列表中还要显示」）：
@@ -134,18 +144,20 @@ export type AddMenuId = PropId | 'attachment';
  * 2026-11-11 起排在第 3 组心情后面（Rei「心情、附件和其他属性」），没有心情时就是第 3 组第一项。
  * 菜单是空的时「+」隐藏。
  */
-export function addMenuItems(t: PropTask, counts: PropCounts = {}, canAttach = false): AddMenuId[] {
+export function addMenuItems(t: PropTask, counts: PropCounts = {}, canAttach = false, canAddNote = false): AddMenuId[] {
   const items: AddMenuId[] = unsetProps(t, counts);
-  if (canAttach) {
+  // 第 3 组：心情、打卡描述、附件、卡片颜色（打卡描述、附件插在心情后面、卡片颜色前面）
+  const extra: AddMenuId[] = [...(canAddNote ? (['checkin_note'] as const) : []), ...(canAttach ? (['attachment'] as const) : [])];
+  if (extra.length) {
     const i = items.findIndex((id) => PROP_SECTION[id] === 3 && id !== 'mood');
-    items.splice(i < 0 ? items.length : i, 0, 'attachment');
+    items.splice(i < 0 ? items.length : i, 0, ...extra);
   }
   return items;
 }
 
 /** 「+」菜单分成几组（空组不出），组间画分隔线（Rei 2026-11-11）。 */
-export function addMenuSections(t: PropTask, counts: PropCounts = {}, canAttach = false): AddMenuId[][] {
-  const items = addMenuItems(t, counts, canAttach);
+export function addMenuSections(t: PropTask, counts: PropCounts = {}, canAttach = false, canAddNote = false): AddMenuId[][] {
+  const items = addMenuItems(t, counts, canAttach, canAddNote);
   return ([1, 2, 3] as const).map((n) => items.filter((id) => PROP_SECTION[id] === n)).filter((g) => g.length > 0);
 }
 

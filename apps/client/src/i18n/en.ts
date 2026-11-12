@@ -1539,7 +1539,6 @@ export const EN: Record<string, EnValue> = {
   "打卡完成了，正文存进了「{title}」": "Checked in. Notes moved to “{title}”",
   "打卡描述": "Check-in Description",
   "添加打卡描述…": "Add a description…",
-  "没有打卡描述": "No description",
   "通知位置": "Notification Position",
   "通知位置|顶部": "Top",
   "通知位置|底部": "Bottom",

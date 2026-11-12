@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROP_ORDER, addMenuItems, addMenuSections, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask , canHaveMood, composerChipOrder} from './prop-chips';
+import { PROP_ORDER, addMenuItems, addMenuSections, applicableProps, clearPatch, isPropSet, setProps, unsetProps, type PropTask , canHaveMood, composerChipOrder, checkInNoteShown } from './prop-chips';
 
 const base: PropTask = {
   completion_mode: 'once',
@@ -162,5 +162,33 @@ describe('新建面板胶囊顺序（Rei 2026-11-11 04:27）', () => {
   it('跟 PROP_ORDER 同一份顺序，相关任务在最后', () => {
     const all = [...PROP_ORDER, 'related' as const].reverse();
     expect(composerChipOrder(all)).toEqual([...PROP_ORDER, 'related']);
+  });
+});
+
+describe('打卡描述做成属性（Rei 2026-11-13 07:25「在属性dropdown中放在心情、附件一组」）', () => {
+  const habit = t({ recurrence: 'FREQ=DAILY', completion_mode: 'count' });
+  it('能加时排在第 3 组：心情后面、附件前面', () => {
+    expect(addMenuSections(habit, {}, true, true).at(-1)).toEqual(['checkin_note', 'attachment']);
+    expect(addMenuSections(t({ recurrence: 'FREQ=DAILY', mood: 'sad' as never }), {}, true, true).at(-1)).toEqual(['checkin_note', 'attachment']);
+    expect(addMenuSections(t({ recurrence: 'FREQ=DAILY' }), {}, true, true).at(-1)).toEqual(['checkin_note', 'attachment']);
+  });
+  it('不能加（不是打卡 / 写了 / 锁住）就不在菜单里，菜单其余不变', () => {
+    expect(addMenuItems(habit, {}, true, false)).toEqual(addMenuItems(habit, {}, true));
+    expect(addMenuItems(habit, {}, true, false)).not.toContain('checkin_note');
+  });
+  it('没附件时也在第 3 组；心情、打卡描述同时在时心情在前', () => {
+    expect(addMenuSections(habit, {}, false, true).at(-1)).toEqual(['checkin_note']);
+    const order = addMenuItems(t(), {}, true, true);
+    expect(order.slice(order.indexOf('mood'))).toEqual(['mood', 'checkin_note', 'attachment']);
+  });
+  it('属性都设了，菜单里还剩打卡描述，「+」不藏', () => {
+    const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g' });
+    expect(addMenuItems(full, { refs: 1 }, false, true)).toEqual(['checkin_note']);
+  });
+  it('框显示吗：写了字就显示；空的（或只有空白）只在打开着时显示', () => {
+    expect(checkInNoteShown('慢跑 5 公里', false)).toBe(true);
+    expect(checkInNoteShown(null, false)).toBe(false);
+    expect(checkInNoteShown('  \n ', false)).toBe(false);
+    expect(checkInNoteShown('', true)).toBe(true);
   });
 });

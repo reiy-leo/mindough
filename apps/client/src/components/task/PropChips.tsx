@@ -8,14 +8,15 @@
  * - 键盘：Tab 到胶囊，Enter / 空格打开，Backspace / Delete 清除；
  * - 行尾「+」：菜单列出没设的属性，选一项直接打开它的选择器；全都设了「+」隐藏；一个都没设时是「+ 添加属性」。
  * - 菜单里的「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
- * - 菜单分三组、组间分隔线（Rei 2026-11-11）：日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、附件、卡片颜色（lib/prop-chips PROP_SECTION；项目 2026-11-12 挪进第 2 组）；
+ * - 菜单里的「打卡描述」（Rei 2026-11-13 07:25）：只有打卡、而且还没写时有；选了在胶囊下面打开那个框、光标进去（框是 TaskDetail 的 CheckInNote）。
+ * - 菜单分三组、组间分隔线（Rei 2026-11-11）：日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、打卡描述、附件、卡片颜色（lib/prop-chips PROP_SECTION；项目 2026-11-12 挪进第 2 组）；
  *   胶囊行按同一个 PROP_ORDER 排，不画分隔。
  * 资料行和任务字段（进度、看到哪…）不在这里，仍在原来的属性卡片里。
  */
 import { useLocked } from '../../lib/strict';
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover, Separator } from 'react-aria-components';
-import { Bell, CalendarDays, Library, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, Library, NotebookText, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import {
@@ -91,12 +92,15 @@ export function PropChips({
   task,
   today,
   onAttach,
+  onAddNote,
 }: {
   store: Store;
   task: Task;
   today: string;
   /** 给了就在「+」菜单最后放「附件」，选好的文件交给它（走 addAttachments）。 */
   onAttach?: (files: File[]) => void;
+  /** 给了就在「+」菜单第 3 组放「打卡描述」（打卡、还没写时由 TaskDetail 给），选了调它打开那个框。 */
+  onAddNote?: () => void;
 }) {
   const ui = useUi();
   const { theme } = useSettings();
@@ -115,7 +119,7 @@ export function PropChips({
   const refGroups = store.taskRefs(task.id);
   const counts = { categories: cats.length, refs: refGroups.reduce((n, g) => n + g.entries.length, 0) };
   const shown = setProps(task, counts);
-  const addSections = addMenuSections(task, counts, !!onAttach);
+  const addSections = addMenuSections(task, counts, !!onAttach, !!onAddNote);
   const addItems = addSections.flat();
   const patch = (p: Partial<Task>) => store.updateTask(task.id, p);
   const group = store.get('group', task.group_id);
@@ -332,6 +336,11 @@ export function PropChips({
                   fileRef.current?.click();
                   return;
                 }
+                // 打卡描述：等菜单收起、焦点回到「+」后再打开框、把光标放进去
+                if (id === 'checkin_note') {
+                  window.setTimeout(() => onAddNote?.(), 0);
+                  return;
+                }
                 // 等菜单收起、焦点回到「+」后再打开那项的选择器
                 window.setTimeout(() => openFor(id, 'add', addRef.current), 0);
               }}
@@ -339,10 +348,10 @@ export function PropChips({
               {addSections.flatMap((ids, n) => [
                 ...(n > 0 ? [<Separator key={`sep-${n}`} className="menu-sep" />] : []),
                 ...ids.map((id) => {
-                  const label = id === 'attachment' ? trc('属性', '附件') : propLabel(id);
+                  const label = id === 'attachment' ? trc('属性', '附件') : id === 'checkin_note' ? tr('打卡描述') : propLabel(id);
                   return (
                     <MenuItem key={id} id={id} className="menu-item" textValue={label}>
-                      {id === 'attachment' ? <Paperclip size={16} /> : addIcon(id, task)}
+                      {id === 'attachment' ? <Paperclip size={16} /> : id === 'checkin_note' ? <NotebookText size={16} /> : addIcon(id, task)}
                       <span>{label}</span>
                     </MenuItem>
                   );
