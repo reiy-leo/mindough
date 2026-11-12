@@ -33,6 +33,7 @@ export const THIRD_PARTY: ThirdParty[] = [
       'tauri-plugin-dialog',
       'tauri-plugin-clipboard-manager',
       'tauri-plugin-single-instance',
+      'tauri-plugin-autostart',
     ],
   },
   { name: 'React', license: 'MIT', url: 'https://react.dev', packages: ['react', 'react-dom'] },
