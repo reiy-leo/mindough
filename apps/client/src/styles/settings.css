@@ -189,12 +189,6 @@
   color: var(--accent);
   font-size: 15px;
 }
-.settings-push-title {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.2;
-}
 
 /* ── 桌面设置窗口 ── */
 /*

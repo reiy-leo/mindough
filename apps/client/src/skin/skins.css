@@ -472,6 +472,9 @@
 [data-skin='material'][data-layout='mobile'] .topbar {
   height: calc(64px + env(safe-area-inset-top));
 }
+[data-skin='material'][data-layout='mobile'] .topbar.is-empty {
+  height: env(safe-area-inset-top);
+}
 [data-skin='material'][data-layout='mobile'] .tabbar {
   border-top: 0;
   backdrop-filter: none;

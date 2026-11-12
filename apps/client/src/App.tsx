@@ -62,7 +62,7 @@ import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
 import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
 import { mobileTopbar } from './lib/mobile-topbar';
-import { TOPBAR_SLOT_ID } from './lib/topbar-slot';
+import { TOPBAR_LEAD_ID, TOPBAR_SLOT_ID } from './lib/topbar-slot';
 interface NavItem {
   page: Route['page'];
   label: string;
@@ -469,6 +469,35 @@ const Page = memo(function Page({ route }: { route: Route }) {
   }
 });
 
+/**
+ * 手机顶栏（Rei 2026-11-12 09:41「页面都不用header」）：不写页名，左格（我的一天的日期 + 农历）、右格（页面送上来的按钮）由页面用
+ * lib/topbar-slot 填。两格都空就加 is-empty，收成只剩状态栏那一截，顶上不空出一行；只有按钮加 no-lead，矮一点；读屏的页名放 sr-only。
+ */
+function MobileTopbarRow({ label }: { label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<'' | ' is-empty' | ' no-lead'>('');
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      const lead = !!el.querySelector('.topbar-lead > *');
+      const acts = !!el.querySelector('.topbar-actions > *');
+      setState(lead ? '' : acts ? ' no-lead' : ' is-empty');
+    };
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={`topbar${state}`}>
+      <span className="sr-only">{label}</span>
+      <span className="topbar-lead" id={TOPBAR_LEAD_ID} />
+      <span className="topbar-actions" id={TOPBAR_SLOT_ID} />
+    </div>
+  );
+}
+
 function MorePage() {
   const store = useStore();
   const sections = [
@@ -479,9 +508,8 @@ function MorePage() {
   ].filter((sec) => sec.items.length > 0);
   return (
     <div className="page">
-      <header className="page-header">
-        <h1 className="page-title">{tr('更多')}</h1>
-      </header>
+      {/* 手机不放页头（Rei 2026-11-12 09:41「页面都不用header」），读屏留 h1 */}
+      <h1 className="sr-only">{tr('更多')}</h1>
       {sections.map((sec) => (
         <section key={sec.id} className="more-section" aria-label={sec.title || sec.items[0]?.label}>
           {sec.title && <h2 className="more-section-title">{sec.title}</h2>}
@@ -913,15 +941,12 @@ export function App() {
     const topbar = mobileTopbar(route.page);
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
-        {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在「更多」页进单独的搜索页）；有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
+        {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在「更多」页进单独的搜索页），也不写页名（09:41），只放我的一天的日期和页面送上来的按钮；
+            有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
         {topbar === 'none' ? (
           <div className="topbar-inset" aria-hidden />
         ) : (
-          <div className="topbar">
-            <span className="topbar-title">{current?.label ?? appName()}</span>
-            {/* 页面送过来的按钮（我的一天的排序 / 分区，lib/topbar-slot） */}
-            <span className="topbar-actions" id={TOPBAR_SLOT_ID} />
-          </div>
+          <MobileTopbarRow label={current?.label ?? appName()} />
         )}
         <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
           <MovedBanner />

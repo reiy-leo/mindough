@@ -58,10 +58,10 @@ describe('滚动条不显示', () => {
     // 详情页：返回一行固定
     expect(lib).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
     expect(read('../pages/People.tsx')).toMatch(/<StickyHead className="detail-head-sticky">\s*<a className="back-link"/);
-    // 已完成：页头固定，任务列表在后面
+    // 已完成：宽屏页头固定（手机不放页头，按钮在顶栏，2026-11-12），任务列表在后面
     const done = read('../pages/Done.tsx');
-    expect(done.indexOf('<PageHeader')).toBeGreaterThan(done.indexOf('<StickyHead>'));
-    expect(done.indexOf('<PageHeader')).toBeLessThan(done.indexOf('</StickyHead>'));
+    expect(done).toMatch(/<StickyHead>\{header\}<\/StickyHead>/);
+    expect(done.indexOf('<PageHeader')).toBeLessThan(done.indexOf('<StickyHead>{header}'));
     expect(done.indexOf('task-list')).toBeGreaterThan(-1);
   });
 });

@@ -322,10 +322,56 @@ button {
   top: 0;
   z-index: 5;
 }
-.topbar-title {
+/* 顶栏不写页名（Rei 2026-11-12 09:41「页面都不用header」）：左格只有我的一天放今天的日期 + 农历（09:39，components/MyDayTitle），
+   字号用原来顶栏标题的 17px，农历 13px 跟在后面、放不下就省略；右格是页面送上来的按钮 */
+.topbar-lead {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.topbar .myday-head-text {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.app-mobile .topbar .page-title.myday-date {
+  flex: none;
+  margin: 0;
   font-weight: 600;
   font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
+.topbar .myday-lunar {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 只有右格（已完成的分区按钮）：一行紧凑的按钮，不留标题那么高 */
+.topbar.no-lead {
+  height: calc(44px + env(safe-area-inset-top));
+}
+[data-skin='material'][data-layout='mobile'] .topbar.no-lead {
+  height: calc(48px + env(safe-area-inset-top));
+}
+/* 我的一天：添加框上面、下面的空白一样大（Rei 2026-11-12 09:39「下方和输入框之间留白太多，保持输入框上下留白均衡」）。
+   以下面为准（添加框下沿到「未完成」字上沿，三皮肤都约 27px），上面从顶栏日期字的下沿量起：
+   原来 Apple / WinUI 约 28px（顶栏 48）、Material 约 36px（顶栏 64），往上提 2 / 12px。日期字号三皮肤一样（17px），差在顶栏高度 */
+.app-mobile .myday-page > .add-bar-sticky {
+  margin-top: -2px;
+}
+[data-skin='material'] .app-mobile .myday-page > .add-bar-sticky {
+  margin-top: -12px;
+}
+/* 两格都空（没日期、没按钮）：收成只剩状态栏那一截，同 .topbar-inset，顶上不空出一行 */
+.topbar.is-empty {
+  height: env(safe-area-inset-top);
+  padding-block: env(safe-area-inset-top) 0;
+  overflow: hidden;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 /* 有自己页头的页没有顶栏（Rei 2026-11-11「只有我的一天保留这个搜索」，见 lib/mobile-topbar）：只留状态栏那一截，网页版高 0 */
 .topbar-inset {
@@ -4969,11 +5015,13 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   min-height: 48px;
 }
 
-/* 手机顶栏右边：页面送过来的按钮（我的一天的排序 / 分区，Rei 2026-11-12 01:56 手机不放页头，lib/topbar-slot） */
+/* 手机顶栏右边：页面送过来的按钮（我的一天的排序 / 分区、已完成的分区，Rei 2026-11-12 01:56 / 09:41 手机不放页头，lib/topbar-slot）；
+   没有左格时也靠右 */
 .topbar-actions {
   display: inline-flex;
   align-items: center;
   flex: none;
+  margin-left: auto;
 }
 .topbar-actions:empty {
   display: none;

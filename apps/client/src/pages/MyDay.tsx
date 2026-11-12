@@ -1,6 +1,6 @@
 import { GridList, GridListItem, useDragAndDrop, Button as RacButton } from 'react-aria-components';
 import { ChevronRight, CircleCheck, EyeOff, Lightbulb, RotateCcw, Sun } from 'lucide-react';
-import { formatDateZh, isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem, type Task } from '@mindough/core';
+import { isPinnedEntry, myDaySections, recentlyUnlocked, reorderSection, suggestions, toDateKey, yesterdayUnfinished, type MyDayItem, type Task } from '@mindough/core';
 import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
@@ -9,8 +9,8 @@ import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { titleOf } from '../lib/view';
 import { RowLead, TaskRow } from '../components/TaskRow';
-import { LunarLine } from '../components/LunarLine';
-import { TopbarActions } from '../lib/topbar-slot';
+import { MyDayTitle } from '../components/MyDayTitle';
+import { TopbarActions, TopbarLead } from '../lib/topbar-slot';
 import { useSettings } from '../lib/settings';
 import { daySuggestions, suggestionsOn } from '../lib/myday-suggest';
 import { JournalCard } from '../components/journal/JournalCard';
@@ -81,7 +81,7 @@ export function MyDayPage() {
   );
 
   return (
-    <div className="page">
+    <div className="page myday-page">
       {/* 中间列不放页头（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）。
           日期和排序 / 分区挪到添加框上面（Rei 2026-11-09 03:48「把输入框下面的日期（去掉进度），排序和分区按钮，移动到上面，日期放大」）：
           日期用页标题的字号（各皮肤的 .page-title），不再显示完成数；这一行和添加框一起固定在顶上 */}
@@ -91,10 +91,12 @@ export function MyDayPage() {
         create={(body) => createToday(store, body, today, { dateToday: settings.myDayDefaultToday })}
         head={
           layout === 'mobile' ? (
-            // 手机不放页头（Rei 2026-11-12 01:56「我的一天、等待安排、过期积压不显示顶部的页头」）：大号日期和农历去掉，读屏留 h1；
-            // 排序 / 分区按钮挪到顶栏右边（顶栏左边写「我的一天」），状态还在这一页
+            // 手机不放页内页头（Rei 2026-11-12 01:56）：今天的日期 + 农历放顶栏左边（09:39「顶部"我的一天"换成今天的日期（和PC端保持一致）」，
+            // 和宽屏同一个 MyDayTitle），排序 / 分区按钮放顶栏右边，状态还在这一页
             <>
-              <h1 className="sr-only">{tr('我的一天')} · {formatDateZh(today)}</h1>
+              <TopbarLead>
+                <MyDayTitle today={today} />
+              </TopbarLead>
               <TopbarActions>
                 <span className="list-tools">
                   <DaySortMenu value={view.sort} onChange={(sort) => setView({ sort })} />
@@ -104,13 +106,7 @@ export function MyDayPage() {
             </>
           ) : (
           <div className="myday-head">
-            <div className="myday-head-text">
-              <h1 className="page-title myday-date">
-                <span className="sr-only">{tr('我的一天')} · </span>
-                {formatDateZh(today)}
-              </h1>
-              <LunarLine date={today} className="myday-lunar" />
-            </div>
+            <MyDayTitle today={today} />
             <span className="list-tools">
               <DaySortMenu value={view.sort} onChange={(sort) => setView({ sort })} />
               <SectionMenu value={view.section as SectionBy} options={MYDAY_SECTIONS} onChange={(section) => setView({ section })} />

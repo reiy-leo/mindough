@@ -222,7 +222,8 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
             <ChevronLeft size={20} aria-hidden />
             <span>{tr('设置')}</span>
           </a>
-          <h1 className="settings-push-title">{itemOf(section).label()}</h1>
+          {/* 手机不放大标题（Rei 2026-11-12 09:41「页面都不用header」），只留「‹ 设置」返回，读屏留 h1 */}
+          <h1 className="sr-only">{itemOf(section).label()}</h1>
         </header>
         <div className="settings-pane">
           <SectionBody id={section} />

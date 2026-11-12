@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StickyHead } from '../components/StickyHead';
 import { SectionMenu } from '../components/project/ProjectMenus';
 import { DATE_SECTIONS, useListView, type DateSection } from '../lib/list-views';
+import { useSettings } from '../lib/settings';
 import { tr, trc } from '../lib/i18n';
 
 /**
@@ -17,6 +18,7 @@ import { tr, trc } from '../lib/i18n';
  */
 export function DonePage() {
   const store = useStore();
+  const { layout } = useSettings();
   const today = toDateKey(store.now());
   const days = doneDays(store.activeTasks());
   const [view, setView] = useListView('done');
@@ -28,16 +30,18 @@ export function DonePage() {
       ))}
     </div>
   );
+  const header = (
+    <PageHeader
+      title={trc('导航', '已完成')}
+      icon={<CircleCheck size={22} />}
+      actions={days.length > 0 ? <SectionMenu value={section} options={DATE_SECTIONS} plain="date" onChange={(v) => setView({ section: v })} /> : undefined}
+    />
+  );
   return (
     <div className="page has-sticky-head">
-      {/* 页头（标题和分区按钮）固定在顶上，只有下面的任务列表滚（Rei 2026-11-11 08:11「已完成页也一样」）；滚动条本来就藏着（HIDE_SCROLLBAR_PAGES 有 done） */}
-      <StickyHead>
-        <PageHeader
-          title={trc('导航', '已完成')}
-          icon={<CircleCheck size={22} />}
-          actions={days.length > 0 ? <SectionMenu value={section} options={DATE_SECTIONS} plain="date" onChange={(v) => setView({ section: v })} /> : undefined}
-        />
-      </StickyHead>
+      {/* 页头（标题和分区按钮）固定在顶上，只有下面的任务列表滚（Rei 2026-11-11 08:11「已完成页也一样」）；滚动条本来就藏着（HIDE_SCROLLBAR_PAGES 有 done）。
+          手机不放页头（Rei 2026-11-12 09:41「页面都不用header」）：PageHeader 只留读屏 h1、分区按钮送到顶栏右边，顶栏本来就固定，不再包 StickyHead */}
+      {layout === 'mobile' ? header : <StickyHead>{header}</StickyHead>}
       {days.length === 0 ? (
         <Empty icon={<CircleCheck size={28} />} title={tr('还没有做完的任务')} hint={tr('做完或关闭的任务会按时间排在这里。')} />
       ) : section === 'none' ? (
