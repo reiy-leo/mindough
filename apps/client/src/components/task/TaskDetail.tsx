@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type TouchEvent, type ReactNode, type RefObject } from 'react';
 import { Autocomplete, Button as RacButton, Disclosure, DisclosurePanel, Heading, Input, ListBox, ListBoxItem, SearchField, useFilter } from 'react-aria-components';
-import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleCheckBig, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
 import { logicalToday, PLAIN_TYPE_ID, countdownPhrase, findEpisode, firstLine, formatEpisode, formatAmount, formatDuration, formatTarget, formatTaskDate, type DateDisplay, isFinished, predecessorsOf, wouldCreateCycle, successorsOf, taskStreak, hasLibrary, isPersonLibrary, libraryCopy, taskFieldsFor, isMovieItem, type FieldDef, type FieldValue, type LibraryEntry, type Store, type Task, type TaskType } from '@mindough/core';
 import { CheckInMetError, checkInMode, isHabit, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
@@ -288,6 +288,8 @@ interface Act {
   icon?: ReactNode;
   onPress: () => void;
   disabled?: boolean;
+  /** 底栏只放图标（悬停提示和读屏名是 label）：「完成」（Rei 2026-11-13 06:10） */
+  iconOnly?: boolean;
 }
 
 /** 现在该做的事：完成 / 开始计时 / +1 …（一个主操作；计时进行中多一个暂停）。 */
@@ -328,7 +330,7 @@ function useActions(store: Store, task: Task, done: () => void) {
           ? p.met
             ? { label: tr('撤销今天的打卡'), icon: <RotateCcw size={16} />, onPress: () => toggleCheckIn(store, ui, task.id, today) }
             : { label: tr('打卡'), icon: <Check size={16} />, onPress: () => record('add', 1) }
-          : { label: tr('完成'), icon: <Check size={16} />, onPress: complete };
+          : { label: tr('完成'), icon: <Check size={16} />, onPress: complete, iconOnly: true };
         break;
       case 'timer':
         if (p.running) {
@@ -344,7 +346,7 @@ function useActions(store: Store, task: Task, done: () => void) {
         // 计数不用单个主按钮：底栏和进度弹层放快捷加量（Rei 2026-10-26，CountQuickButtons）
         break;
       case 'countdown':
-        primary = recurring ? { label: tr('打卡'), icon: <Check size={16} />, onPress: () => record('stop'), disabled: p.met } : { label: tr('完成'), icon: <Check size={16} />, onPress: complete };
+        primary = recurring ? { label: tr('打卡'), icon: <Check size={16} />, onPress: () => record('stop'), disabled: p.met } : { label: tr('完成'), icon: <Check size={16} />, onPress: complete, iconOnly: true };
         break;
     }
   }
@@ -983,12 +985,20 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
                   {secondary.label}
                 </Button>
               )}
-              {primary && (
-                <Button variant="primary" className="primary-action" onPress={primary.onPress} isDisabled={!!primary.disabled}>
-                  {primary.icon}
-                  {primary.label}
-                </Button>
-              )}
+              {primary &&
+                (primary.iconOnly ? (
+                  // 「完成」只放图标（Rei 2026-11-13 06:10「完成按钮 icon 用 circle-check-big，使用 icon btn」）：和顶栏图标按钮同尺寸，强调色
+                  <Tip content={primary.label}>
+                    <RacButton className="icon-btn done-icon-btn primary-action" aria-label={primary.label} onPress={primary.onPress} isDisabled={!!primary.disabled}>
+                      <CircleCheckBig size={18} aria-hidden />
+                    </RacButton>
+                  </Tip>
+                ) : (
+                  <Button variant="primary" className="primary-action" onPress={primary.onPress} isDisabled={!!primary.disabled}>
+                    {primary.icon}
+                    {primary.label}
+                  </Button>
+                ))}
             </>
           ) : null
         }

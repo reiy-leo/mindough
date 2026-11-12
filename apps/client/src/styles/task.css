@@ -1598,6 +1598,26 @@ html[data-layout='mobile'] .date-panel .date-clear {
 .dialog-foot .btn-quiet {
   min-width: 0;
 }
+/* 详情底部的「完成」只放图标（Rei 2026-11-13 06:10）：.icon-btn 的 32×32，和顶栏图标按钮一样大；主操作所以图标用强调色，悬停垫强调色淡底 */
+.icon-btn.done-icon-btn {
+  color: var(--accent);
+}
+.icon-btn.done-icon-btn[data-hovered] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.icon-btn.done-icon-btn[data-pressed] {
+  background: var(--accent-soft);
+  opacity: 0.8;
+}
+.icon-btn.done-icon-btn[data-focus-visible] {
+  outline: none;
+  box-shadow: var(--focus);
+}
+.icon-btn.done-icon-btn[data-disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
 .composer-help {
   width: 28px;
   height: 28px;
