@@ -54,7 +54,6 @@ export function detailMenu(
   return out;
 }
 
-export type RowMenuId = 'open' | 'myday' | 'pin' | 'unpin';
 
 export type HabitMenuId = 'open' | 'myday' | 'pin' | 'unpin' | 'archive' | 'unarchive';
 
@@ -62,7 +61,7 @@ export type HabitMenuId = 'open' | 'myday' | 'pin' | 'unpin' | 'archive' | 'unar
 const asGroup = <T extends string>(xs: { id: T; label: string }[]): { id: T; label: string; separator?: boolean }[] => xs.map((x, i) => (i === 0 ? { ...x, separator: true } : x));
 
 /**
- * 打卡页一行的右键 / 长按菜单（Rei 2026-11-02「打卡任务可以归档」）：查看详情 ｜ 加入 / 移出我的一天 ｜ 归档；
+ * 打卡页一行的右键菜单（Rei 2026-11-02「打卡任务可以归档」；手机长按不出，Rei 2026-11-13）：查看详情 ｜ 加入 / 移出我的一天 ｜ 归档；
  * 归档了的：查看详情 ｜ 取消归档。
  */
 export function habitMenu(archived: boolean, inDay: boolean, pinned = false, pinEnabled = true): { id: HabitMenuId; label: string; separator?: boolean }[] {
@@ -70,11 +69,3 @@ export function habitMenu(archived: boolean, inDay: boolean, pinned = false, pin
   return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<HabitMenuId>(inDay, pinned, pinEnabled)), { id: 'archive', label: tr('归档'), separator: true }];
 }
 
-/**
- * 任务列表行的长按菜单（手机；右键不开了，Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）（Rei 2026-10-25「任何情况下都不显示这两个按钮」：
- * 我的一天「建议」行尾的「今天到期」徽章和「+ 加入」按钮去掉了，加入我的一天挪到这里）。
- * 所有用 TaskRow 的列表都有：查看详情 ｜ 加入 / 移出我的一天、置顶（置顶了的只有「取消置顶」，Rei 2026-11-08）。
- */
-export function rowMenu(inDay: boolean, pinned = false, pinEnabled = true): { id: RowMenuId; label: string; separator?: boolean }[] {
-  return [{ id: 'open', label: tr('查看详情') }, ...asGroup(dayGroup<RowMenuId>(inDay, pinned, pinEnabled))];
-}

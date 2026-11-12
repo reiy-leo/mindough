@@ -49,8 +49,9 @@ export function CheckInsPage() {
   // 页头下拉（Rei 2026-11-09 01:59「右侧显示一个dropdown图标按钮，1. 显示所有的活着的打卡任务，2. 显示已经归档的打卡任务」）：
   // today = 默认（正在计时 / 今天要打卡 / 可以补打 / 已打卡）；all = 全部没归档的；archived = 只看归档的。不记，每次进来都是 today
   const [view, setView] = useState<'today' | 'all' | 'archived'>('today');
-  // 行的右键 / 长按菜单：整页一个，记下是哪一行
-  const menu = useContextMenuAt();
+  // 行的右键菜单：整页一个，记下是哪一行。手机长按不出（Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」），
+  // 系统菜单也不出；归档 / 我的一天 / 置顶都在详情的「…」里
+  const menu = useContextMenuAt({ longPress: false, systemTouchMenu: false });
   const menuTask = useRef<string | null>(null);
   const bindMenu = (id: string) => ({
     ...menu.props,
