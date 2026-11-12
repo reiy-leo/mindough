@@ -16,6 +16,7 @@ import { imageUrl, titleOf } from '../../lib/view';
 import { typeIcon } from '../../lib/icons';
 import { CheckInNote } from './CheckInNote';
 import { registerTaskFlush } from '../../lib/body-flush';
+import { createLiveSaver, onPageHide } from '../../lib/live-save';
 import { AutoTextarea, Button, ConfirmDialog, OverflowMenu, PopoverPanel, ProgressRing, Sheet, Tip, type MenuAction } from '../../ui/primitives';
 import { Markdown } from '../Markdown';
 import { FieldInput, MODE_ICON, TypeFields } from './pickers';
@@ -163,43 +164,61 @@ function DetailFrame({
 
 /**
  * 正文：所见即所得的 Markdown 编辑器（写的时候就是排好版的样子，存的还是 markdown）。
- * 打字先记在本地，离开编辑器、按 Esc 或关掉面板时存下来（同步一次一段，不是每个字一次）。
+ * 边打边存（Rei 2026-11-13 06:19，lib/live-save）：停手 300 ms 写进本地库，列表里的标题跟着变；一直打最多 2 秒存一次；
+ * 离开编辑器、Esc、关掉面板、切任务、页面藏到后台、打卡前马上存。输入法选字中不存。推给别的设备走同步引擎自己的防抖。
+ * 编辑器开着时别的设备同步来的正文不灌进编辑器（离开编辑器时以这里为准存下去），和以前一样。
  */
-function Body({ store, task, placeholder, readOnly = false }: { store: Store; task: Task; placeholder: string; readOnly?: boolean }) {
+/** 导出给测试（TaskBody.test.tsx）。 */
+export function Body({ store, task, placeholder, readOnly = false }: { store: Store; task: Task; placeholder: string; readOnly?: boolean }) {
   const [body, setBody] = useState(task.body_md);
   const latest = useRef(body);
   latest.current = body;
+  /** 这次进编辑器后打过字（没离开过）：别处来的正文不灌进来。 */
   const editing = useRef(false);
+  /** 打过字、还没认过「看到哪」。 */
+  const typed = useRef(false);
   useEffect(() => {
     // 别处（同步、撤销）改了正文，而这里没在写：跟上
     if (!editing.current) setBody(task.body_md);
   }, [task.body_md]);
-  // 关掉面板时还没存：也要存下来
+  /** 把编辑器里的正文写进库（没变不写）。 */
+  const saveNow = () => {
+    const cur = store.get('task', task.id);
+    // 严格模式下刚标完成 / 关闭的：存不进去（StrictModeError），丢掉这点没存的
+    if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
+  };
+  const saveRef = useRef(saveNow);
+  saveRef.current = saveNow;
+  const saver = useMemo(() => createLiveSaver(() => saveRef.current()), []);
+  // 关掉面板、切到别的任务（详情按任务 id 重挂）时还没存：也要存下来
   useEffect(
     () => () => {
-      const cur = store.get('task', task.id);
-      // 严格模式下刚标完成 / 关闭的：存不进去（StrictModeError），丢掉这点没存的，别让卸载报错
-      if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
+      saver.cancel();
+      saveRef.current();
     },
-    [store, task.id],
+    [saver],
   );
+  // 页面藏到后台 / 关掉：排着的马上存
+  useEffect(() => onPageHide(() => saver.flush()), [saver]);
   // 打卡前先把没存的正文存下来（Rei 2026-11-13 打卡正文存档，lib/body-flush）
   useEffect(
     () =>
       registerTaskFlush(store, task.id, () => {
-        if (!editing.current) return;
+        if (!editing.current && !saver.pending) return;
+        saver.cancel();
         editing.current = false;
-        const cur = store.get('task', task.id);
-        if (cur && latest.current !== cur.body_md && !store.isLocked(cur)) store.updateTask(task.id, { body_md: latest.current });
+        saveRef.current();
       }),
-    [store, task.id],
+    [store, task.id, saver],
   );
   const ui = useUi();
   const commit = () => {
+    saver.cancel();
     editing.current = false;
+    saveNow();
+    if (!typed.current) return;
+    typed.current = false;
     const body = latest.current;
-    if (body === task.body_md) return;
-    store.updateTask(task.id, { body_md: body });
     // 看到哪还空着、第一行写了 S02E03 / 第二季第三集：顺手填上，提示里可以撤销
     const type = store.get('task_type', task.type_id);
     // 挂的是电影就不认（电影不显示看到哪，Rei 2026-11-08）
@@ -245,8 +264,10 @@ function Body({ store, task, placeholder, readOnly = false }: { store: Store; ta
         readOnly={readOnly}
         onChange={(v) => {
           editing.current = true;
+          typed.current = true;
           latest.current = v;
           setBody(v);
+          saver.schedule();
         }}
         onBlur={commit}
         onEscape={() => {
