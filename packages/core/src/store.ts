@@ -13,7 +13,7 @@ import { overdueBacklogTasks } from './overdue-backlog';
 import { AUTO_MY_DAY_HLC, type PinOf, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
-import { countdownRecordDepId, countdownRecordId, bodyFirstLine, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
+import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, periodKeyForTask, type Progress } from './checkin';
 import { LinkedByDependencyError, SelfLinkError, canonicalPair, hasDependencyBetween, prefId, relatedIdsOf, taskLinkId, visibleLinks } from './related';
@@ -1463,6 +1463,8 @@ export class Store {
    */
   createTask(input: NewTaskInput = {}, opts: { joinMyDay?: boolean } = {}): Task {
     const now = this.now();
+    // 倒数日只认目标日：只给了日期（scheduled_date）就挪成目标日（Rei 2026-11-12 07:57，countdown-repeat.ts fillCountdownTarget）
+    if (input.completion_mode === 'countdown') input = { ...input, ...fillCountdownTarget(null, input) };
     // 重复的倒数日（Rei 2026-11-12）：规则落到目标日上，目标日是过去的就换成规则的下一次（countdown-repeat.ts）
     if (input.completion_mode === 'countdown' && input.recurrence && input.target_date) {
       const today = taskToday({ time_zone: input.time_zone ?? null }, now, toDateKey(now));
@@ -1512,6 +1514,11 @@ export class Store {
   }
 
   updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'updated_at'>>): Task {
+    // 倒数日只认目标日：有日期的任务改成倒数日（或倒数日只有日期、没有目标日），日期挪成目标日（Rei 2026-11-12 07:57）
+    {
+      const cur = this.tables.task.get(id);
+      if (cur) patch = { ...patch, ...fillCountdownTarget(cur, patch) };
+    }
     // 改了开始或结束：结束日只能晚于开始日，否则回到单日（date-range.ts normalizeRange）
     if ('scheduled_date' in patch || 'end_date' in patch) {
       const cur = this.tables.task.get(id);
@@ -1564,6 +1571,7 @@ export class Store {
    * 客户端在打开时、换天时、数据变了（含同步拉下来）以后调；没有要滚的什么都不写。返回滚了几件。
    */
   rollRecurringCountdowns(): number {
+    this.repairCountdownDates();
     const now = this.now();
     const deviceToday = toDateKey(now);
     const plans: Array<{ task: Task; past: DateKey[]; next: DateKey }> = [];
@@ -1581,6 +1589,27 @@ export class Store {
       }
     });
     return plans.length;
+  }
+
+  /**
+   * 修旧数据（Rei 2026-11-12 07:57「我新建了一个前天的倒数日，添加了每年重复，这个倒数日不见了」）：
+   * 修好以前，有日期的任务改成倒数日时日期留在 scheduled_date、target_date 空着，倒数日页、日历都不列它。
+   * 只挑这种行：没删、没完成 / 关闭的倒数日，target_date 空、scheduled_date 有。走 updateTask：日期挪成目标日，
+   * 重复的话规则落到这天、过去的日子换成下一次（不补记录）。别的行一律不碰。返回修了几件。
+   * rollRecurringCountdowns 开头调（打开、换天、数据变了以后；同步拉下来老客户端写的这种行也会修）。
+   */
+  repairCountdownDates(): number {
+    const ids: string[] = [];
+    for (const t of this.tables.task.values()) {
+      if (t.deleted || t.completion_mode !== 'countdown' || t.target_date || !t.scheduled_date || isFinished(t.status)) continue;
+      if (this.drafts.has(t.id)) continue;
+      ids.push(t.id);
+    }
+    if (!ids.length) return 0;
+    this.batch(() => {
+      for (const id of ids) this.updateTask(id, {});
+    });
+    return ids.length;
   }
 
   /** 写一条那次的记录和它到重复倒数日的前后关系（两行都是确定 id；已经有了就不动）。 */

@@ -109,6 +109,25 @@ export function normalizeCountdownRepeat(cur: CdTask | null, patch: Partial<CdTa
   return out;
 }
 
+/**
+ * 倒数日只认 target_date（倒数日页、日历、提醒都看它）。有日期的任务改成倒数日（日历格子「+」建的任务、详情里切完成方式），
+ * 日期在 scheduled_date 里、target_date 空着：倒数日页、日历都不列它，再加上重复，详情里的日期胶囊也藏起来，整条就「不见了」
+ * （Rei 2026-11-12 07:57「我新建了一个前天的倒数日，添加了每年重复，这个倒数日不见了」）。
+ * 所以倒数日没有目标日、却有日期时，把日期挪成目标日（日期段取开始那天），scheduled_date / end_date 清空，只留一个日子。
+ * 返回要补进 patch 的字段（不用改返回空对象）。Store.createTask / updateTask 在 normalizeCountdownRepeat 之前调，
+ * 打开时 Store.repairCountdownDates 也用它修已经变成这样的旧数据。
+ */
+export function fillCountdownTarget(
+  cur: Pick<Task, 'completion_mode' | 'target_date' | 'scheduled_date'> | null,
+  patch: Partial<Pick<Task, 'completion_mode' | 'target_date' | 'scheduled_date'>>,
+): Partial<Pick<Task, 'target_date' | 'scheduled_date' | 'end_date'>> {
+  const mode = patch.completion_mode ?? cur?.completion_mode ?? 'once';
+  const target = patch.target_date !== undefined ? patch.target_date : (cur?.target_date ?? null);
+  const date = patch.scheduled_date !== undefined ? patch.scheduled_date : (cur?.scheduled_date ?? null);
+  if (mode !== 'countdown' || target || !date) return {};
+  return { target_date: date, scheduled_date: null, end_date: null };
+}
+
 /** 那次记录的完成时间：那天本机中午（已完成页按本机日期分段，落在那天）。 */
 export function recordDoneAt(date: DateKey): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
