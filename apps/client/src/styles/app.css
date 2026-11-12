@@ -3205,7 +3205,7 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
 /* ───────── 英文和其他西文界面 ─────────
  * 英文的弯引号、撇号、省略号用拉丁字体的字形（中文字体里它们是全角，「What’s」会空出一大块）；
  * 2026-10-25 加了西、葡、俄、德、法、印尼，同样处理，另加法语 / 俄语的书名号式引号 « » ‹ › 和法语标点前的不换行空格。
- * 只覆盖这几个码位，其余字照旧走各皮肤的字体。中文、日文界面不受影响（引号本来就该是全角）。 */
+ * 只覆盖这几个码位，其余字照旧走各皮肤的字体。中文、日文界面见下面的 CJK Punct（引号一律全角）。 */
 @font-face {
   font-family: 'Mindough Latin Punct';
   src: local('SF Pro Text'), local('.SF NS'), local('Helvetica Neue'), local('Segoe UI'), local('Roboto'), local('Arial'), local('Liberation Sans'), local('DejaVu Sans');
@@ -3217,6 +3217,52 @@ html:not(:lang(zh)):not(:lang(ja)) .kbd {
 }
 html:not(:lang(zh)):not(:lang(ja)) .page-title {
   font-family: 'Mindough Latin Punct', var(--font-title);
+}
+/* ───────── 中文、日文界面 ─────────
+ * 弯引号 ‘’“”、省略号 …、破折号 — 是中西文共用的码位，字体栈里谁先有就用谁的字形：
+ * 苹果皮肤的 -apple-system（SF）、WinUI 的 Segoe UI、Material 的 Roboto 都排在中文字体前面，又都有这几个字，
+ * 于是正文常拿到窄的西文引号；Mac 上粗体大字号的任务标题却拿到了 PingFang 的全角引号（推测是 WebKit 系统字体按中文语言做的级联），
+ * 同一段话标题和正文样子不一样（Rei 2026-11-13 截图）。这里和上面的 Latin Punct 对称：只把这几个码位钉给中文 / 日文字体，
+ * 放在字体栈最前，标题、正文、列表、日记、输入框一律全角。按字重分几档，粗体标题用真粗体，不靠浏览器假加粗
+ * （苹方最粗只有 Semibold，700 也用它）。没装这些字体的机器上 local() 都落空，照旧走各皮肤的字体。 */
+@font-face {
+  font-family: 'Mindough CJK Punct';
+  font-weight: 100 449;
+  src: local('PingFangSC-Regular'), local('PingFang SC'), local('HiraginoSansGB-W3'), local('Microsoft YaHei UI'), local('MicrosoftYaHeiUI'),
+    local('Microsoft YaHei'), local('NotoSansCJKsc-Regular'), local('Noto Sans CJK SC'), local('NotoSansSC-Regular'), local('Noto Sans SC'),
+    local('SourceHanSansSC-Regular'), local('Source Han Sans SC');
+  unicode-range: U+2014, U+2018-201F, U+2026;
+}
+@font-face {
+  font-family: 'Mindough CJK Punct';
+  font-weight: 450 549;
+  src: local('PingFangSC-Medium'), local('HiraginoSansGB-W6'), local('Microsoft YaHei UI'), local('MicrosoftYaHeiUI'), local('Microsoft YaHei'),
+    local('NotoSansCJKsc-Medium'), local('Noto Sans CJK SC Medium'), local('NotoSansSC-Medium'), local('SourceHanSansSC-Medium');
+  unicode-range: U+2014, U+2018-201F, U+2026;
+}
+@font-face {
+  font-family: 'Mindough CJK Punct';
+  font-weight: 550 1000;
+  src: local('PingFangSC-Semibold'), local('HiraginoSansGB-W6'), local('Microsoft YaHei UI Bold'), local('MicrosoftYaHeiUI-Bold'),
+    local('Microsoft YaHei Bold'), local('MicrosoftYaHei-Bold'), local('NotoSansCJKsc-Bold'), local('Noto Sans CJK SC Bold'), local('NotoSansSC-Bold'),
+    local('SourceHanSansSC-Bold');
+  unicode-range: U+2014, U+2018-201F, U+2026;
+}
+/* 日文界面同样用这组中文字体：日文字体（Noto Sans CJK JP、思源黑体 JP）把这几个码位做成半宽的比例字形，
+ * 苹果的冬青黑体又是全角，跟着系统走反而各平台不一样；中文字体的全角引号、省略号放进日文里也是对的。 */
+html:lang(zh) body,
+html:lang(zh) .kbd,
+html:lang(zh) .file-icon .fi-ext,
+html:lang(ja) body,
+html:lang(ja) .kbd,
+html:lang(ja) .file-icon .fi-ext {
+  font-family: 'Mindough CJK Punct', var(--font);
+}
+html:lang(zh) .page-title,
+html:lang(zh) .project-name-input.input,
+html:lang(ja) .page-title,
+html:lang(ja) .project-name-input.input {
+  font-family: 'Mindough CJK Punct', var(--font-title);
 }
 /* 西文单位和数字之间要空一格（「3/8 glasses」「3/8 Gläser」）；中文「3/8杯」、日文不空 */
 html:not(:lang(zh)):not(:lang(ja)) .ci-unit:not(:empty),
