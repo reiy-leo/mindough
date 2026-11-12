@@ -12,7 +12,7 @@ import { formatHlc } from './hlc';
 import { tr } from './i18n';
 import { taskToday } from './timezone';
 import { taskEndDate } from './date-range';
-import { MAKEUP_ENTRY_PREFIX, makeupNode, makeupStarted, makeupState } from './makeup';
+import { MAKEUP_ENTRY_PREFIX, makeupStarted, makeupState } from './makeup';
 export function entriesFor(entries: readonly MyDayEntry[], date: DateKey): MyDayEntry[] {
   const seen = new Set<string>();
   // 同一 task_id + date 只保留一条（同步时按此合并）
@@ -240,13 +240,17 @@ export function reorderSection(items: readonly MyDayItem[], section: 'open' | 'd
   return out.filter((id) => !pinned.has(id));
 }
 
-/** 昨天加入但没做完、今天也还没加入的任务。 */
+/**
+ * 昨天加入但没做完、今天也还没加入的任务。
+ * 打卡（重复的勾选 / 计时 / 计数）和倒数日一律不算（Rei 2026-11-13）：打卡每天按规则自己进我的一天，昨天没打的走补打卡；
+ * 倒数日不用「做完」。它们昨天在 my_day 表里可能有真行（拖过排序落成的、项目「出现在我的一天」自动加的、手动加的、补打卡点的），也不带回。
+ */
 export function yesterdayUnfinished(
   entries: readonly MyDayEntry[],
   tasksById: ReadonlyMap<string, Task>,
-  checkIns: readonly CheckIn[],
+  _checkIns: readonly CheckIn[],
   today: DateKey,
-  now: Date,
+  _now: Date,
   pinOf: PinOf = pinnedAtOf,
 ): Task[] {
   const yesterday = addDays(today, -1);
@@ -257,10 +261,8 @@ export function yesterdayUnfinished(
     const t = tasksById.get(e.task_id);
     // 置顶的今天本来就在（Rei 2026-11-08），不用带回
     if (!t || t.deleted || t.archived_at || pinOf(t)) continue;
-    // 补打卡还在补的（Rei 2026-11-09 01:52）今天由 makeupDayItems 带着，不用再列进「昨天没做完」
-    if (isHabit(t) && makeupNode(t, checkIns, today, now) && makeupNode(t, checkIns, yesterday, now) === makeupNode(t, checkIns, today, now)) continue;
-    // 重复任务看的是昨天那个周期；普通任务看现在的状态
-    if (isHabit(t) ? !isDoneOn(t, checkIns, yesterday, now) : !isFinished(t.status)) out.push(t);
+    if (isHabit(t) || t.completion_mode === 'countdown') continue;
+    if (!isFinished(t.status)) out.push(t);
   }
   return out;
 }

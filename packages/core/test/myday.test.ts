@@ -46,11 +46,23 @@ describe('我的一天', () => {
     expect(yesterdayUnfinished(entries, byId, [], today, now).map((t) => t.id)).toEqual(['a']);
   });
 
-  it('重复任务看昨天那个周期有没有达标', () => {
-    const entries = [entry('r', '2026-10-14', 1)];
-    expect(yesterdayUnfinished(entries, byId, [], today, now).map((t) => t.id)).toEqual(['r']);
+  it('打卡、倒数日不进昨天没做完（Rei 2026-11-13）：昨天有真行、没打也不带回', () => {
+    const ts = [
+      mkTask('daily', { recurrence: formatRecurrence({ kind: 'daily' }) }),
+      mkTask('timer', { recurrence: formatRecurrence({ kind: 'daily' }), completion_mode: 'timer' }),
+      mkTask('count', { recurrence: formatRecurrence({ kind: 'daily' }), completion_mode: 'count' }),
+      mkTask('weekly', { recurrence: formatRecurrence({ kind: 'weekly', weekdays: [3] }) }),
+      mkTask('cd', { completion_mode: 'countdown', target_date: today }),
+      mkTask('cdr', { completion_mode: 'countdown', target_date: today, recurrence: formatRecurrence({ kind: 'daily' }) }),
+      mkTask('plain'),
+    ];
+    const m = new Map(ts.map((t) => [t.id, t]));
+    const entries = ts.map((t, i) => entry(t.id, '2026-10-14', i + 1));
+    expect(yesterdayUnfinished(entries, m, [], today, now).map((t) => t.id)).toEqual(['plain']);
+    // 达不达标都一样不进
     const evs = [ci('r', '2026-10-14', 'add', local(2026, 10, 14), 2)];
-    expect(yesterdayUnfinished(entries, byId, evs, today, now)).toEqual([]);
+    expect(yesterdayUnfinished([entry('r', '2026-10-14', 1)], byId, evs, today, now)).toEqual([]);
+    expect(yesterdayUnfinished([entry('r', '2026-10-14', 1)], byId, [], today, now)).toEqual([]);
   });
 
   it('建议：今天到期、今天要打卡、刚解锁；已在清单里的不建议', () => {

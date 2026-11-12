@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
-import { checkInDayItems, isCheckInEntry, myDayItems, myDaySections, suggestions, withPinned } from '../src/myday';
+import { checkInDayItems, isCheckInEntry, myDayItems, myDaySections, suggestions, withPinned, yesterdayUnfinished } from '../src/myday';
 import { toDateKey } from '../src/dates';
 import { local } from './helpers';
 
@@ -85,5 +85,31 @@ describe('我的一天里的打卡', () => {
     const h = store.createTask({ body_md: '冥想', recurrence: 'FREQ=DAILY' });
     const sugg = suggestions({ tasks: store.list('task'), entries: store.list('my_day'), checkIns: [], derived: new Map(), recentlyUnlocked: [], today: toDateKey(store.now()), now: store.now(), groups: [] });
     expect(sugg.map((s) => s.task.id)).not.toContain(h.id);
+  });
+});
+
+describe('打卡、倒数日不进「昨天没做完」（Rei 2026-11-13）', () => {
+  it('昨天落成真行的（项目自动加、拖过排序、手动加、补打卡）第二天都不列；普通任务照旧列', async () => {
+    const { store, advance } = await open(); // 周一
+    const mk = store.createTask({ body_md: '跑步', recurrence: 'FREQ=WEEKLY;BYDAY=MO,TH' });
+    advance(DAY); // 周二：能补周一
+    const g = store.insert('group', { name: '健康', icon: '💪', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
+    const today = () => toDateKey(store.now());
+    const auto = store.createTask({ body_md: '刷牙', group_id: g.id, recurrence: 'FREQ=DAILY' });
+    const cd = store.createTask({ body_md: '考试', group_id: g.id, completion_mode: 'countdown', target_date: today() });
+    const drag = store.createTask({ body_md: '深蹲', completion_mode: 'count', target_value: 20, recurrence: 'FREQ=DAILY' });
+    const manual = store.createTask({ body_md: '冥想', completion_mode: 'timer', target_value: 600, recurrence: 'FREQ=DAILY' });
+    const plain = store.createTask({ body_md: '交水费' });
+    store.syncAutoMyDay();
+    store.reorderMyDay(today(), [drag.id]);
+    store.addToMyDay(manual.id);
+    store.startMakeup(mk.id); // 周二补周一
+    store.addToMyDay(plain.id);
+    const real = new Set(store.list('my_day').filter((e) => e.date === today()).map((e) => e.task_id));
+    for (const t of [auto, cd, drag, manual, mk, plain]) expect(real.has(t.id), t.body_md).toBe(true);
+    advance(DAY);
+    const tasks = store.list('task');
+    const y = yesterdayUnfinished(store.list('my_day'), new Map(tasks.map((t) => [t.id, t])), store.list('check_in'), today(), store.now(), store.pinnedAt);
+    expect(y.map((t) => t.id)).toEqual([plain.id]);
   });
 });
