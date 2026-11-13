@@ -735,11 +735,7 @@ html.is-cal-dragging .cal-item[data-hovered] {
   overflow: hidden;
   align-content: start;
 }
-/* 周、多日：一行占满；条目多到放不下时只在这一行里面滚（星期那行不动），页面不滚 */
-.cal-page.is-fill > .cal-grid.is-tall > .cal-row {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
+/* 周、多日：一行占满，放不下的和月视图一样收成「+N」，这一行不滚（Rei 2026-11-13 10:24「周视图如果任务很多也收」；之前是 overflow-y: auto 在行里滚） */
 /* 「+N」：放在被收起来的第一条道上，点了看那天的全部（Rei 2026-11-13 09:44） */
 .cal-more {
   display: flex;

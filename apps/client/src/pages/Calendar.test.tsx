@@ -6,7 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { toDateKey, type Task } from '@mindough/core';
+import { addDays, toDateKey, type Task } from '@mindough/core';
 
 const now = new Date(2026, 10, 10, 12);
 const today = toDateKey(now);
@@ -199,7 +199,7 @@ describe('日历', () => {
     }
   });
 
-  it('周视图：一天很多件也全部列出，没有「+N」（放不下时只在格子区里滚，Rei 2026-11-13 09:44）', () => {
+  it('周视图没量到尺寸（测试环境）时照旧全部列出，倒数日在最上', () => {
     settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
     for (let i = 0; i < 16; i++) tasks.push(task(`t${i}`, '待办'));
     tasks.push(task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
@@ -209,6 +209,50 @@ describe('日历', () => {
     const top = [...host.querySelectorAll<HTMLElement>('.cal-slot')].find((el) => el.style.gridRow === '2')!;
     expect(top.querySelector('.cal-item')!.getAttribute('data-task-id')).toBe('cd');
   });
+
+  for (const kind of ['week', 'days'] as const) {
+    it(`${kind === 'week' ? '周' : '多日'}视图任务多也收成「+N」（Rei 2026-11-13 10:24「周视图如果任务很多也收」）：放得下的照画，点 +N 看那天全部；只多一件照画`, () => {
+      // 假装量到了：一行 26 + 6 + 10 × 24 = 272px 高，日期那行 26px → 放 10 条
+      const RO = globalThis.ResizeObserver;
+      const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+      const oh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+      globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-row') ? 272 : this.classList.contains('cal-grid') ? 640 : 0; } });
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-day-head') ? 26 : 0; } });
+      try {
+        settings.value = { calendarView: { kind, days: 3, weeks: 2 } };
+        tasks.push(task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
+        for (let i = 0; i < 15; i++) tasks.push(task(`t${String(i).padStart(2, '0')}`, '待办'));
+        // 明天正好 10 件：放得下，不出 +N
+        const tomorrow = addDays(today, 1);
+        for (let i = 0; i < 10; i++) tasks.push(task(`m${i}`, '待办', { scheduled_date: tomorrow }));
+        act(() => root.render(<CalendarPage />));
+        const cell = host.querySelector(`.cal-cell[data-date="${today}"]`)!;
+        const row = cell.closest('.cal-row')!;
+        const more = row.querySelectorAll<HTMLElement>('.cal-more');
+        expect(more).toHaveLength(1);
+        // 16 件、放 10 条：画 9 件，第 10 条位置是 +7
+        expect(more[0]!.textContent).toBe('+7');
+        expect((more[0]!.parentElement as HTMLElement).style.gridRow).toBe('11');
+        expect(more[0]!.getAttribute('aria-label')).toContain('还有 7 件，点开看全部');
+        // 倒数日照旧在最上
+        expect(row.querySelector('.cal-item[data-task-id="cd"]')).not.toBeNull();
+        // 明天 10 件全画
+        for (let i = 0; i < 10; i++) expect(row.querySelector(`.cal-item[data-task-id="m${i}"]`)).not.toBeNull();
+        // 点 +N：弹出当天全部 16 件
+        act(() => more[0]!.click());
+        const listed = [...document.querySelectorAll('.cal-day-list .cal-item')].map((el) => el.getAttribute('data-task-id'));
+        expect(listed).toHaveLength(16);
+        expect(listed[0]).toBe('cd');
+      } finally {
+        globalThis.ResizeObserver = RO;
+        if (ch) Object.defineProperty(HTMLElement.prototype, 'clientHeight', ch);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
+        if (oh) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', oh);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['offsetHeight'];
+      }
+    });
+  }
 
   it('订阅事件带颜色和时间（周视图）', () => {
     settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };

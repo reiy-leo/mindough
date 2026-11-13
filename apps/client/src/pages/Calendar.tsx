@@ -6,7 +6,7 @@
  * - 任务：有日期、没结束、不重复的，按日期 / 日期段画进格子（core layoutRow 排道），只写标题；宽屏点开是居中浮层（lib/detail-pane），手机整页。
  * - 倒数日：没结束的，画在目标日那天（Rei 2026-11-11 月视图「当天有倒数日时优先显示倒数日」）。
  * - 宽屏周、多日、多周、月：格子撑满工具栏以下的高度，整页不上下滚（Rei 2026-11-13 09:44，lib/cal-fit）；
- *   月、多周每行平分高度，放不下的收成「+N」，点开看那天全部；周、多日一行占满，放不下时只在格子区里滚。
+ *   月、多周每行平分高度，周、多日一行占满；一天放不下的收成「+N」，点开看那天全部，格子区不滚（周、多日 Rei 2026-11-13 10:24「周视图如果任务很多也收」，之前在格子区里滚）。
  *   （2026-11-11 01:10 到 11-13 是列出全部、格子按内容撑高、页面滚。）
  *   每天从上往下是倒数日 → 任务 → 订阅事件（core layoutRow 分档排道、sortDayItems）。
  *   月视图日期旁数「任务 + 打卡 + 倒数日」（core dayCount），点数字看那天的列表。打卡只算进个数，不画在任何视图、列表里（Rei 2026-11-11 01:08）。
@@ -325,8 +325,9 @@ function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
 /**
  * 宽屏周、多日、多周、月。排道分档：倒数日 → 任务 → 订阅事件，每天从上往下都是这个顺序；多天的任务、事件照旧画成跨格横条。
  * 格子撑满剩下的高度、页面不上下滚（Rei 2026-11-13 09:44「日历的格子要占满剩下的空间，不能上下滚动。」，docs/CALENDAR.md 第十五节）：
- * - 月、多周：每行平均分高度，放不下的收成「+N」，点了看那天的全部（同点日期旁的个数，当天列表 Sheet）；
- * - 周、多日：一行占满，条目多到放不下时只在格子区里面滚，星期那行不动（没有小时格，不压行高）。
+ * - 月、多周：每行平均分高度；周、多日：一行占满（没有小时格，不压行高）；
+ * - 一天放不下的收成「+N」，点了看那天的全部（同点日期旁的个数，当天列表 Sheet）；格子区不滚。
+ *   周、多日也收（Rei 2026-11-13 10:24「周视图如果任务很多也收」），之前是在格子区里滚。
  * 给了 countItems（月视图）时，日期旁写「任务 + 打卡 + 倒数日」的个数，点了看那天的列表。
  */
 function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; coreTo: DateKey; today: DateKey; items: Item[]; countItems?: Item[]; lunar: Lunar; onItem: (it: Item) => void; onDay: (d: DateKey) => void; onCreate: (d: DateKey) => void }) {
@@ -347,7 +348,7 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
     const headH = head?.offsetHeight || 26;
     setMetric((m) => (m.rowH === rowH && m.headH === headH ? m : { rowH, headH }));
   }, [box.w, box.h, p.rows.length, cols]);
-  const fit = tall ? Infinity : fitLanes(metric.rowH, metric.headH);
+  const fit = fitLanes(metric.rowH, metric.headH);
   return (
     <div ref={gridRef} className={`cal-grid${tall ? ' is-tall' : ''}${month ? ' is-month' : ''}`} style={{ ['--cols' as string]: cols } as CSSProperties} role="grid" aria-label={tr('日历')}>
       {showDow && (

@@ -62,6 +62,18 @@ describe('cutLanes', () => {
     expect(r.more[2]).toBe(2);
     expect(r.moreLane).toBe(0);
   });
+  it('周、多日一行占满（Rei 2026-11-13 10:24「周视图如果任务很多也收」）：高行放得下很多条，多出来的同样收成 +N', () => {
+    // 1366×768 周视图一行约 600px：放 23 条
+    const fit = fitLanes(600, 26);
+    expect(fit).toBe(23);
+    const placed = [...Array.from({ length: 30 }, (_, i) => at(1, i)), ...Array.from({ length: 23 }, (_, i) => at(4, i))];
+    const r = cutLanes(placed, 7, fit);
+    // 第 1 天 30 件：画 22 件，+8；第 4 天正好 23 件：全画
+    expect(r.more).toEqual([0, 8, 0, 0, 0, 0, 0]);
+    expect(r.moreLane).toBe(22);
+    expect(r.shown.filter((x) => x.col === 1)).toHaveLength(22);
+    expect(r.shown.filter((x) => x.col === 4)).toHaveLength(23);
+  });
 });
 
 describe('yearLayout', () => {
