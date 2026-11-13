@@ -2299,6 +2299,13 @@ Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「�
 - `TaskDetail`：`CheckInNote` 挪成 `.detail-props` 的第一项，在正文下面、胶囊行上面；胶囊行、附件、资料跟在后面。间距还是 `.detail-props` 的 gap（--space-3），圆角、底色、加 / 收起 / × 都没变。
 - 判断：放在 `.detail-props` 里而不是正文和属性块之间单独一块，这样它和胶囊的距离同胶囊和附件的距离一样，算属性块的一部分。
 
+### 打卡描述框去掉框头，只靠占位 ✅（2026-11-13）
+- Rei 09:31「打卡描述的label不要，换成用placeholder」。
+- `CheckInNote`：删掉 `.checkin-note-head`（notebook-text 图标 + 「打卡描述」），框里只剩 `AutoTextarea`；`section` 从 `aria-labelledby` 改成 `aria-label="打卡描述"`，输入框读屏名照旧。占位沿用「添加打卡描述…」（九语言本来就有，意思够清楚）。
+- × 挪进框里右上角（`position: absolute; top: 8px; right: 6px`，和第一行字居中）；桌面悬停 / 键盘聚焦才出来，手机照旧没有；桌面给输入框右边留 20px，字不压到 × 下面。
+- 内边距 8px 16px 12px → 8px 12px；圆角、底色不变。
+- 文案：「打卡描述」还用在读屏名、「+」菜单、清除提示里，没有词条变成没用，所以没删词条。
+
 ### 错过的倒数日不自动完成 ✅（2026-11-13）
 Rei 2026-11-13 08:38：「错过的倒数日不要直接设置成"已完成"」。
 - 查下来：不重复的倒数日过了目标日，代码里没有地方改它的状态（客户端、同步、Worker、迁移都没有），一直是待办、显示「已过 N 天」。自动写「完成」的只有重复倒数日滚动时生成的那次记录：`Store.writeCountdownRecord` 建行时 `status: '完成'`、`done_at: recordDoneAt(那天)`（那天本机中午），由客户端 `lib/countdown-roll.ts`（打开、换天、数据变了）调 `rollRecurringCountdowns` 触发。

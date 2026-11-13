@@ -2275,34 +2275,28 @@ html[data-layout='mobile'] .date-panel .date-clear {
 }
 
 /* 打卡描述（Rei 2026-11-13 05:09；07:25 改成属性、显示成一个框「背景略深，统一圆角」）：
-   正文下面、胶囊行上面（Rei 2026-11-13 09:18「放在上面」），是 .detail-props 的第一项，上下间距同胶囊和附件（.detail-props 的 gap）。圆角同详情里的属性卡片（--radius-lg）。
+   正文下面、胶囊行上面（Rei 2026-11-13 09:18「放在上面」），没有框头、只有输入区（Rei 2026-11-13 09:31「label不要，换成用placeholder」），是 .detail-props 的第一项，上下间距同胶囊和附件（.detail-props 的 gap）。圆角同详情里的属性卡片（--radius-lg）。
    底色用半透明黑叠在详情底上：不管详情底是什么（白、灰、带色的 Material 中性色、WinUI 半透明 Mica、暗色），都比它深一点；
    --surface-2 在 WinUI 亮色手机、各皮肤暗色里比详情底还亮，不用它。不用 color-mix（Chromium 107）。素净档只改强调色，这里不用变。 */
 .checkin-note {
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  position: relative;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
   background: rgba(0, 0, 0, 0.045);
 }
 [data-theme='dark'] .checkin-note {
   background: rgba(0, 0, 0, 0.24);
 }
-.checkin-note-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 24px;
-  margin-bottom: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-2);
-}
-/* 框头的 ×：清掉并收起（同心情胶囊的 ×：桌面悬停 / 键盘聚焦才出来，触屏没有，删空离开就收） */
+/* 框内右上角的 ×（Rei 2026-11-13 09:31 去掉框头后从框头右边挪进来）：清掉并收起，同心情胶囊的 ×：
+   桌面悬停 / 键盘聚焦才出来，触屏没有，删空离开就收。和第一行字竖直居中（上内边距 8 + 行高 22.4）。 */
 .checkin-note-x {
+  position: absolute;
+  top: 8px;
+  right: 6px;
   display: grid;
   place-items: center;
   width: 22px;
   height: 22px;
-  margin: 0 -6px 0 auto;
   padding: 0;
   border: 0;
   border-radius: var(--radius-ctl);
@@ -2323,6 +2317,10 @@ html[data-layout='mobile'] .date-panel .date-clear {
 @media (hover: hover) {
   .checkin-note:hover .checkin-note-x {
     opacity: 1;
+  }
+  /* 给 × 让出位置，字不压到它下面 */
+  [data-layout='desktop'] .checkin-note.has-x .checkin-note-input {
+    padding-right: 20px;
   }
 }
 @media (hover: none) {

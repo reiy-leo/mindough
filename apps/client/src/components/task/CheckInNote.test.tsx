@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * 打卡描述做成属性（Rei 2026-11-13 07:25「打卡描述做成属性，在属性dropdown中放在心情、附件一组」）：
- * 从「+」打开时光标进去；删空后离开（失焦 / Esc）就收起；框头 × 清掉、收起、能撤销；打开着打字删空不收。
+ * 从「+」打开时光标进去；删空后离开（失焦 / Esc）就收起；框内右上角 × 清掉、收起、能撤销；打开着打字删空不收。
+ * 09:31「打卡描述的label不要，换成用placeholder」：没有框头，只有输入区和占位，读屏名在框上。
  * 边打边存的时机在 TaskBody.test。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -105,7 +106,20 @@ describe('打卡描述框的增删', () => {
     expect(box()).not.toBeNull();
   });
 
-  it('框头 ×：清掉、收起，提示里撤销能回来', () => {
+  it('没有框头标签：只有输入区、占位说用途，读屏名「打卡描述」；× 在框里', () => {
+    const t = habit();
+    render(t.id, true);
+    const sec = host.querySelector('section.checkin-note') as HTMLElement;
+    expect(sec.getAttribute('aria-label')).toBe('打卡描述');
+    expect(sec.hasAttribute('aria-labelledby')).toBe(false);
+    expect(sec.querySelector('.checkin-note-head')).toBeNull();
+    expect(sec.textContent).toBe('');
+    expect(box()!.placeholder).toBe('添加打卡描述…');
+    expect(box()!.getAttribute('aria-label')).toBe('打卡描述');
+    expect(sec.querySelector('.checkin-note-x')?.parentElement).toBe(sec);
+  });
+
+  it('框内 ×：清掉、收起，提示里撤销能回来', () => {
     const t = habit('每天 5 公里');
     render(t.id);
     const x = host.querySelector('.checkin-note-x') as HTMLButtonElement;

@@ -3,13 +3,14 @@
  * 07:25 改成属性（「打卡描述做成属性，在属性dropdown中放在心情、附件一组。打卡显示成一个box,背景略深，统一圆角」）：
  * - 胶囊行上面（正文下面）一个框（底色同详情里的属性卡片，圆角 --radius-lg），只有打卡有；
  * - 没写时不显示，从「+」菜单选「打卡描述」才出来、光标进去（autoFocus）；写了就一直显示；
- * - 删空后离开（失焦 / Esc）就收起，回到「+」菜单；框头的 × 一下清掉并收起，提示里能撤销（同心情胶囊的 ×）。
+ * - 删空后离开（失焦 / Esc）就收起，回到「+」菜单；框内右上角的 × 一下清掉并收起，提示里能撤销（同心情胶囊的 ×）。
+ * - 09:31 去掉框头（「打卡描述的label不要，换成用placeholder」）：框里只有输入区，空着时靠占位「添加打卡描述…」说明用途；读屏名还是「打卡描述」。
  * 纯文字（task.checkin_note），边打边存（Rei 2026-11-13 06:19，lib/live-save：停手 300 ms 存，失焦 / Esc / 关掉 / 页面藏起 / 打卡前马上存，选字中不存）。
  * 打卡达标把正文存档时它不动。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { NotebookText, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { Store, Task } from '@mindough/core';
 import { AutoTextarea } from '../../ui/primitives';
 import { registerTaskFlush } from '../../lib/body-flush';
@@ -62,7 +63,7 @@ export function CheckInNote({
     save();
     if (!latest.current.trim()) onOpenChange?.(false);
   };
-  /** 框头的 ×：清掉、收起，提示里能撤销。 */
+  /** 框内右上角的 ×：清掉、收起，提示里能撤销。 */
   const clear = () => {
     saver.cancel();
     editing.current = false;
@@ -80,18 +81,13 @@ export function CheckInNote({
   useEffect(() => registerTaskFlush(store, task.id, () => (editing.current || saver.pending) && saveRef.current()), [store, task.id, saver]);
   useEffect(() => () => void ((editing.current || saver.pending) && saveRef.current()), [saver]);
   useEffect(() => onPageHide(() => saver.flush()), [saver]);
-  const id = `ci-note-${task.id}`;
   return (
-    <section className="checkin-note" aria-labelledby={id}>
-      <div className="checkin-note-head">
-        <NotebookText size={14} aria-hidden />
-        <span id={id}>{tr('打卡描述')}</span>
-        {!readOnly && (
-          <RacButton className="checkin-note-x" aria-label={tr('清除{label}', { label: tr('打卡描述') })} onPress={clear}>
-            <X size={12} strokeWidth={2.5} aria-hidden />
-          </RacButton>
-        )}
-      </div>
+    <section className={`checkin-note${readOnly ? '' : ' has-x'}`} aria-label={tr('打卡描述')}>
+      {!readOnly && (
+        <RacButton className="checkin-note-x" aria-label={tr('清除{label}', { label: tr('打卡描述') })} onPress={clear}>
+          <X size={12} strokeWidth={2.5} aria-hidden />
+        </RacButton>
+      )}
       {readOnly ? (
         <p className="checkin-note-text">{saved}</p>
       ) : (
