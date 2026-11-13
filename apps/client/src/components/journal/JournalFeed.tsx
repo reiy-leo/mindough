@@ -28,7 +28,7 @@ export function JournalFeed({ groups, today, single }: { groups: ReadonlyArray<{
   const [confirm, setConfirm] = useState<JournalPost | null>(null);
   const remove = (p: JournalPost) => {
     store.deleteJournalPost(p.id);
-    ui.toast({ message: tr('删了一条日记'), actions: [{ label: tr('撤销'), onPress: () => store.restoreJournalPost(p.id) }] }, 6000);
+    ui.toast({ message: tr('删了一条日记'), actions: [{ label: tr('撤销'), onPress: () => store.restoreJournalPost(p.id) }] });
   };
   return (
     <div className="jfeed">

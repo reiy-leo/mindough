@@ -30,7 +30,7 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
     if (!amount) return;
     // 达标了不能再加（Rei 2026-11-09 01:05）：按钮本来就灰掉，手输加量走到这里提示一下；减量照常
     if (amount > 0 && store.progress(task.id, today)?.met) {
-      ui.toast({ message: tr('这次的打卡已经达标了，不能再加') }, 2500);
+      ui.toast({ message: tr('这次的打卡已经达标了，不能再加') });
       return;
     }
     const prev = task.status;
@@ -38,7 +38,7 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
     try {
       r = store.checkIn(task.id, 'add', amount, today);
     } catch (e) {
-      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message });
       throw e;
     }
     const undo = () => store.undoCheckIn(r.event.id);
@@ -55,7 +55,7 @@ export function useCountAdd(store: Store, task: Task, today: string, onDone?: ()
           : amount < 0
             ? tr('减了 {amount}', { amount: amountText(-amount, task.unit) })
             : tr('加了 {amount}', { amount: amountText(amount, task.unit) });
-    ui.toast({ tone: r.progress.met ? 'success' : 'info', message, actions: [{ label: tr('撤销'), onPress: undo }] }, 4000);
+    ui.toast({ tone: r.progress.met ? 'success' : 'info', message, actions: [{ label: tr('撤销'), onPress: undo }] });
   };
 }
 
@@ -146,7 +146,7 @@ export function CountUndoButton({ store, task, today, className = 'btn-sm' }: { 
       className={`${className} count-undo`}
       onPress={() => {
         store.undoCheckIn(last.id);
-        ui.toast({ message: tr('撤销了 {amount}', { amount: formatDelta(last.amount) + (task.unit ? ` ${task.unit}` : '') }) }, 2500);
+        ui.toast({ message: tr('撤销了 {amount}', { amount: formatDelta(last.amount) + (task.unit ? ` ${task.unit}` : '') }) });
       }}
     >
       <Undo2 size={15} />

@@ -80,7 +80,7 @@ export function JournalPage({ date: wanted }: { date?: string }) {
   const send = (body: string, m: MoodId | null, images: File[]) => {
     // 图片挂成这条的附件（Rei 2026-10-29），太大的没加上就提示
     void sendJournalPost(store, { body, mood: m, images }).then((r) => {
-      if (r?.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) }, 6000);
+      if (r?.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) });
     });
     // 按心情筛着、发的又不是这个心情：取消筛选，免得刚发的看不见
     if (mood && m !== mood) setMood(null);

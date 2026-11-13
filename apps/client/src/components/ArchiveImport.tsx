@@ -76,7 +76,6 @@ export function ArchiveImportSheet({ isOpen, onOpenChange }: { isOpen: boolean; 
           },
         ],
       },
-      10000,
     );
   };
 

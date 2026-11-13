@@ -3,6 +3,7 @@ import type { NewTaskInput } from '@mindough/core';
 import { onLayerEntry } from './back-layers';
 import { hashWithTask, taskInHash } from './router';
 import { useSettings } from './settings';
+import { createToastTimers, toastDuration } from './toast-timer';
 
 import { tr } from './i18n';
 export interface ToastAction {
@@ -19,8 +20,13 @@ export interface Toast {
 
 export interface UiCtx {
   toasts: Toast[];
-  toast: (t: Omit<Toast, 'id'>, ms?: number) => void;
+  /** 弹一条提示。多久关不由调用的地方定：没按钮 4 秒、带按钮 6 秒，电脑手机一样（lib/toast-timer）。 */
+  toast: (t: Omit<Toast, 'id'>) => void;
   dismiss: (id: number) => void;
+  /** 鼠标停在提示上：先不关（只给鼠标用，触屏不调）。 */
+  holdToast: (id: number) => void;
+  /** 鼠标离开提示：接着算剩下的时间。 */
+  releaseToast: (id: number) => void;
   /**
    * 选中的任务（三列布局右列 / 手机推入的详情页）。主窗口里它就是 hash 上的 ?task=<id>：
    * 刷新还在，换页面就取消。
@@ -107,21 +113,53 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [didaImportOpen, setDidaImportOpen] = useState(false);
   const seq = useRef(0);
 
-  const dismiss = useCallback((id: number) => setToasts((ts) => ts.filter((t) => t.id !== id)), []);
-  const toast = useCallback(
-    (t: Omit<Toast, 'id'>, ms = 5000) => {
-      const id = ++seq.current;
-      setToasts((ts) => [...ts.slice(-2), { ...t, id }]);
-      setTimeout(() => dismiss(id), ms);
+  // 提示按到点时刻关（lib/toast-timer）：回到前台、按下时顺手扫一遍，手机上 setTimeout 停住也不会一直挂着
+  const [timers] = useState(() => createToastTimers((id) => setToasts((ts) => ts.filter((t) => t.id !== id))));
+  useEffect(() => {
+    const sweep = () => timers.sweep();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sweep();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', sweep);
+    window.addEventListener('focus', sweep);
+    window.addEventListener('pointerdown', sweep, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', sweep);
+      window.removeEventListener('focus', sweep);
+      window.removeEventListener('pointerdown', sweep, { capture: true });
+    };
+  }, [timers]);
+  const dismiss = useCallback(
+    (id: number) => {
+      timers.remove(id);
+      setToasts((ts) => ts.filter((t) => t.id !== id));
     },
-    [dismiss],
+    [timers],
   );
+  const toast = useCallback(
+    (t: Omit<Toast, 'id'>) => {
+      const id = ++seq.current;
+      // 最多留 3 条：挤掉的那条计时也一起去掉
+      setToasts((ts) => {
+        for (const old of ts.slice(0, -2)) timers.remove(old.id);
+        return [...ts.slice(-2), { ...t, id }];
+      });
+      timers.add(id, toastDuration(t));
+    },
+    [timers],
+  );
+  const holdToast = useCallback((id: number) => timers.hold(id), [timers]);
+  const releaseToast = useCallback((id: number) => timers.release(id), [timers]);
 
   const value = useMemo<UiCtx>(
     () => ({
       toasts,
       toast,
       dismiss,
+      holdToast,
+      releaseToast,
       editingId,
       openEditor,
       closeDetail,
@@ -133,7 +171,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       didaImportOpen,
       setDidaImportOpen,
     }),
-    [toasts, toast, dismiss, editingId, openEditor, closeDetail, quickCreate, paletteOpen, didaImportOpen],
+    [toasts, toast, dismiss, holdToast, releaseToast, editingId, openEditor, closeDetail, quickCreate, paletteOpen, didaImportOpen],
   );
   const latest = useRef(value);
   latest.current = value;

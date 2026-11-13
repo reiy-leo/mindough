@@ -200,7 +200,7 @@ export function PropChips({
       patch(p);
       undo = () => patch(snap);
     }
-    ui.toast({ message: tr('已清除「{label}」', { label: propLabel(id) }), actions: [{ label: tr('撤销'), onPress: undo }] }, 5000);
+    ui.toast({ message: tr('已清除「{label}」', { label: propLabel(id) }), actions: [{ label: tr('撤销'), onPress: undo }] });
     const i = shown.indexOf(id);
     const next = shown[i + 1] ?? shown[i - 1];
     requestAnimationFrame(() => {

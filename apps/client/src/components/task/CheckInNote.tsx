@@ -73,7 +73,7 @@ export function CheckInNote({
     store.setCheckInNote(task.id, null);
     onOpenChange?.(false);
     if (before.trim())
-      ui.toast({ message: tr('已清除「{label}」', { label: tr('打卡描述') }), actions: [{ label: tr('撤销'), onPress: () => store.setCheckInNote(task.id, before) }] }, 5000);
+      ui.toast({ message: tr('已清除「{label}」', { label: tr('打卡描述') }), actions: [{ label: tr('撤销'), onPress: () => store.setCheckInNote(task.id, before) }] });
   };
   const saveRef = useRef(save);
   saveRef.current = save;

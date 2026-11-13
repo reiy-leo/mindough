@@ -176,7 +176,6 @@ export function CalendarPage() {
         message: tr('已把「{title}」改到{date}', { title: clipName(titleOf(store, next)) || tr('无标题'), date: formatDateRange(start, end && end !== start ? end : null, today) }),
         actions: [{ label: tr('撤销'), onPress: () => store.updateTask(id, undo) }],
       },
-      6000,
     );
   }, [store, ui, today]);
   useCalDrag(rootRef, {

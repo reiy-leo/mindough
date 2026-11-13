@@ -43,7 +43,7 @@ export function SearchPage() {
   const createFromQuery = () => {
     const t = store.createTask({ body_md: plainTitleMarkdown(trim) });
     store.addToMyDay(t.id);
-    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(trim) }) }, 3000);
+    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(trim) }) });
     ime.reset('');
   };
 

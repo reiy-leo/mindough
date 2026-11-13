@@ -54,7 +54,7 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
         onConfirm={() => {
           const r = store.dissolveGroup(group.id);
           leave();
-          if (r) ui.toast({ message: tr('已解散「{name}」', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoGroupRemoval(r.undo) }] }, 8000);
+          if (r) ui.toast({ message: tr('已解散「{name}」', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoGroupRemoval(r.undo) }] });
         }}
       />
       <ConfirmDialog
@@ -69,7 +69,7 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
           const r = store.deleteGroup(group.id);
           leave();
           if (ui.editingId && deletedIds.has(ui.editingId)) ui.openEditor(null);
-          if (r) ui.toast({ message: tr('已删除「{name}」', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoGroupRemoval(r.undo) }] }, 8000);
+          if (r) ui.toast({ message: tr('已删除「{name}」', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoGroupRemoval(r.undo) }] });
         }}
       />
     </>
@@ -81,14 +81,14 @@ export function useProjectActions(store: Store, group: Group): { items: MenuActi
 export function archiveProject(store: Store, ui: UiCtx, group: Group) {
   if (group.archived_at) return;
   store.archiveGroup(group.id);
-  ui.toast({ message: tr('已归档「{name}」，在项目列表最下面「已归档」里', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.unarchiveGroup(group.id) }] }, 6000);
+  ui.toast({ message: tr('已归档「{name}」，在项目列表最下面「已归档」里', { name: clipName(group.name) }), actions: [{ label: tr('撤销'), onPress: () => store.unarchiveGroup(group.id) }] });
 }
 
 /** 取消归档：一切照旧。 */
 export function unarchiveProject(store: Store, ui: UiCtx, group: Group) {
   if (!group.archived_at) return;
   store.unarchiveGroup(group.id);
-  ui.toast({ message: tr('已取消归档「{title}」', { title: clipName(group.name) }) }, 3000);
+  ui.toast({ message: tr('已取消归档「{title}」', { title: clipName(group.name) }) });
 }
 
 /**

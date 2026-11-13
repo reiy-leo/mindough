@@ -791,7 +791,17 @@ export function Toasts() {
   return (
     <div className="toasts" data-pos={pos} role="status" aria-live="polite">
       {ui.toasts.map((t) => (
-        <div key={t.id} className={`toast toast-${t.tone ?? 'info'}`}>
+        <div
+          key={t.id}
+          className={`toast toast-${t.tone ?? 'info'}`}
+          // 电脑上鼠标停在提示上先不关，移开接着算；触屏点按不算停留（lib/toast-timer）
+          onPointerEnter={(e) => {
+            if (e.pointerType === 'mouse') ui.holdToast(t.id);
+          }}
+          onPointerLeave={(e) => {
+            if (e.pointerType === 'mouse') ui.releaseToast(t.id);
+          }}
+        >
           <span className="toast-msg">{t.message}</span>
           {t.actions?.map((a) => (
             <RacButton
@@ -840,7 +850,7 @@ export function App() {
   useCountdownRoll(store);
   // 多彩档（色彩设置，Rei 2026-11-09）：详情栏顶部的项目 / 类型淡色
   useDetailTint(store, ui.editingId);
-  useEffect(() => installStrictGuard((message) => ui.toast({ message }, 2500)), [ui]);
+  useEffect(() => installStrictGuard((message) => ui.toast({ message })), [ui]);
   // 正文里的 @ 提及胶囊（Rei 2026-11-10）：按 id 取标题、点了打开详情（lib/task-mention.ts）
   const { toast: uiToast, openEditor: uiOpenEditor } = ui;
   const mentionNotFound = useCallback(() => uiToast({ tone: 'error', message: tr('找不到这件任务') }), [uiToast]);
@@ -853,7 +863,7 @@ export function App() {
     (e: { timeStamp: number }) => {
       if (!myDayTap.current(e.timeStamp)) return;
       const show = (t: TapSyncToast) =>
-        uiToast({ tone: t.tone, message: t.message, actions: t.toSettings ? [{ label: tr('去设置'), onPress: () => navigate({ page: 'settings', section: 'account' }) }] : undefined }, t.tone === 'error' ? 5000 : 2500);
+        uiToast({ tone: t.tone, message: t.message, actions: t.toSettings ? [{ label: tr('去设置'), onPress: () => navigate({ page: 'settings', section: 'account' }) }] : undefined });
       const gate = tapSyncGate(getAccount(), getSyncView(), navigator.onLine !== false, tapBusy.current);
       if (gate) return show(gate);
       tapBusy.current = true;

@@ -40,7 +40,6 @@ export function ReminderHost() {
                 { label: tr('10 分钟后'), onPress: a.snooze },
               ],
             },
-            12000,
           ),
       }),
     [store],

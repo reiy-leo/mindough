@@ -110,7 +110,7 @@ export function MilestoneList({
   const archive = (m: Milestone, on: boolean) => {
     store.setMilestoneArchived(m.id, on);
     if (on)
-      ui.toast({ message: tr('已归档里程碑「{name}」', { name: clipName(m.name) }), actions: [{ label: tr('撤销'), onPress: () => store.setMilestoneArchived(m.id, false) }] }, 5000);
+      ui.toast({ message: tr('已归档里程碑「{name}」', { name: clipName(m.name) }), actions: [{ label: tr('撤销'), onPress: () => store.setMilestoneArchived(m.id, false) }] });
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 

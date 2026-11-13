@@ -51,7 +51,7 @@ export function CommandPalette() {
   const createFromQuery = () => {
     const t = store.createTask({ body_md: plainTitleMarkdown(q.trim()) });
     store.addToMyDay(t.id);
-    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(q) }) }, 3000);
+    ui.toast({ tone: 'success', message: tr('已新建并加入我的一天：「{trim}」', { trim: clipName(q) }) });
     close();
   };
   const openHit = (h: SearchHit) => {

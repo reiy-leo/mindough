@@ -28,7 +28,7 @@ export function ClipboardButton({ onFiles, imagesOnly = false, className = 'icon
             .then((files) => files.length && onFiles(files))
             .catch((err) => {
               console.error('读剪贴板失败', err);
-              ui.toast({ tone: 'error', message: tr('没读到剪贴板里的内容，再复制一次试试') }, 4000);
+              ui.toast({ tone: 'error', message: tr('没读到剪贴板里的内容，再复制一次试试') });
             })
             .finally(() => setBusy(false));
         }}

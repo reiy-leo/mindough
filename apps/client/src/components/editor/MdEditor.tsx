@@ -250,7 +250,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       } else scheduleHide();
     },
     onLinkOpen: (u) => openLink(u),
-    onImageBlocked: () => ui?.toast({ message: tr('正文里不能放图片') }, 4000),
+    onImageBlocked: () => ui?.toast({ message: tr('正文里不能放图片') }),
     ...(mention
       ? {
           mention: {

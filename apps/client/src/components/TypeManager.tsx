@@ -192,7 +192,7 @@ function useDeleteType(onDeleted?: () => void): [ReactNode, (t: TaskType) => voi
         store.deleteType(target.id);
         setTarget(null);
         onDeleted?.();
-        ui.toast({ message: tr('已删除「{name}」', { name: clipName(name) }) }, 2500);
+        ui.toast({ message: tr('已删除「{name}」', { name: clipName(name) }) });
       }}
     />
   );

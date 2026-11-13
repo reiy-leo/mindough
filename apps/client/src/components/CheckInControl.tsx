@@ -26,11 +26,11 @@ export function CheckInControl({ store, task, compact }: { store: Store; task: T
       r = store.checkIn(task.id, kind, amount, today);
     } catch (e) {
       // 达标了不能再加（Rei 2026-11-09）：按钮本来灰掉，别的设备同步过来刚好达标时兜底
-      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message });
       throw e;
     }
     if (r.completed) announceComplete(store, ui, r.completed, prev);
-    else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了 🎉')) }, r.archived ? 4000 : 2500);
+    else if (r.progress.met && task.recurrence && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了 🎉')) });
   };
 
   // 目标 1 的计数打卡当勾选完成（core checkInMode，Rei 2026-11-09）

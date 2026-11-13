@@ -77,7 +77,6 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
             { label: tr('撤销'), onPress: () => store.deleteTask(t.id) },
           ],
         },
-        6000,
       );
       return;
     }
@@ -111,7 +110,7 @@ export function runDeepLink(store: Store, ui: Ui, a: DeepLinkAction): void {
             ? tr('已完成「{title}」', { title })
             : tr('「{title}」打卡了', { title });
       const full = r.archived ? `${message} · ${checkInMetMessage(store, r, '')}` : message;
-      ui.toast({ tone: 'success', message: full, actions: [{ label: tr('撤销'), onPress: undo }] }, 6000);
+      ui.toast({ tone: 'success', message: full, actions: [{ label: tr('撤销'), onPress: undo }] });
       return;
     }
   }

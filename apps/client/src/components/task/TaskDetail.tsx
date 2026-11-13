@@ -244,7 +244,6 @@ export function Body({ store, task, placeholder, readOnly = false }: { store: St
             },
           ],
         },
-        5000,
       );
     }
   };
@@ -307,13 +306,13 @@ function useActions(store: Store, task: Task, done: () => void) {
     try {
       r = store.checkIn(task.id, kind, amount, today);
     } catch (e) {
-      if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+      if (e instanceof CheckInMetError) return ui.toast({ message: e.message });
       throw e;
     }
     if (r.completed) {
       announceComplete(store, ui, r.completed, prev);
       done();
-    } else if (r.progress.met && recurring && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了')) }, r.archived ? 4000 : 2500);
+    } else if (r.progress.met && recurring && (kind === 'add' || kind === 'stop')) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, tr('今天的打卡完成了')) });
   };
   const complete = () => {
     const prev = task.status;
@@ -746,7 +745,6 @@ function RefsSection({ store, task, today }: { store: Store; task: Task; today: 
         message: tr('已不再关联「{name}」', { name: clipName(e.name) }),
         actions: [{ label: tr('撤销'), onPress: () => (e.kind === 'person' ? store.linkPerson(task.id, e.id) : store.setTaskItems(task.id, items)) }],
       },
-      5000,
     );
   };
   const open = (type: TaskType, e: LibraryEntry) => {
@@ -904,7 +902,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     },
     reopen: () => {
       store.reopenTask(task.id);
-      ui.toast({ message: tr('已重新打开') }, 2500);
+      ui.toast({ message: tr('已重新打开') });
     },
     archive: () => archiveHabit(store, ui, task.id, true),
     unarchive: () => archiveHabit(store, ui, task.id, false),
@@ -985,7 +983,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
                   aria-label={recurring ? tr('恢复打卡') : tr('重新打开')}
                   onPress={() => {
                     store.reopenTask(task.id);
-                    ui.toast({ message: tr('已重新打开') }, 2500);
+                    ui.toast({ message: tr('已重新打开') });
                   }}
                 >
                   <RotateCcw size={18} aria-hidden />
@@ -1074,7 +1072,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
         onConfirm={() => {
           store.deleteTask(task.id);
           close();
-          ui.toast({ message: tr('已删除') }, 2500);
+          ui.toast({ message: tr('已删除') });
         }}
       />
     </>

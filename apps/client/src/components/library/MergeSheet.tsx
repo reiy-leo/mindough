@@ -121,11 +121,11 @@ export function MergeSheet({
     try {
       const r = person ? store.mergePeople(targetId, others, choices) : store.mergeLibraryItems(targetId, others, choices);
       const name = (person ? store.get('person', targetId)?.name : store.get('library_item', targetId)?.name) ?? target.name;
-      ui.toast({ message: tr('已合并到「{name}」', { name: clipName(name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoMerge(r.undo) }] }, 6000);
+      ui.toast({ message: tr('已合并到「{name}」', { name: clipName(name) }), actions: [{ label: tr('撤销'), onPress: () => store.undoMerge(r.undo) }] });
       onMerged?.(r);
       if (!stayOpen) onClose();
     } catch (e) {
-      ui.toast({ message: e instanceof Error ? e.message : String(e), tone: 'error' }, 4000);
+      ui.toast({ message: e instanceof Error ? e.message : String(e), tone: 'error' });
     }
   };
 
@@ -278,7 +278,7 @@ export function DuplicatesSheet({ store, type, onClose }: { store: Store; type: 
             variant="quiet"
             onPress={() => {
               store.dismissDuplicateGroup(g.key);
-              ui.toast({ message: tr('这组以后不再提示') }, 2500);
+              ui.toast({ message: tr('这组以后不再提示') });
             }}
           >
             {tr('不是同一个')}

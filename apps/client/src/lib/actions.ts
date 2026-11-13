@@ -36,7 +36,6 @@ export function announceComplete(store: Store, ui: Ui, result: CompleteResult, p
         { label: tr('撤销'), onPress: undo ?? (() => store.setStatus(result.task.id, prev)) },
       ],
     },
-    7000,
   );
 }
 
@@ -67,9 +66,9 @@ export function toggleCheckIn(store: Store, ui: Ui, taskId: string, date: string
     const r = store.checkIn(taskId, 'add', 1, date);
     if (r.completed) announceComplete(store, ui, r.completed, t.status);
     // 勾一下本来不弹提示；正文存档了说一声（Rei 2026-11-13）
-    else if (r.archived) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, '') }, 4000);
+    else if (r.archived) ui.toast({ tone: 'success', message: checkInMetMessage(store, r, '') });
   } catch (e) {
-    if (e instanceof CheckInMetError) return ui.toast({ message: e.message }, 2500);
+    if (e instanceof CheckInMetError) return ui.toast({ message: e.message });
     throw e;
   }
 }
@@ -90,10 +89,10 @@ export function archiveHabit(store: Store, ui: Ui, taskId: string, archived: boo
   if (!t || !!t.archived_at === archived) return;
   if (archived) {
     store.archiveTask(taskId);
-    ui.toast({ message: tr('已归档「{title}」，在打卡页最下面「已归档」里', { title: clipName(titleOf(store, taskId)) }), actions: [{ label: tr('撤销'), onPress: () => store.unarchiveTask(taskId) }] }, 6000);
+    ui.toast({ message: tr('已归档「{title}」，在打卡页最下面「已归档」里', { title: clipName(titleOf(store, taskId)) }), actions: [{ label: tr('撤销'), onPress: () => store.unarchiveTask(taskId) }] });
   } else {
     store.unarchiveTask(taskId);
-    ui.toast({ message: tr('已取消归档「{title}」', { title: clipName(titleOf(store, taskId)) }) }, 3000);
+    ui.toast({ message: tr('已取消归档「{title}」', { title: clipName(titleOf(store, taskId)) }) });
   }
 }
 
@@ -109,7 +108,7 @@ export function changeStatus(store: Store, ui: Ui, taskId: string, status: TaskS
 export function tryAddDependency(store: Store, ui: Ui, predId: string, succId: string): boolean {
   try {
     store.addDependency(predId, succId);
-    ui.toast({ tone: 'info', message: tr('已连上：做完「{titleOf}」，就能开始「{titleOf2}」', { titleOf: clipName(titleOf(store, predId)), titleOf2: clipName(titleOf(store, succId)) }) }, 3500);
+    ui.toast({ tone: 'info', message: tr('已连上：做完「{titleOf}」，就能开始「{titleOf2}」', { titleOf: clipName(titleOf(store, predId)), titleOf2: clipName(titleOf(store, succId)) }) });
     return true;
   } catch (e) {
     if (e instanceof CycleError) {
@@ -146,25 +145,25 @@ export function togglePin(store: Store, ui: Ui, taskId: string) {
   const title = clipName(titleOf(store, taskId));
   if (store.isPinned(t)) {
     store.unpinTask(taskId);
-    ui.toast({ message: tr('已取消置顶「{title}」', { title }), actions: [{ label: tr('撤销'), onPress: () => store.pinTask(taskId) }] }, 4000);
+    ui.toast({ message: tr('已取消置顶「{title}」', { title }), actions: [{ label: tr('撤销'), onPress: () => store.pinTask(taskId) }] });
   } else {
     store.pinTask(taskId);
-    ui.toast({ tone: 'success', message: tr('已置顶「{title}」，每天都在我的一天最上面', { title }), actions: [{ label: tr('撤销'), onPress: () => store.unpinTask(taskId) }] }, 4000);
+    ui.toast({ tone: 'success', message: tr('已置顶「{title}」，每天都在我的一天最上面', { title }), actions: [{ label: tr('撤销'), onPress: () => store.unpinTask(taskId) }] });
   }
 }
 
 export function toggleMyDay(store: Store, ui: Ui, taskId: string) {
   // 置顶的每天都在我的一天里（Rei 2026-11-08）：移出没用，提示先取消置顶
   if (store.isPinned(taskId)) {
-    ui.toast({ message: tr('置顶的任务每天都在我的一天里，要移出先取消置顶'), actions: [{ label: tr('取消置顶'), onPress: () => togglePin(store, ui, taskId) }] }, 5000);
+    ui.toast({ message: tr('置顶的任务每天都在我的一天里，要移出先取消置顶'), actions: [{ label: tr('取消置顶'), onPress: () => togglePin(store, ui, taskId) }] });
     return;
   }
   if (store.isInMyDay(taskId)) {
     store.removeFromMyDay(taskId);
-    ui.toast({ message: tr('已移出我的一天') }, 2500);
+    ui.toast({ message: tr('已移出我的一天') });
   } else {
     store.addToMyDay(taskId);
-    ui.toast({ tone: 'success', message: tr('已加入我的一天：「{titleOf}」', { titleOf: clipName(titleOf(store, taskId)) }) }, 2500);
+    ui.toast({ tone: 'success', message: tr('已加入我的一天：「{titleOf}」', { titleOf: clipName(titleOf(store, taskId)) }) });
   }
 }
 
@@ -177,9 +176,9 @@ export function startMakeup(store: Store, ui: Ui, taskId: string) {
   if (!node) return;
   const when = formatDate(node, { weekday: true });
   if (store.isInMyDay(taskId)) {
-    ui.toast({ message: tr('已在我的一天里，打的进度会算到 {when}', { when }) }, 3000);
+    ui.toast({ message: tr('已在我的一天里，打的进度会算到 {when}', { when }) });
     return;
   }
   store.startMakeup(taskId);
-  ui.toast({ tone: 'success', message: tr('已放进我的一天，打的进度会算到 {when}', { when }) }, 3500);
+  ui.toast({ tone: 'success', message: tr('已放进我的一天，打的进度会算到 {when}', { when }) });
 }

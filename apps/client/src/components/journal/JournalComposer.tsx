@@ -57,8 +57,8 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
 
   const addImages = (files: readonly File[]) => {
     const r = pickImages(files);
-    if (r.notImage.length) ui.toast({ tone: 'error', message: tr('只能加图片') }, 4000);
-    if (r.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) }, 6000);
+    if (r.notImage.length) ui.toast({ tone: 'error', message: tr('只能加图片') });
+    if (r.tooBig.length) ui.toast({ tone: 'error', message: tooBigMessage(r.tooBig) });
     if (r.images.length) setPending((cur) => [...cur, ...r.images.map((f) => ({ id: ++seq, file: f, url: URL.createObjectURL(f) }))]);
   };
   const dropping = useFileDrop(box, addImages);

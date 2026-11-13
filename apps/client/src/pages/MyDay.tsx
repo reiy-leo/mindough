@@ -49,7 +49,7 @@ export function MyDayPage() {
   // 标题右边「…」→「隐藏建议」：和设置里的开关是同一个；提示里说去哪儿打开，也能直接撤销
   const hideSuggestions = () => {
     set('myDaySuggestions', false);
-    ui.toast({ message: tr('建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。'), actions: [{ label: tr('撤销'), onPress: () => set('myDaySuggestions', true) }] }, 6000);
+    ui.toast({ message: tr('建议已隐藏。想再看，去设置 → 任务，打开「显示建议」。'), actions: [{ label: tr('撤销'), onPress: () => set('myDaySuggestions', true) }] });
   };
   // 分两段（Rei 2026-11-08）：未完成在上、已完成在下；各段自己拖动排序，勾上就挪到已完成段
   const { open, done } = myDaySections(items);

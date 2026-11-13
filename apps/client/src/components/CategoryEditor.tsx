@@ -82,7 +82,7 @@ export function useCategoryActions() {
     const name = clipName(dataLabel(c.name));
     const message =
       state === 'frequent' ? tr('已把「{name}」设成常用', { name }) : state === 'hidden' ? tr('已把「{name}」设成不显示', { name }) : tr('已把「{name}」设成普通', { name });
-    ui.toast({ message, actions: [{ label: tr('撤销'), onPress: () => store.setCategoryState(id, prev) }] }, 5000);
+    ui.toast({ message, actions: [{ label: tr('撤销'), onPress: () => store.setCategoryState(id, prev) }] });
   };
   const setGroup = (id: string, group: CategoryGroupId) => {
     const c = store.category(id);
@@ -90,7 +90,7 @@ export function useCategoryActions() {
     const prev = store.categoryGroup(id);
     if (prev === group) return;
     store.setCategoryGroup(id, group);
-    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: clipName(dataLabel(c.name)), group: clipName(categoryGroupLabel(group, store)) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] }, 5000);
+    ui.toast({ message: tr('已把「{name}」放进「{group}」', { name: clipName(dataLabel(c.name)), group: clipName(categoryGroupLabel(group, store)) }), actions: [{ label: tr('撤销'), onPress: () => store.setCategoryGroup(id, prev) }] });
   };
   return { setState, setGroup };
 }
@@ -184,7 +184,7 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
     const c = store.createCategory(name);
     setQ('');
     onOpen(c.id);
-    if (!taken) ui.toast({ tone: 'success', message: tr('已新建「{name}」', { name: clipName(dataLabel(c.name)) }) }, 3000);
+    if (!taken) ui.toast({ tone: 'success', message: tr('已新建「{name}」', { name: clipName(dataLabel(c.name)) }) });
   };
   const press = (r: Row) => (r.kind === 'cat' ? onOpen(r.c.id) : create(r.name));
 

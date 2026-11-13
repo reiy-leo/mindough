@@ -439,7 +439,7 @@ export function LibraryItemPage({ typeId, id }: { typeId: string; id: string }) 
         onConfirm={() => {
           store.deleteLibraryItem(id);
           navigate({ page: 'library', typeId: type.id });
-          ui.toast({ message: tr('已删除') }, 2500);
+          ui.toast({ message: tr('已删除') });
         }}
       />
     </div>
