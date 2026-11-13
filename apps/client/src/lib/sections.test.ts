@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Category, Group, Task } from '@mindough/core';
-import { backlogSections, categorySectionOrder, dueBucket, moodRank, overdueBucket, overdueBucketOfDays, sectionOverdue, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
+import type { Category, Group, Milestone, Task } from '@mindough/core';
+import { backlogSections, milestoneSectionOrder, categorySectionOrder, dueBucket, moodRank, overdueBucket, overdueBucketOfDays, sectionOverdue, normalizeSectionBy, sectionTasks, sectionCollapsed, sortByMood, toggleSectionCollapsed } from './sections';
 import { normalizeListView } from './list-views';
 import { normalizePrefs, sortTasks } from './project-view';
 
@@ -35,6 +35,18 @@ describe('列表分区 sections', () => {
     expect(s.map((x) => x.key)).toEqual(['a', 'b', 'none']);
     expect(s[2]!.tasks).toHaveLength(2);
     expect(s[0]!.group?.name).toBe('A');
+  });
+  it('按阶段（Rei 2026-11-13）：按传进来的阶段顺序，没有阶段（或对不上项目的）最后；归档的阶段排在没归档的后面', () => {
+    const m = (id: string, name: string, sort: number, archived = false) => ({ id, name, sort, group_id: 'p', archived_at: archived ? '2026-11-13T00:00:00.000Z' : null, created_at: '2026-11-13T00:00:00.000Z', deleted: false, updated_at: '' }) as Milestone;
+    const list = [m('m1', '设计', 1), m('m2', '施工', 2, true), m('m3', '验收', 3)];
+    const order = milestoneSectionOrder({ milestones: () => list } as never, 'p');
+    expect(order.map((x) => x.id)).toEqual(['m1', 'm3', 'm2']);
+    const tasks = [t({ milestone_id: 'm2' }), t({ milestone_id: 'm1' }), t(), t({ milestone_id: 'gone' })];
+    const s = sectionTasks(tasks, 'milestone', { milestones: order, milestoneOf: (x) => x.milestone_id ?? null })!;
+    expect(s.map((x) => x.key)).toEqual(['m1', 'm2', 'none']);
+    expect(s[2]!.tasks).toHaveLength(2);
+    expect(s[0]!.milestone?.name).toBe('设计');
+    expect(normalizePrefs({ section: 'milestone' }).section).toBe('milestone');
   });
   it('按类型：只进第一个类型，按传进来的类型顺序，没有类型（或不认识的类型）最后', () => {
     const c = (id: string, name: string, o: Partial<Category> = {}) => ({ id, name, color: '#123456', icon: 'tag', hidden: false, ...o }) as unknown as Category;

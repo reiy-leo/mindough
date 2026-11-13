@@ -1832,6 +1832,22 @@ export const MESSAGES: Record<string, MessageValue> = {
   "通知位置|右上角": "Oben rechts",
   "通知位置|右下角": "Unten rechts",
   "念头团里弹出的提示放在哪儿。手机屏幕窄，选右上角、右下角时放在顶部、底部正中。只在这台设备上生效。": "Wo Hinweise in Mindough erscheinen. Auf dem Handy ist der Bildschirm schmal, daher erscheinen „Oben rechts“ und „Unten rechts“ oben bzw. unten mittig. Nur auf diesem Gerät.",
+  // 项目阶段（Rei 2026-11-13）
+  "阶段": "Meilenstein",
+  "按阶段": "Nach Meilenstein",
+  "没有阶段": "Kein Meilenstein",
+  "阶段：{name}": "Meilenstein: {name}",
+  "搜索阶段": "Meilensteine suchen",
+  "搜阶段，或输入名字新建": "Meilenstein suchen oder Namen eingeben, um ihn anzulegen",
+  "新建阶段“{name}”": "Meilenstein „{name}“ anlegen",
+  "阶段名字": "Name des Meilensteins",
+  "阶段名字不能是空的": "Der Name des Meilensteins darf nicht leer sein",
+  "这个项目里已经有「{name}」了": "Dieses Projekt hat bereits „{name}“",
+  "已归档阶段「{name}」": "Meilenstein „{name}“ archiviert",
+  "「{name}」的操作": "Aktionen für „{name}“",
+  "这个项目还没有阶段，输入名字新建": "Dieses Projekt hat noch keine Meilensteine. Gib einen Namen ein, um einen anzulegen",
+  "清除阶段": "Meilenstein entfernen",
+  "阶段「{name}」所在的项目找不到，没导入": "Das Projekt des Meilensteins „{name}“ wurde nicht gefunden, daher nicht importiert",
 };
 
 export const DATA: Record<string, string> = {

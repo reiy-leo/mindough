@@ -63,7 +63,8 @@ import { groupIconFromPicker, isGroupArchived, normalizeGroupName, type GroupRem
 import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './journal-feed';
 import { renamedFileName, safeFileName, sortAttachments } from './attachments';
 import { LIB_OPT_OUT, groupLibraryId, manualVia, placeTask, type LibLinkTarget, type LinkOf } from './project-libraries';
-import type { GroupLibrary } from './types';
+import type { GroupLibrary, Milestone } from './types';
+import { cleanMilestoneName, milestoneNameKey, sortMilestones } from './milestone';
 export interface StoreOptions {
   deviceId?: string;
   now?: () => Date;
@@ -228,6 +229,8 @@ export class Store {
         if (t === 'task' && (row as Task).refs_mirror === undefined) (row as Task).refs_mirror = null;
         // v21 之前没有 lib_via（项目关联资料库）：同上，空 = 手动放的
         if (t === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
+        // v24 之前没有 milestone_id（阶段）：同上，空 = 没设
+        if (t === 'task' && (row as Task).milestone_id === undefined) (row as Task).milestone_id = null;
         // v9 之前没有 count_config（空 = 步长 1）：同上
         if (t === 'task' && !isPlainObject((row as Task).count_config)) (row as Task).count_config = {};
         // v5 之前没有 merged_into：同上
@@ -409,6 +412,8 @@ export class Store {
       if (c.table === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
       // 打卡描述（v23）同理，空也写上，和重开后读回的样子一致
       if (c.table === 'task' && (row as Task).checkin_note === undefined) (row as Task).checkin_note = null;
+      // 阶段（v24，milestone.ts）：空也写上；阶段只能是任务现在这个项目的——移出项目、换了项目就清掉（不跨项目保留）
+      if (c.table === 'task') (row as Task).milestone_id = this.validMilestoneId(row as Task);
       // 资料 / 人物总带着 merged_into（没合并过 = null），和重开后读回的样子一致
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
       (this.tables[c.table] as Map<string, BaseRow>).set(row.id, row);
@@ -535,6 +540,11 @@ export class Store {
         if (t.mood === undefined) t.mood = null;
         // 打卡描述（v23）：老客户端推上来的行没有这一列，沿用本机的值，别冲掉
         if (t.checkin_note === undefined) t.checkin_note = (cur as Task | undefined)?.checkin_note ?? null;
+        // 阶段（v24）：老客户端推上来的行没有这一列。项目没变就沿用本机的值；项目变了（它挪了项目）当成清掉，阶段不跨项目
+        if (t.milestone_id === undefined) {
+          const old = cur as Task | undefined;
+          t.milestone_id = old && (old.group_id ?? null) === (t.group_id ?? null) ? (old.milestone_id ?? null) : null;
+        }
         if (!isPlainObject(t.count_config)) t.count_config = {};
         // 老客户端推上来的任务没有 lib_via（v21）：项目没变就沿用本机的；项目变了按手动挪动算（各设备算的一样，不进 outbox）
         if (t.lib_via === undefined) {
@@ -1537,6 +1547,7 @@ export class Store {
       pinned_at: input.pinned_at ?? null,
       mood: input.mood ?? null,
       checkin_note: input.checkin_note ?? null,
+      milestone_id: input.milestone_id ?? null,
       sort: input.sort ?? maxSort + 1,
       created_at: input.created_at ?? now.toISOString(),
       ...(input.id ? { id: input.id } : {}),
@@ -1911,7 +1922,7 @@ export class Store {
     const rows: Array<{ table: TableName; row: BaseRow }> = [{ table: 'group', row: { ...g, deleted: true } }];
     for (const t of tasks) rows.push({ table: 'task', row: { ...t, group_id: null } as BaseRow });
     this.write(rows);
-    return { tasks: tasks.length, undo: { kind: 'dissolve', groupId: id, tasks: tasks.map((t) => ({ id: t.id, group_id: id })) } };
+    return { tasks: tasks.length, undo: { kind: 'dissolve', groupId: id, tasks: tasks.map((t) => ({ id: t.id, group_id: id, ...(t.milestone_id ? { milestone_id: t.milestone_id } : {}) })) } };
   }
 
   /** 删除项目：项目和里面的任务一起打墓碑（任务连同前后关系、我的一天、附件，和 deleteTask 一样）。 */
@@ -1932,7 +1943,8 @@ export class Store {
       if (g?.deleted) rows.push({ table: 'group', row: { ...g, deleted: false } });
       for (const m of undo.tasks) {
         const t = this.tables.task.get(m.id);
-        if (t && !t.deleted && t.group_id === null) rows.push({ table: 'task', row: { ...t, group_id: m.group_id } as BaseRow });
+        // 解散时清掉的阶段一起放回（阶段那行没动过，还属于这个项目）
+        if (t && !t.deleted && t.group_id === null) rows.push({ table: 'task', row: { ...t, group_id: m.group_id, ...(m.milestone_id ? { milestone_id: m.milestone_id } : {}) } as BaseRow });
       }
     } else {
       for (const r of undo.rows) {
@@ -1941,6 +1953,86 @@ export class Store {
       }
     }
     this.write(rows);
+  }
+
+  // ───────────── 项目阶段（Rei 2026-11-13，milestone.ts） ─────────────
+
+  /**
+   * 写任务时它的阶段该是什么：没设、不在项目里 → null；阶段那行在本机、却不是这个项目的（或删了）→ null；
+   * 本机还没有那一行（理论上只有同步顺序问题）→ 留着，显示时 milestoneOf 再核对。
+   */
+  private validMilestoneId(t: Task): string | null {
+    const id = t.milestone_id ?? null;
+    if (!id) return null;
+    if (!t.group_id) return null;
+    const m = this.tables.milestone.get(id);
+    if (m && (m.deleted || m.group_id !== t.group_id)) return null;
+    return id;
+  }
+
+  /** 项目的阶段列表（按 sort）。archived = true 时连归档的一起。 */
+  milestones(groupId: string | null | undefined, archived = false): Milestone[] {
+    if (!groupId) return [];
+    return sortMilestones([...this.tables.milestone.values()].filter((m) => !m.deleted && m.group_id === groupId && (archived || !m.archived_at)));
+  }
+
+  /** 任务挂的阶段：要还在、而且属于任务现在的项目，否则当没有。 */
+  milestoneOf(task: Pick<Task, 'group_id' | 'milestone_id'> | null | undefined): Milestone | undefined {
+    if (!task?.milestone_id || !task.group_id) return undefined;
+    const m = this.tables.milestone.get(task.milestone_id);
+    return m && !m.deleted && m.group_id === task.group_id ? m : undefined;
+  }
+
+  /** 项目里同名（忽略大小写、首尾空白）的阶段，归档的也算。 */
+  findMilestone(groupId: string, name: string): Milestone | undefined {
+    const key = milestoneNameKey(name);
+    if (!key) return undefined;
+    return sortMilestones([...this.tables.milestone.values()].filter((m) => !m.deleted && m.group_id === groupId && milestoneNameKey(m.name) === key))[0];
+  }
+
+  /**
+   * 新建阶段，排在这个项目列表最后。名字空的不建（返回 undefined）；项目不在也不建。
+   * 已经有同名的（忽略大小写）不新建，返回那一个；它归档了就取消归档。
+   */
+  createMilestone(groupId: string, name: string): Milestone | undefined {
+    const n = cleanMilestoneName(name);
+    if (!n || !this.get('group', groupId)) return undefined;
+    const dup = this.findMilestone(groupId, n);
+    if (dup) return dup.archived_at ? this.update('milestone', dup.id, { archived_at: null }) : dup;
+    const maxSort = [...this.tables.milestone.values()].filter((m) => !m.deleted && m.group_id === groupId).reduce((x, m) => Math.max(x, m.sort), 0);
+    return this.insert('milestone', { group_id: groupId, name: n, sort: maxSort + 1, archived_at: null, created_at: this.now().toISOString() });
+  }
+
+  /** 改阶段名字。空的、和同项目别的阶段重名的不改，分别返回 'empty' / 'duplicate'；没变也算 'ok'。 */
+  renameMilestone(id: string, name: string): 'ok' | 'empty' | 'duplicate' | 'missing' {
+    const m = this.get('milestone', id);
+    if (!m) return 'missing';
+    const n = cleanMilestoneName(name);
+    if (!n) return 'empty';
+    const dup = this.findMilestone(m.group_id, n);
+    if (dup && dup.id !== id) return 'duplicate';
+    if (n !== m.name) this.update('milestone', id, { name: n });
+    return 'ok';
+  }
+
+  /** 归档 / 取消归档阶段。任务上挂着的不动（照常显示），只是选择器里不再列。 */
+  setMilestoneArchived(id: string, archived: boolean): Milestone | undefined {
+    const m = this.get('milestone', id);
+    if (!m || !!m.archived_at === archived) return m;
+    return this.update('milestone', id, { archived_at: archived ? this.now().toISOString() : null });
+  }
+
+  /** 给任务设阶段（null = 清掉）。任务不在项目里、阶段不是这个项目的：不写，返回 false。 */
+  setTaskMilestone(taskId: string, milestoneId: string | null): boolean {
+    const t = this.get('task', taskId);
+    if (!t) return false;
+    if (milestoneId) {
+      const m = this.get('milestone', milestoneId);
+      if (!t.group_id || !m || m.group_id !== t.group_id) return false;
+    }
+    if ((t.milestone_id ?? null) === milestoneId) return true;
+    this.updateTask(taskId, { milestone_id: milestoneId });
+    return true;
   }
 
   // ───────────── 项目关联资料库（Rei 2026-11-10，project-libraries.ts） ─────────────
@@ -2520,7 +2612,7 @@ export class Store {
     this.batch(() => {
       // 先建成待办：严格模式下完成的任务不能再挂类型、前后关系、附件，最后一步才标完成
       this.createTask(
-        { id, body_md: archiveBody(title, node, rest), status: '待办', group_id: task.group_id, type_id: null, completion_mode: 'once', mood: task.mood ?? null, created_at: doneAt },
+        { id, body_md: archiveBody(title, node, rest), status: '待办', group_id: task.group_id, milestone_id: task.milestone_id ?? null, type_id: null, completion_mode: 'once', mood: task.mood ?? null, created_at: doneAt },
         { joinMyDay: false },
       );
       const cats = this.categoryIdsOfTask(task.id).filter((c) => !isMarkerCategory(c));

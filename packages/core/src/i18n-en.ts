@@ -460,6 +460,8 @@ export const CORE_EN: Record<string, V> = {
   "高德地图": "Amap",
   "B0FFKKRXAZ，或粘贴高德链接": "B0FFKKRXAZ, or paste an Amap link",
   "高德地点编号是 B 开头的 10 位字母数字": "An Amap place ID is 10 letters and digits starting with B",
+  // 项目阶段（Rei 2026-11-13）
+  '阶段「{name}」所在的项目找不到，没导入': (p) => `The project for milestone “${p.name}” wasn’t found, so it wasn’t imported`,
 };
 
 function ordinal(n: number): string {

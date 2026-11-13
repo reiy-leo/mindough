@@ -44,6 +44,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     mood: 'text?',
     lib_via: 'text?',
     checkin_note: 'text?',
+    milestone_id: 'text?',
     sort: 'real',
     created_at: 'text',
   },
@@ -88,6 +89,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
     created_at: 'text',
   },
   group_library: { type_id: 'text', group_id: 'text', created_at: 'text' },
+  milestone: { group_id: 'text', name: 'text', sort: 'real', archived_at: 'text?', created_at: 'text' },
   calendar_sub: { name: 'text', url: 'text', color: 'text', sort: 'real', created_at: 'text' },
 };
 
@@ -405,6 +407,20 @@ CREATE TABLE IF NOT EXISTS "calendar_sub" (
     name: '打卡描述（task.checkin_note）',
     sql: `
 ALTER TABLE "task" ADD COLUMN "checkin_note" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-13：项目里的阶段（milestone.ts）。每个项目一张列表；task.milestone_id 指向它，空 = 没设（老行都是空）。
+    // 老客户端不认这张表和这一列：表的行它忽略，任务行推上来没有这一列时按 Store.applyRemote 的规则补。
+    version: 24,
+    name: '项目阶段（milestone、task.milestone_id）',
+    sql: `
+CREATE TABLE IF NOT EXISTS "milestone" (
+  "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,
+  "group_id" TEXT NOT NULL, "name" TEXT NOT NULL, "sort" REAL NOT NULL DEFAULT 0, "archived_at" TEXT, "created_at" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "milestone_group" ON "milestone" ("group_id");
+ALTER TABLE "task" ADD COLUMN "milestone_id" TEXT;
 `,
   },
 ];

@@ -1832,6 +1832,22 @@ export const MESSAGES: Record<string, MessageValue> = {
   "通知位置|右上角": "Canto superior direito",
   "通知位置|右下角": "Canto inferior direito",
   "念头团里弹出的提示放在哪儿。手机屏幕窄，选右上角、右下角时放在顶部、底部正中。只在这台设备上生效。": "Onde os avisos aparecem no Mindough. No celular a tela é estreita, então Canto superior direito e Canto inferior direito ficam centralizados em cima ou embaixo. Só neste dispositivo.",
+  // 项目阶段（Rei 2026-11-13）
+  "阶段": "Marco",
+  "按阶段": "Por marco",
+  "没有阶段": "Sem marco",
+  "阶段：{name}": "Marco: {name}",
+  "搜索阶段": "Buscar marcos",
+  "搜阶段，或输入名字新建": "Busque um marco ou digite um nome para criar",
+  "新建阶段“{name}”": "Criar marco “{name}”",
+  "阶段名字": "Nome do marco",
+  "阶段名字不能是空的": "O nome do marco não pode ficar vazio",
+  "这个项目里已经有「{name}」了": "Este projeto já tem “{name}”",
+  "已归档阶段「{name}」": "Marco “{name}” arquivado",
+  "「{name}」的操作": "Ações de “{name}”",
+  "这个项目还没有阶段，输入名字新建": "Este projeto ainda não tem marcos. Digite um nome para criar",
+  "清除阶段": "Limpar marco",
+  "阶段「{name}」所在的项目找不到，没导入": "O projeto do marco “{name}” não foi encontrado, então ele não foi importado",
 };
 
 export const DATA: Record<string, string> = {

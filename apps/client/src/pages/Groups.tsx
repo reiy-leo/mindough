@@ -19,7 +19,7 @@ import { ProjectTimeline } from '../components/project/ProjectTimeline';
 import { ProjectChains } from '../components/project/ProjectChains';
 import { SectionMenu, SortMenu, ViewMenu } from '../components/project/ProjectMenus';
 import { SectionedList } from '../components/SectionedList';
-import { categorySectionOrder, sectionTasks } from '../lib/sections';
+import { categorySectionOrder, milestoneSectionOrder, sectionTasks } from '../lib/sections';
 import { useSettings } from '../lib/settings';
 import { useColorLevel } from '../lib/color-level';
 import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
@@ -235,6 +235,8 @@ function GroupDetail({
           today: store.today(),
           weekStart: weekStartsOn(),
           ...(prefs.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
+          // 按阶段（Rei 2026-11-13）：没归档的按列表顺序，归档了还挂着任务的跟在后面
+          ...(prefs.section === 'milestone' ? { milestones: milestoneSectionOrder(store, g.id), milestoneOf: (t: Task) => store.milestoneOf(t)?.id ?? null } : {}),
         }) : null;
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）
   const defType = store.get('task_type', store.effectiveDefaultTypeId(g));
@@ -318,7 +320,7 @@ function GroupDetail({
               renderList={(list) => (
                 <div className="task-list plain">
                   {list.map((t) => (
-                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate showMilestone={prefs.section !== 'milestone'} />
                   ))}
                 </div>
               )}
@@ -326,7 +328,7 @@ function GroupDetail({
           ) : (
             <div className="task-list plain">
               {open.map((t) => (
-                <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+                <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate showMilestone={prefs.section !== 'milestone'} />
               ))}
             </div>
           )}
@@ -344,7 +346,7 @@ function GroupDetail({
               {prefs.endedOpen && (
                 <div id={`project-ended-${g.id}`} className="task-list plain">
                   {ended.map((t) => (
-                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate />
+                    <TaskRow key={t.id} store={store} task={t} showGroup={false} showDate showMilestone={prefs.section !== 'milestone'} />
                   ))}
                 </div>
               )}

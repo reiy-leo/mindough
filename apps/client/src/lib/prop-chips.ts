@@ -11,19 +11,21 @@
  * - 组：不放进组（group_id = null）
  * - 心情：没记（mood = null；只有普通任务有：不重复、不是倒数日，Rei 2026-11-08「日记的心情属性在普通任务属性中也可以添加」）
  * - 颜色：默认（card_color = null；只有倒数日有，Rei 2026-11-02「倒数日的card可以设置不同的颜色背景」）
+ * - 阶段：没设（milestone_id = null；只有在项目里的任务有，Rei 2026-11-13「这个属性只有项目中可以设置」，见 core milestone.ts）
  * 资料（Rei 2026-10-28：和类型平级，跨库多选，含人物）不是胶囊：挂了就在胶囊下面按库分组列出来；
  * 一条都没挂时，「+」菜单里有「资料」（PropId refs）。以前的「资料库」「和谁有关」两个胶囊并进了资料。
  */
 import { canRemind, cardColorOf, type Task } from '@mindough/core';
 
-export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind' | 'group' | 'mood' | 'color';
+export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind' | 'group' | 'milestone' | 'mood' | 'color';
 
 /**
  * 固定顺序（Rei 2026-11-11 重排）：胶囊行和「+」菜单都按这个排。
  * ① 日期、完成方式、重复、提醒；② 项目、资料、类型；③ 心情和其他属性（卡片颜色）。
  * 项目 2026-11-12 从第 3 组挪进资料那组、放第一个（Rei「项目移到资料那一组」；这组原来没别的排序规则，就按这里的顺序）。
+ * 阶段（2026-11-13）紧跟在项目后面：它是项目里的属性，挨着项目最好找（我定的）。
  */
-export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'group', 'refs', 'category', 'mood', 'color'];
+export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'group', 'milestone', 'refs', 'category', 'mood', 'color'];
 
 /** 「+」菜单里每项属于第几组（组和组之间画分隔线）。项目在第 2 组第一个；第 3 组是心情、打卡描述、附件、卡片颜色。 */
 export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
@@ -32,6 +34,7 @@ export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
   repeat: 1,
   remind: 1,
   group: 2,
+  milestone: 2,
   refs: 2,
   category: 2,
   mood: 3,
@@ -40,12 +43,14 @@ export const PROP_SECTION: Readonly<Record<AddMenuId, 1 | 2 | 3>> = {
   color: 3,
 };
 
-export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurrence' | 'category_id' | 'remind_time' | 'group_id' | 'target_date' | 'card_color'> & { mood?: string | null };
+export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurrence' | 'category_id' | 'remind_time' | 'group_id' | 'target_date' | 'card_color'> & { mood?: string | null; milestone_id?: string | null };
 
 /** 挂了几个类型、几条资料（含人物）。不给类型数时看单值 category_id。 */
 export interface PropCounts {
   categories?: number;
   refs?: number;
+  /** 挂的阶段还在、属于任务现在的项目吗（store.milestoneOf）。不给时看 milestone_id 有没有。 */
+  milestone?: boolean;
 }
 
 /** 这件任务现在能有哪些属性（日期看重不重复，提醒要有时间可以响；类型、资料所有任务都能挂）。 */
@@ -57,6 +62,8 @@ export function applicableProps(t: PropTask): PropId[] {
     if (id === 'color') return t.completion_mode === 'countdown';
     // 心情只给普通任务（打卡、倒数日没有）；以前记过的照样显示，能清掉
     if (id === 'mood') return canHaveMood(t) || !!t.mood;
+    // 阶段只给项目里的任务（Rei 2026-11-13）；不在项目里的看不到也设不了
+    if (id === 'milestone') return !!t.group_id;
     return true;
   });
 }
@@ -81,6 +88,8 @@ export function isPropSet(id: PropId, t: PropTask, counts: PropCounts = {}): boo
       return !!t.group_id;
     case 'mood':
       return !!t.mood;
+    case 'milestone':
+      return counts.milestone ?? !!t.milestone_id;
     case 'color':
       return !!cardColorOf(t);
   }
@@ -110,7 +119,10 @@ export function clearPatch(id: PropId): Partial<Task> | null {
     case 'remind':
       return { remind_time: null };
     case 'group':
-      return { group_id: null };
+      // 移出项目时阶段跟着清（store 也会清）；写进来是为了撤销时连阶段一起放回
+      return { group_id: null, milestone_id: null };
+    case 'milestone':
+      return { milestone_id: null };
     case 'mood':
       return { mood: null };
     case 'color':

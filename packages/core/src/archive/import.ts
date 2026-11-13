@@ -25,6 +25,7 @@ import { migratedPostId, parseJournalDay } from '../journal-feed';
 import { isFileKey, safeFileName } from '../attachments';
 import { categoryFromCheckin, fillCategory } from '../categories';
 import { formerBuiltinCategory } from '../seed/builtin-checkin-categories';
+import { cleanMilestoneName } from '../milestone';
 import {
   COMPLETION_MODES,
   TASK_STATUSES,
@@ -37,6 +38,7 @@ import {
   type CompletionMode,
   type FieldValue,
   type Group,
+  type Milestone,
   type LibraryItem,
   type Person,
   type JournalEntry,
@@ -463,6 +465,23 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     return id;
   };
 
+  // 项目阶段（Rei 2026-11-13）：_meta/milestones.json，项目要在这次导入里或库里
+  const archiveMilestones = new Map<string, string>();
+  if (format === 'mindough') {
+    for (const r of rowsOf('_meta/milestones.json', (r) => isId(r.group_id) && typeof r.name === 'string')) {
+      const m = r as unknown as Milestone;
+      const gid = m.group_id.trim();
+      if (!(archiveGroups.has(gid) || store.get('group', gid))) {
+        warn('_meta/milestones.json', tr('阶段「{name}」所在的项目找不到，没导入', { name: m.name }));
+        continue;
+      }
+      const name = cleanMilestoneName(m.name);
+      if (!name) continue;
+      archiveMilestones.set(m.id, gid);
+      add('extra', 'milestone', '_meta/milestones.json', name, fresh<Omit<Milestone, 'updated_at' | 'deleted'>>({ id: m.id, group_id: gid, name, sort: num(m.sort) ?? 0, archived_at: iso(m.archived_at) ?? null, created_at: iso(m.created_at) ?? now.toISOString() }));
+    }
+  }
+
   // 资料库、人物
   for (const p of parsed.filter(isLib)) {
     const type = isId(p.fm.type) ? p.fm.type.trim() : null;
@@ -616,6 +635,12 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       pinned_at: iso(fm.pinned) ?? null,
       mood: isMoodId(fm.mood) ? fm.mood : null,
       checkin_note: str(fm.checkin_note)?.trim() || null,
+      // 阶段：要是这件任务所在项目的（这次导入里的，或库里已有的）
+      milestone_id: (() => {
+        const mid = isId(fm.milestone) ? fm.milestone.trim() : null;
+        if (!mid || !group) return null;
+        return (archiveMilestones.get(mid) ?? store.get('milestone', mid)?.group_id) === group ? mid : null;
+      })(),
       sort: num(fm.sort) ?? ++sort,
       created_at: iso(fm.created) ?? now.toISOString(),
     });

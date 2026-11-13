@@ -8,6 +8,7 @@
  * - 键盘：Tab 到胶囊，Enter / 空格打开，Backspace / Delete 清除；
  * - 行尾「+」：菜单列出没设的属性，选一项直接打开它的选择器；全都设了「+」隐藏；一个都没设时是「+ 添加属性」。
  * - 菜单里的「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
+ * - 阶段（Rei 2026-11-13 09:19）：只有项目里的任务有，紧跟项目；点开是这个项目阶段的可搜索下拉，能新建（MilestonePicker）。
  * - 菜单里的「打卡描述」（Rei 2026-11-13 07:25）：只有打卡、而且还没写时有；选了在胶囊行上面打开那个框、光标进去（框是 TaskDetail 的 CheckInNote）。
  * - 菜单分三组、组间分隔线（Rei 2026-11-11）：日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、打卡描述、附件、卡片颜色（lib/prop-chips PROP_SECTION；项目 2026-11-12 挪进第 2 组）；
  *   胶囊行按同一个 PROP_ORDER 排，不画分隔。
@@ -16,7 +17,7 @@
 import { useLocked } from '../../lib/strict';
 import { useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Button as RacButton, Dialog, Menu, MenuItem, MenuTrigger, Popover, Separator } from 'react-aria-components';
-import { Bell, CalendarDays, Library, NotebookText, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, Library, Milestone as MilestoneIcon, NotebookText, Paintbrush, Paperclip, Plus, Repeat, Shapes, Smile, Tag, X } from 'lucide-react';
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import {
@@ -48,6 +49,7 @@ import { TaskDateText } from '../TaskDateText';
 import { useDateDisplay } from '../../lib/date-display';
 import { formatRemindTime, RemindPanel } from './RemindPanel';
 import { GroupIcon } from '../project/GroupIcon';
+import { MilestoneList } from './MilestonePicker';
 
 /** 属性名（胶囊的 aria-label、「+」菜单、弹层标题共用；叫法同原来的属性列表）。 */
 export function propLabel(id: PropId): string {
@@ -66,6 +68,8 @@ export function propLabel(id: PropId): string {
       return tr('提醒');
     case 'group':
       return trc('属性', '项目');
+    case 'milestone':
+      return tr('阶段');
     case 'mood':
       return tr('心情');
     case 'color':
@@ -74,9 +78,9 @@ export function propLabel(id: PropId): string {
 }
 
 /** 弹层要宽一点的（里面是一段句子 / 列表）。 */
-const WIDE: ReadonlySet<PropId> = new Set(['mode', 'repeat', 'category', 'refs']);
+const WIDE: ReadonlySet<PropId> = new Set(['mode', 'repeat', 'category', 'refs', 'milestone']);
 /** 手机上从底部出来的（下拉列表）。 */
-const SHEET: ReadonlySet<PropId> = new Set(['category', 'refs', 'date']);
+const SHEET: ReadonlySet<PropId> = new Set(['category', 'refs', 'date', 'milestone']);
 
 interface ChipView {
   icon: ReactNode;
@@ -117,7 +121,8 @@ export function PropChips({
 
   const cats = store.categoriesOfTask(task);
   const refGroups = store.taskRefs(task.id);
-  const counts = { categories: cats.length, refs: refGroups.reduce((n, g) => n + g.entries.length, 0) };
+  const milestone = store.milestoneOf(task);
+  const counts = { categories: cats.length, refs: refGroups.reduce((n, g) => n + g.entries.length, 0), milestone: !!milestone };
   const shown = setProps(task, counts);
   const addSections = addMenuSections(task, counts, !!onAttach, !!onAddNote);
   const addItems = addSections.flat();
@@ -159,6 +164,10 @@ export function PropChips({
       case 'group': {
         const s = group?.name ?? '';
         return { icon: group ? <GroupIcon group={group} size={16} /> : <Shapes size={14} />, text: s, aria: s };
+      }
+      case 'milestone': {
+        const s = milestone?.name ?? '';
+        return { icon: <MilestoneIcon size={14} />, text: s, aria: s };
       }
       case 'mood': {
         const s = moodLabel(task.mood);
@@ -265,6 +274,10 @@ export function PropChips({
             <CardColorPicker store={store} task={task} onDone={close} />
           </div>
         );
+      case 'milestone':
+        return task.group_id ? (
+          <MilestoneList store={store} groupId={task.group_id} value={milestone?.id ?? null} onChange={(id) => store.setTaskMilestone(task.id, id)} onDone={close} />
+        ) : null;
       case 'group':
         return (
           <GroupList
@@ -413,6 +426,8 @@ function addIcon(id: PropId, task: Task): ReactNode {
       return <Bell size={16} />;
     case 'group':
       return <Shapes size={16} />;
+    case 'milestone':
+      return <MilestoneIcon size={16} />;
     case 'mood':
       return <Smile size={16} />;
     case 'color':

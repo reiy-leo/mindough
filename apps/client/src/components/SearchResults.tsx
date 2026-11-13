@@ -32,6 +32,7 @@ function searchInput(store: Store) {
     taskItems: store.list('task_item'),
     taskCategories: store.list('task_category'),
     categories: store.list('category'),
+    milestones: store.list('milestone'),
   };
 }
 

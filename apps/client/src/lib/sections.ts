@@ -11,13 +11,15 @@
  *   （任务上类型的顺序，store.categoryIdsOfTask 的第一个，和打卡页按类型分组一样不重复出现）；没挂类型的放最后「没有类型」。
  *   分区顺序和类型页、类型选择器同一个规则（categorySectionOrder）：常用的在前，其余按最近用过，没用过的按默认组；
  *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
+ * - 按阶段（Rei 2026-11-13 项目阶段，只在项目页）：按这个项目阶段列表的顺序（没归档的在前，归档的跟在后面），没设阶段的放最后「没有阶段」。
+ *   任务挂的阶段不在传进来的列表里（对不上项目）也算「没有阶段」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
-import { isMarkerCategory, logicalToday, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Store, type Task } from '@mindough/core';
+import { isMarkerCategory, logicalToday, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Milestone, type Store, type Task } from '@mindough/core';
 import { dataLabel, tr, trc } from './i18n';
 
-export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'due';
-export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'type', 'due'];
+export type SectionBy = 'none' | 'mood' | 'project' | 'type' | 'milestone' | 'due';
+export const SECTION_BYS: readonly SectionBy[] = ['none', 'mood', 'project', 'type', 'milestone', 'due'];
 
 /**
  * 按类型分区时类型的先后：能显示的按选择器顺序（store.pickerCategories：常用 → 最近用过 → 默认组），
@@ -27,6 +29,12 @@ export function categorySectionOrder(store: Pick<Store, 'categories' | 'pickerCa
   // 内置的标记类型（置顶、收藏、紧急、重要）不单独成段（Rei 2026-11-12）：挂了它们的任务按下一个类型分，只挂了这几个的在「没有类型」
   const hidden = store.categories(true).filter((c) => c.hidden && !isMarkerCategory(c));
   return [...store.pickerCategories().filter((c) => !isMarkerCategory(c)), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
+}
+
+/** 按阶段分区时阶段的先后：没归档的按列表顺序，归档的跟在后面（同样按列表顺序）。 */
+export function milestoneSectionOrder(store: Pick<Store, 'milestones'>, groupId: string): Milestone[] {
+  const all = store.milestones(groupId, true);
+  return [...all.filter((m) => !m.archived_at), ...all.filter((m) => !!m.archived_at)];
 }
 
 export function normalizeSectionBy(v: unknown, allowed: readonly SectionBy[] = SECTION_BYS): SectionBy {
@@ -149,6 +157,8 @@ export interface ListSection<T> {
   group?: Group;
   /** 按类型时是那个类型（画图标、上色）。 */
   category?: Category;
+  /** 按阶段时是那个阶段。 */
+  milestone?: Milestone;
   tasks: T[];
 }
 
@@ -161,6 +171,9 @@ export function sectionTasks<T extends Task>(
     /** 按类型：类型的先后（categorySectionOrder），和每件任务挂的类型 id（按任务上的顺序，store.categoryIdsOfTask）。 */
     categories?: readonly Category[];
     categoryIdsOf?: (t: T) => readonly string[];
+    /** 按阶段：项目的阶段（按列表顺序，归档的放后面），和每件任务的阶段 id（store.milestoneOf，对不上项目给 null）。 */
+    milestones?: readonly Milestone[];
+    milestoneOf?: (t: T) => string | null;
     now?: Date;
     today?: DateKey;
     weekStart?: 0 | 1;
@@ -168,8 +181,8 @@ export function sectionTasks<T extends Task>(
 ): ListSection<T>[] | null {
   if (by === 'none') return null;
   const out: ListSection<T>[] = [];
-  const push = (key: string, label: string, list: T[], extra?: { group?: Group; category?: Category }) => {
-    if (list.length) out.push({ key, label, kind: by as Exclude<SectionBy, 'none'>, tasks: list, ...(extra?.group ? { group: extra.group } : {}), ...(extra?.category ? { category: extra.category } : {}) });
+  const push = (key: string, label: string, list: T[], extra?: { group?: Group; category?: Category; milestone?: Milestone }) => {
+    if (list.length) out.push({ key, label, kind: by as Exclude<SectionBy, 'none'>, tasks: list, ...(extra?.group ? { group: extra.group } : {}), ...(extra?.category ? { category: extra.category } : {}), ...(extra?.milestone ? { milestone: extra.milestone } : {}) });
   };
   if (by === 'mood') {
     for (const id of MOOD_IDS) push(id, moodLabel(id), tasks.filter((t) => t.mood === id));
@@ -191,6 +204,17 @@ export function sectionTasks<T extends Task>(
     }
     for (const c of cats) push(c.id, dataLabel(c.name), byCat.get(c.id) ?? [], { category: c });
     push('none', trc('列表分区', '没有类型'), byCat.get('none') ?? []);
+  } else if (by === 'milestone') {
+    const list = ctx.milestones ?? [];
+    const known = new Set(list.map((m) => m.id));
+    const byMs = new Map<string, T[]>();
+    for (const t of tasks) {
+      const id = ctx.milestoneOf?.(t) ?? null;
+      const k = id && known.has(id) ? id : 'none';
+      byMs.set(k, [...(byMs.get(k) ?? []), t]);
+    }
+    for (const m of list) push(m.id, m.name, byMs.get(m.id) ?? [], { milestone: m });
+    push('none', tr('没有阶段'), byMs.get('none') ?? []);
   } else {
     const now = ctx.now ?? new Date();
     const today = ctx.today ?? logicalToday(now);

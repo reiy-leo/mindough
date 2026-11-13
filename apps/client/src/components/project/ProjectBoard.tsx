@@ -48,7 +48,7 @@ const BoardCard = memo(function BoardCard({ store, task: t }: { store: Store; ta
           [CheckboxContext, NO_SLOTS],
         ]}
       >
-        <TaskRow store={store} task={t} showGroup={false} showDate />
+        <TaskRow store={store} task={t} showGroup={false} showDate showMilestone />
       </Provider>
     </GridListItem>
   );

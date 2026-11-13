@@ -354,3 +354,81 @@ html[data-layout='mobile'] .popover.popover-panel.is-sheet .cat-select-list {
 html[data-layout='mobile'] .popover.popover-panel.is-sheet .cat-option {
   min-height: 44px;
 }
+
+/* ───────── 阶段下拉（Rei 2026-11-13，components/task/MilestonePicker）：沿用类型下拉的样子 ───────── */
+.milestone-option-icon {
+  flex: none;
+  color: var(--text-2);
+}
+.milestone-option-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.milestone-option.is-archived .milestone-option-name {
+  color: var(--text-2);
+}
+.milestone-option-tag {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.milestone-option-more {
+  flex: none;
+  display: inline-flex;
+  margin-right: -4px;
+  opacity: 0;
+}
+.milestone-option.is-active .milestone-option-more,
+.milestone-option-more:focus-within,
+.milestone-option-more:has([aria-expanded='true']) {
+  opacity: 1;
+}
+.milestone-more-btn.icon-btn {
+  width: 26px;
+  height: 26px;
+}
+/* 触屏没有悬停：「…」一直在 */
+@media (hover: none) {
+  .milestone-option-more {
+    opacity: 1;
+  }
+}
+.milestone-option.is-editing {
+  cursor: default;
+  align-items: flex-start;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.milestone-option.is-editing .milestone-option-icon {
+  margin-top: 6px;
+}
+.milestone-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.milestone-rename-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.milestone-rename-input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.milestone-rename-error {
+  font-size: 12px;
+  color: var(--danger);
+}

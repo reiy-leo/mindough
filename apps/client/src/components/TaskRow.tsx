@@ -1,6 +1,6 @@
 import { useRef, type MouseEvent, type PointerEvent, type ReactNode, type TouchEvent } from 'react';
 import { Button as RacButton, Checkbox } from 'react-aria-components';
-import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
+import { Ban, Check, CirclePlay, Globe, GripVertical, Link2, Lock, Milestone as MilestoneIcon, Plug, Repeat, Sun, SunDim, X } from 'lucide-react';
 import { HoverTip } from '../ui/HoverTip';
 import { categoryIcon, checkInMode, groupColor, describeRecurrence, isCheckInTask, isHabit, isTaskOverdue, parseRecurrence, timeZoneBadge, type Store, type Task } from '@mindough/core';
 import { useIsEditing, useUiStable } from '../lib/ui';
@@ -34,6 +34,8 @@ export interface TaskRowProps {
   trailing?: ReactNode;
   /** 打卡任务是否显示行内打卡按钮。 */
   showCheckIn?: boolean;
+  /** 显示阶段小标签（Rei 2026-11-13 项目阶段）：项目页的列表、看板用；按阶段分区时不用（分区标题就是）。 */
+  showMilestone?: boolean;
 }
 
 /**
@@ -67,7 +69,7 @@ export function RowLead({ pinned, dragLabel }: { pinned: boolean; dragLabel?: st
   );
 }
 
-export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true }: TaskRowProps) {
+export function TaskRow({ store, task, showGroup = true, showDate = false, showMyDay = true, doneOverride, trailing, showCheckIn = true, showMilestone = false }: TaskRowProps) {
   // 不订阅整个 UI 状态（2026-11-12 看板卡顿）：选中只看自己这件，别的行选中 / 取消时不重渲染
   const ui = useUiStable();
   const v = viewOf(store, task);
@@ -219,6 +221,12 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
           {showGroup && v.group && (
             <span className="meta-group" style={colorLevel === 'vivid' ? { color: vividText(colorLevel, groupColor(v.group), theme) } : undefined}>
               <GroupIcon group={v.group} size={14} /> {v.group.name}
+            </span>
+          )}
+          {showMilestone && store.milestoneOf(task) && (
+            <span className="meta-milestone" aria-label={tr('阶段：{name}', { name: store.milestoneOf(task)!.name })}>
+              <MilestoneIcon size={12} aria-hidden />
+              <span className="meta-milestone-name">{store.milestoneOf(task)!.name}</span>
             </span>
           )}
           {showDate && task.scheduled_date && (

@@ -2,7 +2,7 @@
 import { fieldText, searchableMarkdown, stripUnderlineTags, stripWithLiterals, taskTitle } from './preview';
 import { itemSubtitle, mergedData } from './library';
 import { isHiddenFieldKey } from './lookup';
-import { isFinished, type Category, type Group, type JournalPost, type LibraryItem, type Person, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskType } from './types';
+import { isFinished, type Category, type Group, type Milestone, type JournalPost, type LibraryItem, type Person, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskType } from './types';
 import { formatDate } from './dates';
 import { moodLabel } from './journal';
 import { postTime } from './journal-feed';
@@ -31,6 +31,8 @@ export interface SearchIndexInput {
   taskItems?: readonly TaskItem[];
   taskCategories?: readonly TaskCategory[];
   categories?: readonly Category[];
+  /** 项目阶段（Rei 2026-11-13）：任务挂的阶段名字也算进去（阶段要属于任务现在的项目）。 */
+  milestones?: readonly Milestone[];
 }
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKC');
@@ -84,6 +86,11 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
     const c = catById.get(x.category_id);
     if (!x.deleted && c) pushRef(x.task_id, `${c.name} ${dataLabel(c.name)}`);
   }
+  const milestoneById = new Map((input.milestones ?? []).filter((m) => !m.deleted).map((m) => [m.id, m]));
+  const milestoneText = (t: Task) => {
+    const m = t.milestone_id ? milestoneById.get(t.milestone_id) : undefined;
+    return m && m.group_id === t.group_id ? m.name : '';
+  };
   const hits: SearchHit[] = [];
   for (const it of itemById.values()) {
     const type = typeById.get(it.type_id);
@@ -106,7 +113,7 @@ export function search(input: SearchIndexInput, query: string, limit = 30): Sear
         return fieldText(v);
       })
       .join(' ');
-    const extra = [fields, (peopleOfTask.get(t.id) ?? []).join(' '), (refText.get(t.id) ?? []).join(' '), t.group_id ? (groupById.get(t.group_id)?.name ?? '') : ''].join(' ');
+    const extra = [fields, (peopleOfTask.get(t.id) ?? []).join(' '), (refText.get(t.id) ?? []).join(' '), t.group_id ? (groupById.get(t.group_id)?.name ?? '') : '', milestoneText(t0)].join(' ');
     const title = taskTitle(t);
     const body = searchableMarkdown(t.body_md);
     let s = scoreText(`${title} ${body} ${extra}`, terms);

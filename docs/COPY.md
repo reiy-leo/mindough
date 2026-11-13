@@ -57,6 +57,7 @@
 | 已完成 / 已关闭 | 完成 / 关闭（作状态标记时） | 详情顶部的状态徽章 |
 | 重新打开 | — | 重复任务上叫「恢复打卡」 |
 | 项目 | 组（2026-10-25 以前的叫法）、分组 | Rei 2026-10-25「groups更改成projects」，问中文要不要一起改时答「要都要改」：界面上原来叫「组」的地方都改叫「项目」（侧边栏、页面标题、属性胶囊、选择器、空状态、搜索面板（⌘F）、导入导出说明）。代码、数据库、深链接里还是 group（`#/groups`、`mindough://view/groups`；`#/projects`、`view/projects` 是别名）。注意：资料库里有个内置的「项目」库（项目库），两者同名，界面上靠位置区分 |
+| 阶段 | 里程碑、Milestone、节点 | Rei 2026-11-13 项目阶段：项目里任务的一个属性，每个项目一张自己的列表（docs/MILESTONE.md）。胶囊、「+」菜单、分区菜单（「按阶段」「没有阶段」）、下拉里（「新建阶段“xxx”」「清除阶段」）都叫「阶段」。英文 Milestone |
 | 不放进项目 | 不分组（琐事） | 项目选择里的空选项 |
 | 编辑… · 解散项目… · 删除项目… | 重命名 / 更换图标 / 移除项目 / 归档项目 | 项目的 ··· 菜单（Rei 2026-11-01，读屏名「项目操作」）：项目页右上角、项目卡片右上角、侧栏那一项右键，三处一样，顺序 编辑… ｜ 在侧边栏显示 ｜ 解散项目… · 删除项目…（红色）。「编辑…」打开面板「编辑项目」：图标 + 名字输入框（读屏「项目名字」）+ 图标选择 +「出现在我的一天」开关，按钮「保存」。新建项目用同一个面板，标题「新建项目」、按钮「创建」，没有开始、结束、类型、默认资料库（Rei 2026-11-02）。项目页左上角：图标按钮读屏「换图标」，名字按钮读屏「改名：X」。解散确认：标题「解散「X」？」，正文「项目没了，里面的 N 件任务都留着：没日期的回到待安排，有日期的还在那一天。」（没任务「项目里没有任务，解散后项目就没了。」），按钮「解散」，提示「已解散「X」」+「撤销」。删除确认：标题「删除「X」？」，正文「项目和里面的 N 件任务会一起删掉。只想留下任务，就选「解散项目」。」（没任务「项目里没有任务，删掉的只有项目本身。」），红色按钮「删除」，提示「已删除「X」」+「撤销」。英文 Edit… / Dissolve Project… / Delete Project…，Edit Project，Dissolve “X”?，Delete “X”? |
 | 和谁有关 | 关联人物 | |
@@ -239,6 +240,7 @@
 | 日历（导航 / 页面） | Calendar | 侧栏「计划 → 日历」（2026-11-10 起，取代时间轴）；视图 Week / Month / Year / Days / Weeks；「还有 N 件」= {n} more；「{n} 件任务、打卡和倒数日」= {n} tasks, check-ins and countdowns；设置「节假日」Holidays、「显示节假日」Show holidays、「日历订阅」Calendar subscriptions |
 | 时间轴（导航 / 页面，2026-11-10 前） | Timeline | 侧栏「计划 → 时间轴」（2026-11-02 前叫「列表」，2026-11-10 换成日历）。项目页视图里也有「时间轴」（甘特图），英文同样是 Timeline；项目里的视图「列表」还是 List |
 | 项目 | Projects / Project | 导航复数，属性单数（2026-10-25 由 Groups / Group 改来）；「不放进项目」= No Project；「新建项目」= New Project；项目面板的开关「出现在我的一天」= Show in My Day |
+| 阶段 | Milestone | 项目里任务的属性（2026-11-13）；分区「按阶段」= By Milestone，「没有阶段」= No milestone；按钮「清除阶段」= Clear Milestone |
 | 看板 / 时间轴 / 任务链（项目页视图） | Board / Timeline / Task Chain | 菜单项；「视图：X」= View: X；排序 Sort by：Default order / Created / Modified / Start date / Due date，Ascending / Descending；时间轴缩放 Day / Week / Month；「单独的任务 N」= Standalone tasks N；「未定时间 N」= No date N（2026-10-26） |
 | 任务链 | Task Chain | 开关文字（Title Case）；读屏名 “Task Chain: show every step before and after this one”；「已完成 N / 共 M」= “N of M done”；每一步的时间：Done Today / Done Yesterday / Done 3 Days Ago / Done Sep 1、Today / Tomorrow / In 5 Days / 2 Days Overdue / Nov 30、No Date（Title Case）；「N 件」= 1 task / N tasks；「这件」= This task；「接在 X 后面」= After “X” |
 | 显示活动图 / 隐藏活动图 | Show Activity / Hide Activity | 打卡卡片左上角圆点的提示和读屏名（Title Case，2026-10-25） |

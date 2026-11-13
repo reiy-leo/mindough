@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
-import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Shapes, Smile, Sparkles, Tag, X } from 'lucide-react';
+import { Bell, CalendarDays, CircleHelp, CornerDownRight, Library, Link2, Milestone as MilestoneIcon, Shapes, Smile, Sparkles, Tag, X } from 'lucide-react';
 import { MoodIcon } from '../journal/MoodIcon';
 import { MoodGrid } from '../journal/MoodGrid';
 import { canHaveMood, composerChipOrder, type ComposerChipId } from '../../lib/prop-chips';
@@ -18,6 +18,7 @@ import { titleOf } from '../../lib/view';
 import { RefList, RefPicker, type RefKey } from '../library/RefPicker';
 import { CompletionChoice, CompletionSentence, GroupList, RepeatEditor, TypeFields, modeDefaults, type CompletionValue } from './pickers';
 import { DatePanel } from './DatePanel';
+import { MilestoneList } from './MilestonePicker';
 import { TaskSearch } from './TaskSearch';
 
 /** 属性小胶囊：没设时是灰色的名称，设了显示值。点开是弹层。 */
@@ -77,6 +78,8 @@ interface Draft extends CompletionValue {
   /** 任务时区（Rei 2026-10-25）：在日期面板里选过才有，空 = 跟着设备。 */
   timeZone: string | null;
   groupId: string | null;
+  /** 阶段（Rei 2026-11-13）：只有选了项目才有；换项目时清掉。 */
+  milestoneId: string | null;
   /** 资料（Rei 2026-10-28：跨库多选，人物也在这里），按挑的先后。 */
   refs: RefKey[];
   /** 相关任务：建好后连成「相关」（只是有关系，不分先后）。 */
@@ -118,6 +121,7 @@ function initialDraft(store: Store, d: NewTaskInput, people: readonly string[]):
     remindTime: d.remind_time ?? null,
     timeZone: d.time_zone ?? null,
     groupId: d.group_id ?? null,
+    milestoneId: d.group_id ? (d.milestone_id ?? null) : null,
     refs,
     related: [],
     epIgnored: false,
@@ -168,6 +172,7 @@ function Composer() {
   const today = store.today();
   const dateMode = useDateDisplay();
   const group = store.get('group', d.groupId);
+  const milestone = d.milestoneId ? store.milestoneOf({ group_id: d.groupId, milestone_id: d.milestoneId }) : undefined;
   // 项目的默认资料库（或打开时指定的库）：资料面板先打开它，它的任务字段也先列出来
   const defaultLib = store.get('task_type', req.defaults.type_id ?? store.effectiveDefaultTypeId(group));
   const groups = refGroups(store, d.refs);
@@ -253,6 +258,7 @@ function Composer() {
       type_data: typeData,
       library_item_id: items[0] ?? null,
       group_id: d.groupId,
+      milestone_id: d.groupId ? d.milestoneId : null,
       scheduled_date: d.date,
       end_date: d.recurrence ? null : d.endDate,
       completion_mode: d.completion_mode,
@@ -367,13 +373,24 @@ function Composer() {
             store={store}
             value={d.groupId}
             onChange={(id) => {
-              set({ groupId: id });
+              // 阶段是项目自己的：换了项目就清掉
+              set(id === d.groupId ? { groupId: id } : { groupId: id, milestoneId: null });
               close();
             }}
           />
         )}
       </PopoverPanel>
     ),
+    // 阶段（Rei 2026-11-13「这个属性只有项目中可以设置」）：选了项目才出来
+    milestone: d.groupId ? (
+      <PopoverPanel
+        label={tr('阶段')}
+        className="is-wide is-sheet cat-select-pop"
+        trigger={<PropChip icon={<MilestoneIcon size={14} />} label={tr('阶段')} {...(milestone ? { value: milestone.name } : {})} />}
+      >
+        {(close) => <MilestoneList store={store} groupId={d.groupId!} value={milestone?.id ?? null} onChange={(id) => set({ milestoneId: id })} onDone={close} />}
+      </PopoverPanel>
+    ) : null,
     mood: canHaveMood({ recurrence: d.recurrence, completion_mode: d.completion_mode }) && (
       <PopoverPanel label={tr('心情')} trigger={<PropChip icon={d.mood ? <MoodIcon mood={d.mood} size={16} /> : <Smile size={14} />} label={tr('心情')} {...(d.mood ? { value: moodLabel(d.mood) } : {})} />}>
         {(close) => (

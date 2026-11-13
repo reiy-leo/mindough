@@ -40,7 +40,7 @@ export function normalizeGroupName(name: string | null | undefined): string | nu
  * - delete：项目和里面的任务（连同任务的前后关系、我的一天、附件等）都打了墓碑；rows 记下打墓碑的每一行。
  */
 export type GroupRemovalUndo =
-  | { kind: 'dissolve'; groupId: string; tasks: Array<{ id: string; group_id: string }> }
+  | { kind: 'dissolve'; groupId: string; tasks: Array<{ id: string; group_id: string; milestone_id?: string }> }
   | { kind: 'delete'; groupId: string; rows: Array<{ table: string; id: string }> };
 
 export interface GroupRemovalResult {

@@ -51,7 +51,7 @@ describe('「+」菜单：列出没设的属性', () => {
     expect(unsetProps(t(), { refs: 1 })).not.toContain('refs');
   });
   it('全都设了：菜单是空的（「+」隐藏）', () => {
-    expect(unsetProps(t({ completion_mode: 'timer', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g' }), { refs: 1 })).toEqual([]);
+    expect(unsetProps(t({ completion_mode: 'timer', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g', milestone_id: 'm' }), { refs: 1 })).toEqual([]);
   });
   it('设过的 + 没设的 = 适用的全部，不重不漏（资料除外）', () => {
     const task = t({ group_id: 'g', completion_mode: 'countdown', target_date: '2026-11-01' });
@@ -85,7 +85,7 @@ describe('「+」菜单里的附件（Rei 2026-10-25）', () => {
     expect(addMenuItems(t(), {}, false)).toEqual(unsetProps(t()));
   });
   it('属性都设了，菜单里还剩「附件」，「+」不藏', () => {
-    const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g' });
+    const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g', milestone_id: 'm' });
     expect(addMenuItems(full, { refs: 1 }, true)).toEqual(['attachment']);
   });
 });
@@ -127,8 +127,8 @@ describe('「+」菜单分三组（Rei 2026-11-11）', () => {
       ['mood', 'attachment'],
     ]);
   });
-  it('项目设过就不在菜单里，资料那组只剩资料、类型', () => {
-    expect(addMenuSections(t({ scheduled_date: '2026-10-16', group_id: 'g' }), {}, true)[1]).toEqual(['refs', 'category']);
+  it('项目设过就不在菜单里，资料那组换成阶段、资料、类型（阶段只给项目里的任务，Rei 2026-11-13）', () => {
+    expect(addMenuSections(t({ scheduled_date: '2026-10-16', group_id: 'g' }), {}, true)[1]).toEqual(['milestone', 'refs', 'category']);
   });
   it('资料、类型都挂了，资料那组只剩项目', () => {
     expect(addMenuSections(t({ scheduled_date: '2026-10-16', category_id: 'c' }), { refs: 1 }, true)).toEqual([
@@ -138,7 +138,7 @@ describe('「+」菜单分三组（Rei 2026-11-11）', () => {
     ]);
   });
   it('没有日期这一项（重复任务）就跳过它，空组不出', () => {
-    const rec = t({ recurrence: 'FREQ=DAILY', category_id: 'c', group_id: 'g' });
+    const rec = t({ recurrence: 'FREQ=DAILY', category_id: 'c', group_id: 'g', milestone_id: 'm' });
     expect(addMenuSections(rec, { refs: 1 }, true)).toEqual([['remind'], ['attachment']]);
     const rec2 = t({ recurrence: 'FREQ=DAILY' });
     expect(addMenuSections(rec2, {}, true)).toEqual([['remind'], ['group', 'refs', 'category'], ['attachment']]);
@@ -182,7 +182,7 @@ describe('打卡描述做成属性（Rei 2026-11-13 07:25「在属性dropdown中
     expect(order.slice(order.indexOf('mood'))).toEqual(['mood', 'checkin_note', 'attachment']);
   });
   it('属性都设了，菜单里还剩打卡描述，「+」不藏', () => {
-    const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g' });
+    const full = t({ completion_mode: 'count', recurrence: 'FREQ=DAILY', category_id: 'c', remind_time: '09:00', group_id: 'g', milestone_id: 'm' });
     expect(addMenuItems(full, { refs: 1 }, false, true)).toEqual(['checkin_note']);
   });
   it('框显示吗：写了字就显示；空的（或只有空白）只在打开着时显示', () => {
@@ -190,5 +190,22 @@ describe('打卡描述做成属性（Rei 2026-11-13 07:25「在属性dropdown中
     expect(checkInNoteShown(null, false)).toBe(false);
     expect(checkInNoteShown('  \n ', false)).toBe(false);
     expect(checkInNoteShown('', true)).toBe(true);
+  });
+});
+
+describe('阶段（Rei 2026-11-13「这个属性只有项目中可以设置」）', () => {
+  it('不在项目里：没有阶段这一项；在项目里：「+」菜单项目后面就是阶段', () => {
+    expect(applicableProps(t())).not.toContain('milestone');
+    expect(applicableProps(t({ group_id: 'g' }))).toContain('milestone');
+    expect(unsetProps(t({ group_id: 'g' }))).toEqual(['date', 'mode', 'repeat', 'milestone', 'refs', 'category', 'mood']);
+  });
+  it('设了显示胶囊，排在项目后面；挂的阶段对不上项目（counts.milestone = false）当没设', () => {
+    const task = t({ group_id: 'g', milestone_id: 'm', scheduled_date: '2026-11-13' });
+    expect(setProps(task)).toEqual(['date', 'group', 'milestone']);
+    expect(setProps(task, { milestone: false })).toEqual(['date', 'group']);
+  });
+  it('清除阶段只改 milestone_id；清除项目连阶段一起清（撤销时一起放回）', () => {
+    expect(clearPatch('milestone')).toEqual({ milestone_id: null });
+    expect(clearPatch('group')).toEqual({ group_id: null, milestone_id: null });
   });
 });

@@ -35,6 +35,7 @@ export const SECTION_LABEL: Record<SectionBy, () => string> = {
   project: () => tr('按项目'),
   // 和打卡页「排列：按类型」同字，英文按分区菜单大写（By Category），所以带语境
   type: () => trc('列表分区', '按类型'),
+  milestone: () => tr('按阶段'),
   due: () => tr('按目标日期'),
 };
 
