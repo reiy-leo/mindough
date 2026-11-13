@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
 import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, Clock, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorCog, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
@@ -31,6 +31,7 @@ import { appName, getLocale, LOCALE_NAMES, LOCALES, tr, trc } from '../lib/i18n'
 import { THIRD_PARTY } from '../lib/third-party';
 import tmdbLogo from '../assets/tmdb-logo.svg';
 import { versionLabel } from '../lib/version';
+import { scrollPageToTop } from '../lib/root-scroll';
 import { useLocalePref } from '../lib/locale';
 import { exportToZip } from '../lib/archive';
 
@@ -86,6 +87,18 @@ function useRememberSection(sec: SettingsSection | undefined) {
   useEffect(() => {
     if (sec) localStorage.setItem(LAST_KEY, sec);
   }, [sec]);
+}
+
+/**
+ * 进设置、换一项、从子页返回都从顶部开始（Rei 2026-11-14 06:09「手机端的设置页现在默认是滚动到底部的，设置成顶部」）。
+ * 滚的那层（.main 等）换页不重建，不归零就停在上一页滚到的位置；在页面画出来之前归零，不闪。
+ */
+function useScrollTopOn(key: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    scrollPageToTop(ref.current);
+  }, [key]);
+  return ref;
 }
 
 function SectionBody({ id }: { id: SettingsSection }) {
@@ -200,10 +213,11 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
   const { layout } = useSettings();
   const narrow = layout === 'mobile';
   useRememberSection(section);
+  const top = useScrollTopOn(`${narrow ? 'm' : 'w'}:${section ?? ''}`);
 
   if (narrow && !section) {
     return (
-      <div className="page settings-page">
+      <div className="page settings-page" ref={top}>
         <PageHeader title={tr('设置')} icon={<SettingsIcon size={22} />} />
         <nav className="card more-list settings-list" aria-label={tr('设置分区')}>
           {SETTINGS_ITEMS.map((it) => {
@@ -229,7 +243,7 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
 
   if (narrow && section) {
     return (
-      <div className="page settings-page settings-push" key={section}>
+      <div className="page settings-page settings-push" key={section} ref={top}>
         <header className="settings-push-head">
           <a className="settings-back" href={href({ page: 'settings' })}>
             <ChevronLeft size={20} aria-hidden />
@@ -247,7 +261,7 @@ export function SettingsPage({ section }: { section?: SettingsSection }) {
 
   const sec = section ?? lastSection();
   return (
-    <div className="page settings-page">
+    <div className="page settings-page" ref={top}>
       <PageHeader title={tr('设置')} icon={<SettingsIcon size={22} />} />
       <div className="settings-layout">
         <div className="settings-layout-side">
@@ -273,6 +287,7 @@ export function SettingsWindow() {
   const route = useRoute();
   const sec = (route.page === 'settings' && route.section) || lastSection();
   useRememberSection(sec);
+  const top = useScrollTopOn(sec);
   // 主窗口要换到某一项（已经开着时）
   useEffect(() => {
     if (!isTauri()) return;
@@ -310,7 +325,7 @@ export function SettingsWindow() {
           </h1>
         </header>
         <div className="settings-main-scroll">
-          <div className="settings-pane">
+          <div className="settings-pane" ref={top}>
             <SectionBody id={sec} />
           </div>
         </div>

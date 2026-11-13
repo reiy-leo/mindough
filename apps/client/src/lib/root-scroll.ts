@@ -114,3 +114,17 @@ export function scrollIntoContainer(el: Element, opts: { block?: 'nearest' | 'ce
   if (typeof box.scrollTo === 'function') box.scrollTo({ top: next, behavior: opts.behavior ?? 'auto' });
   else box.scrollTop = next;
 }
+
+/** 页面所在的滚动层：手机和桌面平时是 .main，macOS 无标题栏时多一层 .main-scroll；设置窗口是 .settings-main-scroll。 */
+export const PAGE_SCROLL_SELECTOR = '.main, .main-scroll, .settings-main-scroll';
+
+/**
+ * 把 el 外面的页面滚动层都滚回顶部（只动 PAGE_SCROLL_SELECTOR 那几层，el 自己也算）。
+ * .main 换页时不重建，上一页滚到哪儿新页面就停在哪儿（Rei 2026-11-14「手机端的设置页现在默认是滚动到底部的，设置成顶部」）。
+ */
+export function scrollPageToTop(el: Element | null): void {
+  for (let p: Element | null = el; p; p = p.parentElement) {
+    if (p.matches(ROOT_SCROLL_SELECTOR)) return;
+    if (p.matches(PAGE_SCROLL_SELECTOR) && (p as HTMLElement).scrollTop) (p as HTMLElement).scrollTop = 0;
+  }
+}

@@ -4,10 +4,11 @@
  * - 样式：html / body / #root / .app 不滚；会滚的列都是 position: relative，里面的绝对定位元素跑不出来
  * - 兜底：桌面布局下外层被滚动就复位；手机、触屏、软键盘弹出时不拦
  * - scrollIntoContainer 只滚最近的那一列
+ * - scrollPageToTop 换页时把页面那层滚回顶部（Rei 2026-11-14 设置页别停在上一页的位置）
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installRootScrollGuard, nearestScroller, resetRootScroll, scrollIntoContainer, shouldResetRootScroll, type RootScrollEnv } from './root-scroll';
+import { installRootScrollGuard, nearestScroller, resetRootScroll, scrollIntoContainer, scrollPageToTop, shouldResetRootScroll, type RootScrollEnv } from './root-scroll';
 
 // 测试从 apps/client 下跑（pnpm test）；happy-dom 里 import.meta.url 不是 file:，直接按工作目录找
 const css = readFileSync(existsSync('src/styles/app.css') ? 'src/styles/app.css' : 'apps/client/src/styles/app.css', 'utf8');
@@ -166,5 +167,50 @@ describe('scrollIntoContainer', () => {
     scrollIntoContainer(item, { block: 'nearest' });
     // 600 + 40 - 400 = 240
     expect(main.scrollTop).toBe(240);
+  });
+});
+
+describe('scrollPageToTop', () => {
+  it('手机 / 桌面：.main 归零，外层不碰', () => {
+    document.body.innerHTML = '<div id="root"><div class="app"><main class="main"><div class="page" id="p"><nav id="n"></nav></div></main></div></div>';
+    const main = document.querySelector<HTMLElement>('.main')!;
+    const page = document.getElementById('p')!;
+    main.scrollTop = 118;
+    page.scrollTop = 5; // 页面本身不是页面滚动层，不动
+    scrollPageToTop(page);
+    expect(main.scrollTop).toBe(0);
+    expect(page.scrollTop).toBe(5);
+  });
+
+  it('macOS 无标题栏：.main-scroll 和 .main 都归零', () => {
+    document.body.innerHTML = '<div class="app"><main class="main"><div class="main-scroll"><div class="page" id="p"></div></div></main></div>';
+    const main = document.querySelector<HTMLElement>('.main')!;
+    const inner = document.querySelector<HTMLElement>('.main-scroll')!;
+    main.scrollTop = 40;
+    inner.scrollTop = 300;
+    scrollPageToTop(document.getElementById('p'));
+    expect(inner.scrollTop).toBe(0);
+    expect(main.scrollTop).toBe(0);
+  });
+
+  it('设置窗口：.settings-main-scroll 归零', () => {
+    document.body.innerHTML = '<div class="settings-window"><main class="settings-main"><div class="settings-main-scroll"><div class="settings-pane" id="p"></div></div></main></div>';
+    const box = document.querySelector<HTMLElement>('.settings-main-scroll')!;
+    box.scrollTop = 500;
+    scrollPageToTop(document.getElementById('p'));
+    expect(box.scrollTop).toBe(0);
+  });
+
+  it('null 不报错', () => {
+    expect(() => scrollPageToTop(null)).not.toThrow();
+  });
+});
+
+describe('设置页进来从顶部开始', () => {
+  const src = readFileSync(existsSync('src/pages/Settings.tsx') ? 'src/pages/Settings.tsx' : 'apps/client/src/pages/Settings.tsx', 'utf8');
+  it('手机列表、手机子页、宽屏、设置窗口四处都挂了归零的 ref', () => {
+    expect(src.match(/ref=\{top\}/g)?.length).toBe(4);
+    expect(src).toMatch(/useScrollTopOn\(`\$\{narrow \? 'm' : 'w'\}:\$\{section \?\? ''\}`\)/);
+    expect(src).toMatch(/useScrollTopOn\(sec\)/);
   });
 });
