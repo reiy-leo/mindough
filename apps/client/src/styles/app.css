@@ -4724,6 +4724,78 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .checkin-toolbar .checkin-head-actions {
   flex: none;
 }
+/* 打卡页、倒数日页顶部协调（Rei 2026-11-13 10:44「打卡页顶部感觉不协调优化一下」）。
+   ① 左对齐：工具栏左边第一个控件（排列方式 / 倒数日三个下拉 / 回到今天）是安静按钮，自带左内边距 + 1px 边框，
+      字比下面的分区标题、卡片往右缩了 11–13px。各皮肤统一左内边距 10px，整体往左挪 11px，字和分区标题、卡片左边对齐；
+      悬停底色伸到内容左边外面一点（同 iOS / macOS 工具栏里的文字按钮），页面左右内边距放得下。倒数日的下拉折行时整组一起挪，第二行也对齐。
+   ② 字重：排列方式、倒数日下拉、类型页「列表 / 图标」下拉是同一种视图切换，Apple 皮肤从 600 改 500，和资料库顶上选中的标签一样；WinUI 400、Material 500 本来就和各自标签页一致，不动。 */
+[data-skin] .checkin-toolbar .checkin-arrange-btn {
+  padding-inline: 10px 8px;
+}
+[data-skin] .checkin-toolbar .checkin-back {
+  padding-inline: 10px 12px;
+}
+.checkin-toolbar > .checkin-arrange-btn,
+.checkin-toolbar > .checkin-back,
+.checkin-toolbar > .countdown-menus {
+  margin-inline-start: -11px;
+}
+[data-skin='apple'] .checkin-toolbar .checkin-arrange-btn,
+[data-skin='apple'] .btn.view-dropdown-btn {
+  font-weight: 500;
+}
+/* ③ 右边图标按钮和加号（NewButton）一起看：
+   - 「显示哪些打卡」选了别的视图时用强调色（PRODUCT 写的规则，之前漏了样式）。
+   - WinUI、Material：加号是填充强调色的按钮（WinUI 34×32、Material 34×40），旁边的图标按钮做成同高（WinUI 34×32；Material 40×40，M3 标准图标按钮）；
+     颜色照旧灰（同资料库「…」挨着加号的做法）。
+   - Apple 电脑：加号 32×32、20px、笔画 2.25（画出来约 1.9px）；漏斗按钮同大，图标 18px、笔画 2.5，线一样粗、看上去和加号一样大
+     （漏斗三道横线比加号宽，同号会显大），颜色照旧灰（电脑上我的一天排序 / 分区、资料库「…」都是灰，只有加号是强调色）。
+   - Apple 手机：同手机顶栏（.topbar .icon-btn）和 iOS 导航栏，工具栏图标都是强调色，36×36；漏斗图标 20px、笔画 2.5（画出来约 2.1px，和 24px 的加号一样粗）；
+     按下变淡、不垫底，同加号；选了别的视图时垫一块淡强调色底（不用 color-mix，按两种 Apple 强调色直接写 rgba）。 */
+.checkin-head-actions .icon-btn.is-active {
+  color: var(--accent);
+}
+[data-skin='winui'] .checkin-head-actions .icon-btn {
+  width: 34px;
+  height: 32px;
+  min-width: 34px;
+}
+[data-skin='material'] .checkin-head-actions .icon-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+}
+[data-skin='apple'] .checkin-head-actions .icon-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+[data-skin='apple'][data-layout='mobile'] .checkin-head-actions .icon-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 9px;
+  color: var(--accent);
+  transition: opacity 0.12s ease;
+}
+[data-skin='apple'][data-layout='mobile'] .checkin-head-actions .icon-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+[data-skin='apple'][data-layout='mobile'] .checkin-head-actions .icon-btn[data-hovered] {
+  background: transparent;
+  color: var(--accent);
+}
+[data-skin='apple'][data-layout='mobile'] .checkin-head-actions .icon-btn[data-pressed] {
+  opacity: 0.35;
+}
+[data-skin='apple'][data-layout='mobile'] .checkin-head-actions .icon-btn.is-active {
+  background: rgba(0, 122, 255, 0.12);
+}
+[data-skin='apple'][data-layout='mobile'][data-theme='dark'] .checkin-head-actions .icon-btn.is-active {
+  background: rgba(10, 132, 255, 0.22);
+}
 
 /* 打卡页只有下面的分区滚（Rei 2026-11-11「打卡页只滚动下面的 sections」）：工具栏和顶部活动图（设置 → 打卡开着时）一起 sticky，
    做法同 .project-head-sticky（不透明页面底色、左右多铺一点盖住行的悬停底色、滚动后底下一条细线）。
@@ -4761,10 +4833,16 @@ html[data-layout='mobile'] .project-archived-banner .btn {
 .checkin-head-sticky > .heatmap-card {
   margin-top: var(--space-4);
 }
-/* 固定块下面第一个分区不再加 .section 的 20px 上外边距（Rei 2026-11-12 10:16「打卡页的顶部行下方空白好大」）：
-   页头去掉后固定块自己已有 12px 下内边距，两样叠起来工具行到「今天要打卡」字上沿有 38.6px；
-   改成 8px，和我的一天添加框到「未完成」一样是 26.6px（三皮肤、宽屏 / 手机都同）。 */
+/* 固定块下面第一个分区的上外边距（Rei 2026-11-12 10:16「打卡页的顶部行下方空白好大」、2026-11-13 10:44「打卡页顶部感觉不协调」）：
+   要比的是看得见的空白。我的一天添加框有边框，框下沿到「未完成」字上沿 26.6px；打卡页工具行没有边框，「按今天」是安静按钮，
+   字下沿离工具行下沿还有约 8px 空着，11-12 时按工具行下沿量到 26.6px，看上去其实有 34px，比我的一天松。
+   现在不加上外边距：工具行下沿到「今天要打卡」字上沿 18.6px（固定块下内边距 12 + 段头里字的上沿 6.6），
+   「按今天」字下沿到「今天要打卡」字上沿约 26–27px，和我的一天一样（三皮肤、宽屏 / 手机都同）。
+   开着顶部活动图时下面是有底色的卡片，照旧按卡片下沿量 26.6px，留 8px。 */
 .checkin-head-sticky + .section {
+  margin-top: 0;
+}
+.checkin-head-sticky.has-heat + .section {
   margin-top: var(--space-2);
 }
 
@@ -5170,7 +5248,7 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 }
 
 /* 已完成：没有页头（Rei 2026-11-12 10:19「已完成页：去掉header」），最上面直接是第一段日期标题。
-   顶部到标题字上沿和我的一天添加框到「未完成」、打卡页工具行到「今天要打卡」一样是 26.6px（同 .checkin-head-sticky + .section 的思路）：
+   顶部到标题字上沿和我的一天添加框到「未完成」、打卡页「按今天」字下沿到「今天要打卡」看上去一样（26.6px 同 .checkin-head-sticky + .section 的思路）：
    页面上内边距 + 这里的上外边距凑 20px，再加 32px 段头里字的上沿 6.6px。宽屏页面上内边距已是 20，不再叠 .section 的 20；手机页面上内边距 8，补 12。 */
 .done-page > .sr-only:first-child + .section {
   margin-top: 0;

@@ -189,7 +189,8 @@ export function CheckInsPage() {
       <h1 className="sr-only">{view === 'all' ? tr('所有打卡') : view === 'archived' ? tr('已归档的打卡') : trc('导航', '打卡')}</h1>
       {/* 工具栏和顶部活动图固定在顶上，只有下面的分区滚（Rei 2026-11-11「打卡页只滚动下面的 sections」）；滚动条藏起来（App 的 HIDE_SCROLLBAR_PAGES） */}
       <div ref={head.sentinel} className="add-bar-sentinel" aria-hidden />
-      <div className={`checkin-head-sticky${head.stuck ? ' is-stuck' : ''}`}>
+      {/* has-heat：顶部活动图开着时，下面第一个分区离图的间距照旧（见 app.css .checkin-head-sticky + .section） */}
+      <div className={`checkin-head-sticky${head.stuck ? ' is-stuck' : ''}${view === 'today' && settings.checkInsYearHeatmap ? ' has-heat' : ''}`}>
       <div className="filter-row checkin-toolbar">
         {view !== 'today' ? (
           <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
