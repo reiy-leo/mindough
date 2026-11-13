@@ -5,7 +5,9 @@
  *   看到哪一段（翻到哪个月）不同步。手机五种视图都能用，不用回落。
  * - 任务：有日期、没结束、不重复的，按日期 / 日期段画进格子（core layoutRow 排道），只写标题；宽屏点开是居中浮层（lib/detail-pane），手机整页。
  * - 倒数日：没结束的，画在目标日那天（Rei 2026-11-11 月视图「当天有倒数日时优先显示倒数日」）。
- * - 宽屏周、多日、多周、月（Rei 2026-11-11 01:10）：格子列出当天全部条目，没有「还有 N 件」，格子按内容撑高（页面滚）；
+ * - 宽屏周、多日、多周、月：格子撑满工具栏以下的高度，整页不上下滚（Rei 2026-11-13 09:44，lib/cal-fit）；
+ *   月、多周每行平分高度，放不下的收成「+N」，点开看那天全部；周、多日一行占满，放不下时只在格子区里滚。
+ *   （2026-11-11 01:10 到 11-13 是列出全部、格子按内容撑高、页面滚。）
  *   每天从上往下是倒数日 → 任务 → 订阅事件（core layoutRow 分档排道、sortDayItems）。
  *   月视图日期旁数「任务 + 打卡 + 倒数日」（core dayCount），点数字看那天的列表。打卡只算进个数，不画在任何视图、列表里（Rei 2026-11-11 01:08）。
  *   原来按天往下排的时间轴列表已经删掉（旧地址 #/agenda、view/timeline 打开的就是这一页）。
@@ -19,7 +21,7 @@
  *   有起止的整段平移、天数不变（core calDropPatch）；写入走 store.updateTask（我的一天跟着走），提示里能撤销。手机月视图从下面的列表拖到上面的小月历。
  * - 手机：月视图上面是小月历（只画点），下面是选中那天的列表；周、多日、多周按天竖排；年视图一列两个月。
  */
-import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button as RacButton } from 'react-aria-components';
 import { ChevronLeft, ChevronRight, Hourglass, Minus, Plus, MapPin } from 'lucide-react';
 import { logicalToday, CAL_VIEW_KINDS, DAYS_MAX, DAYS_MIN, WEEKS_MAX, WEEKS_MIN, calItemTier, calRange, calDropPatch, calPatchStart, calShiftPatch, calUndoPatch, type CalDatePatch, dayCount, compareDateKey, dueToday, formatDateRange, isFinished, itemsOnDay, layoutRow, normalizeSubColor, parseRecurrence, parseDateKey, sortDayItems, stepCalAnchor, addDays, taskEndDate, weekday, weekdayLabel, weekStartsOn, yearMonths, type CalView, type CalViewKind, type DateKey, type Task } from '@mindough/core';
@@ -38,6 +40,7 @@ import { titleOf } from '../lib/view';
 import { intlLocale, tr, trc } from '../lib/i18n';
 import '../styles/calendar.css';
 import { clipName } from '../lib/toast-text';
+import { cutLanes, fitLanes, useBoxSize, yearLayout } from '../lib/cal-fit';
 
 interface TaskItem {
   kind: 'task';
@@ -223,7 +226,7 @@ export function CalendarPage() {
   }
 
   return (
-    <div ref={rootRef} className={`page cal-page is-${view.kind}${mobile ? ' is-mobile' : ''}`}>
+    <div ref={rootRef} className={`page cal-page is-fill is-${view.kind}${mobile ? ' is-mobile' : ''}`}>
       {/* 页头去掉（Rei 2026-11-12 00:54「去掉页头」）：原页头只有图标和「日历」标题，没有按钮；翻页、今天、范围标题、视图、天数 / 周数本来就在下面这行工具栏。
           读屏还是要有页面名（同打卡页）；手机上标题在顶栏（lib/mobile-topbar 的 HEADERLESS_PAGES） */}
       <h1 className="sr-only">{trc('导航', '日历')}</h1>
@@ -320,8 +323,10 @@ function ItemButton({ it, onItem }: { it: Item; onItem: (it: Item) => void }) {
 }
 
 /**
- * 宽屏周、多日、多周、月（Rei 2026-11-11 01:10）：每格列出当天全部条目，没有「还有 N 件」，行按内容撑高。
- * 排道分档：倒数日 → 任务 → 订阅事件，每天从上往下都是这个顺序；多天的任务、事件照旧画成跨格横条。
+ * 宽屏周、多日、多周、月。排道分档：倒数日 → 任务 → 订阅事件，每天从上往下都是这个顺序；多天的任务、事件照旧画成跨格横条。
+ * 格子撑满剩下的高度、页面不上下滚（Rei 2026-11-13 09:44「日历的格子要占满剩下的空间，不能上下滚动。」，docs/CALENDAR.md 第十五节）：
+ * - 月、多周：每行平均分高度，放不下的收成「+N」，点了看那天的全部（同点日期旁的个数，当天列表 Sheet）；
+ * - 周、多日：一行占满，条目多到放不下时只在格子区里面滚，星期那行不动（没有小时格，不压行高）。
  * 给了 countItems（月视图）时，日期旁写「任务 + 打卡 + 倒数日」的个数，点了看那天的列表。
  */
 function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreFrom: DateKey; coreTo: DateKey; today: DateKey; items: Item[]; countItems?: Item[]; lunar: Lunar; onItem: (it: Item) => void; onDay: (d: DateKey) => void; onCreate: (d: DateKey) => void }) {
@@ -331,8 +336,20 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
   const showDow = cols === 7 || tall;
   // 同一档里的先后：事件全天在前、再按时间（任务的先后 layoutRow 自己按开始日和长短排）
   const ordered = useMemo(() => sortDayItems('', p.items), [p.items]);
+  // 量一行多高、日期那行多高，算每行放几条（行高由 flex 平分，和里面放了多少无关，不会来回抖）
+  const gridRef = useRef<HTMLDivElement>(null);
+  const box = useBoxSize(gridRef);
+  const [metric, setMetric] = useState({ rowH: 0, headH: 26 });
+  useLayoutEffect(() => {
+    const row = gridRef.current?.querySelector<HTMLElement>('.cal-row');
+    const head = row?.querySelector<HTMLElement>('.cal-day-head');
+    const rowH = row?.clientHeight ?? 0;
+    const headH = head?.offsetHeight || 26;
+    setMetric((m) => (m.rowH === rowH && m.headH === headH ? m : { rowH, headH }));
+  }, [box.w, box.h, p.rows.length, cols]);
+  const fit = tall ? Infinity : fitLanes(metric.rowH, metric.headH);
   return (
-    <div className={`cal-grid${tall ? ' is-tall' : ''}${month ? ' is-month' : ''}`} style={{ ['--cols' as string]: cols } as CSSProperties} role="grid" aria-label={tr('日历')}>
+    <div ref={gridRef} className={`cal-grid${tall ? ' is-tall' : ''}${month ? ' is-month' : ''}`} style={{ ['--cols' as string]: cols } as CSSProperties} role="grid" aria-label={tr('日历')}>
       {showDow && (
         <div className="cal-dow" role="row">
           {(p.rows[0] ?? []).map((d) => (
@@ -344,7 +361,8 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
       )}
       {p.rows.map((row) => {
         const { placed } = layoutRow(row, ordered, (x) => calItemTier(x.role));
-        const lanes = placed.reduce((m, x) => Math.max(m, x.lane + 1), 0);
+        const { shown, more, moreLane } = cutLanes(placed, row.length, fit);
+        const lanes = Math.max(moreLane + 1, shown.reduce((m, x) => Math.max(m, x.lane + 1), 0));
         return (
           <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: `auto repeat(${lanes}, auto) auto 1fr`, ['--lanes' as string]: lanes } as CSSProperties}>
             {row.map((d, c) => (
@@ -367,7 +385,7 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
                 </div>
               );
             })}
-            {placed.map((x) => (
+            {shown.map((x) => (
               <div
                 key={x.item.id}
                 className={`cal-slot${x.contLeft ? ' cont-left' : ''}${x.contRight ? ' cont-right' : ''}${x.span > 1 ? ' is-span' : ''}`}
@@ -376,6 +394,15 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
                 <ItemButton it={x.item} onItem={p.onItem} />
               </div>
             ))}
+            {more.map((n, c) =>
+              n > 0 ? (
+                <div key={`more-${row[c]}`} className="cal-slot cal-more-slot" style={{ gridColumn: c + 1, gridRow: moreLane + 2 }}>
+                  <RacButton className="cal-more" aria-label={`${formatDateRange(row[c]!, null)} · ${tr('还有 {n} 件，点开看全部', { n })}`} onPress={() => p.onDay(row[c]!)}>
+                    +{n}
+                  </RacButton>
+                </div>
+              ) : null,
+            )}
           </div>
         );
       })}
@@ -458,8 +485,18 @@ function YearView(p: { year: number; weekStart: 0 | 1; today: DateKey; items: It
     return s;
   }, [p.items]);
   const dows = months[0]!.cells.slice(0, 7).map((_, i) => (p.weekStart + i) % 7);
+  // 12 个月撑满剩下的空间、不滚（Rei 2026-11-13 09:44）：按宽高挑列数，月和月一样高（都按 6 周排）。
+  // 间距、标题高和 calendar.css 的 .cal-year gap、.cal-year-title 对上；没量到（测试环境）时退回 CSS 的 auto-fill。
+  const ref = useRef<HTMLDivElement>(null);
+  const box = useBoxSize(ref);
+  const gapX = p.mobile ? 12 : 24;
+  const gapY = p.mobile ? 8 : 12;
+  const fit = yearLayout(box.w, box.h, { gapX, gapY, titleH: p.mobile ? 18 : 22 });
+  const style = fit
+    ? ({ ['--year-cols' as string]: fit.cols, ['--year-rows' as string]: fit.rows, ['--year-day' as string]: `${Math.max(8, Math.min(fit.dayW, fit.dayH))}px` } as CSSProperties)
+    : undefined;
   return (
-    <div className="cal-year">
+    <div ref={ref} className={`cal-year${fit ? ' is-fit' : ''}`} style={style}>
       {months.map(({ month, cells }) => (
         <div key={month} className="cal-year-month">
           <div className="cal-year-title">{new Intl.DateTimeFormat(intlLocale(), { timeZone: 'UTC', month: 'long' }).format(new Date(Date.UTC(p.year, month - 1, 1)))}</div>

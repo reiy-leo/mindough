@@ -100,19 +100,13 @@
 }
 .cal-row {
   position: relative;
-  min-height: 108px;
+  min-height: 0;
   row-gap: 2px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
 }
 .cal-row:last-child {
   border-bottom: 0;
-}
-.cal-grid.is-tall .cal-row {
-  min-height: 420px;
-}
-.cal-grid.is-month .cal-row {
-  min-height: 96px;
 }
 .cal-cell-bg {
   border-left: 1px solid var(--border);
@@ -367,7 +361,7 @@
   color: var(--accent);
 }
 
-/* 年视图 */
+/* 年视图（量到尺寸后 .is-fit 按宽高定列数、撑满，见下面「撑满」一节；没量到时 auto-fill） */
 .cal-year {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
@@ -709,4 +703,136 @@ html.is-cal-dragging .cal-item[data-hovered] {
 .cal-mini-cell.is-drop-target {
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* 撑满剩下的空间、整页不上下滚（Rei 2026-11-13 09:44「日历的格子要占满剩下的空间，不能上下滚动。」，docs/CALENDAR.md 第十五节）。
+   页面撑满 .main（macOS 无标题栏时 .main-scroll），每层 flex 都给 min-height: 0，不然里面的东西把父级撑高，又变成整页滚（同类型页 .types-page.is-fill）。
+   手机：html / body / #root 本来就是 100% 高、不滚（app.css 开头），页面底下给标签栏和安全区让位；不用 100vh（手机地址栏收放时 100vh 比看得见的高）。 */
+.cal-page.is-fill {
+  height: 100%;
+  min-height: 0;
+  padding-bottom: var(--space-4);
+}
+.app-mobile .cal-page.is-fill {
+  padding-bottom: calc(var(--tabbar-h) + var(--space-2) + env(safe-area-inset-bottom));
+}
+.cal-page.is-fill > .cal-toolbar {
+  flex: none;
+}
+/* 宽屏格子：星期那行定高，下面每行平分 */
+.cal-page.is-fill > .cal-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cal-page.is-fill > .cal-grid > .cal-dow {
+  flex: none;
+}
+.cal-page.is-fill > .cal-grid > .cal-row {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  align-content: start;
+}
+/* 周、多日：一行占满；条目多到放不下时只在这一行里面滚（星期那行不动），页面不滚 */
+.cal-page.is-fill > .cal-grid.is-tall > .cal-row {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* 「+N」：放在被收起来的第一条道上，点了看那天的全部（Rei 2026-11-13 09:44） */
+.cal-more {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+.cal-more[data-hovered] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.cal-more[data-focus-visible] {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+/* 年视图：列数、行数由 Calendar.tsx 量了宽高算（lib/cal-fit yearLayout），每月按 6 周排，月和月一样高 */
+.cal-page.is-fill > .cal-year {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.cal-year.is-fit {
+  grid-template-columns: repeat(var(--year-cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--year-rows), minmax(0, 1fr));
+  gap: 12px 24px;
+}
+html[data-layout='mobile'] .cal-year.is-fit {
+  grid-template-columns: repeat(var(--year-cols), minmax(0, 1fr));
+  gap: 8px 12px;
+}
+.cal-year.is-fit .cal-year-month {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.cal-year.is-fit .cal-year-title {
+  flex: none;
+  height: 22px;
+  margin: 0;
+  line-height: 22px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+html[data-layout='mobile'] .cal-year.is-fit .cal-year-title {
+  height: 18px;
+  line-height: 18px;
+  font-size: 13px;
+}
+.cal-year.is-fit .cal-year-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  align-items: stretch;
+}
+.cal-year.is-fit .cal-year-dow {
+  display: grid;
+  place-items: center;
+  font-size: clamp(8px, calc(var(--year-day) * 0.42), 11px);
+}
+.cal-year.is-fit .cal-year-day {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  font-size: clamp(9px, calc(var(--year-day) * 0.5), 13px);
+}
+.cal-year.is-fit .cal-year-day.has-items::after {
+  bottom: max(1px, calc(var(--year-day) * 0.08));
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+}
+/* 手机月视图：上面小月历照原高，下面选中那天的列表占剩下的，条目多时只在列表里滚 */
+.cal-page.is-fill > .cal-mini {
+  flex: none;
+}
+.cal-page.is-fill > .cal-day-list,
+.cal-page.is-fill > .cal-day-lists {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

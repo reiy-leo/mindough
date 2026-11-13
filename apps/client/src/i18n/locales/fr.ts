@@ -1770,6 +1770,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "天": "jours",
   "周数": "Nombre de semaines",
   "{n} 件任务、打卡和倒数日": "{n, plural, one {# tâche, habitude ou compte à rebours} other {# tâches, habitudes et comptes à rebours}}",
+  "还有 {n} 件，点开看全部": "{n, plural, one {# de plus} other {# de plus}}, touchez pour tout voir",
   "这天没有安排": "Rien de prévu",
   "全天": "Toute la journée",
   "来自订阅「{name}」，只能看，不能改。": "De l’abonnement « {name} ». Lecture seule.",

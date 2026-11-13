@@ -107,7 +107,7 @@ describe('日历', () => {
     expect(cd.querySelector('.cal-item-icon')).not.toBeNull();
   });
 
-  it('月视图：列出当天全部，倒数日 → 任务 → 订阅事件；日期旁数任务 + 打卡 + 倒数日；没有「还有 N 件」；不列打卡', () => {
+  it('月视图：放得下时列出当天全部，倒数日 → 任务 → 订阅事件；日期旁数任务 + 打卡 + 倒数日；不列打卡', () => {
     tasks.push(
       task('a', '待办'),
       task('b', '待办'),
@@ -137,7 +137,69 @@ describe('日历', () => {
     expect(listed).toEqual(['cd', 'a', 'b', 'c', 'event']);
   });
 
-  it('周视图：一天很多件也全部列出，没有「还有 N 件」', () => {
+  it('月视图格子撑满、放不下收成「+N」（Rei 2026-11-13 09:44）：前几条照画，点 +N 看那天全部', () => {
+    // 假装量到了：每行 26 + 6 + 3 × 24 = 104px 高，日期那行 26px → 一行放 3 条
+    const RO = globalThis.ResizeObserver;
+    const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    const oh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-row') ? 104 : this.classList.contains('cal-grid') ? 640 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-day-head') ? 26 : 0; } });
+    try {
+      tasks.push(task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));
+      for (const id of ['a', 'b', 'c', 'd']) tasks.push(task(id, '待办'));
+      tasks.push(task('one', '待办', { scheduled_date: '2026-11-03' }));
+      act(() => root.render(<CalendarPage />));
+      const row = host.querySelector(`.cal-cell[data-date="${today}"]`)!.closest('.cal-row')!;
+      const shown = [...row.querySelectorAll<HTMLElement>('.cal-slot:not(.cal-more-slot)')].map((el) => el.querySelector('.cal-item')!.getAttribute('data-task-id'));
+      expect(shown).toEqual(['cd', 'a']);
+      const more = row.querySelectorAll<HTMLElement>('.cal-more');
+      expect(more).toHaveLength(1);
+      expect(more[0]!.textContent).toBe('+3');
+      expect((more[0]!.parentElement as HTMLElement).style.gridRow).toBe('4');
+      expect(more[0]!.getAttribute('aria-label')).toContain('还有 3 件，点开看全部');
+      // 只有一件的那天照常画，没有 +N
+      const other = host.querySelector('.cal-cell[data-date="2026-11-03"]')!.closest('.cal-row')!;
+      expect(other.querySelector('.cal-more')).toBeNull();
+      expect(other.querySelector('.cal-item[data-task-id="one"]')).not.toBeNull();
+      // 点 +N：弹出那天的列表，全部 5 件
+      act(() => more[0]!.click());
+      expect([...document.querySelectorAll('.cal-day-list .cal-item')].map((el) => el.getAttribute('data-task-id'))).toEqual(['cd', 'a', 'b', 'c', 'd']);
+    } finally {
+      globalThis.ResizeObserver = RO;
+      if (ch) Object.defineProperty(HTMLElement.prototype, 'clientHeight', ch);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
+      if (oh) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', oh);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['offsetHeight'];
+    }
+  });
+
+  it('年视图量到尺寸后按宽高定列数（Rei 2026-11-13 09:44）', () => {
+    const RO = globalThis.ResizeObserver;
+    const cw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const ch = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-year') ? 1100 : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('cal-year') ? 640 : 0; } });
+    try {
+      settings.value = { calendarView: { kind: 'year', days: 3, weeks: 2 } };
+      act(() => root.render(<CalendarPage />));
+      const y = host.querySelector<HTMLElement>('.cal-year')!;
+      expect(y.classList.contains('is-fit')).toBe(true);
+      const cols = Number(y.style.getPropertyValue('--year-cols'));
+      expect(cols * Number(y.style.getPropertyValue('--year-rows'))).toBe(12);
+      expect([4, 6]).toContain(cols);
+      expect(host.querySelectorAll('.cal-year-month')).toHaveLength(12);
+    } finally {
+      globalThis.ResizeObserver = RO;
+      if (cw) Object.defineProperty(HTMLElement.prototype, 'clientWidth', cw);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientWidth'];
+      if (ch) Object.defineProperty(HTMLElement.prototype, 'clientHeight', ch);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
+    }
+  });
+
+  it('周视图：一天很多件也全部列出，没有「+N」（放不下时只在格子区里滚，Rei 2026-11-13 09:44）', () => {
     settings.value = { calendarView: { kind: 'week', days: 3, weeks: 2 } };
     for (let i = 0; i < 16; i++) tasks.push(task(`t${i}`, '待办'));
     tasks.push(task('cd', '待办', { completion_mode: 'countdown', scheduled_date: null, target_date: today }));

@@ -1770,6 +1770,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "天": "hari",
   "周数": "Jumlah minggu",
   "{n} 件任务、打卡和倒数日": "{n} tugas, kebiasaan, dan hitung mundur",
+  "还有 {n} 件，点开看全部": "{n} lagi, ketuk untuk melihat semua",
   "这天没有安排": "Tidak ada rencana",
   "全天": "Sepanjang hari",
   "来自订阅「{name}」，只能看，不能改。": "Dari langganan “{name}”. Hanya baca.",

@@ -1483,6 +1483,7 @@ export const EN: Record<string, EnValue> = {
   "天": "days",
   "周数": "Number of weeks",
   "{n} 件任务、打卡和倒数日": (p) => `${n(p.n, 'task, check-in or countdown', 'tasks, check-ins and countdowns')}`,
+  "还有 {n} 件，点开看全部": (p) => `${p.n} more, open to see all`,
   "这天没有安排": "Nothing planned",
   "全天": "All day",
   "来自订阅「{name}」，只能看，不能改。": "From the subscription “{name}”. Read-only.",
