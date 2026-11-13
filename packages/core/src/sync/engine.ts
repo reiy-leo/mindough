@@ -224,6 +224,8 @@ export class SyncEngine {
     this.store.settleAfterSync();
     // 打卡正文一次性补存（Rei 2026-11-13 05:30）：新设备空库打开时没做，第一次拉完在这里做；做过的设备只看一眼标记
     await this.store.backfillCheckInArchivesOnce('sync');
+    // 老版本自动标成完成的重复倒数日记录改回待办（Rei 2026-11-13 08:38）：新设备空库打开时没做，第一次拉完在这里做
+    await this.store.restoreAutoDoneCountdownRecordsOnce('sync');
     await this.store.flush();
   }
 

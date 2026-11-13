@@ -12,7 +12,7 @@ import { overdueBacklogTasks } from './overdue-backlog';
 import { AUTO_MY_DAY_HLC, type PinOf, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
-import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
+import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, isAutoRecordDoneAt, isCountdownRecordEdge, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
 import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, habitRule, isHabit, periodKeyForTask, type Progress } from './checkin';
 import { periodKeyFor } from './recurrence';
@@ -126,6 +126,9 @@ export class MergeError extends Error {
 
 /** 打卡正文一次性补存做过了（本机 meta，不同步）。 */
 export const CHECKIN_BACKFILL_META = 'checkin_backfill_v1';
+
+/** 老版本自动标成完成的重复倒数日记录，一次性改回待办做过了（本机 meta，不同步；Rei 2026-11-13 08:38）。 */
+export const COUNTDOWN_RECORD_UNDONE_META = 'countdown_record_undone_v1';
 
 export type NewTaskInput = Partial<Omit<Task, 'id' | 'updated_at' | 'deleted'>> & { id?: string };
 
@@ -252,6 +255,8 @@ export class Store {
     await store.flush();
     // 打卡正文一次性补存（Rei 2026-11-13 05:30）：本机还没做过、而且已经有打卡时做；新设备空库等第一次同步拉完再做（SyncEngine）
     await store.backfillCheckInArchivesOnce('open');
+    // 老版本自动标成完成的重复倒数日记录改回待办（Rei 2026-11-13 08:38），同样只做一次；新设备空库等第一次同步拉完
+    await store.restoreAutoDoneCountdownRecordsOnce('open');
     return store;
   }
 
@@ -329,10 +334,24 @@ export class Store {
     return this.edgeCache;
   }
 
+  /**
+   * 挡后续的前后关系：生效的前后关系去掉「重复倒数日那次的记录 → 重复倒数日」（isCountdownRecordEdge）。
+   * 记录是待办（Rei 2026-11-13 08:38 错过的倒数日不自动完成），这种关系照样显示在「先做完这些」、任务链里，
+   * 但不让重复倒数日「被阻塞」，点完记录也不算「刚解锁」。派生状态、解锁提示、刚解锁都用它。按版本缓存。
+   */
+  blockingEdges(): Edge[] {
+    if (this.blockingCache?.version === this._version) return this.blockingCache.value;
+    const value = this.edges().filter((e) => !isCountdownRecordEdge(e, this.tables.task.get(e.pred_id)));
+    this.blockingCache = { version: this._version, value };
+    return value;
+  }
+
+  private blockingCache: { version: number; value: Edge[] } | null = null;
+
   /** 全部任务的派生状态（可开始 / 被阻塞 …），按版本缓存。 */
   derived(): Map<string, DerivedStatus> {
     if (this.derivedCache?.version !== this._version) {
-      this.derivedCache = { version: this._version, value: deriveAll(this.list('task'), this.edges()) };
+      this.derivedCache = { version: this._version, value: deriveAll(this.list('task'), this.blockingEdges()) };
     }
     return this.derivedCache.value;
   }
@@ -1630,6 +1649,53 @@ export class Store {
     return ids.length;
   }
 
+  /**
+   * 老版本自动标成完成的重复倒数日记录改回待办（Rei 2026-11-13 08:38「错过的倒数日不要直接设置成"已完成"」）。
+   * 只认得出是自动完成的才改，三条都要对上：
+   * 1. 任务 id = countdownRecordId(某件任务, 它自己的目标日)，那件任务和它之间有过前后关系（删掉的关系也算）——是滚动生成的记录；
+   * 2. 状态「完成」、没删、还是倒数日、不重复；
+   * 3. 完成时间是老版本写的「那天本机中午」（isAutoRecordDoneAt）。用户手动完成的是点的那一刻，对不上就不动。
+   * 改成待办、清掉完成时间（直接写行，不走 setStatus，不弹解锁）。返回改了几条。
+   */
+  restoreAutoDoneCountdownRecords(): number {
+    const succOf = new Map<string, string[]>();
+    for (const d of this.tables.dependency.values()) {
+      const list = succOf.get(d.pred_id);
+      if (list) list.push(d.succ_id);
+      else succOf.set(d.pred_id, [d.succ_id]);
+    }
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const t of this.tables.task.values()) {
+      if (t.deleted || t.status !== '完成' || t.completion_mode !== 'countdown' || t.recurrence || !t.target_date) continue;
+      const date = t.target_date;
+      if (!(succOf.get(t.id) ?? []).some((succ) => t.id === countdownRecordId(succ, date))) continue;
+      if (!isAutoRecordDoneAt(t.done_at, date)) continue;
+      rows.push({ table: 'task', row: { ...t, status: '待办', done_at: null } as BaseRow });
+    }
+    if (rows.length) this.write(rows);
+    return rows.length;
+  }
+
+  /**
+   * 上一条只做一次（本机标记 meta `countdown_record_undone_v1`）。trigger = 'open'：本机还没有倒数日（新设备空库）就先不做、不记标记，
+   * 等 'sync'：第一次同步拉完（SyncEngine 调）再做。做完记标记；改回的行照常同步出去，别的设备也跟着变回待办。
+   * 严格模式开着也改：改回待办就是「重新打开」，严格模式本来放行。出错不挡打开 / 同步，不记标记，下次再试。
+   */
+  async restoreAutoDoneCountdownRecordsOnce(trigger: 'open' | 'sync'): Promise<number> {
+    if (await this.adapter.getMeta(COUNTDOWN_RECORD_UNDONE_META)) return 0;
+    const hasCountdown = [...this.tables.task.values()].some((t) => !t.deleted && t.completion_mode === 'countdown');
+    if (trigger === 'open' && !hasCountdown) return 0;
+    let n = 0;
+    try {
+      n = this.restoreAutoDoneCountdownRecords();
+    } catch {
+      return 0;
+    }
+    await this.adapter.setMeta(COUNTDOWN_RECORD_UNDONE_META, new Date().toISOString());
+    await this.flush();
+    return n;
+  }
+
   /** 写一条那次的记录和它到重复倒数日的前后关系（两行都是确定 id；已经有了就不动）。 */
   private writeCountdownRecord(task: Task, date: DateKey): void {
     const id = countdownRecordId(task.id, date);
@@ -1638,8 +1704,9 @@ export class Store {
         {
           id,
           body_md: bodyFirstLine(task.body_md),
-          status: '完成',
-          done_at: recordDoneAt(date),
+          // 错过的那次是待办，用户自己点完成（Rei 2026-11-13 08:38「错过的倒数日不要直接设置成"已完成"」）
+          status: '待办',
+          done_at: null,
           group_id: task.group_id,
           type_id: task.type_id,
           completion_mode: 'countdown',
@@ -2064,7 +2131,7 @@ export class Store {
 
   setStatus(id: string, status: TaskStatus): CompleteResult {
     const before = this.list('task');
-    const edges = this.edges();
+    const edges = this.blockingEdges();
     // done_at = 结束时间（完成或关闭都记），重新打开时清空
     const task = this.updateTask(id, { status, done_at: isFinished(status) ? this.now().toISOString() : null });
     const unlocked =
@@ -2288,7 +2355,7 @@ export class Store {
     const seen = new Set<string>();
     for (const e of this.tables.my_day.values()) if (e.date === today) seen.add(e.task_id);
     const derived = this.derived();
-    const unlocked = recentlyUnlocked(tasks, this.edges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
+    const unlocked = recentlyUnlocked(tasks, this.blockingEdges(), derived, new Date(now.getTime() - 24 * 3600_000).toISOString());
     const picks = autoMyDayTasks({ tasks, checkIns: this.list('check_in'), derived, recentlyUnlocked: unlocked, today, now, groups: this.list('group'), seen });
     if (!picks.length) return 0;
     const stamped: Change[] = [];

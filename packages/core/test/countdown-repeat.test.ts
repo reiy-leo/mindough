@@ -116,7 +116,7 @@ async function open(now: () => Date, deviceId = 'dev1') {
 }
 
 describe('Store.rollRecurringCountdowns', () => {
-  it('过了目标日：滚到下一次，过去那次生成一条完成的记录，连成前置', async () => {
+  it('过了目标日：滚到下一次，过去那次生成一条待办的记录（Rei 2026-11-13 08:38），连成前置', async () => {
     let now = local(2026, 11, 12, 9);
     const store = await open(() => now);
     const cat = store.createCategory('家人');
@@ -128,11 +128,11 @@ describe('Store.rollRecurringCountdowns', () => {
     expect(store.get('task', t.id)!.target_date).toBe('2027-11-12');
     const rid = countdownRecordId(t.id, '2026-11-12');
     const rec = store.get('task', rid)!;
-    expect(rec).toMatchObject({ body_md: '妈妈生日', status: '完成', completion_mode: 'countdown', target_date: '2026-11-12', recurrence: null, group_id: g.id, card_color: 'red', category_id: cat.id });
+    expect(rec).toMatchObject({ body_md: '妈妈生日', status: '待办', done_at: null, completion_mode: 'countdown', target_date: '2026-11-12', recurrence: null, group_id: g.id, card_color: 'red', category_id: cat.id });
     expect(store.categoryIdsOfTask(rid)).toEqual([cat.id]);
     expect(store.edges()).toContainEqual(expect.objectContaining({ pred_id: rid, succ_id: t.id }));
     expect(store.raw('dependency', countdownRecordDepId(t.id, '2026-11-12'))).toBeTruthy();
-    // 前置已完成，重复倒数日照样可开始
+    // 记录 → 重复倒数日的关系不挡后续，重复倒数日照样可开始
     expect(store.derived().get(t.id)?.state).toBe('可开始');
     // 再跑一遍什么都不写
     const v = store.version;

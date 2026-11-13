@@ -4,7 +4,8 @@
  * - 倒数日（completion_mode = countdown）设了重复规则（task.recurrence）：target_date 是「当前那次」。
  *   目标日当天还显示「今天」；第二天起把 target_date 滚到规则的下一次（今天或以后最近的一次）。
  * - 每滚过一次，生成一条不重复的倒数日当那次的记录：正文只有第一行（标题）、同资料库类型、类型、项目、卡片颜色、时区，
- *   target_date = 过去那天，状态「完成」（done_at = 那天中午），用 FS 前后关系连成重复倒数日的前置。
+ *   target_date = 过去那天，状态「待办」（Rei 2026-11-13 08:38「错过的倒数日不要直接设置成"已完成"」；以前写「完成」、done_at = 那天中午），
+ *   用 FS 前后关系连成重复倒数日的前置。这条前后关系不挡重复倒数日（isCountdownRecordEdge，Store.blockingEdges）。
  *   好久没开 app、漏了好几次，就每次一条（最多 MAX_RECORDS 条，取最近的）。
  * - 多设备：记录的 id 和前后关系的 id 都由「重复倒数日 id + 那天」算出来（countdownRecordId / countdownRecordDepId），
  *   两台设备各滚一遍写的是同一行，同步按 LWW 只剩一条。老客户端看到的记录就是普通倒数日。
@@ -128,7 +129,31 @@ export function fillCountdownTarget(
   return { target_date: date, scheduled_date: null, end_date: null };
 }
 
-/** 那次记录的完成时间：那天本机中午（已完成页按本机日期分段，落在那天）。 */
+/**
+ * 这条前后关系是不是「那次的记录 → 重复倒数日」（Store.writeCountdownRecord 写的）：前置是倒数日、有目标日，
+ * id 恰好是 countdownRecordId(后续, 前置的目标日)。这种关系不挡后续（Store.blockingEdges）：记录现在是待办，
+ * 要是照常挡，重复倒数日会一直「还在等 N 件事」，点完一条记录还会被当成「刚解锁」放进我的一天。
+ */
+export function isCountdownRecordEdge(e: { succ_id: string }, pred: Pick<Task, 'id' | 'completion_mode' | 'target_date'> | null | undefined): boolean {
+  return !!pred && pred.completion_mode === 'countdown' && !!pred.target_date && pred.id === countdownRecordId(e.succ_id, pred.target_date);
+}
+
+/**
+ * 老版本自动写的完成时间吗（迁移 Store.restoreAutoDoneCountdownRecords 用）：老版本生成记录时 done_at = recordDoneAt(那天)，
+ * 即生成那台设备本机时区的那天 12:00:00.000。换算成 UTC 是整分钟，离「那天 UTC 中午」不超过 14 小时（时区偏移 −12 到 +14）。
+ * 手动点完成写的是点的那一刻（老记录本来就是完成，要先重新打开再点），几乎不会恰好落在整分钟的 0 秒 0 毫秒上。
+ */
+export function isAutoRecordDoneAt(doneAt: string | null | undefined, date: DateKey): boolean {
+  if (!doneAt) return false;
+  if (doneAt === recordDoneAt(date)) return true;
+  const ms = Date.parse(doneAt);
+  if (!Number.isFinite(ms) || ms % 60_000 !== 0) return false;
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const noonUtc = Date.UTC(y, m - 1, d, 12, 0, 0);
+  return Math.abs(ms - noonUtc) <= 14 * 3600_000;
+}
+
+/** 那次记录的完成时间：那天本机中午（老版本生成记录时用；现在只用来认出老版本自动写的完成，见 isAutoRecordDoneAt）。 */
 export function recordDoneAt(date: DateKey): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
   return new Date(y, m - 1, d, 12, 0, 0).toISOString();

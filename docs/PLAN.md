@@ -2183,7 +2183,7 @@ Rei 2026-11-12 01:26：项目页切到看板很卡，看板里点任务弹详情
 ### 重复的倒数日 ✅（2026-11-12）
 Rei 2026-11-12 03:21：「倒数日如果是重复任务，过了日期就生成一个过期任务，作为这个重复任务的前置任务」。以前倒数日设了重复也只看 target_date，过了只显示「已过 N 天」。规则见 PRODUCT「重复的倒数日」。
 - core `countdown-repeat.ts`：`planCountdownRoll`（过去的几次 + 下一次）、`normalizeCountdownRepeat`（改目标日 / 规则时一起收拾，`Store.createTask` / `updateTask` 调）、`countdownRecordId` / `countdownRecordDepId`（FNV 算的确定 id，和 taskLinkId 同一种写法）。`Store.rollRecurringCountdowns()` 写记录（`createTask` + 类型 + 前后关系，已有这一行——含墓碑——就不写）并把 target_date 换成下一次，整批一次提交；客户端 `lib/countdown-roll.ts` 挂在 App 上，打开、换天、数据变了（含同步拉下来）都看一遍，没东西要滚时不写。
-- 记录的状态定成「完成」：不然重复倒数日会一直「还在等 N 件事」（前置没完成就被阻塞）。代价是记录会进已完成页那天。
+- 记录的状态定成「完成」：不然重复倒数日会一直「还在等 N 件事」（前置没完成就被阻塞）。代价是记录会进已完成页那天。2026-11-13 改成待办，见下面「错过的倒数日不自动完成」。
 - 打卡判断换成 `habitRule` / `isHabit`（checkin.ts）：倒数日的重复不算打卡。周期键、今天要打卡、连续次数、活动图、我的一天「昨天没做完」、提醒、打卡页、详情底栏 / 进度、行首重复图标、补打卡、「…」菜单都改用它；日历让重复的倒数日照常画在目标日。
 - 加了公历「每年」规则（`FREQ=YEARLY;BYMONTH;BYMONTHDAY`，2 月 29 日平年取 28 日）：生日、纪念日要用。界面上只给倒数日（日子跟着目标日，不用另选月日）；core 的打卡逻辑也认它。老客户端不认没有 RSCALE 的 YEARLY，当不重复。
 - 没有迁移（不加列），Worker 没改。新文案 3 条（只这一次 / 循环倒数 / 说明），九种语言，外语待母语者看。
@@ -2294,3 +2294,12 @@ Rei 2026-11-13 01:46：Material 3 皮肤（安卓默认）整体是紫色，「�
 - 样式：`.checkin-note` 圆角 `--radius-lg`（同属性卡片）；底色半透明黑叠在详情底上（亮 0.045、暗 0.24），三皮肤亮暗都比详情底深一点。原想照属性卡片用 `--surface-2`，实测 WinUI 亮色手机和各皮肤暗色下它比详情底还亮，不是「略深」，所以没用；没用 color-mix。
 - 判断：「打卡 box」理解成打卡描述这个框（同一句话前半句说的就是它），打卡快捷按钮、进度区没动。「重新打开」用 rotate-ccw、默认灰色图标按钮，「这件事已经做完了。」那行留着。
 
+### 错过的倒数日不自动完成 ✅（2026-11-13）
+Rei 2026-11-13 08:38：「错过的倒数日不要直接设置成"已完成"」。
+- 查下来：不重复的倒数日过了目标日，代码里没有地方改它的状态（客户端、同步、Worker、迁移都没有），一直是待办、显示「已过 N 天」。自动写「完成」的只有重复倒数日滚动时生成的那次记录：`Store.writeCountdownRecord` 建行时 `status: '完成'`、`done_at: recordDoneAt(那天)`（那天本机中午），由客户端 `lib/countdown-roll.ts`（打开、换天、数据变了）调 `rollRecurringCountdowns` 触发。
+- 改法：记录建成待办、`done_at` 空；重复倒数日照旧滚到下一次。新加 `Store.blockingEdges()`：`edges()` 去掉 `isCountdownRecordEdge`（前置是倒数日、id = `countdownRecordId(后续, 前置目标日)`）。`derived()`、`setStatus` 的解锁、`syncAutoMyDay` 和我的一天页的「刚解锁」都改用它，所以记录待办不挡重复倒数日，点完记录也不算解锁。「先做完这些」、任务链、项目时间轴照旧用 `edges()`，记录照样列着。
+- 去向：倒数日页（已过 N 天）、日历那天。过期积压（`isOverdueBacklogTask` 跳过倒数日）、等待安排（有目标日的倒数日不进）、昨天没做完（0682146 起跳过倒数日）、建议 / 自动进我的一天（只看目标日 = 今天）都不列。
+- 旧数据：`Store.restoreAutoDoneCountdownRecords()` 只改三条都对上的：id = `countdownRecordId(某个后续, 自己的目标日)`（看依赖表，墓碑也算）；完成、没删、不重复的倒数日；`isAutoRecordDoneAt`：完成时间等于本机算的那天中午，或者是整分钟、离那天 UTC 中午不超过 14 小时（别的时区的设备生成的）。改成待办、清 `done_at`，直接写行，不走 `setStatus`。`restoreAutoDoneCountdownRecordsOnce`（本机 meta `countdown_record_undone_v1`）：Store.open 末尾（本机有倒数日才做）、SyncEngine 第一次拉完各调一次；严格模式下也改（改回待办 = 重新打开，严格模式本来放行）。
+- 没改表结构，Worker 没改，没加文案（「已过 N 天」本来就有）。
+- 测试：core `countdown-missed.test.ts`（9 项：不重复的不改、记录待办且不挡、普通前置照挡、去向、认自动完成时间、只改自动完成的、只做一次、严格模式、新设备同步后做）；`countdown-repeat.test.ts` 第一项改成待办。
+- 待 Rei 确认：记录不挡重复倒数日（上面当初选「完成」就是为了不挡）；只做一次，老版本 App（alpha.3 及以前）下次发版前滚动时还会写「完成」的记录，做过迁移的设备不会再改回；手动完成靠完成时间分辨，恰好在那天中午整点 0 秒点完成的会当成自动的（几乎不会）。
