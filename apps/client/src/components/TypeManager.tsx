@@ -76,6 +76,7 @@ import { useStore } from '../store/StoreProvider';
 import { useSettings } from '../lib/settings';
 import { useUi } from '../lib/ui';
 import { isDragPress, useReorderGuard } from '../lib/drag-guard';
+import { useTouchReorder, type ReorderLike } from '../lib/touch-reorder';
 import { layoutShape } from './library/Library';
 import { sidebarToggleLabel } from '../lib/library-sidebar';
 
@@ -211,18 +212,21 @@ function TypeList({ onOpen }: { onOpen: (id: string) => void }) {
   const archive = useArchive();
   const [deleteDialog, askDelete] = useDeleteType();
   const reorderGuard = useReorderGuard();
+  const onReorder = (e: ReorderLike) => {
+    const order = types.map((t) => t.id);
+    const moving = [...e.keys].map(String);
+    const rest = order.filter((id) => !moving.includes(id));
+    const at = rest.indexOf(String(e.target.key));
+    rest.splice(e.target.dropPosition === 'before' ? at : at + 1, 0, ...moving);
+    store.reorderTypes(rest);
+  };
   const { dragAndDropHooks } = useDragAndDrop({
     ...reorderGuard.handlers,
     getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
-    onReorder: (e) => {
-      const order = types.map((t) => t.id);
-      const moving = [...e.keys].map(String);
-      const rest = order.filter((id) => !moving.includes(id));
-      const at = rest.indexOf(String(e.target.key));
-      rest.splice(e.target.dropPosition === 'before' ? at : at + 1, 0, ...moving);
-      store.reorderTypes(rest);
-    },
+    onReorder,
   });
+  // 手指拖动不走 React Aria 的原生拖放（lib/touch-reorder）
+  useTouchReorder(reorderGuard, { group: 'types', onReorder });
   return (
     <>
       <GridList ref={reorderGuard.ref} aria-label={trc('资料库编辑器', '资料库')} className="type-manage-list" items={types} dragAndDropHooks={dragAndDropHooks} onAction={(k) => !isDragPress() && onOpen(String(k))}>
@@ -462,18 +466,20 @@ function FieldList({ type }: { type: TaskType }) {
   const [label, setLabel] = useState('');
   const [kind, setKind] = useState<FieldKind>('text');
   const reorderGuard = useReorderGuard();
+  const onReorder = (e: ReorderLike) => {
+    const order = fields.map((f) => f.key);
+    const moving = [...e.keys].map(String);
+    const rest = order.filter((k) => !moving.includes(k));
+    const at = rest.indexOf(String(e.target.key));
+    rest.splice(e.target.dropPosition === 'before' ? at : at + 1, 0, ...moving);
+    store.setTypeFields(type.id, reorderFields(type.fields, rest));
+  };
   const { dragAndDropHooks } = useDragAndDrop({
     ...reorderGuard.handlers,
     getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
-    onReorder: (e) => {
-      const order = fields.map((f) => f.key);
-      const moving = [...e.keys].map(String);
-      const rest = order.filter((k) => !moving.includes(k));
-      const at = rest.indexOf(String(e.target.key));
-      rest.splice(e.target.dropPosition === 'before' ? at : at + 1, 0, ...moving);
-      store.setTypeFields(type.id, reorderFields(type.fields, rest));
-    },
+    onReorder,
   });
+  useTouchReorder(reorderGuard, { group: `fields-${type.id}`, onReorder });
   const add = () => {
     const l = label.trim();
     if (!l) return;

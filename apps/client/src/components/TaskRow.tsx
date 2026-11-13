@@ -109,7 +109,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
   const typeTint = (c: string | null | undefined) => vividText(colorLevel, c, theme) ?? c ?? undefined;
 
   // 长按不出菜单（Rei 2026-11-13 01:37「安卓端 长按任务还是会显示右键菜单，更改成不显示」）：手机上长按什么也不做，
-  // 能拖的列表长按照常拿起拖动（React Aria）；原来菜单里的 查看详情 / 我的一天 / 置顶 都在详情里（点行、顶栏太阳、「…」）。
+  // 能拖的列表长按照常拿起拖动（手指走 lib/touch-reorder，不走 React Aria 的原生拖放）；原来菜单里的 查看详情 / 我的一天 / 置顶 都在详情里（点行、顶栏太阳、「…」）。
   // 计时还留着，只为认出长按：按满 500ms 再松手不算点开（不然长按松手会打开详情）；挪动、滚动过照旧作废（lib/long-press）。
   // 右键也不开菜单（Rei 2026-11-08 23:39「任务列表都删掉右键菜单」）：onContextMenu 只 preventDefault，不落回浏览器 / 系统菜单。
   const press = useRef<{ x: number; y: number; timer: number } | null>(null);

@@ -850,6 +850,84 @@ button {
 .list-item[data-dragging] {
   opacity: 0.5;
 }
+/* 手指拖动排序（lib/touch-reorder，Rei 2026-11-14「手机端 拖 drag handle 没反应；长按会变灰」）：
+   手指不走原生拖放；按把手（按坐标认，React Aria 给把手写了内联 pointer-events: none）就拿起，行长按 450ms 拿起后挪动。
+   拖动中：原行变淡留在原位，一张同样的卡片跟手走，落点一条强调色横线；看板拖到别的列，那一列描强调色虚线框、染淡底。
+   没用 color-mix（老 WebView 不认）。 */
+/* 手机任务列表不放拖动把手（Rei 2026-11-14 06:17「手机端的任务列表的 drag handle 不显示，而是通过长按触发 drag」）：
+   我的一天、等待安排、项目看板的行 / 卡片长按拖；置顶行的占位格也不要。电脑（含触屏平板宽屏）把手照旧。
+   类型、字段列表不是任务列表，把手留着。手机上 .task-row 左内边距 12px，去掉把手后内容不贴边。 */
+[data-layout='mobile'] .list-item .drag-handle,
+[data-layout='mobile'] .board-card .drag-handle {
+  display: none;
+}
+/* 看板卡片原来靠把手留出左边距（.board-card .task-row 只有 2px），没了把手补到 10px */
+[data-layout='mobile'] .board-card .task-row {
+  padding-left: 10px;
+}
+.is-touch-lifted {
+  background: var(--surface-hover);
+  transform: scale(1.01);
+  transition: transform 0.12s var(--ease), background 0.12s var(--ease);
+}
+.is-touch-drag-source {
+  opacity: 0.35;
+}
+.touch-drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden;
+  gap: 0 !important;
+  pointer-events: none;
+  will-change: transform;
+  border-radius: var(--radius-lg);
+  /* WinUI 的 --surface 半透明：垫一层 --bg，压在别的行上面不透字 */
+  background: linear-gradient(var(--surface), var(--surface)) var(--bg);
+  box-shadow: var(--shadow-pop);
+}
+.touch-drag-ghost > * {
+  border-top: 0 !important;
+}
+/* 看板卡片自己有卡片样子：外壳不画底和阴影，阴影给卡片 */
+.touch-drag-ghost.board-list {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  overflow: visible;
+}
+.touch-drag-ghost.board-list > * {
+  background: linear-gradient(var(--surface), var(--surface)) var(--bg);
+  box-shadow: var(--shadow-pop);
+}
+.touch-drop-line {
+  position: fixed;
+  z-index: 1001;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.is-touch-drop-target {
+  background: var(--accent-soft);
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+html.is-touch-reordering,
+html.is-touch-reordering * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-touch-lifted {
+    transition: none;
+  }
+}
 .list-item[data-drop-target] {
   background: var(--accent-soft);
 }

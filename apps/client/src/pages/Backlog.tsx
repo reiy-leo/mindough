@@ -14,6 +14,7 @@ import { draftKey } from '../lib/list-draft';
 import { DatePanel } from '../components/task/DatePanel';
 import { titleOf } from '../lib/view';
 import { useReorderGuard } from '../lib/drag-guard';
+import { useTouchReorder, type ReorderLike } from '../lib/touch-reorder';
 
 import { tr } from '../lib/i18n';
 import { clipName } from '../lib/toast-text';
@@ -25,18 +26,21 @@ export function BacklogPage() {
 
   // 拖完不留高亮、不选中被拖的行（lib/drag-guard）
   const reorderGuard = useReorderGuard();
+  const onReorder = (e: ReorderLike) => {
+    const order = list.map((t) => t.id);
+    const moving = [...e.keys].map(String);
+    const rest = order.filter((id) => !moving.includes(id));
+    const targetIdx = rest.indexOf(String(e.target.key));
+    rest.splice(e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1, 0, ...moving);
+    store.reorderBacklog(rest);
+  };
   const { dragAndDropHooks } = useDragAndDrop({
     ...reorderGuard.handlers,
     getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
-    onReorder: (e) => {
-      const order = list.map((t) => t.id);
-      const moving = [...e.keys].map(String);
-      const rest = order.filter((id) => !moving.includes(id));
-      const targetIdx = rest.indexOf(String(e.target.key));
-      rest.splice(e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1, 0, ...moving);
-      store.reorderBacklog(rest);
-    },
+    onReorder,
   });
+  // 手指拖动不走 React Aria 的原生拖放（lib/touch-reorder）
+  useTouchReorder(reorderGuard, { group: 'backlog', onReorder });
 
   return (
     <div className="page">

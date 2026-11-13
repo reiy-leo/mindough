@@ -5,6 +5,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { useUi } from '../lib/ui';
 import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
 import { useReorderGuard } from '../lib/drag-guard';
+import { useTouchReorder, type ReorderLike } from '../lib/touch-reorder';
 import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { draftKey } from '../lib/list-draft';
@@ -238,20 +239,27 @@ function DayList({ id, section, label, list, all, today }: { id?: string; sectio
   const ui = useUi();
   // 拖完不留高亮、不选中被拖的行（lib/drag-guard）
   const reorderGuard = useReorderGuard();
+  const onReorder = (e: ReorderLike) => {
+    const order = list.map((i) => i.task.id);
+    const moving = [...e.keys].map(String);
+    // 置顶的总在最上面（Rei 2026-11-08）：拖它不动；拖到置顶的上面也一样排在置顶的下面（core reorderSection 去掉置顶的）
+    if (list.some((i) => isPinnedEntry(i.entry) && moving.includes(i.task.id))) return;
+    const rest = order.filter((x) => !moving.includes(x));
+    const targetIdx = rest.indexOf(String(e.target.key));
+    const insertAt = e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1;
+    rest.splice(insertAt, 0, ...moving);
+    store.reorderMyDay(today, reorderSection(all, section, rest));
+  };
   const { dragAndDropHooks } = useDragAndDrop({
     ...reorderGuard.handlers,
     getItems: (keys) => [...keys].map((k) => ({ 'text/plain': String(k) })),
-    onReorder: (e) => {
-      const order = list.map((i) => i.task.id);
-      const moving = [...e.keys].map(String);
-      // 置顶的总在最上面（Rei 2026-11-08）：拖它不动；拖到置顶的上面也一样排在置顶的下面（core reorderSection 去掉置顶的）
-      if (list.some((i) => isPinnedEntry(i.entry) && moving.includes(i.task.id))) return;
-      const rest = order.filter((x) => !moving.includes(x));
-      const targetIdx = rest.indexOf(String(e.target.key));
-      const insertAt = e.target.dropPosition === 'before' ? targetIdx : targetIdx + 1;
-      rest.splice(insertAt, 0, ...moving);
-      store.reorderMyDay(today, reorderSection(all, section, rest));
-    },
+    onReorder,
+  });
+  // 手指拖动不走 React Aria 的原生拖放（lib/touch-reorder，Rei 2026-11-14 安卓拖不动、长按变灰卡住）
+  useTouchReorder(reorderGuard, {
+    group: `myday-${section}`,
+    canDrag: (k) => !list.some((i) => i.task.id === k && isPinnedEntry(i.entry)),
+    onReorder,
   });
   return (
     <GridList id={id} ref={reorderGuard.ref} aria-label={label} className="task-list" dragAndDropHooks={dragAndDropHooks} dependencies={[ui.editingId]} items={list.map((i) => ({ ...i, id: i.task.id }))}>

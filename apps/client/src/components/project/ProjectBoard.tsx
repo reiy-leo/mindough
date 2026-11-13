@@ -16,6 +16,7 @@ import { useIsEditing, useUiStable } from '../../lib/ui';
 import { changeStatus } from '../../lib/actions';
 import { boardColumns } from '../../lib/project-view';
 import { isDragPress, useReorderGuard } from '../../lib/drag-guard';
+import { useTouchReorder } from '../../lib/touch-reorder';
 import { titleOf } from '../../lib/view';
 import { RowLead, TaskRow } from '../TaskRow';
 
@@ -101,9 +102,16 @@ function Column({ store, status, tasks, order }: { store: Store; status: TaskSta
     onInsert: (e) => void moveHere(e.items),
     onItemDrop: (e) => void moveHere(e.items),
   });
+  // 手指拖动不走 React Aria 的原生拖放（lib/touch-reorder）：各列同组，拖到别的列改状态；列内不排
+  useTouchReorder(guard, {
+    group: 'board',
+    onReceive: (ids) => {
+      for (const id of ids) changeStatus(store, ui, id, status);
+    },
+  });
   const label = TASK_STATUS_LABEL[status];
   return (
-    <section className={`board-col is-${status === '待办' ? 'todo' : status === '进行中' ? 'doing' : status === '完成' ? 'done' : 'closed'}`} aria-label={label}>
+    <section data-touch-reorder-zone className={`board-col is-${status === '待办' ? 'todo' : status === '进行中' ? 'doing' : status === '完成' ? 'done' : 'closed'}`} aria-label={label}>
       <header className="board-col-head">
         <span className="board-col-dot" aria-hidden />
         <span className="board-col-title">{label}</span>
