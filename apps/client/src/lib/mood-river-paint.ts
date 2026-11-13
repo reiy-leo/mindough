@@ -28,7 +28,7 @@ export interface RiverPaint {
   t: number;
   /** 呼吸开着没有（减少动态效果时 false：不起落、不漂）。 */
   motion: boolean;
-  /** 透明度上限（深色 225，浅色 255）。 */
+  /** 透明度上限（深色 240，浅色 255）。 */
   maxAlpha: number;
   /** 软边噪声的起点（core riverSeed）。 */
   seed: number;

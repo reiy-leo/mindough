@@ -17,6 +17,8 @@ import {
   getLocale,
   intlLocale,
   mixOklabTo,
+  oklabLightness,
+  toneOklab,
   moodLabel,
   monthShort,
   riverDayAt,
@@ -47,7 +49,7 @@ export function riverRangeLabel(range: RiverRange): string {
   return range.kind === 'recent' ? tr('最近 30 天') : riverMonthTitle(range.year, range.month);
 }
 
-/** 任意 CSS 颜色 → RGB（画一个像素读回来，令牌里写 color-mix 也认）。 */
+/** 任意 CSS 颜色 → RGB（画一个像素读回来）。认不出的写法（如老 WebView 不认 color-mix）用 fallback，不再当成黑色。 */
 function makeColorReader() {
   const c = document.createElement('canvas');
   c.width = c.height = 1;
@@ -55,8 +57,9 @@ function makeColorReader() {
   return (css: string, fallback: Rgb): Rgb => {
     if (!g || !css) return fallback;
     g.clearRect(0, 0, 1, 1);
-    g.fillStyle = '#000';
+    g.fillStyle = '#010203';
     g.fillStyle = css;
+    if (g.fillStyle === '#010203') return fallback;
     g.fillRect(0, 0, 1, 1);
     const d = g.getImageData(0, 0, 1, 1).data;
     return [d[0]!, d[1]!, d[2]!];
@@ -108,7 +111,19 @@ const MOOD_FALLBACK: Record<string, Rgb> = {
 };
 
 /**
- * 每股的颜色：心情色调柔和（往白 / 背景靠一点、色度降一点）。点了胶囊时，别的颜色再往背景靠，那股更纯。
+ * 河流里一股心情的色调（Rei 2026-11-13「日记中的渐变颜色块的研发发黑，light theme要浅，dark theme深一点」）。
+ * 心情令牌是给小脸、文字用的，浅色主题里本来就深（#b07f00、#2e7cf6），素净档更是近黑的灰；直接拿来画大块渐变就发黑。
+ * 这里只留色相，亮度按令牌原来的深浅挪到固定一段（OKLab L）：浅色 0.80–0.90，像淡彩；深色 0.48–0.56，深但不黑。
+ * 色度乘一下再封顶，免得浅色太艳出 sRGB 偏色。素净档的灰也走这条，深浅次序不变。
+ */
+export function riverTone(base: string, dark: boolean, focused = false): string {
+  const Lb = oklabLightness(base) ?? 0.5;
+  if (dark) return toneOklab(base, 0.36 + 0.2 * Lb + (focused ? 0.04 : 0), focused ? 1 : 0.8, focused ? 0.14 : 0.11);
+  return toneOklab(base, 0.76 + 0.2 * Lb - (focused ? 0.05 : 0), focused ? 0.8 : 0.6, focused ? 0.12 : 0.085);
+}
+
+/**
+ * 每股的颜色：riverTone 调成浅色淡彩 / 深色中深。点了胶囊时，别的颜色再往背景靠，那股更浓一点。
  * 空状态：五股很淡的中性灰（浅色接近背景，深色深灰），其中一股带一点紫。
  */
 function laneColors(p: Palette, lanes: ReadonlyArray<MoodId | null>, focus: MoodId | null, empty: boolean): Rgb[] {
@@ -118,8 +133,8 @@ function laneColors(p: Palette, lanes: ReadonlyArray<MoodId | null>, focus: Mood
   }
   return lanes.map((m) => {
     const base = m ? (p.moods[m] ?? p.text) : mixOklabTo(p.text, p.bg, 0.55);
-    let c = p.dark ? mixOklabTo(base, p.bg, 0.12, 0.9) : mixOklabTo(base, '#ffffff', 0.22, 0.95);
-    if (focus) c = m === focus ? (p.dark ? mixOklabTo(base, p.bg, 0.06, 0.95) : mixOklabTo(base, '#ffffff', 0.12, 1)) : mixOklabTo(c, p.bg, 0.5, 0.6);
+    let c = riverTone(base, p.dark);
+    if (focus) c = m === focus ? riverTone(base, p.dark, true) : mixOklabTo(c, p.bg, 0.5, 0.6);
     return fromHex(c);
   });
 }
@@ -167,7 +182,7 @@ export function MoodRiver({ data, focus, range }: { data: RiverData; focus: stri
     if (!g) return;
     const img = g.createImageData(cw, ch);
     const draw = (t: number) => {
-      paintRiver(img.data, { cw, ch, scale, W: size.W, H: size.H, profile, colors, t, motion: !reduced, maxAlpha: palette?.dark ? 225 : 255, seed });
+      paintRiver(img.data, { cw, ch, scale, W: size.W, H: size.H, profile, colors, t, motion: !reduced, maxAlpha: palette?.dark ? 240 : 255, seed });
       g.putImageData(img, 0, 0);
     };
     params.current = { draw };

@@ -227,6 +227,26 @@ export function mixOklabTo(a: string, b: string, t: number, chroma = 1): string 
   return `#${hex2(r)}${hex2(g)}${hex2(bl)}`;
 }
 
+/** 一种颜色在 OKLab 里的亮度（0–1）。读不出来返回 null。 */
+export function oklabLightness(a: string): number | null {
+  const ra = parseHex(a);
+  return ra ? rgbToOklab(ra)[0] : null;
+}
+
+/**
+ * 心情河流的色调（Rei 2026-11-13「日记中的渐变颜色块的研发发黑，light theme要浅，dark theme深一点」）：
+ * 保留色相，亮度换成 L，色度乘 chroma 再封顶 maxChroma（太艳的浅色出不了 sRGB，会偏色）。读不出来返回 a 原样。
+ */
+export function toneOklab(a: string, L: number, chroma: number, maxChroma: number): string {
+  const ra = parseHex(a);
+  if (!ra) return a;
+  const [, A, B] = rgbToOklab(ra);
+  const c = Math.hypot(A, B);
+  const k = c > 1e-6 ? Math.min(c * chroma, maxChroma) / c : 0;
+  const [r, g, bl] = oklabToRgb([Math.min(1, Math.max(0, L)), A * k, B * k]);
+  return `#${hex2(r)}${hex2(g)}${hex2(bl)}`;
+}
+
 /**
  * 一天的格子颜色（Rei 2026-10-28「activity图的颜色根据心情的颜色mix」）：每条按它的心情色算一份，没心情的（和不认识的心情）算 neutral，取平均。
  * palette：心情 id → 颜色（客户端从皮肤令牌 --mood-* 读出来）。没有条目返回 null。

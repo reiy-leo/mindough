@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fillRiverGaps, laneBase, mixOklabTo, riverData, riverDayAt, riverDays, riverMonths, riverProfile, riverSeed, riverSpan, riverYears, RIVER_RECENT_DAYS } from '../src';
+import { fillRiverGaps, laneBase, mixOklabTo, oklabLightness, riverData, riverDayAt, riverDays, riverMonths, riverProfile, riverSeed, riverSpan, riverYears, RIVER_RECENT_DAYS, toneOklab } from '../src';
 import type { JournalPost } from '../src/types';
 
 let seq = 0;
@@ -153,5 +153,19 @@ describe('其他小工具', () => {
     const soft = mixOklabTo('#ff0000', '#ffffff', 0.3, 0.8);
     expect(soft).not.toBe('#ff0000');
     expect(mixOklabTo('nope', '#fff', 0.5)).toBe('nope');
+  });
+});
+
+describe('toneOklab：河流色调（2026-11-13 浅色要浅、深色不发黑）', () => {
+  it('亮度换成给定值，色相留着，色度封顶', () => {
+    const light = toneOklab('#2e7cf6', 0.88, 0.6, 0.085);
+    expect(oklabLightness(light)!).toBeCloseTo(0.88, 1);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(light.slice(i, i + 2), 16));
+    expect(b).toBeGreaterThan(r!); // 还是蓝的
+    expect(b).toBeGreaterThan(g!);
+    expect(oklabLightness(toneOklab('#1d1d1f', 0.8, 0.6, 0.085))!).toBeCloseTo(0.8, 1); // 素净档近黑的灰也提亮
+    expect(toneOklab('#808080', 0.5, 1, 0.1)).toMatch(/^#([0-9a-f]{2})\1\1$/); // 灰还是灰
+    expect(toneOklab('nope', 0.5, 1, 0.1)).toBe('nope');
+    expect(oklabLightness('nope')).toBeNull();
   });
 });

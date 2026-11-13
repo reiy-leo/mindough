@@ -361,6 +361,8 @@
   max-width: calc(100% - 16px);
   padding: 3px 9px;
   border-radius: var(--radius-pill);
+  /* Chromium 107 不认 color-mix，先给实色垫底 */
+  background: var(--surface);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: var(--shadow-pop);
   color: var(--text);
