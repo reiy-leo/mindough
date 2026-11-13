@@ -364,11 +364,15 @@ function GridView(p: { view: CalView; rows: DateKey[][]; weekStart: 0 | 1; coreF
         const { placed } = layoutRow(row, ordered, (x) => calItemTier(x.role));
         const { shown, more, moreLane } = cutLanes(placed, row.length, fit);
         const lanes = Math.max(moreLane + 1, shown.reduce((m, x) => Math.max(m, x.lane + 1), 0));
+        // 没有条目的行 lanes 是 0，repeat(0, auto) 不合法、整条 grid-template-rows 会被丢掉，所以 0 时不写 repeat
         return (
-          <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: `auto repeat(${lanes}, auto) auto 1fr`, ['--lanes' as string]: lanes } as CSSProperties}>
-            {row.map((d, c) => (
-              <div key={`bg-${d}`} className={`cal-cell-bg${d === p.today ? ' is-today' : ''}`} style={{ gridColumn: c + 1, gridRow: '1 / -1' }} data-drop-date={d} aria-hidden />
-            ))}
+          <div key={row[0]} className="cal-row" role="row" style={{ gridTemplateRows: lanes > 0 ? `auto repeat(${lanes}, auto) auto 1fr` : 'auto auto 1fr', ['--lanes' as string]: lanes } as CSSProperties}>
+            {/* 每格的底（竖线、今天的淡底、拖放落点）单独一层，绝对定位铺满整行（含底下的 padding），不靠排道的格子轨道撑高（Rei 2026-11-13 12:01「竖线不完整」） */}
+            <div className="cal-row-bg" aria-hidden>
+              {row.map((d, c) => (
+                <div key={`bg-${d}`} className={`cal-cell-bg${d === p.today ? ' is-today' : ''}`} style={{ gridColumn: c + 1 }} data-drop-date={d} />
+              ))}
+            </div>
             {row.map((d, c) => {
               const count = p.countItems ? dayCount(d, p.countItems) : 0;
               return (

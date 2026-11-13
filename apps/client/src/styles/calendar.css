@@ -108,9 +108,19 @@
 .cal-row:last-child {
   border-bottom: 0;
 }
-.cal-cell-bg {
-  border-left: 1px solid var(--border);
+/* 每格的底单独一层，绝对定位铺满整行（含 padding-bottom），竖线和今天的淡底从行顶贯通到行底。
+   以前 .cal-cell-bg 是行里的格子项、跨 1 / -1 轨道：底下 6px padding 盖不到，没条目的行 repeat(0, auto) 让整条模板失效、只剩日期那行高（Rei 2026-11-13 12:01「竖线不完整」）。 */
+.cal-row-bg {
+  position: absolute;
+  inset: 0;
   z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+.cal-cell-bg {
+  min-width: 0;
+  border-left: 1px solid var(--border);
 }
 .cal-cell-bg:first-child {
   border-left: 0;

@@ -137,6 +137,22 @@ describe('日历', () => {
     expect(listed).toEqual(['cd', 'a', 'b', 'c', 'event']);
   });
 
+  it('格子底单独一层铺满整行，没条目的行不写 repeat(0, auto)（Rei 2026-11-13 12:01「竖线不完整」）', () => {
+    tasks.push(task('a', '待办'));
+    act(() => root.render(<CalendarPage />));
+    const rows = [...host.querySelectorAll<HTMLElement>('.cal-grid > .cal-row')];
+    expect(rows.length).toBeGreaterThan(1);
+    for (const row of rows) {
+      expect(row.style.gridTemplateRows).not.toContain('repeat(0');
+      expect(row.style.gridTemplateRows).not.toBe('');
+      const layer = row.querySelector(':scope > .cal-row-bg')!;
+      expect(layer.querySelectorAll('.cal-cell-bg[data-drop-date]').length).toBe(row.querySelectorAll('.cal-cell').length);
+    }
+    const empty = rows.find((r) => !r.querySelector('.cal-slot'))!;
+    expect(empty.style.gridTemplateRows).toBe('auto auto 1fr');
+    expect(host.querySelector(`.cal-row-bg .cal-cell-bg.is-today[data-drop-date="${today}"]`)).not.toBeNull();
+  });
+
   it('月视图格子撑满、放不下收成「+N」（Rei 2026-11-13 09:44）：前几条照画，点 +N 看那天全部', () => {
     // 假装量到了：每行 26 + 6 + 3 × 24 = 104px 高，日期那行 26px → 一行放 3 条
     const RO = globalThis.ResizeObserver;
