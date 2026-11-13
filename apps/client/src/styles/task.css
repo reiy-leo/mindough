@@ -2275,7 +2275,7 @@ html[data-layout='mobile'] .date-panel .date-clear {
 }
 
 /* 打卡描述（Rei 2026-11-13 05:09；07:25 改成属性、显示成一个框「背景略深，统一圆角」）：
-   胶囊行下面、附件上面（.detail-props 的 gap 管上下间距）。圆角同详情里的属性卡片（--radius-lg）。
+   正文下面、胶囊行上面（Rei 2026-11-13 09:18「放在上面」），是 .detail-props 的第一项，上下间距同胶囊和附件（.detail-props 的 gap）。圆角同详情里的属性卡片（--radius-lg）。
    底色用半透明黑叠在详情底上：不管详情底是什么（白、灰、带色的 Material 中性色、WinUI 半透明 Mica、暗色），都比它深一点；
    --surface-2 在 WinUI 亮色手机、各皮肤暗色里比详情底还亮，不用它。不用 color-mix（Chromium 107）。素净档只改强调色，这里不用变。 */
 .checkin-note {

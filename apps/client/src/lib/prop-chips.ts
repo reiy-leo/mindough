@@ -128,7 +128,7 @@ export function canHaveMood(t: Pick<Task, 'recurrence' | 'completion_mode'>): bo
 
 /**
  * 「+」菜单的一项：没设的属性、「打卡描述」或者「附件」。
- * 打卡描述（Rei 2026-11-13 07:25「打卡描述做成属性，在属性dropdown中放在心情、附件一组」）不是胶囊，是胶囊下面一个框：
+ * 打卡描述（Rei 2026-11-13 07:25「打卡描述做成属性，在属性dropdown中放在心情、附件一组」）不是胶囊，是胶囊行上面一个框：
  * 只有打卡有；没写、也没从菜单打开时在菜单里，写了（或正打开着）就不在。
  */
 export type AddMenuId = PropId | 'attachment' | 'checkin_note';

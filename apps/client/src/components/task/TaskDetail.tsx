@@ -922,10 +922,10 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
 
   // 属性：单值属性收成一行胶囊（Rei 2026-10-25 方案 A），资料行和任务字段仍是卡片里的行。
   // 附件紧跟在胶囊下面、资料卡片上面（Rei 2026-10-25「显示在属性块下方」）：从「+」加的附件就出现在「+」旁边。
+  // 打卡描述框是这一块的第一项、在胶囊行上面（Rei 2026-11-13 09:18），和下面几项一样用 .detail-props 的 gap。
   const props = (
     <div className="detail-props">
-      <PropChips store={store} task={task} today={today} {...(locked ? {} : { onAttach: addFiles })} {...(noteAddable ? { onAddNote: () => setNote({ id: task.id, open: true, focus: true }) } : {})} />
-      {/* 打卡描述（Rei 2026-11-13 07:25 改成属性）：胶囊下面、附件上面一个框；写了一直显示，没写时从「+」打开 */}
+      {/* 打卡描述（Rei 2026-11-13 07:25 改成属性）：正文下面、胶囊行上面一个框（Rei 2026-11-13 09:18「放在上面」）；写了一直显示，没写时从「+」打开 */}
       {noteShown && (
         <CheckInNote
           store={store}
@@ -935,6 +935,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
           onOpenChange={(open) => setNote((s) => (s.id === task.id && s.open === open && !s.focus ? s : { id: task.id, open, focus: false }))}
         />
       )}
+      <PropChips store={store} task={task} today={today} {...(locked ? {} : { onAttach: addFiles })} {...(noteAddable ? { onAddNote: () => setNote({ id: task.id, open: true, focus: true }) } : {})} />
       <Attachments owner={owner} bare readOnly={locked} />
       <RefsSection store={store} task={task} today={today} />
     </div>
