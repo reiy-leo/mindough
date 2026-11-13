@@ -140,7 +140,7 @@ function DetailFrame({
       <div className="dialog-head pane-head" {...(mode === 'pane' ? { 'data-tauri-drag-region': true } : {})}>
         {page && (
           <RacButton className="pane-back" aria-label={tr('返回')} onPress={onClose}>
-            <BackIcon size={skin === 'apple' ? 24 : 20} aria-hidden />
+            <BackIcon size={skin === 'apple' ? 18 : 20} aria-hidden />
             <span className="pane-back-label">{tr('返回')}</span>
           </RacButton>
         )}
@@ -886,8 +886,19 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
         <Archive size={12} />
         <span className="status-badge-text">{tr('已归档')}</span></span>
     );
-  else if (derived?.state === '被阻塞') badge = <span className="status-badge is-blocked">{tr('还在等 {length} 件事', { length: derived.missing.length })}</span>;
-  else if (task.status === '进行中') badge = <span className="status-badge is-active">{tr('进行中')}</span>;
+  // 字包一层 .status-badge-text：手机顶栏放不下时在这层省略（…），不是被胶囊硬切掉（Rei 2026-11-14 07:11 截图里「还在等 1 件事」的「事」被切掉半个）
+  else if (derived?.state === '被阻塞')
+    badge = (
+      <span className="status-badge is-blocked">
+        <span className="status-badge-text">{tr('还在等 {length} 件事', { length: derived.missing.length })}</span>
+      </span>
+    );
+  else if (task.status === '进行中')
+    badge = (
+      <span className="status-badge is-active">
+        <span className="status-badge-text">{tr('进行中')}</span>
+      </span>
+    );
 
   // 「关闭」在这里，不在底部（Rei 2026-10-17）；顺序和分隔见 lib/task-menu.ts
   const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };

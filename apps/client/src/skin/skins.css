@@ -1215,9 +1215,12 @@
 [data-skin='apple'] .task-list .task-row.is-selected {
   border-radius: 0;
 }
+/* 「‹ 返回」和同一行的胶囊、日期计数一样大（Rei 2026-11-14 07:11「apple 皮肤的左上角『返回』这两个字巨大，更改成和同一行的 size 一样大」）：
+   以前照 iOS 导航栏写 17px、chevron 24，这一行别的字是 12–13px（状态胶囊 12、日期计数 13），返回显得特别大，还把胶囊挤得放不下。
+   现在字 13px、chevron 18（跟同行图标一样大）；按钮高仍 44、最窄 44，点得到。 */
 [data-skin='apple'] .page-detail .pane-back {
   color: var(--accent);
-  font-size: 17px;
+  font-size: 13px;
   padding-left: 0;
 }
 [data-skin='apple'] .pane-back-label {
