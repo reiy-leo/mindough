@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { useUiStable } from '../lib/ui';
 import { useStore } from '../store/StoreProvider';
 import { afterQuickAdd, NEW_TASK_FOCUS_PREF, normalizeNewTaskFocus, quickAdd } from '../lib/quick-add';
+import { useListDraft } from '../lib/list-draft';
 
 /**
  * 列表页最上面的快速添加框（Rei 2026-10-26「我的一天、待安排、可做的中间列的header去掉，换成输入框」）。
@@ -15,6 +16,7 @@ import { afterQuickAdd, NEW_TASK_FOCUS_PREF, normalizeNewTaskFocus, quickAdd } f
  * head：框上面的一行（我的一天的大号日期 + 排序 / 分区按钮，Rei 2026-11-09 03:48），也和框一起固定。
  * 添加框固定在列表顶上，不跟着列表滚（Rei 2026-11-02「所有的任务输入框都不随列表滚动」）：外面一层 sticky、不透明底；
  * 滚动后（顶上的哨兵看不见了）加 is-stuck，底下多一条细分隔线。
+ * draftKey：打了没提交的字存成这台设备上的草稿，切页、切项目、刷新回来还在，提交后删（Rei 2026-11-14，lib/list-draft）。
  */
 /**
  * 固定在顶上的那一层滚动了没有：把 sentinel 放在 sticky 层前面（1px 高），它滚出可见区域就是 stuck。
@@ -33,16 +35,18 @@ export function useStuck() {
   return { sentinel, stuck };
 }
 
-export function QuickAddBar({ placeholder, label, create, trailing, meta, head }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode; head?: ReactNode }) {
+export function QuickAddBar({ placeholder, label, create, trailing, meta, head, draftKey }: { placeholder: string; label: string; create: (text: string) => string; trailing?: ReactNode; meta?: ReactNode; head?: ReactNode; draftKey: string }) {
   const ui = useUiStable();
   const store = useStore();
-  const [draft, setDraft] = useState('');
+  const [saved, save, clearSaved] = useListDraft(draftKey);
+  const draft = saved.text;
+  const setDraft = (text: string) => save({ text });
   const input = useRef<HTMLTextAreaElement>(null);
   const { sentinel, stuck } = useStuck();
   const add = () => {
     const id = quickAdd({ create, openEditor: ui.openEditor }, draft);
     if (!id) return;
-    setDraft('');
+    clearSaved();
     // 光标去哪看设置「新建后光标」（同步偏好，电脑和手机一样，Rei 2026-11-13）
     afterQuickAdd(id, input.current, normalizeNewTaskFocus(store.pref(NEW_TASK_FOCUS_PREF)));
   };

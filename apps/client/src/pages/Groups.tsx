@@ -13,6 +13,7 @@ import { CategoryLabel, CategoryPicker, NO_CATEGORY } from '../components/Catego
 import { TaskRow } from '../components/TaskRow';
 import { PageHeader } from '../components/PageHeader';
 import { QuickAddBar, useStuck } from '../components/QuickAddBar';
+import { draftKey } from '../lib/list-draft';
 import { todayDefaults } from '../lib/quick-add';
 import { ProjectBoard } from '../components/project/ProjectBoard';
 import { ProjectTimeline } from '../components/project/ProjectTimeline';
@@ -301,7 +302,7 @@ function GroupDetail({
           </Button>
         </div>
       )}
-      <QuickAddBar label={tr('添加任务到这个项目')} placeholder={tr('这个项目里要做什么？按回车添加')} create={create} />
+      <QuickAddBar draftKey={draftKey('project', g.id)} label={tr('添加任务到这个项目')} placeholder={tr('这个项目里要做什么？按回车添加')} create={create} />
       </div>
       {prefs.view === 'board' ? (
         <ProjectBoard store={store} tasks={tasks} />

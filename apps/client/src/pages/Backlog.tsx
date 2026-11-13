@@ -10,6 +10,7 @@ import { useUi } from '../lib/ui';
 import { Button, PopoverPanel } from '../ui/primitives';
 import { RowLead, TaskRow } from '../components/TaskRow';
 import { QuickAddBar } from '../components/QuickAddBar';
+import { draftKey } from '../lib/list-draft';
 import { DatePanel } from '../components/task/DatePanel';
 import { titleOf } from '../lib/view';
 import { useReorderGuard } from '../lib/drag-guard';
@@ -41,7 +42,7 @@ export function BacklogPage() {
     <div className="page">
       {/* 中间列不放页头（Rei 2026-10-26）：最上面是添加框，加进待安排；件数挪到列表上方的小字。
           原来页头的「新建任务」按钮去掉了，右下角的新建按钮也去掉了（Rei 2026-11-08）：N 照常打开完整的新建面板 */}
-      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到等待安排')} label={tr('添加任务到等待安排')} create={(body) => store.createTask({ body_md: body }).id}
+      <QuickAddBar placeholder={tr('想到什么先记下，按回车添加到等待安排')} label={tr('添加任务到等待安排')} draftKey={draftKey('backlog')} create={(body) => store.createTask({ body_md: body }).id}
         meta={
           <div className="list-meta">
             <h1 className="sr-only">{tr('等待安排')}</h1>

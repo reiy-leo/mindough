@@ -7,6 +7,7 @@ import { Button, Empty, OverflowMenu, Section, Tip } from '../ui/primitives';
 import { useReorderGuard } from '../lib/drag-guard';
 import { createToday } from '../lib/quick-add';
 import { QuickAddBar } from '../components/QuickAddBar';
+import { draftKey } from '../lib/list-draft';
 import { titleOf } from '../lib/view';
 import { RowLead, TaskRow } from '../components/TaskRow';
 import { MyDayTitle } from '../components/MyDayTitle';
@@ -88,6 +89,7 @@ export function MyDayPage() {
       <QuickAddBar
         placeholder={tr('今天要做什么？按回车添加')}
         label={tr('添加任务到今天')}
+        draftKey={draftKey('myday')}
         create={(body) => createToday(store, body, today, { dateToday: settings.myDayDefaultToday })}
         head={
           layout === 'mobile' ? (

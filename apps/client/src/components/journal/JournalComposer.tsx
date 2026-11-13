@@ -9,6 +9,7 @@
  *   发送时跟着这条走，挂成这条的附件（lib/journal-send.ts）。别的文件提示「只能加图片」。
  *   把图片拖到输入框上（包括正文）也一样进「待发」（Rei 2026-11-01，和任务详情拖附件一致）。
  * - 右边：发送（⌘/Ctrl + Enter 也发）。只放了图片也能发。发了就不能改（Store 拦着），所以发送前不用确认。
+ * - 没发的正文和心情存成这台设备上的草稿（Rei 2026-11-14，lib/list-draft）：切页回来、刷新、重启都还在，发了就删；待发的图片不存。
  */
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import { Button as RacButton } from 'react-aria-components';
@@ -25,6 +26,7 @@ import { DropOverlay, useFileDrop } from '../attachments/Attachments';
 import { MoodIcon } from './MoodIcon';
 import { MoodGrid } from './MoodGrid';
 import { tr } from '../../lib/i18n';
+import { draftKey, useListDraft } from '../../lib/list-draft';
 
 export interface ComposerHandle {
   focus: () => void;
@@ -40,8 +42,14 @@ let seq = 0;
 
 export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: string, mood: MoodId | null, images: File[]) => void; autoFocus?: boolean }>(function JournalComposer({ onSend, autoFocus }, ref) {
   const ui = useUi();
-  const [body, setBody] = useState('');
-  const [mood, setMood] = useState<MoodId | null>(null);
+  const [draft, saveDraft, clearDraft] = useListDraft(draftKey('journal'));
+  const body = draft.text;
+  const mood = (draft.mood ?? null) as MoodId | null;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  // 同一拍里先后改正文和心情也不丢：先更新 ref 再存
+  const setBody = (text: string) => saveDraft((draftRef.current = { ...draftRef.current, text }));
+  const setMood = (m: MoodId | null) => saveDraft((draftRef.current = { text: draftRef.current.text, mood: m }));
   const [played, setPlayed] = useState(0);
   const [pending, setPending] = useState<Pending[]>([]);
   const editor = useRef<MdEditorHandle | null>(null);
@@ -78,9 +86,8 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
     onSend(text, mood, pending.map((p) => p.file));
     pending.forEach((p) => URL.revokeObjectURL(p.url));
     setPending([]);
-    setBody('');
+    clearDraft();
     editor.current?.setMarkdown('');
-    setMood(null);
     focus();
   };
   const sendRef = useRef(send);
