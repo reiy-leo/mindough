@@ -229,7 +229,7 @@ export class Store {
         if (t === 'task' && (row as Task).refs_mirror === undefined) (row as Task).refs_mirror = null;
         // v21 之前没有 lib_via（项目关联资料库）：同上，空 = 手动放的
         if (t === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
-        // v24 之前没有 milestone_id（阶段）：同上，空 = 没设
+        // v24 之前没有 milestone_id（里程碑）：同上，空 = 没设
         if (t === 'task' && (row as Task).milestone_id === undefined) (row as Task).milestone_id = null;
         // v9 之前没有 count_config（空 = 步长 1）：同上
         if (t === 'task' && !isPlainObject((row as Task).count_config)) (row as Task).count_config = {};
@@ -412,7 +412,7 @@ export class Store {
       if (c.table === 'task' && (row as Task).lib_via === undefined) (row as Task).lib_via = null;
       // 打卡描述（v23）同理，空也写上，和重开后读回的样子一致
       if (c.table === 'task' && (row as Task).checkin_note === undefined) (row as Task).checkin_note = null;
-      // 阶段（v24，milestone.ts）：空也写上；阶段只能是任务现在这个项目的——移出项目、换了项目就清掉（不跨项目保留）
+      // 里程碑（v24，milestone.ts）：空也写上；里程碑只能是任务现在这个项目的——移出项目、换了项目就清掉（不跨项目保留）
       if (c.table === 'task') (row as Task).milestone_id = this.validMilestoneId(row as Task);
       // 资料 / 人物总带着 merged_into（没合并过 = null），和重开后读回的样子一致
       if ((c.table === 'library_item' || c.table === 'person') && (row as LibraryItem).merged_into === undefined) (row as LibraryItem).merged_into = null;
@@ -540,7 +540,7 @@ export class Store {
         if (t.mood === undefined) t.mood = null;
         // 打卡描述（v23）：老客户端推上来的行没有这一列，沿用本机的值，别冲掉
         if (t.checkin_note === undefined) t.checkin_note = (cur as Task | undefined)?.checkin_note ?? null;
-        // 阶段（v24）：老客户端推上来的行没有这一列。项目没变就沿用本机的值；项目变了（它挪了项目）当成清掉，阶段不跨项目
+        // 里程碑（v24）：老客户端推上来的行没有这一列。项目没变就沿用本机的值；项目变了（它挪了项目）当成清掉，里程碑不跨项目
         if (t.milestone_id === undefined) {
           const old = cur as Task | undefined;
           t.milestone_id = old && (old.group_id ?? null) === (t.group_id ?? null) ? (old.milestone_id ?? null) : null;
@@ -1943,7 +1943,7 @@ export class Store {
       if (g?.deleted) rows.push({ table: 'group', row: { ...g, deleted: false } });
       for (const m of undo.tasks) {
         const t = this.tables.task.get(m.id);
-        // 解散时清掉的阶段一起放回（阶段那行没动过，还属于这个项目）
+        // 解散时清掉的里程碑一起放回（里程碑那行没动过，还属于这个项目）
         if (t && !t.deleted && t.group_id === null) rows.push({ table: 'task', row: { ...t, group_id: m.group_id, ...(m.milestone_id ? { milestone_id: m.milestone_id } : {}) } as BaseRow });
       }
     } else {
@@ -1955,10 +1955,10 @@ export class Store {
     this.write(rows);
   }
 
-  // ───────────── 项目阶段（Rei 2026-11-13，milestone.ts） ─────────────
+  // ───────────── 项目里程碑（Rei 2026-11-13，milestone.ts） ─────────────
 
   /**
-   * 写任务时它的阶段该是什么：没设、不在项目里 → null；阶段那行在本机、却不是这个项目的（或删了）→ null；
+   * 写任务时它的里程碑该是什么：没设、不在项目里 → null；里程碑那行在本机、却不是这个项目的（或删了）→ null；
    * 本机还没有那一行（理论上只有同步顺序问题）→ 留着，显示时 milestoneOf 再核对。
    */
   private validMilestoneId(t: Task): string | null {
@@ -1970,20 +1970,20 @@ export class Store {
     return id;
   }
 
-  /** 项目的阶段列表（按 sort）。archived = true 时连归档的一起。 */
+  /** 项目的里程碑列表（按 sort）。archived = true 时连归档的一起。 */
   milestones(groupId: string | null | undefined, archived = false): Milestone[] {
     if (!groupId) return [];
     return sortMilestones([...this.tables.milestone.values()].filter((m) => !m.deleted && m.group_id === groupId && (archived || !m.archived_at)));
   }
 
-  /** 任务挂的阶段：要还在、而且属于任务现在的项目，否则当没有。 */
+  /** 任务挂的里程碑：要还在、而且属于任务现在的项目，否则当没有。 */
   milestoneOf(task: Pick<Task, 'group_id' | 'milestone_id'> | null | undefined): Milestone | undefined {
     if (!task?.milestone_id || !task.group_id) return undefined;
     const m = this.tables.milestone.get(task.milestone_id);
     return m && !m.deleted && m.group_id === task.group_id ? m : undefined;
   }
 
-  /** 项目里同名（忽略大小写、首尾空白）的阶段，归档的也算。 */
+  /** 项目里同名（忽略大小写、首尾空白）的里程碑，归档的也算。 */
   findMilestone(groupId: string, name: string): Milestone | undefined {
     const key = milestoneNameKey(name);
     if (!key) return undefined;
@@ -1991,7 +1991,7 @@ export class Store {
   }
 
   /**
-   * 新建阶段，排在这个项目列表最后。名字空的不建（返回 undefined）；项目不在也不建。
+   * 新建里程碑，排在这个项目列表最后。名字空的不建（返回 undefined）；项目不在也不建。
    * 已经有同名的（忽略大小写）不新建，返回那一个；它归档了就取消归档。
    */
   createMilestone(groupId: string, name: string): Milestone | undefined {
@@ -2003,7 +2003,7 @@ export class Store {
     return this.insert('milestone', { group_id: groupId, name: n, sort: maxSort + 1, archived_at: null, created_at: this.now().toISOString() });
   }
 
-  /** 改阶段名字。空的、和同项目别的阶段重名的不改，分别返回 'empty' / 'duplicate'；没变也算 'ok'。 */
+  /** 改里程碑名字。空的、和同项目别的里程碑重名的不改，分别返回 'empty' / 'duplicate'；没变也算 'ok'。 */
   renameMilestone(id: string, name: string): 'ok' | 'empty' | 'duplicate' | 'missing' {
     const m = this.get('milestone', id);
     if (!m) return 'missing';
@@ -2015,14 +2015,14 @@ export class Store {
     return 'ok';
   }
 
-  /** 归档 / 取消归档阶段。任务上挂着的不动（照常显示），只是选择器里不再列。 */
+  /** 归档 / 取消归档里程碑。任务上挂着的不动（照常显示），只是选择器里不再列。 */
   setMilestoneArchived(id: string, archived: boolean): Milestone | undefined {
     const m = this.get('milestone', id);
     if (!m || !!m.archived_at === archived) return m;
     return this.update('milestone', id, { archived_at: archived ? this.now().toISOString() : null });
   }
 
-  /** 给任务设阶段（null = 清掉）。任务不在项目里、阶段不是这个项目的：不写，返回 false。 */
+  /** 给任务设里程碑（null = 清掉）。任务不在项目里、里程碑不是这个项目的：不写，返回 false。 */
   setTaskMilestone(taskId: string, milestoneId: string | null): boolean {
     const t = this.get('task', taskId);
     if (!t) return false;

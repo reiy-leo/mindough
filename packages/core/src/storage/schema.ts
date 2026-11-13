@@ -410,10 +410,10 @@ ALTER TABLE "task" ADD COLUMN "checkin_note" TEXT;
 `,
   },
   {
-    // Rei 2026-11-13：项目里的阶段（milestone.ts）。每个项目一张列表；task.milestone_id 指向它，空 = 没设（老行都是空）。
+    // Rei 2026-11-13：项目里的里程碑（milestone.ts）。每个项目一张列表；task.milestone_id 指向它，空 = 没设（老行都是空）。
     // 老客户端不认这张表和这一列：表的行它忽略，任务行推上来没有这一列时按 Store.applyRemote 的规则补。
     version: 24,
-    name: '项目阶段（milestone、task.milestone_id）',
+    name: '项目里程碑（milestone、task.milestone_id）',
     sql: `
 CREATE TABLE IF NOT EXISTS "milestone" (
   "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,

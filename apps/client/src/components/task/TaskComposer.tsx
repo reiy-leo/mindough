@@ -78,7 +78,7 @@ interface Draft extends CompletionValue {
   /** 任务时区（Rei 2026-10-25）：在日期面板里选过才有，空 = 跟着设备。 */
   timeZone: string | null;
   groupId: string | null;
-  /** 阶段（Rei 2026-11-13）：只有选了项目才有；换项目时清掉。 */
+  /** 里程碑（Rei 2026-11-13）：只有选了项目才有；换项目时清掉。 */
   milestoneId: string | null;
   /** 资料（Rei 2026-10-28：跨库多选，人物也在这里），按挑的先后。 */
   refs: RefKey[];
@@ -373,7 +373,7 @@ function Composer() {
             store={store}
             value={d.groupId}
             onChange={(id) => {
-              // 阶段是项目自己的：换了项目就清掉
+              // 里程碑是项目自己的：换了项目就清掉
               set(id === d.groupId ? { groupId: id } : { groupId: id, milestoneId: null });
               close();
             }}
@@ -381,12 +381,12 @@ function Composer() {
         )}
       </PopoverPanel>
     ),
-    // 阶段（Rei 2026-11-13「这个属性只有项目中可以设置」）：选了项目才出来
+    // 里程碑（Rei 2026-11-13「这个属性只有项目中可以设置」）：选了项目才出来
     milestone: d.groupId ? (
       <PopoverPanel
-        label={tr('阶段')}
+        label={tr('里程碑')}
         className="is-wide is-sheet cat-select-pop"
-        trigger={<PropChip icon={<MilestoneIcon size={14} />} label={tr('阶段')} {...(milestone ? { value: milestone.name } : {})} />}
+        trigger={<PropChip icon={<MilestoneIcon size={14} />} label={tr('里程碑')} {...(milestone ? { value: milestone.name } : {})} />}
       >
         {(close) => <MilestoneList store={store} groupId={d.groupId!} value={milestone?.id ?? null} onChange={(id) => set({ milestoneId: id })} onDone={close} />}
       </PopoverPanel>

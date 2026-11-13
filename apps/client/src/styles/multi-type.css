@@ -355,7 +355,7 @@ html[data-layout='mobile'] .popover.popover-panel.is-sheet .cat-option {
   min-height: 44px;
 }
 
-/* ───────── 阶段下拉（Rei 2026-11-13，components/task/MilestonePicker）：沿用类型下拉的样子 ───────── */
+/* ───────── 里程碑下拉（Rei 2026-11-13，components/task/MilestonePicker）：沿用类型下拉的样子 ───────── */
 .milestone-option-icon {
   flex: none;
   color: var(--text-2);

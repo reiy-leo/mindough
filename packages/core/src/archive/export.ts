@@ -298,7 +298,7 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
       mood: t.mood ?? undefined,
       // 打卡描述（Rei 2026-11-13，v23）：写了才写，纯文字
       checkin_note: t.checkin_note ?? undefined,
-      // 阶段（Rei 2026-11-13，v24）：设了才写，id + 名字注释（阶段列表在 _meta/milestones.json）
+      // 里程碑（Rei 2026-11-13，v24）：设了才写，id + 名字注释（里程碑列表在 _meta/milestones.json）
       milestone: store.milestoneOf(t) ? new Noted(t.milestone_id!, store.milestoneOf(t)!.name) : undefined,
       sort: t.sort,
       people: listOf(peopleOf.get(t.id), (id) => store.get('person', id)?.name ?? ''),
@@ -407,7 +407,7 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
   });
   // 类型（打卡分类和项目分类合成的一套，2026-10-26）：只写 categories.json；旧的 checkin-categories.json 不再写，导入还认
   files.push({ path: '_meta/categories.json', data: json(store.categories(true).map(strip)) });
-  // 项目阶段（Rei 2026-11-13）：项目还在的才写，归档的也写
+  // 项目里程碑（Rei 2026-11-13）：项目还在的才写，归档的也写
   files.push({ path: '_meta/milestones.json', data: json(store.list('milestone').filter((m) => !!store.get('group', m.group_id)).map(strip)) });
   files.push({ path: '_meta/prefs.json', data: json(store.list('pref').map(strip)) });
   files.push({ path: '_meta/checkins.json', data: json(checkins.filter((c) => taskById.has(c.task_id)).map(strip)) });

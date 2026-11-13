@@ -1,5 +1,5 @@
 /**
- * 项目阶段（Rei 2026-11-13，见 src/milestone.ts）：每个项目一张阶段列表；任务最多一个阶段，只在项目里能设；
+ * 项目里程碑（Rei 2026-11-13，见 src/milestone.ts）：每个项目一张里程碑列表；任务最多一个里程碑，只在项目里能设；
  * 移出项目 / 换项目清掉；同项目不重名（忽略大小写、首尾空白）；归档不删；选择器的过滤和「新建」；
  * 迁移 v24、两台设备同步、老客户端推上来的行、导出导入、搜索、解散项目的撤销。
  */
@@ -41,7 +41,7 @@ describe('纯函数', () => {
   it('选择器：不搜时列没归档的；搜时过滤，没有完全同名的最后给「新建」', () => {
     const list = [ms('a', '设计', { sort: 1 }), ms('b', '施工', { sort: 2 }), ms('c', '验收', { sort: 3, archived_at: '2026-11-13T00:00:00.000Z' }), ms('d', '删了', { deleted: true })];
     expect(milestoneOptions(list, '').map((o) => (o.kind === 'milestone' ? o.milestone.id : 'new'))).toEqual(['a', 'b']);
-    // 现在挂着的归档阶段也列上
+    // 现在挂着的归档里程碑也列上
     expect(milestoneOptions(list, '', 'c').map((o) => (o.kind === 'milestone' ? o.milestone.id : 'new'))).toEqual(['a', 'b', 'c']);
     const hits = milestoneOptions(list, '施');
     expect(hits.map((o) => (o.kind === 'milestone' ? o.milestone.id : `new:${o.name}`))).toEqual(['b', 'new:施']);
@@ -90,7 +90,7 @@ describe('Store：建、改名、归档、设到任务上', () => {
     expect(store.renameMilestone('nope', 'x')).toBe('missing');
   });
 
-  it('只有项目里的任务能设，阶段要是这个项目的', async () => {
+  it('只有项目里的任务能设，里程碑要是这个项目的', async () => {
     const store = await open();
     const A = project(store);
     const B = project(store, '搬家');
@@ -107,7 +107,7 @@ describe('Store：建、改名、归档、设到任务上', () => {
     expect(store.get('task', t.id)!.milestone_id).toBeNull();
   });
 
-  it('移出项目、换项目：阶段清掉（换回来也不恢复）；归档阶段照常挂着', async () => {
+  it('移出项目、换项目：里程碑清掉（换回来也不恢复）；归档里程碑照常挂着', async () => {
     const store = await open();
     const A = project(store);
     const B = project(store, '搬家');
@@ -123,12 +123,12 @@ describe('Store：建、改名、归档、设到任务上', () => {
     store.setTaskMilestone(t.id, a1.id);
     store.updateTask(t.id, { group_id: null });
     expect(store.get('task', t.id)!.milestone_id).toBeNull();
-    // 直接写别的项目的阶段也写不进去
+    // 直接写别的项目的里程碑也写不进去
     store.updateTask(t.id, { group_id: B.id, milestone_id: a1.id });
     expect(store.get('task', t.id)!.milestone_id).toBeNull();
   });
 
-  it('解散项目清掉阶段，撤销后连阶段一起放回', async () => {
+  it('解散项目清掉里程碑，撤销后连里程碑一起放回', async () => {
     const store = await open();
     const A = project(store);
     const a1 = store.createMilestone(A.id, '设计')!;
@@ -141,7 +141,7 @@ describe('Store：建、改名、归档、设到任务上', () => {
     expect(store.get('task', t.id)!.milestone_id).toBe(a1.id);
   });
 
-  it('新建任务可以直接带阶段', async () => {
+  it('新建任务可以直接带里程碑', async () => {
     const store = await open();
     const A = project(store);
     const a1 = store.createMilestone(A.id, '设计')!;
@@ -178,7 +178,7 @@ describe('迁移、同步、老客户端', () => {
     expect(s2.get('task', t.id)!.milestone_id ?? null).toBeNull();
   });
 
-  it('两台设备：A 建阶段、设到任务上，B 同步后看到；B 换项目清掉，A 也清掉', async () => {
+  it('两台设备：A 建里程碑、设到任务上，B 同步后看到；B 换项目清掉，A 也清掉', async () => {
     const remote = new MemoryRemote();
     const dev = async (id: string) => {
       const store = await open(new MemoryAdapter(), id);
@@ -220,7 +220,7 @@ describe('迁移、同步、老客户端', () => {
     expect(store.get('task', t.id)!.milestone_id).toBeNull();
   });
 
-  it('同步来的行阶段和项目对不上（并发改）：显示当没有', async () => {
+  it('同步来的行里程碑和项目对不上（并发改）：显示当没有', async () => {
     const store = await open();
     const A = project(store);
     const B = project(store, '搬家');
@@ -236,7 +236,7 @@ describe('导出导入、搜索', () => {
     const store = await open();
     const A = project(store);
     const m = store.createMilestone(A.id, '设计')!;
-    const arch = store.createMilestone(A.id, '旧阶段')!;
+    const arch = store.createMilestone(A.id, '旧里程碑')!;
     store.setMilestoneArchived(arch.id, true);
     const t = store.createTask({ body_md: '量尺寸', group_id: A.id, milestone_id: m.id });
     const { files } = exportArchive(store);
@@ -245,11 +245,11 @@ describe('导出导入、搜索', () => {
     const dst = await open(new MemoryAdapter(), 'dev2');
     applyImport(dst, planImport(dst, files));
     expect(dst.get('task', t.id)!.milestone_id).toBe(m.id);
-    expect(dst.milestones(A.id, true).map((x) => x.name)).toEqual(['设计', '旧阶段']);
+    expect(dst.milestones(A.id, true).map((x) => x.name)).toEqual(['设计', '旧里程碑']);
     expect(dst.get('milestone', arch.id)!.archived_at).not.toBeNull();
   });
 
-  it('搜索：阶段名字能搜到任务', async () => {
+  it('搜索：里程碑名字能搜到任务', async () => {
     const store = await open();
     const A = project(store);
     const m = store.createMilestone(A.id, '水电改造')!;

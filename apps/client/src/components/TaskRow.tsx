@@ -34,7 +34,7 @@ export interface TaskRowProps {
   trailing?: ReactNode;
   /** 打卡任务是否显示行内打卡按钮。 */
   showCheckIn?: boolean;
-  /** 显示阶段小标签（Rei 2026-11-13 项目阶段）：项目页的列表、看板用；按阶段分区时不用（分区标题就是）。 */
+  /** 显示里程碑小标签（Rei 2026-11-13 项目里程碑）：项目页的列表、看板用；按里程碑分区时不用（分区标题就是）。 */
   showMilestone?: boolean;
 }
 
@@ -224,7 +224,7 @@ export function TaskRow({ store, task, showGroup = true, showDate = false, showM
             </span>
           )}
           {showMilestone && store.milestoneOf(task) && (
-            <span className="meta-milestone" aria-label={tr('阶段：{name}', { name: store.milestoneOf(task)!.name })}>
+            <span className="meta-milestone" aria-label={tr('里程碑：{name}', { name: store.milestoneOf(task)!.name })}>
               <MilestoneIcon size={12} aria-hidden />
               <span className="meta-milestone-name">{store.milestoneOf(task)!.name}</span>
             </span>

@@ -36,7 +36,7 @@ describe('列表分区 sections', () => {
     expect(s[2]!.tasks).toHaveLength(2);
     expect(s[0]!.group?.name).toBe('A');
   });
-  it('按阶段（Rei 2026-11-13）：按传进来的阶段顺序，没有阶段（或对不上项目的）最后；归档的阶段排在没归档的后面', () => {
+  it('按里程碑（Rei 2026-11-13）：按传进来的里程碑顺序，没有里程碑（或对不上项目的）最后；归档的里程碑排在没归档的后面', () => {
     const m = (id: string, name: string, sort: number, archived = false) => ({ id, name, sort, group_id: 'p', archived_at: archived ? '2026-11-13T00:00:00.000Z' : null, created_at: '2026-11-13T00:00:00.000Z', deleted: false, updated_at: '' }) as Milestone;
     const list = [m('m1', '设计', 1), m('m2', '施工', 2, true), m('m3', '验收', 3)];
     const order = milestoneSectionOrder({ milestones: () => list } as never, 'p');

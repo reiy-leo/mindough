@@ -31,7 +31,7 @@ export interface SearchIndexInput {
   taskItems?: readonly TaskItem[];
   taskCategories?: readonly TaskCategory[];
   categories?: readonly Category[];
-  /** 项目阶段（Rei 2026-11-13）：任务挂的阶段名字也算进去（阶段要属于任务现在的项目）。 */
+  /** 项目里程碑（Rei 2026-11-13）：任务挂的里程碑名字也算进去（里程碑要属于任务现在的项目）。 */
   milestones?: readonly Milestone[];
 }
 

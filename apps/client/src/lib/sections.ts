@@ -11,8 +11,8 @@
  *   （任务上类型的顺序，store.categoryIdsOfTask 的第一个，和打卡页按类型分组一样不重复出现）；没挂类型的放最后「没有类型」。
  *   分区顺序和类型页、类型选择器同一个规则（categorySectionOrder）：常用的在前，其余按最近用过，没用过的按默认组；
  *   设成不显示的类型照常成段，排在能显示的后面（同样规则排）。不在传进来的类型列表里的（理论上没有）也算「没有类型」。
- * - 按阶段（Rei 2026-11-13 项目阶段，只在项目页）：按这个项目阶段列表的顺序（没归档的在前，归档的跟在后面），没设阶段的放最后「没有阶段」。
- *   任务挂的阶段不在传进来的列表里（对不上项目）也算「没有阶段」。
+ * - 按里程碑（Rei 2026-11-13 项目里程碑，只在项目页）：按这个项目里程碑列表的顺序（没归档的在前，归档的跟在后面），没设里程碑的放最后「没有里程碑」。
+ *   任务挂的里程碑不在传进来的列表里（对不上项目）也算「没有里程碑」。
  * - 分区里的顺序就是传进来的顺序（调用方先排好）；空分区不出现。
  */
 import { isMarkerCategory, logicalToday, addDays, diffDays, isMoodId, moodLabel, MOOD_IDS, orderPickerCategories, startOfWeek, taskEndDate, taskToday, type Category, type DateKey, type Group, type Milestone, type Store, type Task } from '@mindough/core';
@@ -31,7 +31,7 @@ export function categorySectionOrder(store: Pick<Store, 'categories' | 'pickerCa
   return [...store.pickerCategories().filter((c) => !isMarkerCategory(c)), ...orderPickerCategories(hidden, store.frequentCategoryIds(), store.categoryLastUsed(), store.categoryGroupOverrides())];
 }
 
-/** 按阶段分区时阶段的先后：没归档的按列表顺序，归档的跟在后面（同样按列表顺序）。 */
+/** 按里程碑分区时里程碑的先后：没归档的按列表顺序，归档的跟在后面（同样按列表顺序）。 */
 export function milestoneSectionOrder(store: Pick<Store, 'milestones'>, groupId: string): Milestone[] {
   const all = store.milestones(groupId, true);
   return [...all.filter((m) => !m.archived_at), ...all.filter((m) => !!m.archived_at)];
@@ -157,7 +157,7 @@ export interface ListSection<T> {
   group?: Group;
   /** 按类型时是那个类型（画图标、上色）。 */
   category?: Category;
-  /** 按阶段时是那个阶段。 */
+  /** 按里程碑时是那个里程碑。 */
   milestone?: Milestone;
   tasks: T[];
 }
@@ -171,7 +171,7 @@ export function sectionTasks<T extends Task>(
     /** 按类型：类型的先后（categorySectionOrder），和每件任务挂的类型 id（按任务上的顺序，store.categoryIdsOfTask）。 */
     categories?: readonly Category[];
     categoryIdsOf?: (t: T) => readonly string[];
-    /** 按阶段：项目的阶段（按列表顺序，归档的放后面），和每件任务的阶段 id（store.milestoneOf，对不上项目给 null）。 */
+    /** 按里程碑：项目的里程碑（按列表顺序，归档的放后面），和每件任务的里程碑 id（store.milestoneOf，对不上项目给 null）。 */
     milestones?: readonly Milestone[];
     milestoneOf?: (t: T) => string | null;
     now?: Date;
@@ -214,7 +214,7 @@ export function sectionTasks<T extends Task>(
       byMs.set(k, [...(byMs.get(k) ?? []), t]);
     }
     for (const m of list) push(m.id, m.name, byMs.get(m.id) ?? [], { milestone: m });
-    push('none', tr('没有阶段'), byMs.get('none') ?? []);
+    push('none', tr('没有里程碑'), byMs.get('none') ?? []);
   } else {
     const now = ctx.now ?? new Date();
     const today = ctx.today ?? logicalToday(now);

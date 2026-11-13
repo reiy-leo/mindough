@@ -1,14 +1,14 @@
 /**
- * 阶段选择（Rei 2026-11-13 09:19「显示为一个可搜索的dropdown，搜索可以选择，也可以新建」，见 core milestone.ts）。
- * 任务详情的「阶段」胶囊、新建面板都用它；列的是这个项目自己的阶段。样子沿用类型下拉（.cat-select）。
+ * 里程碑选择（Rei 2026-11-13 09:19「显示为一个可搜索的dropdown，搜索可以选择，也可以新建」，见 core milestone.ts）。
+ * 任务详情的「里程碑」胶囊、新建面板都用它；列的是这个项目自己的里程碑。样子沿用类型下拉（.cat-select）。
  *
  * - 顶上搜索框：输入就过滤（名字包含、中文名拼音首字母 / 全拼都行），组字时不过滤（lib/ime）。
- * - 列表：这个项目没归档的阶段，按列表顺序；任务现在挂的阶段归档了也列上，带「已归档」。单选，点了就选上并收起。
- * - 搜不到完全同名的（忽略大小写、首尾空白）：最后一行「新建阶段“xxx”」，回车或点它就建，建完直接选上。
- *   同名的阶段归档了，「新建」就是把它取消归档再选上。
+ * - 列表：这个项目没归档的里程碑，按列表顺序；任务现在挂的里程碑归档了也列上，带「已归档」。单选，点了就选上并收起。
+ * - 搜不到完全同名的（忽略大小写、首尾空白）：最后一行「新建里程碑“xxx”」，回车或点它就建，建完直接选上。
+ *   同名的里程碑归档了，「新建」就是把它取消归档再选上。
  * - 每行右边「…」：改名（行里直接改，回车存，Esc 取消；空的、同项目重名的不让存）、归档 / 取消归档（提示里能撤销）。
- *   归档只是不在这里列，挂着它的任务照常显示。阶段没有删除。
- * - 底部「清除阶段」（选了阶段时才有）。键盘：↑↓ 移动，回车选，Esc 关掉。
+ *   归档只是不在这里列，挂着它的任务照常显示。里程碑没有删除。
+ * - 底部「清除里程碑」（选了里程碑时才有）。键盘：↑↓ 移动，回车选，Esc 关掉。
  */
 import { imeBusy, useImeQuery } from '../../lib/ime';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -29,7 +29,7 @@ export function MilestoneList({
   autoFocus = true,
 }: {
   store: Store;
-  /** 任务所在的项目（列这个项目的阶段）。 */
+  /** 任务所在的项目（列这个项目的里程碑）。 */
   groupId: string;
   value: string | null;
   onChange: (id: string | null) => void;
@@ -102,7 +102,7 @@ export function MilestoneList({
   const saveRename = () => {
     if (!editing) return;
     const r = store.renameMilestone(editing.id, editing.text);
-    if (r === 'empty') return setEditing({ ...editing, error: tr('阶段名字不能是空的') });
+    if (r === 'empty') return setEditing({ ...editing, error: tr('里程碑名字不能是空的') });
     if (r === 'duplicate') return setEditing({ ...editing, error: tr('这个项目里已经有「{name}」了', { name: editing.text.trim() }) });
     setEditing(null);
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -110,7 +110,7 @@ export function MilestoneList({
   const archive = (m: Milestone, on: boolean) => {
     store.setMilestoneArchived(m.id, on);
     if (on)
-      ui.toast({ message: tr('已归档阶段「{name}」', { name: clipName(m.name) }), actions: [{ label: tr('撤销'), onPress: () => store.setMilestoneArchived(m.id, false) }] }, 5000);
+      ui.toast({ message: tr('已归档里程碑「{name}」', { name: clipName(m.name) }), actions: [{ label: tr('撤销'), onPress: () => store.setMilestoneArchived(m.id, false) }] }, 5000);
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
@@ -129,8 +129,8 @@ export function MilestoneList({
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={rows.length ? optId(active) : undefined}
-          aria-label={tr('搜索阶段')}
-          placeholder={tr('搜阶段，或输入名字新建')}
+          aria-label={tr('搜索里程碑')}
+          placeholder={tr('搜里程碑，或输入名字新建')}
           value={ime.text}
           onChange={(e) => ime.onChange(e.target.value)}
           {...ime.handlers}
@@ -139,7 +139,7 @@ export function MilestoneList({
           autoComplete="off"
         />
       </div>
-      <ul ref={listRef} id={listId} role="listbox" aria-label={tr('阶段')} className="cat-select-list">
+      <ul ref={listRef} id={listId} role="listbox" aria-label={tr('里程碑')} className="cat-select-list">
         {rows.map((r, i) => {
           if (r.kind === 'create')
             return (
@@ -147,7 +147,7 @@ export function MilestoneList({
                 <span className="cat-check" aria-hidden>
                   <Plus size={13} />
                 </span>
-                <span className="milestone-option-name">{tr('新建阶段“{name}”', { name: r.name })}</span>
+                <span className="milestone-option-name">{tr('新建里程碑“{name}”', { name: r.name })}</span>
               </li>
             );
           const m = r.milestone;
@@ -160,7 +160,7 @@ export function MilestoneList({
                   <input
                     ref={renameRef}
                     className="milestone-rename-input"
-                    aria-label={tr('阶段名字')}
+                    aria-label={tr('里程碑名字')}
                     aria-invalid={!!editing.error || undefined}
                     value={editing.text}
                     onChange={(e) => setEditing({ id: m.id, text: e.target.value, error: null })}
@@ -219,13 +219,13 @@ export function MilestoneList({
             </li>
           );
         })}
-        {empty && <li className="cat-select-empty">{tr('这个项目还没有阶段，输入名字新建')}</li>}
+        {empty && <li className="cat-select-empty">{tr('这个项目还没有里程碑，输入名字新建')}</li>}
         {!empty && !rows.length && <li className="cat-select-empty">{tr('没有找到')}</li>}
       </ul>
       {value && (
         <div className="cat-select-foot">
           <RacButton className="link-btn" onPress={() => pick(null)}>
-            {tr('清除阶段')}
+            {tr('清除里程碑')}
           </RacButton>
         </div>
       )}

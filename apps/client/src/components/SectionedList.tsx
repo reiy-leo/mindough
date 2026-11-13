@@ -17,7 +17,7 @@ function SectionIcon({ s }: { s: ListSection<Task> }) {
   if (s.kind === 'project') return s.group ? <GroupIcon group={s.group} size={16} /> : <Shapes size={15} aria-hidden />;
   // 按类型（Rei 2026-11-12）：类型自己的小图标块（IconTile，和类型页、侧栏一样）；「没有类型」一个中性的标签图标
   if (s.kind === 'type') return s.category ? <IconTile icon={categoryIcon(s.category)} color={s.category.color} size={16} /> : <Tag size={15} aria-hidden />;
-  // 按阶段（Rei 2026-11-13）：阶段和「没有阶段」都用 milestone 图标
+  // 按里程碑（Rei 2026-11-13）：里程碑和「没有里程碑」都用 milestone 图标
   if (s.kind === 'milestone') return <MilestoneIcon size={15} aria-hidden />;
   return <CalendarClock size={15} aria-hidden />;
 }

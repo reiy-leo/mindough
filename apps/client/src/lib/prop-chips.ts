@@ -11,7 +11,7 @@
  * - 组：不放进组（group_id = null）
  * - 心情：没记（mood = null；只有普通任务有：不重复、不是倒数日，Rei 2026-11-08「日记的心情属性在普通任务属性中也可以添加」）
  * - 颜色：默认（card_color = null；只有倒数日有，Rei 2026-11-02「倒数日的card可以设置不同的颜色背景」）
- * - 阶段：没设（milestone_id = null；只有在项目里的任务有，Rei 2026-11-13「这个属性只有项目中可以设置」，见 core milestone.ts）
+ * - 里程碑：没设（milestone_id = null；只有在项目里的任务有，Rei 2026-11-13「这个属性只有项目中可以设置」，见 core milestone.ts）
  * 资料（Rei 2026-10-28：和类型平级，跨库多选，含人物）不是胶囊：挂了就在胶囊下面按库分组列出来；
  * 一条都没挂时，「+」菜单里有「资料」（PropId refs）。以前的「资料库」「和谁有关」两个胶囊并进了资料。
  */
@@ -23,7 +23,7 @@ export type PropId = 'category' | 'refs' | 'mode' | 'date' | 'repeat' | 'remind'
  * 固定顺序（Rei 2026-11-11 重排）：胶囊行和「+」菜单都按这个排。
  * ① 日期、完成方式、重复、提醒；② 项目、资料、类型；③ 心情和其他属性（卡片颜色）。
  * 项目 2026-11-12 从第 3 组挪进资料那组、放第一个（Rei「项目移到资料那一组」；这组原来没别的排序规则，就按这里的顺序）。
- * 阶段（2026-11-13）紧跟在项目后面：它是项目里的属性，挨着项目最好找（我定的）。
+ * 里程碑（2026-11-13）紧跟在项目后面：它是项目里的属性，挨着项目最好找（我定的）。
  */
 export const PROP_ORDER: readonly PropId[] = ['date', 'mode', 'repeat', 'remind', 'group', 'milestone', 'refs', 'category', 'mood', 'color'];
 
@@ -49,7 +49,7 @@ export type PropTask = Pick<Task, 'completion_mode' | 'scheduled_date' | 'recurr
 export interface PropCounts {
   categories?: number;
   refs?: number;
-  /** 挂的阶段还在、属于任务现在的项目吗（store.milestoneOf）。不给时看 milestone_id 有没有。 */
+  /** 挂的里程碑还在、属于任务现在的项目吗（store.milestoneOf）。不给时看 milestone_id 有没有。 */
   milestone?: boolean;
 }
 
@@ -62,7 +62,7 @@ export function applicableProps(t: PropTask): PropId[] {
     if (id === 'color') return t.completion_mode === 'countdown';
     // 心情只给普通任务（打卡、倒数日没有）；以前记过的照样显示，能清掉
     if (id === 'mood') return canHaveMood(t) || !!t.mood;
-    // 阶段只给项目里的任务（Rei 2026-11-13）；不在项目里的看不到也设不了
+    // 里程碑只给项目里的任务（Rei 2026-11-13）；不在项目里的看不到也设不了
     if (id === 'milestone') return !!t.group_id;
     return true;
   });
@@ -119,7 +119,7 @@ export function clearPatch(id: PropId): Partial<Task> | null {
     case 'remind':
       return { remind_time: null };
     case 'group':
-      // 移出项目时阶段跟着清（store 也会清）；写进来是为了撤销时连阶段一起放回
+      // 移出项目时里程碑跟着清（store 也会清）；写进来是为了撤销时连里程碑一起放回
       return { group_id: null, milestone_id: null };
     case 'milestone':
       return { milestone_id: null };

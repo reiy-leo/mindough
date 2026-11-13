@@ -235,7 +235,7 @@ function GroupDetail({
           today: store.today(),
           weekStart: weekStartsOn(),
           ...(prefs.section === 'type' ? { categories: categorySectionOrder(store), categoryIdsOf: (t: Task) => store.categoryIdsOfTask(t) } : {}),
-          // 按阶段（Rei 2026-11-13）：没归档的按列表顺序，归档了还挂着任务的跟在后面
+          // 按里程碑（Rei 2026-11-13）：没归档的按列表顺序，归档了还挂着任务的跟在后面
           ...(prefs.section === 'milestone' ? { milestones: milestoneSectionOrder(store, g.id), milestoneOf: (t: Task) => store.milestoneOf(t)?.id ?? null } : {}),
         }) : null;
   // 默认类型归档了照样生效、照常显示（Rei 2026-10-17）

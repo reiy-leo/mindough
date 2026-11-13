@@ -127,7 +127,7 @@ describe('「+」菜单分三组（Rei 2026-11-11）', () => {
       ['mood', 'attachment'],
     ]);
   });
-  it('项目设过就不在菜单里，资料那组换成阶段、资料、类型（阶段只给项目里的任务，Rei 2026-11-13）', () => {
+  it('项目设过就不在菜单里，资料那组换成里程碑、资料、类型（里程碑只给项目里的任务，Rei 2026-11-13）', () => {
     expect(addMenuSections(t({ scheduled_date: '2026-10-16', group_id: 'g' }), {}, true)[1]).toEqual(['milestone', 'refs', 'category']);
   });
   it('资料、类型都挂了，资料那组只剩项目', () => {
@@ -193,18 +193,18 @@ describe('打卡描述做成属性（Rei 2026-11-13 07:25「在属性dropdown中
   });
 });
 
-describe('阶段（Rei 2026-11-13「这个属性只有项目中可以设置」）', () => {
-  it('不在项目里：没有阶段这一项；在项目里：「+」菜单项目后面就是阶段', () => {
+describe('里程碑（Rei 2026-11-13「这个属性只有项目中可以设置」）', () => {
+  it('不在项目里：没有里程碑这一项；在项目里：「+」菜单项目后面就是里程碑', () => {
     expect(applicableProps(t())).not.toContain('milestone');
     expect(applicableProps(t({ group_id: 'g' }))).toContain('milestone');
     expect(unsetProps(t({ group_id: 'g' }))).toEqual(['date', 'mode', 'repeat', 'milestone', 'refs', 'category', 'mood']);
   });
-  it('设了显示胶囊，排在项目后面；挂的阶段对不上项目（counts.milestone = false）当没设', () => {
+  it('设了显示胶囊，排在项目后面；挂的里程碑对不上项目（counts.milestone = false）当没设', () => {
     const task = t({ group_id: 'g', milestone_id: 'm', scheduled_date: '2026-11-13' });
     expect(setProps(task)).toEqual(['date', 'group', 'milestone']);
     expect(setProps(task, { milestone: false })).toEqual(['date', 'group']);
   });
-  it('清除阶段只改 milestone_id；清除项目连阶段一起清（撤销时一起放回）', () => {
+  it('清除里程碑只改 milestone_id；清除项目连里程碑一起清（撤销时一起放回）', () => {
     expect(clearPatch('milestone')).toEqual({ milestone_id: null });
     expect(clearPatch('group')).toEqual({ group_id: null, milestone_id: null });
   });

@@ -195,8 +195,8 @@ export interface Task extends BaseRow {
    */
   checkin_note?: string | null;
   /**
-   * 阶段（Rei 2026-11-13「项目支持milestone…这个属性只有项目中可以设置。每个项目中的这个属性的列表都不一样」，见 milestone.ts）：
-   * 指向 milestone 表的一行，空 = 没设。一件任务最多一个阶段，只有在项目里的任务能设，阶段必须属于任务现在的项目：
+   * 里程碑（Rei 2026-11-13「项目支持milestone…这个属性只有项目中可以设置。每个项目中的这个属性的列表都不一样」，见 milestone.ts）：
+   * 指向 milestone 表的一行，空 = 没设。一件任务最多一个里程碑，只有在项目里的任务能设，里程碑必须属于任务现在的项目：
    * 移出项目或换项目时本机写入清掉它（Store.write）。老客户端不认这一列，推上来的行没有它：项目没变就沿用本机的值，
    * 项目变了当成清掉（见 Store.applyRemote）。SQLite 迁移 v24。
    */
@@ -418,7 +418,7 @@ export interface CalendarSub extends BaseRow {
 }
 
 /**
- * 项目里的阶段（Rei 2026-11-13，英文 Milestone，见 milestone.ts）：每个项目一张自己的列表。
+ * 项目里的里程碑（Rei 2026-11-13，英文 Milestone，见 milestone.ts）：每个项目一张自己的列表。
  * 名字在同一个项目里不重名（忽略大小写和首尾空白）；sort 是列表里的先后；archived_at 非空 = 归档了，
  * 选择器里不再列（任务上已经挂着的照常显示）。没有删除，只有归档。SQLite 迁移 v24。
  * 老客户端不认这张表，拉到的行直接忽略。

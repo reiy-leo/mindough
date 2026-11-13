@@ -8,7 +8,7 @@
  * - 键盘：Tab 到胶囊，Enter / 空格打开，Backspace / Delete 清除；
  * - 行尾「+」：菜单列出没设的属性，选一项直接打开它的选择器；全都设了「+」隐藏；一个都没设时是「+ 添加属性」。
  * - 菜单里的「附件」（Rei 2026-10-25）：打开系统文件选择（可多选），加过附件也一直在，所以能加附件时「+」不藏。
- * - 阶段（Rei 2026-11-13 09:19）：只有项目里的任务有，紧跟项目；点开是这个项目阶段的可搜索下拉，能新建（MilestonePicker）。
+ * - 里程碑（Rei 2026-11-13 09:19）：只有项目里的任务有，紧跟项目；点开是这个项目里程碑的可搜索下拉，能新建（MilestonePicker）。
  * - 菜单里的「打卡描述」（Rei 2026-11-13 07:25）：只有打卡、而且还没写时有；选了在胶囊行上面打开那个框、光标进去（框是 TaskDetail 的 CheckInNote）。
  * - 菜单分三组、组间分隔线（Rei 2026-11-11）：日期、完成方式、重复、提醒 ｜ 项目、资料、类型 ｜ 心情、打卡描述、附件、卡片颜色（lib/prop-chips PROP_SECTION；项目 2026-11-12 挪进第 2 组）；
  *   胶囊行按同一个 PROP_ORDER 排，不画分隔。
@@ -69,7 +69,7 @@ export function propLabel(id: PropId): string {
     case 'group':
       return trc('属性', '项目');
     case 'milestone':
-      return tr('阶段');
+      return tr('里程碑');
     case 'mood':
       return tr('心情');
     case 'color':

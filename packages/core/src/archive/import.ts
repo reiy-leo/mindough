@@ -465,14 +465,14 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     return id;
   };
 
-  // 项目阶段（Rei 2026-11-13）：_meta/milestones.json，项目要在这次导入里或库里
+  // 项目里程碑（Rei 2026-11-13）：_meta/milestones.json，项目要在这次导入里或库里
   const archiveMilestones = new Map<string, string>();
   if (format === 'mindough') {
     for (const r of rowsOf('_meta/milestones.json', (r) => isId(r.group_id) && typeof r.name === 'string')) {
       const m = r as unknown as Milestone;
       const gid = m.group_id.trim();
       if (!(archiveGroups.has(gid) || store.get('group', gid))) {
-        warn('_meta/milestones.json', tr('阶段「{name}」所在的项目找不到，没导入', { name: m.name }));
+        warn('_meta/milestones.json', tr('里程碑「{name}」所在的项目找不到，没导入', { name: m.name }));
         continue;
       }
       const name = cleanMilestoneName(m.name);
@@ -635,7 +635,7 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
       pinned_at: iso(fm.pinned) ?? null,
       mood: isMoodId(fm.mood) ? fm.mood : null,
       checkin_note: str(fm.checkin_note)?.trim() || null,
-      // 阶段：要是这件任务所在项目的（这次导入里的，或库里已有的）
+      // 里程碑：要是这件任务所在项目的（这次导入里的，或库里已有的）
       milestone_id: (() => {
         const mid = isId(fm.milestone) ? fm.milestone.trim() : null;
         if (!mid || !group) return null;

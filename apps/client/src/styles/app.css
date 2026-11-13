@@ -1129,7 +1129,7 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   min-width: 0;
   flex-shrink: 1;
 }
-/* 阶段小标签（Rei 2026-11-13）：灰色、名字长了省略 */
+/* 里程碑小标签（Rei 2026-11-13）：灰色、名字长了省略 */
 .row-meta > .meta-milestone {
   min-width: 0;
   flex-shrink: 1;

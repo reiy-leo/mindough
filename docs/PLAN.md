@@ -2316,11 +2316,11 @@ Rei 2026-11-13 08:38：「错过的倒数日不要直接设置成"已完成"」�
 - 测试：core `countdown-missed.test.ts`（9 项：不重复的不改、记录待办且不挡、普通前置照挡、去向、认自动完成时间、只改自动完成的、只做一次、严格模式、新设备同步后做）；`countdown-repeat.test.ts` 第一项改成待办。
 - 待 Rei 确认：记录不挡重复倒数日（上面当初选「完成」就是为了不挡）；只做一次，老版本 App（alpha.3 及以前）下次发版前滚动时还会写「完成」的记录，做过迁移的设备不会再改回；手动完成靠完成时间分辨，恰好在那天中午整点 0 秒点完成的会当成自动的（几乎不会）。
 
-### 项目阶段（Milestone）✅（2026-11-13）
+### 项目里程碑（Milestone）✅（2026-11-13）
 - Rei 09:19「项目支持milestone。项目中添加或修改任务：添加新属性"阶段、里程碑"，这个属性只有项目中可以设置。每个项目中的这个属性的列表都不一样。显示为一个可搜索的dropdown，搜索可以选择，也可以新建。」说明见 docs/MILESTONE.md。
 - core：新表 `milestone`（group_id、name、sort、archived_at、created_at）+ `task.milestone_id`，迁移 v24；`milestone.ts` 放纯函数（名字整理、重名键、排序、选择器的行 `milestoneOptions`）；Store 加 `milestones / milestoneOf / findMilestone / createMilestone / renameMilestone / setMilestoneArchived / setTaskMilestone`。
-- 不变式在 `Store.write` 的 stampOne 里：任务不在项目里、阶段不属于这个项目（本机有那一行时）就写成空，所以换项目、移出项目、解散项目、资料库自动挪动都会清阶段。解散的撤销记录带上原阶段，撤销时放回。
+- 不变式在 `Store.write` 的 stampOne 里：任务不在项目里、里程碑不属于这个项目（本机有那一行时）就写成空，所以换项目、移出项目、解散项目、资料库自动挪动都会清里程碑。解散的撤销记录带上原里程碑，撤销时放回。
 - 同步：Worker 存通用行，不用改。老客户端推上来没有这一列：项目没变沿用本机值，项目变了当清掉。显示时 `milestoneOf` 再核对一次项目，并发改出来的对不上就当没有。
-- 客户端：`lib/prop-chips` 加 `milestone`（第 2 组项目后面，只给有项目的任务；清除项目连阶段一起清，撤销一起回来）；`components/task/MilestonePicker` 可搜索单选下拉，沿用类型下拉的样式，行尾「…」改名 / 归档；新建面板选了项目才出阶段胶囊；TaskRow `showMilestone`（项目页列表、看板）；项目页分区加「按阶段」。
-- 导出导入：任务写 `milestone`，列表在 `_meta/milestones.json`；全局搜索带阶段名。
-- 判断：中文用「阶段」；没有删除只有归档；不做拖动排序；换项目直接清、不提示；别的页面不写阶段。
+- 客户端：`lib/prop-chips` 加 `milestone`（第 2 组项目后面，只给有项目的任务；清除项目连里程碑一起清，撤销一起回来）；`components/task/MilestonePicker` 可搜索单选下拉，沿用类型下拉的样式，行尾「…」改名 / 归档；新建面板选了项目才出里程碑胶囊；TaskRow `showMilestone`（项目页列表、看板）；项目页分区加「按里程碑」。
+- 导出导入：任务写 `milestone`，列表在 `_meta/milestones.json`；全局搜索带里程碑名。
+- 判断：中文叫「里程碑」（先用的「阶段」，Rei 10:09 定成「里程碑」）；没有删除只有归档；不做拖动排序；换项目直接清、不提示；别的页面不写里程碑。

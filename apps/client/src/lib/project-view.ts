@@ -11,7 +11,7 @@
 import { addDays, diffDays, isMoodId, startOfWeek, TASK_STATUSES, type DateKey, type Task, type TaskStatus } from '@mindough/core';
 import { moodRank, normalizeSectionBy, type SectionBy } from './sections';
 
-/** 项目页能选的分区：不分区、按心情、按类型、按阶段（Rei 2026-11-13 项目阶段）、按目标日期。 */
+/** 项目页能选的分区：不分区、按心情、按类型、按里程碑（Rei 2026-11-13 项目里程碑）、按目标日期。 */
 export const PROJECT_SECTIONS: readonly SectionBy[] = ['none', 'mood', 'type', 'milestone', 'due'];
 
 export type ProjectView = 'list' | 'board' | 'timeline' | 'chain';
