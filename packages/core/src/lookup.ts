@@ -11,14 +11,14 @@
  */
 import { BUILTIN_TYPE_IDS } from './seed/builtin-types';
 import { fieldText } from './preview';
-import { amapPoiIdOf, amapShareUrlOf, isbnOf, linksOf, normalizeUrl, siteIdOf } from './links';
+import { amapPoiIdOf, amapShareUrlOf, imdbNameIdOf, isbnOf, linksOf, normalizeUrl, siteIdOf, tmdbPersonIdOf } from './links';
 import { normalizeName } from './library';
 import { stripEpisode } from './episode';
 import { tr } from './i18n';
 import type { FieldDef, FieldValue, LibraryItem, LinkValue, TaskType } from './types';
 
-/** restaurant / place：餐厅、目的地（高德）。 */
-export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place';
+/** restaurant / place：餐厅、目的地（高德）；person：影人（TMDB 人物，Rei 2026-11-14）。 */
+export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place' | 'person';
 export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb' | 'amap';
 
 /** Worker 返回的一条结果。fields 的 key 是内置类型的字段 key（year、kind、imdb、author…）。 */
@@ -36,6 +36,8 @@ export interface LookupResult {
   subtitle?: string;
   fields: Record<string, FieldValue>;
   url: string;
+  /** 简介（影人的 TMDB 生平，Rei 2026-11-14）：填进资料的备注（note_md），只在备注空着时填，补全时可勾选覆盖。 */
+  note?: string;
 }
 
 /** limited：配额或每秒请求数超了（高德 10003 / 10004 / 10019…），过一会儿或明天再试。 */
@@ -65,7 +67,7 @@ export interface LookupSourceDef {
 }
 
 export const LOOKUP_SOURCES: Record<LookupSource, LookupSourceDef> = {
-  tmdb: { label: 'TMDB', home: 'https://www.themoviedb.org', kinds: ['movie'], covers: true, url: (id) => `https://www.themoviedb.org/${id}` },
+  tmdb: { label: 'TMDB', home: 'https://www.themoviedb.org', kinds: ['movie', 'person'], covers: true, url: (id) => `https://www.themoviedb.org/${id}` },
   douban: { get label() { return tr('豆瓣'); }, home: 'https://movie.douban.com', kinds: ['movie'], covers: true, url: (id) => `https://movie.douban.com/subject/${id}/` },
   doubanbook: { get label() { return tr('豆瓣读书'); }, home: 'https://book.douban.com', kinds: ['book'], covers: true, url: (id) => `https://book.douban.com/subject/${id}/` },
   openlibrary: { label: 'Open Library', home: 'https://openlibrary.org', kinds: ['book'], covers: false, url: (id) => `https://openlibrary.org/${/M$/.test(id) ? 'books' : 'works'}/${id}` },
@@ -84,7 +86,7 @@ export function lookupCover(r: Pick<LookupResult, 'source' | 'image' | 'thumb'>)
 }
 
 /** 各种类型在界面上列出的来源（「从 TMDB 找」）：豆瓣是尽力而为，不写在标题里。 */
-export const PRIMARY_SOURCE: Record<LookupKind, LookupSource> = { movie: 'tmdb', book: 'openlibrary', game: 'steam', restaurant: 'amap', place: 'amap' };
+export const PRIMARY_SOURCE: Record<LookupKind, LookupSource> = { movie: 'tmdb', book: 'openlibrary', game: 'steam', restaurant: 'amap', place: 'amap', person: 'tmdb' };
 
 /** 地点类（餐厅、目的地）：结果来自高德，都是中文，界面语言不影响。 */
 export const isPlaceKind = (k: LookupKind | null | undefined): k is 'restaurant' | 'place' => k === 'restaurant' || k === 'place';
@@ -95,9 +97,10 @@ const KIND_BY_TYPE: Record<string, LookupKind> = {
   [BUILTIN_TYPE_IDS.game]: 'game',
   [BUILTIN_TYPE_IDS.restaurant]: 'restaurant',
   [BUILTIN_TYPE_IDS.travel]: 'place',
+  [BUILTIN_TYPE_IDS.filmPerson]: 'person',
 };
 
-/** 这个类型能不能在线找：只认内置的影视 / 书籍 / 游戏 / 餐厅 / 目的地（字段 key 是对得上的）。 */
+/** 这个类型能不能在线找：只认内置的影视 / 书籍 / 游戏 / 餐厅 / 目的地 / 影人（字段 key 是对得上的）。 */
 export function lookupKindOf(type: Pick<TaskType, 'id'> | null | undefined): LookupKind | null {
   return (type && KIND_BY_TYPE[type.id]) ?? null;
 }
@@ -142,6 +145,9 @@ export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id
   const douban = siteIdOf('douban', r.fields.douban);
   const isbn = siteIdOf('isbn', r.fields.isbn);
   const amap = siteIdOf('amap', r.fields.amap);
+  // 影人（Rei 2026-11-14）：TMDB 人物编号、IMDb 影人编号
+  const tmdbPerson = siteIdOf('tmdb_person', r.fields.tmdb);
+  const imdbName = siteIdOf('imdb_name', r.fields.imdb);
   const name = normalizeName(r.name);
   let byName: string | null = null;
   for (const it of items) {
@@ -151,6 +157,8 @@ export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id
     if (douban && siteIdOf('douban', it.fields.douban) === douban) return it.id;
     if (isbn && siteIdOf('isbn', it.fields.isbn) === isbn) return it.id;
     if (amap && siteIdOf('amap', it.fields.amap) === amap) return it.id;
+    if (tmdbPerson && siteIdOf('tmdb_person', it.fields.tmdb) === tmdbPerson) return it.id;
+    if (imdbName && siteIdOf('imdb_name', it.fields.imdb) === imdbName) return it.id;
     if (byName || !name || normalizeName(it.name) !== name || typeof it.fields[SOURCE_KEY] === 'string') continue;
     const y = typeof it.fields.year === 'number' ? it.fields.year : null;
     if (y === null || !r.year || y === r.year) byName = it.id;
@@ -166,7 +174,7 @@ export type LookupMedia = 'movie' | 'tv';
  * 按什么去找：影视先认已填的 IMDb、再豆瓣编号，书认 ISBN（精确，取那一版），都没有就按名字搜
  * （去掉季标记、知道是电影还是剧集就只搜那一种；书按名字得到的是作品，只有作品级的字段）。
  */
-export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'doubanbook' | 'isbn' | 'amap'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
+export type LookupQuery = { by: 'id'; source: 'imdb' | 'douban' | 'doubanbook' | 'isbn' | 'amap' | 'tmdb'; id: string } | { by: 'name'; q: string; media?: LookupMedia; season?: number };
 
 /**
  * 输入框里的字 → 拿去在线找的样子（真实数据试跑：带「第三季」的剧名在 TMDB 一部都搜不到，Rei 2026-10-16）：
@@ -187,6 +195,15 @@ export function lookupSearchText(text: string, kind?: LookupKind | null): Lookup
     if (share) return { by: 'id', source: 'amap', id: share };
     // 高德的其他链接（搜索页、路线）认不出地点：不拿网址当名字搜
     if (/^https?:\/\/\S*amap\.com\//i.test(raw)) return null;
+    return { by: 'name', q: raw.slice(0, 100) };
+  }
+  if (kind === 'person') {
+    // 影人（Rei 2026-11-14）：粘贴的 IMDb 影人编号 / 链接、TMDB 人物链接按编号取；别的按名字搜，不去季标记
+    const nm = /^(nm\d{7,10}|https?:\/\/\S*imdb\.com\/\S*)$/i.test(raw) ? imdbNameIdOf(raw) : null;
+    if (nm) return { by: 'id', source: 'imdb', id: nm };
+    const tp = /^https?:\/\/\S*themoviedb\.org\/\S*$/i.test(raw) ? tmdbPersonIdOf(raw) : null;
+    if (tp) return { by: 'id', source: 'tmdb', id: `person/${tp}` };
+    if (/^https?:\/\//i.test(raw)) return null;
     return { by: 'name', q: raw.slice(0, 100) };
   }
   if (kind === 'book') {
@@ -226,6 +243,14 @@ export function lookupQueryOf(type: Pick<TaskType, 'id' | 'fields'>, draft: { na
     if (imdb) return { by: 'id', source: 'imdb', id: imdb };
     const douban = doubanDef ? siteIdOf('douban', draft.fields[doubanDef.key]) : null;
     if (douban) return { by: 'id', source: 'douban', id: douban };
+  }
+  if (kind === 'person') {
+    const tmdbDef = type.fields.find((f) => f.kind === 'site_id' && f.site === 'tmdb_person');
+    const tp = tmdbDef ? siteIdOf('tmdb_person', draft.fields[tmdbDef.key]) : null;
+    if (tp) return { by: 'id', source: 'tmdb', id: `person/${tp}` };
+    const nmDef = type.fields.find((f) => f.kind === 'site_id' && f.site === 'imdb_name');
+    const nm = nmDef ? siteIdOf('imdb_name', draft.fields[nmDef.key]) : null;
+    if (nm) return { by: 'id', source: 'imdb', id: nm };
   }
   if (isPlaceKind(kind)) {
     const amapDef = type.fields.find((f) => f.kind === 'site_id' && f.site === 'amap');
@@ -287,7 +312,11 @@ function mergeLinks(cur: FieldValue | undefined, add: FieldValue): LinkValue[] {
  * 值一样的不列；空缺的默认勾上，已有值的默认不勾（勾上 = 覆盖）。
  * 图片那一行的 next 是结果的原图地址（真正填进去前由 Worker 拉进 R2）；不带封面的来源（书）没有这一行。
  */
-export function planAutofill(type: Pick<TaskType, 'fields'>, draft: { name: string; image: string | null; fields: Record<string, FieldValue> }, r: LookupResult): FillRow[] {
+export const NOTE_ROW_KEY = '_note';
+/** 简介那一行的定义（影人的 TMDB 生平填进备注）。 */
+const NOTE_ROW_DEF: FieldDef = { key: NOTE_ROW_KEY, label: '简介', kind: 'text' }; // i18n-ignore 字段名（数据，显示经 dataLabel）
+
+export function planAutofill(type: Pick<TaskType, 'fields'>, draft: { name: string; image: string | null; fields: Record<string, FieldValue>; note_md?: string }, r: LookupResult): FillRow[] {
   const rows: FillRow[] = [];
   for (const def of type.fields) {
     if (def.scope === 'task' && !def.primary && !def.media) continue;
@@ -309,11 +338,17 @@ export function planAutofill(type: Pick<TaskType, 'fields'>, draft: { name: stri
     // 链接是合并的，不会丢东西，默认也勾上
     rows.push({ key: def.key, def, current, next: next!, filled, apply: !filled || def.kind === 'links' });
   }
+  // 简介（影人，Rei 2026-11-14）：填进备注；草稿带着备注时才列
+  const note = r.note?.trim();
+  if (note && draft.note_md !== undefined && draft.note_md.trim() !== note) {
+    const filled = draft.note_md.trim() !== '';
+    rows.push({ key: NOTE_ROW_KEY, def: NOTE_ROW_DEF, current: draft.note_md, next: note, filled, apply: !filled });
+  }
   return rows;
 }
 
 /** 把勾上的几行填进草稿；image 由调用方先换成 asset id 再传进来（拉图失败就传 null，图片那行不填）。 */
-export function applyAutofill<D extends { name: string; image: string | null; fields: Record<string, FieldValue> }>(
+export function applyAutofill<D extends { name: string; image: string | null; fields: Record<string, FieldValue>; note_md?: string }>(
   draft: D,
   rows: readonly FillRow[],
   chosen: ReadonlySet<string>,
@@ -325,6 +360,7 @@ export function applyAutofill<D extends { name: string; image: string | null; fi
   for (const row of rows) {
     if (!chosen.has(row.key)) continue;
     if (row.def.primary) out.name = fieldText(row.next);
+    else if (row.key === NOTE_ROW_KEY) out.note_md = fieldText(row.next);
     else if (row.def.media) {
       if (!image) continue;
       out.image = image;
@@ -336,7 +372,7 @@ export function applyAutofill<D extends { name: string; image: string | null; fi
 }
 
 /** 选中一条在线结果，直接建资料用的数据（图片另由 Worker 拉进 R2）。 */
-export function itemOfLookup(type: Pick<TaskType, 'fields'>, r: LookupResult): { name: string; fields: Record<string, FieldValue> } {
+export function itemOfLookup(type: Pick<TaskType, 'fields'>, r: LookupResult): { name: string; fields: Record<string, FieldValue>; note_md: string } {
   const fields: Record<string, FieldValue> = {};
   for (const def of type.fields) {
     if (def.primary || def.media || def.scope === 'task') continue;
@@ -344,7 +380,7 @@ export function itemOfLookup(type: Pick<TaskType, 'fields'>, r: LookupResult): {
     if (!isEmpty(v)) fields[def.key] = v!;
   }
   fields[SOURCE_KEY] = sourceRef(r);
-  return { name: r.name, fields };
+  return { name: r.name, fields, note_md: r.note?.trim() ?? '' };
 }
 
 // ───────────── 地图选点（餐厅、目的地，Rei 2026-11-10） ─────────────

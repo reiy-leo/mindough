@@ -409,6 +409,8 @@ export function exportArchive(store: Store, opts: ExportOptions = {}): ExportRes
   files.push({ path: '_meta/categories.json', data: json(store.categories(true).map(strip)) });
   // 项目里程碑（Rei 2026-11-13）：项目还在的才写，归档的也写
   files.push({ path: '_meta/milestones.json', data: json(store.list('milestone').filter((m) => !!store.get('group', m.group_id)).map(strip)) });
+  // 资料之间的关联（影人 ↔ 影片，Rei 2026-11-14）：只写还生效的，两端写合并后留下的那条
+  files.push({ path: '_meta/library_links.json', data: json(store.libraryLinks().map((r) => strip({ ...r.link, from_item: r.from, to_item: r.to }))) });
   files.push({ path: '_meta/prefs.json', data: json(store.list('pref').map(strip)) });
   files.push({ path: '_meta/checkins.json', data: json(checkins.filter((c) => taskById.has(c.task_id)).map(strip)) });
   files.push({ path: '_meta/assets.json', data: json([...images.assets.values()]) });

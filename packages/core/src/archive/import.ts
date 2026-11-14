@@ -26,6 +26,7 @@ import { isFileKey, safeFileName } from '../attachments';
 import { categoryFromCheckin, fillCategory } from '../categories';
 import { formerBuiltinCategory } from '../seed/builtin-checkin-categories';
 import { cleanMilestoneName } from '../milestone';
+import { cleanRole } from '../library-link';
 import {
   COMPLETION_MODES,
   TASK_STATUSES,
@@ -40,6 +41,7 @@ import {
   type Group,
   type Milestone,
   type LibraryItem,
+  type LibraryLink,
   type Person,
   type JournalEntry,
   type JournalPost,
@@ -524,6 +526,18 @@ export function planImport(store: Store, input: readonly ArchiveFile[], opts: Im
     });
     archivePeople.add(row.id);
     add('person', 'person', p.path, name, row);
+  }
+
+  // 资料之间的关联（影人 ↔ 影片，Rei 2026-11-14）：_meta/library_links.json，两端资料要在这次导入里或库里
+  if (format === 'mindough') {
+    for (const r of rowsOf('_meta/library_links.json', (r) => isId(r.id) && isId(r.from_item) && isId(r.to_item))) {
+      const l = r as unknown as LibraryLink;
+      const from = l.from_item.trim();
+      const to = l.to_item.trim();
+      if (from === to || !(archiveItems.has(from) || store.get('library_item', from)) || !(archiveItems.has(to) || store.get('library_item', to))) continue;
+      const role = cleanRole(typeof l.role === 'string' ? l.role : '');
+      add('extra', 'library_link', '_meta/library_links.json', role || l.id, fresh<Omit<LibraryLink, 'updated_at' | 'deleted'>>({ id: l.id.trim(), from_item: from, to_item: to, role, sort: num(l.sort) ?? 0, created_at: iso(l.created_at) ?? now.toISOString() }));
+    }
   }
 
   // 日记：一个文件一天。2026-10-28 起每条一段（标记注释里有 id），按条导入；旧格式（没有标记）还是整篇进旧表，Store 再转成一条

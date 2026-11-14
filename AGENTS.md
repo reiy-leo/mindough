@@ -40,6 +40,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   project-libraries.ts  项目关联资料库（Rei 2026-11-10）：group_library 一库一行、task.lib_via 记因哪个库进的项目；placeTask / manualVia 纯规则，写入在 Store.setGroupLibraries / settleProjectLibraries，同步拉完由 SyncEngine 调 settleAfterSync
   preview.ts search.ts  无标题任务的预览、全局搜索（⌘F / Ctrl+F）
   task-mention.ts       正文里 @ 提到任务（Rei 2026-11-10）：存成链接 `[标题](mindough://task/<id>)`、能 @ 谁（任务里普通任务，日记里多倒数日）、候选过滤排序、光标前的 @；编辑器节点在 client `components/editor/mention.ts`，胶囊在 `lib/task-mention.ts`
+  library-link.ts       资料之间的关联（影人 → 影片，Rei 2026-11-14，docs/FILM-PEOPLE.md）：library_link 一对一行（id 由这一对算）、角色整理、作品 / 主创排序；读写在 Store（libraryLinks / linksFromItem / linksToItem / linkLibraryItems …），界面 client components/library/FilmLinks.tsx，全部手动连
   library.ts            资料库：库名叫法、资料 / 任务字段拆分、去重与模糊搜索、旧数据迁移计划、占位图配色；侧栏置顶（偏好 library.sidebar / group.sidebar）和拖动后的顺序（偏好 *.sidebar_order，orderBySidebar，Rei 2026-11-10）
   typedef.ts            类型编辑器（界面叫资料库编辑器）的纯逻辑：字段增改排序隐藏、删字段留墓碑（key 不变、值保留）、类型顺序（同步偏好 type_order）；归档存 hidden 列（Store.archiveType）；只有空的自定义资料库能删（typeDeleteBlock / Store.deleteType 打墓碑，Rei 2026-11-10），有内容的、内置的只能归档
   attachment-cache.ts   附件本机缓存的纯逻辑（Rei 2026-10-25）：缓存记录、24 小时到期与清理、点一下做什么（图片灯箱 / 其他下载）、每个附件哪些操作能用

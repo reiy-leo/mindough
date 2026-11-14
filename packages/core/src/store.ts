@@ -50,7 +50,7 @@ import { CategoryDeleteError, builtinCategoryDrifted, canonicalBuiltinCategory, 
 import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
 import { isCardColor } from './card-color';
-import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type CheckInCategory, type DateKey, type CheckInKind, type FieldDef, type FieldValue, type LibraryItem, type NewRow, type Person, type TableMap, type TableName, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskStatus } from './types';
+import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type CheckInCategory, type DateKey, type CheckInKind, type FieldDef, type FieldValue, type LibraryItem, type LibraryLink, type NewRow, type Person, type TableMap, type TableName, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskStatus } from './types';
 import type { Change, StorageAdapter } from './storage/adapter';
 
 import { dataLabel, tr } from './i18n';
@@ -65,6 +65,7 @@ import { renamedFileName, safeFileName, sortAttachments } from './attachments';
 import { LIB_OPT_OUT, groupLibraryId, manualVia, placeTask, type LibLinkTarget, type LinkOf } from './project-libraries';
 import type { GroupLibrary, Milestone } from './types';
 import { cleanMilestoneName, milestoneNameKey, sortMilestones } from './milestone';
+import { cleanRole, libraryLinkId, sortCredits, sortFilmography } from './library-link';
 export interface StoreOptions {
   deviceId?: string;
   now?: () => Date;
@@ -936,7 +937,7 @@ export class Store {
   }
 
   /** 找同名资料（规范化后），没有就新建。 */
-  findOrCreateLibraryItem(typeId: string, data: { name: string; image?: string | null; fields?: Record<string, FieldValue> }): LibraryItem {
+  findOrCreateLibraryItem(typeId: string, data: { name: string; image?: string | null; fields?: Record<string, FieldValue>; note_md?: string }): LibraryItem {
     const hit = findSameName(this.libraryEntries(typeId), data.name);
     return (hit && this.get('library_item', hit.id)) || this.createLibraryItem(typeId, data);
   }
@@ -960,6 +961,8 @@ export class Store {
         linked.add(l.task_id);
         rows.push({ table: 'task_item', row: { ...l, deleted: true } });
       }
+    // 影人 ↔ 影片的关联（Rei 2026-11-14）：一端删了，这条关联也断开
+    for (const r of this.libraryLinks()) if (r.from === id || r.to === id) rows.push({ table: 'library_link', row: { ...r.link, deleted: true } });
     for (const t of this.list('task')) {
       if (!(t.library_item_id && this.resolveItemId(t.library_item_id) === id) && !linked.has(t.id)) continue;
       // 只剩这一条资料时把资料抄回任务，卡片照样显示；还有别的资料就只解开这条
@@ -2033,6 +2036,90 @@ export class Store {
     if ((t.milestone_id ?? null) === milestoneId) return true;
     this.updateTask(taskId, { milestone_id: milestoneId });
     return true;
+  }
+
+  // ───────────── 资料之间的关联（影人 ↔ 影片，Rei 2026-11-14，library-link.ts） ─────────────
+
+  /**
+   * 还生效的关联：没删、两端资料都还在（合并过的顺着 merged_into 找到留下的那条），自己连自己的不算；
+   * 合并后同一对出现好几行时只留最新那行。from / to 是解析后的资料 id。
+   */
+  libraryLinks(): Array<{ link: LibraryLink; from: string; to: string }> {
+    const best = new Map<string, { link: LibraryLink; from: string; to: string }>();
+    for (const l of this.tables.library_link.values()) {
+      if (l.deleted) continue;
+      const from = this.resolveItemId(l.from_item);
+      const to = this.resolveItemId(l.to_item);
+      if (!from || !to || from === to) continue;
+      const k = `${from}|${to}`;
+      const cur = best.get(k);
+      if (!cur || l.updated_at > cur.link.updated_at) best.set(k, { link: l, from, to });
+    }
+    return [...best.values()];
+  }
+
+  /** 从这条资料连出去的（影人 → 影片）：另一端的资料 + 关联行，按影片年份新的在前。 */
+  linksFromItem(itemId: string): Array<{ link: LibraryLink; item: LibraryItem }> {
+    const id = this.resolveItemId(itemId) ?? itemId;
+    const rows: Array<{ link: LibraryLink; item: LibraryItem }> = [];
+    for (const r of this.libraryLinks()) if (r.from === id) rows.push({ link: r.link, item: this.get('library_item', r.to)! });
+    return sortFilmography(rows);
+  }
+
+  /** 连到这条资料的（影片 ← 影人）：另一端的资料 + 关联行，按连上的先后。 */
+  linksToItem(itemId: string): Array<{ link: LibraryLink; item: LibraryItem }> {
+    const id = this.resolveItemId(itemId) ?? itemId;
+    const rows: Array<{ link: LibraryLink; item: LibraryItem }> = [];
+    for (const r of this.libraryLinks()) if (r.to === id) rows.push({ link: r.link, item: this.get('library_item', r.from)! });
+    return sortCredits(rows);
+  }
+
+  /**
+   * 连上两条资料（from → to），带一句角色。已经连着：只改角色（role 给了且不一样时）。断开过：同一行翻回来，角色换成这次的。
+   * 两端是同一条、有一端不在了：不写，返回 null。
+   */
+  linkLibraryItems(fromItem: string, toItem: string, role = ''): LibraryLink | null {
+    const from = this.resolveItemId(fromItem);
+    const to = this.resolveItemId(toItem);
+    if (!from || !to || from === to) return null;
+    const r = cleanRole(role);
+    const live = this.libraryLinks().find((x) => x.from === from && x.to === to);
+    if (live) {
+      if (r && r !== live.link.role) return this.update('library_link', live.link.id, { role: r });
+      return live.link;
+    }
+    const id = libraryLinkId(from, to);
+    const maxSort = this.libraryLinks().filter((x) => x.to === to).reduce((m, x) => Math.max(m, x.link.sort), 0);
+    const old = this.tables.library_link.get(id);
+    if (old) {
+      this.write([{ table: 'library_link', row: { ...old, from_item: from, to_item: to, role: r, sort: maxSort + 1, deleted: false } as BaseRow }]);
+      return this.tables.library_link.get(id)!;
+    }
+    return this.insert('library_link', { id, from_item: from, to_item: to, role: r, sort: maxSort + 1, created_at: this.now().toISOString() });
+  }
+
+  /** 改关联的角色（空 = 不写角色）。 */
+  setLibraryLinkRole(linkId: string, role: string): LibraryLink | undefined {
+    const l = this.get('library_link', linkId);
+    if (!l) return undefined;
+    const r = cleanRole(role);
+    return r === l.role ? l : this.update('library_link', linkId, { role: r });
+  }
+
+  /** 断开（打墓碑）。返回断开前那一行，撤销时交给 restoreLibraryLink。 */
+  unlinkLibraryItems(linkId: string): LibraryLink | undefined {
+    const l = this.get('library_link', linkId);
+    if (!l) return undefined;
+    const before = { ...l };
+    this.remove('library_link', linkId);
+    return before;
+  }
+
+  /** 撤销断开：那一行翻回来，角色、顺序照旧。 */
+  restoreLibraryLink(before: LibraryLink): void {
+    const cur = this.tables.library_link.get(before.id);
+    if (!cur || !cur.deleted) return;
+    this.write([{ table: 'library_link', row: { ...cur, role: before.role, sort: before.sort, deleted: false } as BaseRow }]);
   }
 
   // ───────────── 项目关联资料库（Rei 2026-11-10，project-libraries.ts） ─────────────

@@ -24,7 +24,7 @@ function fnv(s: string, seed = 0x811c9dc5): number {
   return h >>> 0;
 }
 
-function pairId(kind: string, a: string, b: string): string {
+export function pairId(kind: string, a: string, b: string): string {
   const key = `${kind}\u0000${a}\u0000${b}`;
   const hex = [fnv(key), fnv(key, 0x01234567), fnv(key, 0x89abcdef), fnv(key, 0x2468ace0)].map((n) => n.toString(16).padStart(8, '0')).join('');
   return `00000000-${hex.slice(0, 4)}-7${hex.slice(5, 8)}-8${hex.slice(9, 12)}-${hex.slice(12, 24)}`;

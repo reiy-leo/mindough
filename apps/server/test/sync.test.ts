@@ -130,6 +130,17 @@ describe('push / pull', () => {
     expect(body.more).toBe(false);
   });
 
+  it('新表 library_link（影人 ↔ 影片，Rei 2026-11-14）：通用行存储照存照拉，断开的墓碑按 LWW 盖过去', async () => {
+    const t = await syncToken();
+    const link = { from_item: 'p1', to_item: 'm1', role: '导演', sort: 1, created_at: '2026-11-14T00:00:00.000Z' };
+    expect((await push(t, [row('l1', '0000000001000-0000-devA', link, 'library_link')])).status).toBe(200);
+    const tomb = { ...row('l1', '0000000002000-0000-devB', link, 'library_link'), deleted: true };
+    expect(await (await push(t, [tomb])).json()).toEqual({ applied: 1 });
+    const { body } = await pull(t);
+    expect(body.rows.map((r) => [r.table, r.id, r.deleted])).toEqual([['library_link', 'l1', true]]);
+    expect(body.rows[0]!.row).toMatchObject({ from_item: 'p1', to_item: 'm1', role: '导演' });
+  });
+
   it('行级 LWW：旧的推不上去，新的覆盖并拿到新的 seq；相等不算', async () => {
     const t = await syncToken();
     await push(t, [row('a', '0000000002000-0000-devB', { body_md: '新' })]);

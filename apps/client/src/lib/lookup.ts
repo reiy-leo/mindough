@@ -153,7 +153,7 @@ export function createItemFromLookup(store: Store, type: TaskType, r: LookupResu
     return { id: twin, created: false };
   }
   const data = itemOfLookup(type, r);
-  const id = store.createLibraryItem(type.id, { name: data.name, fields: data.fields }).id;
+  const id = store.createLibraryItem(type.id, { name: data.name, fields: data.fields, note_md: data.note_md }).id;
   void enrich(store, type, id, r, deps);
   return { id, created: true };
 }
@@ -182,6 +182,10 @@ async function enrich(store: Store, type: TaskType, id: string, r: LookupResult,
   }
   const patch: Parameters<Store['updateLibraryItem']>[1] = {};
   if (changed) patch.fields = fields;
+  // 影人（Rei 2026-11-14）：搜索结果只有 TMDB 的主名（常是英文），详情才有中文名；名字还是搜索结果那个（没被改过）就换成详情的
+  if (full !== r && full.name && full.name !== r.name && cur.name === r.name.trim()) patch.name = full.name;
+  // 简介进备注：备注空着才填
+  if (full.note?.trim() && !cur.note_md.trim()) patch.note_md = full.note.trim();
   if (asset && !cur.image) patch.image = asset;
   if (Object.keys(patch).length) store.updateLibraryItem(id, patch);
 }
@@ -223,7 +227,8 @@ export function useOnlineSearch(kind: LookupKind | null, text: string, delay = 3
     setState((s) => ({ ...s, status: 'loading' }));
     const run = (): Promise<LookupSearchResponse> => {
       if (q.by === 'name') return searchOnline(kind, q.q, ctrl.signal, undefined, q.media ? { media: q.media } : {});
-      const fits = q.source === 'amap' ? isPlaceKind(kind) : q.source === 'isbn' || q.source === 'doubanbook' ? kind === 'book' : kind === 'movie';
+      // 影人（Rei 2026-11-14）只认 IMDb 影人编号和 TMDB 人物链接（lookupSearchText 只给这两种）
+      const fits = kind === 'person' ? q.source === 'imdb' || q.source === 'tmdb' : q.source === 'amap' ? isPlaceKind(kind) : q.source === 'isbn' || q.source === 'doubanbook' ? kind === 'book' : kind === 'movie' && q.source !== 'tmdb';
       if (!fits) return searchOnline(kind, text.trim(), ctrl.signal);
       const source: LookupSource = q.source === 'imdb' ? 'tmdb' : q.source === 'isbn' ? 'openlibrary' : q.source;
       return fetchLookupItem(q.source, q.id, ctrl.signal, undefined, kind).then(

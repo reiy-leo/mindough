@@ -130,6 +130,7 @@ checkins:
 ## 其他文件
 
 - `_group.md`：`id`、`name`、`icon`、`start`、`end`、`category`（id）、`default_type`（id）、`my_day`（关掉了才写 false）、`color`、`archived`（归档了才写归档时间，ISO 8601）；正文是一行 `# 项目名`（导入时忽略）。
+- `_meta/library_links.json`：资料之间的关联（影人 → 影片，2026-11-14，docs/FILM-PEOPLE.md）：每条 `id`、`from_item`、`to_item`、`role`、`sort`、`created_at`，只写还生效的；两端资料找不到的不导入。
 - `_meta/milestones.json`：项目里程碑（2026-11-13）：每条 `id`、`group_id`、`name`、`sort`、`archived_at`、`created_at`，归档的也在；项目找不到的不导入。
 - `library/…/x.md`：`id`、`type`（id）、`name`、`image`（`assets/…`，或没取到文件时的 asset id / 链接）、`fields`（资料字段：年份、作者、IMDb 编号、价格 `{ amount, currency }`、更多链接 `[{ url, label? }]`…）、`created`；正文是备注。
 - `people/x.md`：`id`、`name`、`avatar`、`relation`、`birthday`；正文是备注。

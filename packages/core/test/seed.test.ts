@@ -9,8 +9,8 @@ import { taskStreak } from '../src/checkin';
 import { local } from './helpers';
 
 describe('内置类型', () => {
-  it('普通 + 10 种，名称与 PLAN 一致，字段 key 不重复', () => {
-    expect(BUILTIN_TASK_TYPES.map((t) => t.name)).toEqual(['普通', '影视', '游戏', '书籍', '项目', '课程', '旅行', '购物', '餐厅', '饮食', '人物']);
+  it('普通 + 11 种，名称与 PLAN 一致，字段 key 不重复', () => {
+    expect(BUILTIN_TASK_TYPES.map((t) => t.name)).toEqual(['普通', '影视', '游戏', '书籍', '项目', '课程', '旅行', '购物', '餐厅', '饮食', '人物', '影人']);
     for (const t of BUILTIN_TASK_TYPES) {
       expect(new Set(t.fields.map((f) => f.key)).size).toBe(t.fields.length);
       if (t.name !== '普通') {

@@ -1,11 +1,11 @@
 /**
  * 在线找资料：各来源适配器共用的结果形状与请求工具。
  * LookupResult 与 packages/core/src/lookup.ts 的同名类型一致（Worker 不依赖 core，两处一起改）。
- * fields 的 key 是内置类型的字段 key：餐厅 / 目的地 amap / address / city / location / phone / category / rating / cost / hours（见 amap.ts）；影视 year / kind（电影、剧集）/ imdb / douban；书 author / publisher / year / isbn / total_pages（按名字只有作品级的 author / year / total_pages）；游戏 platform / links。
+ * fields 的 key 是内置类型的字段 key：影人 name_en / birth_year / roles（演员、导演、编剧、制片、配乐）/ tmdb / imdb（nm 开头）；餐厅 / 目的地 amap / address / city / location / phone / category / rating / cost / hours（见 amap.ts）；影视 year / kind（电影、剧集）/ imdb / douban；书 author / publisher / year / isbn / total_pages（按名字只有作品级的 author / year / total_pages）；游戏 platform / links。
  */
 export type FieldValue = string | number | boolean | string[] | Array<{ url: string; label?: string }> | { amount: number; currency: string } | null;
-/** restaurant / place：餐厅、目的地，只接高德（Rei 2026-11-09）。 */
-export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place';
+/** restaurant / place：餐厅、目的地，只接高德（Rei 2026-11-09）；person：影人，只接 TMDB 人物（Rei 2026-11-14）。 */
+export type LookupKind = 'movie' | 'book' | 'game' | 'restaurant' | 'place' | 'person';
 export type LookupSource = 'tmdb' | 'douban' | 'doubanbook' | 'openlibrary' | 'steam' | 'igdb' | 'amap';
 export type Lang = 'zh' | 'en';
 
@@ -19,6 +19,8 @@ export interface LookupResult {
   subtitle?: string;
   fields: Record<string, FieldValue>;
   url: string;
+  /** 简介（影人的 TMDB 生平）：客户端填进资料的备注。 */
+  note?: string;
 }
 
 /** limited：配额、QPS 超了（高德 10003 / 10004 / 10019…），过一会儿或明天再试。 */

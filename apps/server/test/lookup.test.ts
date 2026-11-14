@@ -172,6 +172,38 @@ describe('TMDB', () => {
     expect(enBody.results.map((r) => r.source)).toEqual(['tmdb']);
   });
 
+  it('影人（Rei 2026-11-14）：kind=person 只问 TMDB 人物搜索；详情给中英文名、生年、身份、IMDb 编号、简介；nm 编号 find', async () => {
+    const calls = mockFetch({
+      'https://api.themoviedb.org/3/search/person': (u) => {
+        expect(u.searchParams.get('language')).toBe('zh-CN');
+        return Response.json({ results: [{ id: 525, name: 'Christopher Nolan', known_for_department: 'Directing', profile_path: '/n.jpg', known_for: [{ title: '星际穿越' }, { title: '奥本海默' }, { title: '盗梦空间' }] }] });
+      },
+      'https://api.themoviedb.org/3/person/525': (u) =>
+        u.searchParams.get('language') === 'zh-CN'
+          ? Response.json({ id: 525, name: 'Christopher Nolan', also_known_as: ['クリストファー・ノーラン', '克里斯托弗·诺兰', '诺兰'], birthday: '1970-07-30', biography: '', known_for_department: 'Directing', profile_path: '/n.jpg', imdb_id: 'nm0634240' })
+          : Response.json({ id: 525, name: 'Christopher Nolan', also_known_as: ['克里斯托弗·诺兰'], birthday: '1970-07-30', biography: 'British-American filmmaker.', known_for_department: 'Directing' }),
+      'https://api.themoviedb.org/3/find/nm0634240': (u) => {
+        expect(u.searchParams.get('external_source')).toBe('imdb_id');
+        return Response.json({ person_results: [{ id: 525, name: 'Christopher Nolan' }], movie_results: [] });
+      },
+    });
+    const env = baseEnv({ TMDB_API_KEY: V3 });
+    const res = await call('/api/lookup/search?kind=person&q=%E8%AF%BA%E5%85%B0&lang=zh', env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { results: Array<Record<string, unknown>>; sources: Array<{ source: string }> };
+    expect(body.sources.map((x) => x.source)).toEqual(['tmdb']);
+    expect(body.results[0]).toMatchObject({ source: 'tmdb', sourceId: 'person/525', name: 'Christopher Nolan', subtitle: '星际穿越、奥本海默', thumb: 'https://image.tmdb.org/t/p/w185/n.jpg', fields: { tmdb: '525', name_en: 'Christopher Nolan', roles: ['导演'] } });
+    // 同一个词搜影视和搜影人分开缓存、分开请求
+    expect(calls.filter((c) => c.url.pathname === '/3/search/person')).toHaveLength(1);
+    const p = (await (await call('/api/lookup/item?source=tmdb&id=person/525&lang=zh', env)).json()) as Record<string, unknown>;
+    expect(p).toMatchObject({ name: '克里斯托弗·诺兰', subtitle: 'Christopher Nolan', year: 1970, image: 'https://image.tmdb.org/t/p/h632/n.jpg', note: 'British-American filmmaker.', fields: { name_en: 'Christopher Nolan', birth_year: 1970, roles: ['导演'], tmdb: '525', imdb: 'nm0634240' } });
+    const en = (await (await call('/api/lookup/item?source=tmdb&id=person/525&lang=en', env)).json()) as Record<string, unknown>;
+    expect(en).toMatchObject({ name: 'Christopher Nolan', subtitle: '克里斯托弗·诺兰' });
+    const byNm = (await (await call('/api/lookup/item?source=imdb&id=NM0634240&lang=zh', env)).json()) as Record<string, unknown>;
+    expect(byNm).toMatchObject({ sourceId: 'person/525', name: '克里斯托弗·诺兰' });
+    expect((await call('/api/lookup/item?source=tmdb&id=person/abc', env)).status).toBe(400);
+  });
+
   it('详情带 IMDb；按 IMDb 编号 find；剧集从 external_ids 拿', async () => {
     mockFetch({
       'https://api.themoviedb.org/3/movie/693134': () => Response.json({ id: 693134, title: '沙丘2', release_date: '2024-02-27', poster_path: '/p2.jpg', imdb_id: 'tt15239678' }),

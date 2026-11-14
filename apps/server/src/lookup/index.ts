@@ -1,6 +1,6 @@
 /**
  * 在线找资料（M4）：都要登录（会话或同步凭据，同 /api/assets）。状态码附中文说明。
- * - GET  /api/lookup/search?kind=movie|book|game|restaurant|place&q=…&lang=zh|en[&source=…][&media=movie|tv][&alt=别名…][&city=上海市]
+ * - GET  /api/lookup/search?kind=movie|book|game|restaurant|place|person&q=…&lang=zh|en[&source=…][&media=movie|tv][&alt=别名…][&city=上海市]
  *        → { results: LookupResult[], sources: [{ source, status: ok|unconfigured|blocked|error, code?, message? }] }
  *        影视同时问 TMDB 和豆瓣（豆瓣的结果只在中文界面列出，尽力而为）；一个来源出错不影响另一个。
  *        media：只要电影或只要剧集（客户端从「电影/剧集」字段、季标记判断；季标记客户端已去掉）。
@@ -9,6 +9,8 @@
  *        书同时问豆瓣读书和 Open Library（Rei 2026-11-09）：中文界面都列，豆瓣读书在前；英文界面名字里有汉字才问豆瓣读书。
  *        Open Library 的结果和豆瓣读书的同一本（同 ISBN，或同名同作者）不再列。
  *        餐厅、目的地只问高德（amap.ts，Rei 2026-11-09）：city 是上次选的城市，优先它、不限定；结果都是中文。
+ *        影人（kind=person，Rei 2026-11-14）只问 TMDB 人物搜索；source=tmdb&id=person/525 取详情（中英文名、生年、简介、IMDb 编号），
+ *        source=imdb&id=nm0634240 按 IMDb 影人编号取。只给候选，不自动收录。
  *        所有来源都失败时返回第一个失败的状态码（如 TMDB 没配置 → 503 服务不可用）。
  * - GET  /api/lookup/item?source=tmdb|douban|doubanbook|openlibrary|steam|igdb|imdb|isbn|amap&id=…&lang=zh|en[&kind=restaurant|place] → LookupResult
  *        source=amap：id 是高德 POI id（B0FFKKRXAZ），或高德分享短链 surl.amap.com/…（只读跳转地址里的 POI id）。
@@ -29,7 +31,7 @@ import { doubanBookByIsbn, doubanBookItem, searchDoubanBook } from './doubanbook
 import { openLibraryByIsbn, openLibraryItem, searchOpenLibrary, validIsbn } from './openlibrary';
 import { searchSteam, steamItem } from './steam';
 import { igdbItem, searchIgdb, type IgdbHit } from './igdb';
-import { searchTmdb, tmdbByImdb, tmdbItem, tmdbSeasons, type Media } from './tmdb';
+import { searchTmdb, searchTmdbPeople, tmdbByImdb, tmdbItem, tmdbSeasons, type Media } from './tmdb';
 import { amapItem, amapRegeo, searchAmap, type AmapKind } from './amap';
 import { LookupError, upstream, type Lang, type LookupEnv, type LookupKind, type LookupResult, type LookupSource, type LookupSourceStatus } from './types';
 
@@ -41,7 +43,7 @@ export const ITEM_TTL = 7 * 24 * 3600;
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
-const KIND_SOURCES: Record<LookupKind, LookupSource[]> = { movie: ['tmdb', 'douban'], book: ['doubanbook', 'openlibrary'], game: ['steam', 'igdb'], restaurant: ['amap'], place: ['amap'] };
+const KIND_SOURCES: Record<LookupKind, LookupSource[]> = { movie: ['tmdb', 'douban'], book: ['doubanbook', 'openlibrary'], game: ['steam', 'igdb'], restaurant: ['amap'], place: ['amap'], person: ['tmdb'] };
 
 /** Cache API：Worker 里是 caches.default；单测（node）里没有就直接查。 */
 interface CacheLike {
@@ -66,17 +68,19 @@ const langOf = (url: URL): Lang => (url.searchParams.get('lang') === 'en' ? 'en'
 
 interface SearchOpts {
   media?: Media;
+  /** 搜影人（TMDB /search/person）。 */
+  people?: boolean;
   year?: number;
   kind?: AmapKind;
   city?: string;
 }
 
 function searchOne(env: LookupEnv, source: LookupSource, q: string, lang: Lang, opts: SearchOpts = {}): Promise<LookupResult[]> {
-  const key = `search/${source}/${lang}/${opts.media ?? 'all'}/${opts.year ?? ''}/${opts.kind ?? ''}/${encodeURIComponent(opts.city ?? '')}/${encodeURIComponent(q.toLowerCase())}`;
+  const key = `search/${source}/${lang}/${opts.people ? 'person' : (opts.media ?? 'all')}/${opts.year ?? ''}/${opts.kind ?? ''}/${encodeURIComponent(opts.city ?? '')}/${encodeURIComponent(q.toLowerCase())}`;
   return cached(key, SEARCH_TTL, () => {
     switch (source) {
       case 'tmdb':
-        return searchTmdb(env, q, lang, opts);
+        return opts.people ? searchTmdbPeople(env, q, lang) : searchTmdb(env, q, lang, opts);
       case 'douban':
         return searchDouban(q);
       case 'doubanbook':
@@ -113,7 +117,7 @@ export async function lookupSearch(env: LookupEnv, kind: LookupKind, q: string, 
   else if (lang === 'en' && !CJK.test(q)) sources = sources.filter((s) => s !== 'douban' && s !== 'doubanbook');
   const media = kind === 'movie' ? query.media : undefined;
   const amapOpts: SearchOpts = kind === 'restaurant' || kind === 'place' ? { kind, ...(query.city ? { city: query.city } : {}) } : {};
-  const settled = await Promise.allSettled(sources.map((s) => searchOne(env, s, q, lang, s === 'tmdb' ? { ...(media ? { media } : {}) } : s === 'amap' ? amapOpts : {})));
+  const settled = await Promise.allSettled(sources.map((s) => searchOne(env, s, q, lang, s === 'tmdb' ? (kind === 'person' ? { people: true } : { ...(media ? { media } : {}) }) : s === 'amap' ? amapOpts : {})));
   const lists = new Map<LookupSource, LookupResult[]>();
   settled.forEach((r, i) => {
     if (r.status !== 'fulfilled') return;
@@ -123,7 +127,7 @@ export async function lookupSearch(env: LookupEnv, kind: LookupKind, q: string, 
   });
   // TMDB 按这个名字没搜到：用别名、豆瓣给的原名补搜（最多试 3 个）
   const tmdbIdx = sources.indexOf('tmdb');
-  if (tmdbIdx >= 0 && settled[tmdbIdx]!.status === 'fulfilled' && lists.get('tmdb')!.length === 0) {
+  if (kind === 'movie' && tmdbIdx >= 0 && settled[tmdbIdx]!.status === 'fulfilled' && lists.get('tmdb')!.length === 0) {
     const tries: Array<{ name: string; year?: number }> = (query.alt ?? []).filter(Boolean).map((name) => ({ name }));
     for (const d of lists.get('douban') ?? []) if (d.subtitle && d.subtitle !== q) tries.push({ name: d.subtitle, ...(d.year ? { year: d.year } : {}) });
     const seenName = new Set([q.toLowerCase()]);
@@ -311,7 +315,7 @@ export async function handleLookup(req: Request, env: LookupWorkerEnv, url: URL)
     const kind = url.searchParams.get('kind') as LookupKind | null;
     const q = (url.searchParams.get('q') ?? '').trim();
     const only = (url.searchParams.get('source') ?? '') as LookupSource | '';
-    if (!kind || !(kind in KIND_SOURCES)) return json({ error: '400 请求有误：kind 只能是 movie、book、game、restaurant、place' }, 400);
+    if (!kind || !(kind in KIND_SOURCES)) return json({ error: '400 请求有误：kind 只能是 movie、book、game、restaurant、place、person' }, 400);
     if (!q) return json({ error: '400 请求有误：q 不能为空' }, 400);
     if (q.length > 200) return json({ error: '400 请求有误：q 太长了' }, 400);
     if (only && !KIND_SOURCES[kind].includes(only)) return json({ error: `400 请求有误：${kind} 没有 ${only} 这个来源` }, 400);

@@ -108,7 +108,7 @@ describe('字段纯函数', () => {
     const ids = BUILTIN_TASK_TYPES.filter(isEditableType).map((t) => t.id);
     expect(ids).not.toContain(T.plain);
     expect(ids).not.toContain(T.person);
-    expect(ids).toHaveLength(9);
+    expect(ids).toHaveLength(10);
   });
 });
 

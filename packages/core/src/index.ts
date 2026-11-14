@@ -44,6 +44,7 @@ export * from './lookup';
 export * from './group';
 export * from './project-libraries';
 export * from './milestone';
+export * from './library-link';
 export * from './store';
 export * from './storage/adapter';
 export * from './storage/memory';

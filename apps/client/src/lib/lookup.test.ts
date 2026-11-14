@@ -30,6 +30,34 @@ describe('在线找资料（客户端）', () => {
     expect(store.get('library_item', id)).toMatchObject({ image: 'asset-1', fields: { imdb: 'tt15239678' } });
   });
 
+  it('影人（Rei 2026-11-14）：先用搜索结果的英文主名建，详情回来换成中文名、补生年和编号，简介进备注；头像按圆形裁', async () => {
+    const store = await Store.open(new MemoryAdapter());
+    const type = store.get('task_type', BUILTIN_TYPE_IDS.filmPerson)!;
+    const hit: LookupResult = { source: 'tmdb', sourceId: 'person/525', name: 'Christopher Nolan', image: 'https://image.tmdb.org/t/p/h632/n.jpg', fields: { tmdb: '525', name_en: 'Christopher Nolan', roles: ['导演'] }, url: 'https://www.themoviedb.org/person/525' };
+    const full: LookupResult = { ...hit, name: '克里斯托弗·诺兰', year: 1970, fields: { ...hit.fields, birth_year: 1970, imdb: 'nm0634240' }, note: '英国导演。' };
+    const importImage = vi.fn(async () => 'asset-1');
+    const { id } = createItemFromLookup(store, type, hit, { fetchItem: async () => full, importImage });
+    expect(store.get('library_item', id)!.name).toBe('Christopher Nolan');
+    await flush();
+    await flush();
+    expect(importImage).toHaveBeenCalledWith(store, hit.image, 'round');
+    expect(store.get('library_item', id)).toMatchObject({ name: '克里斯托弗·诺兰', image: 'asset-1', note_md: '英国导演。', fields: { birth_year: 1970, imdb: 'nm0634240', roles: ['导演'] } });
+  });
+
+  it('影人：名字已经被改过、备注已经写过，详情回来不动它们', async () => {
+    const store = await Store.open(new MemoryAdapter());
+    const type = store.get('task_type', BUILTIN_TYPE_IDS.filmPerson)!;
+    const hit: LookupResult = { source: 'tmdb', sourceId: 'person/525', name: 'Christopher Nolan', fields: { tmdb: '525' }, url: 'https://www.themoviedb.org/person/525' };
+    let release!: () => void;
+    const gate = new Promise<void>((x) => (release = x));
+    const { id } = createItemFromLookup(store, type, hit, { fetchItem: async () => (await gate, { ...hit, name: '克里斯托弗·诺兰', note: '英国导演。' }), importImage: async () => null });
+    store.updateLibraryItem(id, { name: '诺兰', note_md: '我的笔记' });
+    release();
+    await flush();
+    await flush();
+    expect(store.get('library_item', id)).toMatchObject({ name: '诺兰', note_md: '我的笔记' });
+  });
+
   it('库里已有同名的：用它，不新建；已有的值不动', async () => {
     const store = await Store.open(new MemoryAdapter());
     const type = store.get('task_type', BUILTIN_TYPE_IDS.movie)!;

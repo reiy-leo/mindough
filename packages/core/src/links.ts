@@ -61,6 +61,21 @@ export const SITES: Record<string, SiteDef> = {
     parse: (input) => isbnOf(input),
     url: (id) => `https://openlibrary.org/isbn/${id}`,
   },
+  // 影人（Rei 2026-11-14）：TMDB 人物编号（数字）和 IMDb 影人编号（nm 开头），只存编号，显示成链接
+  tmdb_person: {
+    label: 'TMDB',
+    get placeholder() { return tr('525，或粘贴链接'); },
+    get hint() { return tr('TMDB 人物编号是一串数字，在链接 person/ 后面'); },
+    parse: (input) => tmdbPersonIdOf(input),
+    url: (id) => `https://www.themoviedb.org/person/${id}`,
+  },
+  imdb_name: {
+    label: 'IMDb',
+    get placeholder() { return tr('nm0634240，或粘贴链接'); },
+    get hint() { return tr('IMDb 影人编号是 nm 加数字，比如 nm0634240'); },
+    parse: (input) => imdbNameIdOf(input),
+    url: (id) => `https://www.imdb.com/name/${id}/`,
+  },
   // 高德地图的地点编号（POI id，B 开头 10 位），显示成高德的地点详情页（电脑、手机都能开）。Rei 2026-11-09
   amap: {
     get label() { return tr('高德地图'); },
@@ -70,6 +85,25 @@ export const SITES: Record<string, SiteDef> = {
     url: (id) => `https://uri.amap.com/poidetail?poiid=${id}&src=mindough`,
   },
 };
+
+/** TMDB 人物编号：纯数字，或 themoviedb.org/person/525-christopher-nolan 这样的链接。 */
+export function tmdbPersonIdOf(input: string): string | null {
+  const s = clean(input);
+  if (!s) return null;
+  if (/^\d{1,10}$/.test(s)) return String(Number(s));
+  const m = /themoviedb\.org\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?person\/(\d{1,10})(?=$|[-/?#])/i.exec(s);
+  return m ? String(Number(m[1]!)) : null;
+}
+
+/** IMDb 影人编号：nm 加 7–10 位数字，或 imdb.com/name/nm0634240/ 这样的链接；只填数字补上 nm。 */
+export function imdbNameIdOf(input: string): string | null {
+  const s = clean(input);
+  if (!s) return null;
+  const m = /^(nm\d{7,10})$/i.exec(s) ?? (s.includes('/') ? /(?:^|[^a-z0-9])(nm\d{7,10})(?=$|[^a-z0-9])/i.exec(s) : null);
+  if (m) return m[1]!.toLowerCase();
+  if (/^\d{7,10}$/.test(s)) return `nm${s}`;
+  return null;
+}
 
 /** 高德地点编号（POI id）：B 开头 10 位大写字母数字。 */
 const AMAP_POI = /^B[0-9A-Z]{9}$/;

@@ -91,18 +91,25 @@ export async function searchTmdb(env: LookupEnv, q: string, lang: Lang, opts: { 
     .map(({ m, t }) => toResult(m, t));
 }
 
-/** id：「movie/550」「tv/1399」。 */
+/** id：「movie/550」「tv/1399」，影人「person/525」。 */
 export async function tmdbItem(env: LookupEnv, id: string, lang: Lang): Promise<LookupResult> {
+  if (/^person\/\d{1,10}$/.test(id)) return tmdbPerson(env, id, lang);
   const m = /^(movie|tv)\/(\d{1,10})$/.exec(id);
-  if (!m) throw new LookupError(400, '400 请求有误：TMDB 编号要写成 movie/550 或 tv/1399');
+  if (!m) throw new LookupError(400, '400 请求有误：TMDB 编号要写成 movie/550、tv/1399 或 person/525');
   const mediaType = m[1] as 'movie' | 'tv';
   const data = await tmdb<TmdbMedia>(env, `/${mediaType}/${m[2]}`, { language: language(lang), append_to_response: 'external_ids' });
   return toResult(data, mediaType, data.imdb_id ?? data.external_ids?.imdb_id);
 }
 
-/** 按 IMDb 编号直接取（find）。 */
+/** 按 IMDb 编号直接取（find）：tt 开头是影视，nm 开头是影人（Rei 2026-11-14）。 */
 export async function tmdbByImdb(env: LookupEnv, imdb: string, lang: Lang): Promise<LookupResult> {
-  if (!/^tt\d{7,10}$/.test(imdb)) throw new LookupError(400, '400 请求有误：IMDb 编号是 tt 加数字');
+  if (/^nm\d{7,10}$/.test(imdb)) {
+    const data = await tmdb<{ person_results?: TmdbPerson[] }>(env, `/find/${imdb}`, { external_source: 'imdb_id', language: language(lang) });
+    const p = data.person_results?.[0];
+    if (!p) throw new LookupError(404, `404 未找到：TMDB 上没有 ${imdb}`);
+    return tmdbPerson(env, `person/${p.id}`, lang);
+  }
+  if (!/^tt\d{7,10}$/.test(imdb)) throw new LookupError(400, '400 请求有误：IMDb 编号是 tt 加数字（影人是 nm 加数字）');
   const data = await tmdb<{ movie_results?: TmdbMedia[]; tv_results?: TmdbMedia[] }>(env, `/find/${imdb}`, { external_source: 'imdb_id', language: language(lang) });
   const movie = data.movie_results?.[0];
   if (movie) return toResult(movie, 'movie', imdb);
@@ -166,4 +173,87 @@ export async function tmdbSeasons(env: LookupEnv, id: string, lang: Lang): Promi
     });
   }
   return { tv: `tv/${tvId}`, seasons };
+}
+
+// ───────────── 影人（Rei 2026-11-14「影人库」） ─────────────
+// 只在用户点「添加」时帮忙填：头像、中英文名、生年、简介、TMDB / IMDb 编号、身份（按 TMDB 的 known_for_department）。
+// 不拉演职员表、不自动匹配（Rei：影人手动加，和影片的关联也手动）。
+
+export interface TmdbPerson {
+  id: number;
+  name?: string;
+  also_known_as?: string[];
+  birthday?: string | null;
+  biography?: string;
+  profile_path?: string | null;
+  imdb_id?: string | null;
+  known_for_department?: string;
+  known_for?: Array<{ title?: string; name?: string; media_type?: string }>;
+  external_ids?: { imdb_id?: string | null };
+}
+
+/** TMDB 的部门 → 影人「身份」选项（存中文原样，界面按语言显示）。 */
+const DEPT_ROLE: Record<string, string> = { Acting: '演员', Directing: '导演', Writing: '编剧', Production: '制片', Sound: '配乐' };
+const HAN = /[\u3400-\u9fff]/;
+const KANA = /[\u3040-\u30ff]/;
+const LATIN_NAME = /^[\p{Script=Latin}\s.'’\-·,]+$/u;
+
+/** 中文名、英文名：主名有汉字就是中文名，否则从别名里挑第一个有汉字、没有假名的；英文名同理挑拉丁字母的。 */
+export function personNames(p: Pick<TmdbPerson, 'name' | 'also_known_as'>): { zh?: string; en?: string } {
+  const name = (p.name ?? '').trim();
+  const aka = (p.also_known_as ?? []).map((s) => s.trim()).filter(Boolean);
+  const zh = HAN.test(name) && !KANA.test(name) ? name : aka.find((a) => HAN.test(a) && !KANA.test(a));
+  const en = name && LATIN_NAME.test(name) ? name : aka.find((a) => LATIN_NAME.test(a) && /[A-Za-z]/.test(a));
+  return { ...(zh ? { zh } : {}), ...(en ? { en } : {}) };
+}
+
+export function personResult(p: TmdbPerson, lang: Lang, bio?: string): LookupResult {
+  const { zh, en } = personNames(p);
+  const raw = (p.name ?? '').trim();
+  const name = (lang === 'zh' ? (zh ?? raw) : (en ?? raw)) || zh || en || '';
+  const other = name === zh ? en : zh;
+  const year = yearOf(p.birthday);
+  const role = p.known_for_department ? DEPT_ROLE[p.known_for_department] : undefined;
+  const imdb = p.imdb_id ?? p.external_ids?.imdb_id;
+  const known = (p.known_for ?? []).map((k) => (k.title ?? k.name ?? '').trim()).filter(Boolean).slice(0, 2);
+  const fields: LookupResult['fields'] = { tmdb: String(p.id) };
+  if (en) fields.name_en = en;
+  if (year) fields.birth_year = year;
+  if (role) fields.roles = [role];
+  if (imdb && /^nm\d{7,10}$/.test(imdb)) fields.imdb = imdb;
+  const subtitle = [other, known.join(lang === 'zh' ? '、' : ', ')].filter(Boolean).join(' · ');
+  const note = (bio ?? p.biography ?? '').trim();
+  return {
+    source: 'tmdb',
+    sourceId: `person/${p.id}`,
+    name,
+    ...(year ? { year } : {}),
+    ...(p.profile_path && POSTER_PATH.test(p.profile_path) ? { image: `${TMDB_IMAGE}/h632${p.profile_path}`, thumb: `${TMDB_IMAGE}/w185${p.profile_path}` } : {}),
+    ...(subtitle ? { subtitle } : {}),
+    fields,
+    url: `https://www.themoviedb.org/person/${p.id}`,
+    ...(note ? { note } : {}),
+  };
+}
+
+/** 搜影人（/search/person）：搜索结果里没有别名和生日，选中后客户端再取详情补上。 */
+export async function searchTmdbPeople(env: LookupEnv, q: string, lang: Lang): Promise<LookupResult[]> {
+  const data = await tmdb<{ results?: TmdbPerson[] }>(env, '/search/person', { query: q, language: language(lang), include_adult: 'false', page: '1' });
+  return (data.results ?? []).slice(0, 8).map((p) => personResult(p, lang));
+}
+
+/** id：「person/525」。中文界面的简介没有中文时用英文的。 */
+export async function tmdbPerson(env: LookupEnv, id: string, lang: Lang): Promise<LookupResult> {
+  const m = /^person\/(\d{1,10})$/.exec(id);
+  if (!m) throw new LookupError(400, '400 请求有误：TMDB 人物编号要写成 person/525');
+  const data = await tmdb<TmdbPerson>(env, `/person/${m[1]}`, { language: language(lang), append_to_response: 'external_ids' });
+  let bio = (data.biography ?? '').trim();
+  if (!bio && lang === 'zh') {
+    try {
+      bio = ((await tmdb<TmdbPerson>(env, `/person/${m[1]}`, { language: 'en-US' })).biography ?? '').trim();
+    } catch {
+      /* 英文简介拿不到就不填 */
+    }
+  }
+  return personResult(data, lang, bio);
 }

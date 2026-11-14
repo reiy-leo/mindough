@@ -216,7 +216,15 @@ export function seedDemo(store: Store): void {
     lib(T.movie, tr('漫长的季节'), { year: 2023, kind: '剧集', douban: '35588177' });
     lib(T.movie, tr('请回答 1988'), { year: 2015, kind: '剧集' });
     const oppenheimer = lib(T.movie, tr('奥本海默'), { year: 2023, kind: '电影' });
-    lib(T.movie, tr('千与千寻'), { year: 2001, kind: '电影' });
+    const spirited = lib(T.movie, tr('千与千寻'), { year: 2001, kind: '电影' });
+    // 影人库（Rei 2026-11-14）：影人和片子的关联都是手动连的
+    const nolan = lib(T.filmPerson, tr('克里斯托弗·诺兰'), { name_en: 'Christopher Nolan', birth_year: 1970, roles: ['导演', '编剧'], tmdb: '525', imdb: 'nm0634240' }); // i18n-ignore 选项值（数据）
+    const mcc = lib(T.filmPerson, tr('马修·麦康纳'), { name_en: 'Matthew McConaughey', birth_year: 1969, roles: ['演员'], tmdb: '10297', imdb: 'nm0000190' }); // i18n-ignore 选项值（数据）
+    const miyazaki = lib(T.filmPerson, tr('宫崎骏'), { name_en: 'Hayao Miyazaki', birth_year: 1941, roles: ['导演', '编剧'], tmdb: '608', imdb: 'nm0594503' }); // i18n-ignore 选项值（数据）
+    store.linkLibraryItems(nolan.id, interstellar.id, tr('导演、编剧'));
+    store.linkLibraryItems(nolan.id, oppenheimer.id, tr('导演、编剧'));
+    store.linkLibraryItems(mcc.id, interstellar.id, tr('主演·饰 库珀'));
+    store.linkLibraryItems(miyazaki.id, spirited.id, tr('导演、编剧'));
     lib(T.book, tr('置身事内'), { author: tr('兰小欢'), total_pages: 320 });
     lib(T.book, tr('长安的荔枝'), { author: tr('马伯庸'), total_pages: 220 });
     lib(T.book, tr('人类简史'), { author: tr('尤瓦尔·赫拉利'), total_pages: 440 });

@@ -26,6 +26,7 @@ import {
   type LookupSource,
   type Store,
   type TaskType,
+  NOTE_ROW_KEY,
 } from '@mindough/core';
 import { LookupHttpError, fetchLookupItem, importLookupImage, rememberLookupCity, searchOnline, type OnlineSearchState } from '../../lib/lookup';
 import { statusZh } from '../../lib/account';
@@ -172,6 +173,8 @@ function valueText(row: FillRow, v: FieldValue | undefined): string {
   if (row.def.kind === 'site_id') return siteIdOf(row.def.site, v) ?? fieldText(v);
   if (row.def.kind === 'links') return linksOf(v).map((l) => l.label || l.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')).join(tr('、'));
   if (row.def.kind === 'number' && row.def.unit && fieldText(v)) return `${fieldText(v)} ${dataLabel(row.def.unit)}`;
+  // 多选（影人的身份）：选项按界面语言显示
+  if (row.def.kind === 'multiselect' && Array.isArray(v)) return v.map((x) => dataLabel(String(x))).join(tr('、'));
   return fieldText(v);
 }
 
@@ -202,7 +205,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
   const [phase, setPhase] = useState<Phase>({ at: 'loading' });
   const [busy, setBusy] = useState(false);
   const ctrl = useRef<AbortController | null>(null);
-  const emptyHint = kind === 'book' ? tr('先填书名，或者 ISBN') : isPlaceKind(kind) ? tr('先填名字，或者粘贴高德地图链接') : tr('先填名字，或者 IMDb / 豆瓣编号');
+  const emptyHint = kind === 'book' ? tr('先填书名，或者 ISBN') : isPlaceKind(kind) ? tr('先填名字，或者粘贴高德地图链接') : kind === 'person' ? tr('先填名字，或者 TMDB / IMDb 编号') : tr('先填名字，或者 IMDb / 豆瓣编号');
 
   const review = async (r: LookupResult, fromPick: LookupResult[] | null) => {
     setPhase({ at: 'loading' });
@@ -224,7 +227,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
     const c = new AbortController();
     ctrl.current = c;
     const byName = async (raw: string, note?: string) => {
-      const nq = lookupQueryOf(type, { name: raw, fields: { ...draft.fields, imdb: null, douban: null, isbn: null, amap: null } });
+      const nq = lookupQueryOf(type, { name: raw, fields: { ...draft.fields, imdb: null, douban: null, isbn: null, amap: null, tmdb: null } });
       const name = nq?.by === 'name' ? nq.q : '';
       if (nq?.by === 'id') return setPhase({ at: 'message', text: note ?? emptyHint });
       if (!name) return setPhase({ at: 'message', text: note ?? emptyHint });
@@ -337,7 +340,7 @@ export function AutofillPanel({ store, type, draft, onApply, onCancel }: { store
                         </span>
                       ) : (
                         <>
-                          <span className="autofill-next">{valueText(row, row.next)}</span>
+                          <span className={`autofill-next${row.key === NOTE_ROW_KEY ? ' is-long' : ''}`}>{valueText(row, row.next)}</span>
                           {row.filled && row.def.kind !== 'links' && <span className="autofill-old">{tr('现在：{v}', { v: valueText(row, row.current) })}</span>}
                         </>
                       )}

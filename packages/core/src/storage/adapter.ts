@@ -68,6 +68,7 @@ export function emptySnapshot(): Snapshot {
     group_library: [],
     calendar_sub: [],
     milestone: [],
+    library_link: [],
   };
 }
 

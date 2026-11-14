@@ -44,6 +44,7 @@ export const LIBRARY_COPY: Record<string, LibraryCopy> = {
   [B.shopping]: { get name() { return tr('好物清单'); }, get short() { return tr('好物'); }, get pick() { return tr('选一件东西…'); }, get measure() { return tr('件'); }, count: (n) => tr('{n} 件', { n }), get addFirst() { return tr('添加第一件'); } },
   [B.restaurant]: { get name() { return tr('餐厅库'); }, get short() { return tr('餐厅'); }, get pick() { return tr('选一家餐厅…'); }, get measure() { return tr('家'); }, count: (n) => tr('{n} 家', { n }), get addFirst() { return tr('添加第一家'); } },
   [B.meal]: { get name() { return tr('菜谱'); }, get short() { return tr('菜谱'); }, get pick() { return tr('选一道菜…'); }, get measure() { return tr('道'); }, count: (n) => tr('{n} 道菜', { n }), get addFirst() { return tr('添加第一道菜'); } },
+  [B.filmPerson]: { get name() { return tr('影人库'); }, get short() { return tr('影人'); }, get pick() { return tr('选一位影人…'); }, get measure() { return tr('位'); }, count: (n) => tr('{n} 位', { n }), get addFirst() { return tr('添加第一位'); } },
   [B.person]: { get name() { return tr('人物'); }, get short() { return tr('人物'); }, get pick() { return tr('选一个人…'); }, get measure() { return tr('位'); }, count: (n) => tr('{n} 位', { n }), get addFirst() { return tr('添加第一位'); } },
 };
 

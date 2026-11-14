@@ -17,9 +17,9 @@ async function open(now = local(2026, 10, 15, 10)) {
 }
 
 describe('Store', () => {
-  it('打开时补齐 11 个内置类型（普通 + 10 种）', async () => {
+  it('打开时补齐 12 个内置类型（普通 + 11 种，2026-11-14 加了影人）', async () => {
     const { store, adapter } = await open();
-    expect(store.list('task_type')).toHaveLength(11);
+    expect(store.list('task_type')).toHaveLength(12);
     await store.flush();
     expect((await adapter.loadAll()).task_type).toHaveLength(BUILTIN_TASK_TYPES.length);
   });

@@ -243,6 +243,7 @@ describe('在线补全：逐项计划', () => {
     expect(itemOfLookup(movie, { ...dune, fields: { ...dune.fields, episode: 'S01E01', junk: 1 } })).toEqual({
       name: '沙丘2',
       fields: { year: 2024, kind: '电影', imdb: 'tt15239678', [SOURCE_KEY]: 'tmdb:movie/693134' },
+      note_md: '',
     });
   });
 });

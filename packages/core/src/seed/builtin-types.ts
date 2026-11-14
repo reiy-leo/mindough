@@ -1,5 +1,5 @@
 /**
- * 内置任务类型：普通 + 10 种。与自定义类型走同一套 layout + fields + body_template 机制。
+ * 内置任务类型：普通 + 11 种（2026-11-14 加了影人）。与自定义类型走同一套 layout + fields + body_template 机制。
  * id 固定（UUIDv7 格式、时间戳 0），各设备生成同一批内置类型，同步时自然合并。
  */
 import type { FieldDef, TaskType } from '../types';
@@ -19,6 +19,8 @@ export const BUILTIN_TYPE_IDS = {
   restaurant: tid(8),
   meal: tid(9),
   person: tid(10),
+  /** 影人（Rei 2026-11-14，docs/FILM-PEOPLE.md）：演员、导演、编剧…，和影视库平级的单独一个库。 */
+  filmPerson: tid(11),
 } as const;
 
 /**
@@ -42,6 +44,9 @@ const placeFields = (opts: { cost: boolean }): FieldDef[] => [
   { key: 'hours', label: '营业时间', kind: 'text' },
   { key: 'amap', label: '高德地图', kind: 'site_id', site: 'amap' },
 ];
+
+/** 影人的「身份」默认选项（多选；用户在资料库编辑器里还能自己加，Rei 2026-11-14）。 */
+export const FILM_PERSON_ROLES = ['演员', '导演', '编剧', '制片', '配乐'];
 
 /** 游戏平台的选项（多选；界面文案见 docs/COPY.md）。 */
 export const GAME_PLATFORMS = [
@@ -258,6 +263,29 @@ export const BUILTIN_TASK_TYPES: TaskType[] = [
     body_template: '## 要聊什么\n\n\n## 备注\n',
     default_completion_mode: 'once',
     sort: 10,
+  },
+  {
+    // 影人（Rei 2026-11-14）：圆形头像，排在影视后面。简介写在资料的备注里（note_md），TMDB 补全时也填那里。
+    // 新加的内置类型不用改 BUILTIN_TYPES_REVISION：本机没有这一行时 ensureBuiltinTypes 会补上。
+    ...BASE,
+    id: BUILTIN_TYPE_IDS.filmPerson,
+    name: '影人',
+    icon: 'drama',
+    color: '#d6336c',
+    layout: 'round',
+    fields: [
+      { key: 'name', label: '名字', kind: 'text', primary: true, placeholder: '比如：克里斯托弗·诺兰' },
+      { key: 'photo', label: '头像', kind: 'image', media: true },
+      { key: 'name_en', label: '英文名', kind: 'text' },
+      { key: 'birth_year', label: '生年', kind: 'number' },
+      { key: 'roles', label: '身份', kind: 'multiselect', options: FILM_PERSON_ROLES },
+      { key: 'tmdb', label: 'TMDB', kind: 'site_id', site: 'tmdb_person' },
+      { key: 'imdb', label: 'IMDb', kind: 'site_id', site: 'imdb_name' },
+      { key: 'links', label: '更多链接', kind: 'links' },
+    ],
+    body_template: '## 备注\n',
+    default_completion_mode: 'once',
+    sort: 1.5,
   },
 ];
 

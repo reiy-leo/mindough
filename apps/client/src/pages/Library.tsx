@@ -36,6 +36,7 @@ import { Markdown } from '../components/Markdown';
 import { ItemArt, ItemSheet, artShape, entryArt } from '../components/library/Library';
 import { OnlineOptions, SourceNote } from '../components/library/Lookup';
 import { SeasonsSection } from '../components/library/Seasons';
+import { FilmLinksSection } from '../components/library/FilmLinks';
 import { createItemFromLookup, useOnlineSearch } from '../lib/lookup';
 import { LinkChips } from '../components/library/LinkFields';
 import { DuplicatesSheet, MergeIntoSheet, MergeSheet } from '../components/library/MergeSheet';
@@ -407,6 +408,9 @@ export function LibraryItemPage({ typeId, id }: { typeId: string; id: string }) 
         </div>
       </header>
       {item.note_md.trim() && <Markdown source={item.note_md} className="card note-card" />}
+      {/* 影人库（Rei 2026-11-14）：影人详情列「作品」，影视详情列「主创」，都是手动关联的 */}
+      {type.id === BUILTIN_TYPE_IDS.filmPerson && <FilmLinksSection store={store} item={item} side="works" />}
+      {type.id === BUILTIN_TYPE_IDS.movie && <FilmLinksSection store={store} item={item} side="credits" />}
       <SeasonsSection store={store} type={type} item={item} />
       <Section title={tr('相关任务 {length}', { length: tasks.length })}>
         {tasks.length ? (

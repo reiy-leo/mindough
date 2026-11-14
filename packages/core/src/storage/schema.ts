@@ -91,6 +91,7 @@ export const COLUMNS: { [K in TableName]: Columns<TableMap[K]> } = {
   group_library: { type_id: 'text', group_id: 'text', created_at: 'text' },
   milestone: { group_id: 'text', name: 'text', sort: 'real', archived_at: 'text?', created_at: 'text' },
   calendar_sub: { name: 'text', url: 'text', color: 'text', sort: 'real', created_at: 'text' },
+  library_link: { from_item: 'text', to_item: 'text', role: 'text', sort: 'real', created_at: 'text' },
 };
 
 /** SQL 标识符加引号（"group" 是关键字）。 */
@@ -421,6 +422,20 @@ CREATE TABLE IF NOT EXISTS "milestone" (
 );
 CREATE INDEX IF NOT EXISTS "milestone_group" ON "milestone" ("group_id");
 ALTER TABLE "task" ADD COLUMN "milestone_id" TEXT;
+`,
+  },
+  {
+    // Rei 2026-11-14：影人库（docs/FILM-PEOPLE.md）。资料之间的关联，一行一对（影人 → 影片），带角色；全部手动连。
+    // 老客户端不认这张表，拉到的行它忽略。
+    version: 25,
+    name: '资料之间的关联（library_link）',
+    sql: `
+CREATE TABLE IF NOT EXISTS "library_link" (
+  "id" TEXT PRIMARY KEY NOT NULL, "updated_at" TEXT NOT NULL, "deleted" INTEGER NOT NULL DEFAULT 0,
+  "from_item" TEXT NOT NULL, "to_item" TEXT NOT NULL, "role" TEXT NOT NULL DEFAULT '', "sort" REAL NOT NULL DEFAULT 0, "created_at" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "library_link_from" ON "library_link" ("from_item");
+CREATE INDEX IF NOT EXISTS "library_link_to" ON "library_link" ("to_item");
 `,
   },
 ];

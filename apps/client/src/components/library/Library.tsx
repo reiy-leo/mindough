@@ -347,7 +347,8 @@ export function saveDraft(store: Store, type: TaskType, d: ItemDraft, existingId
     store.updateLibraryItem(existingId, { name, image: d.image, fields, note_md: d.note_md });
     return existingId;
   }
-  return store.findOrCreateLibraryItem(type.id, { name, image: d.image, fields }).id;
+  // 备注也带上（影人用 TMDB 补全时简介在备注里，Rei 2026-11-14；以前新建时备注会丢）
+  return store.findOrCreateLibraryItem(type.id, { name, image: d.image, fields, note_md: d.note_md }).id;
 }
 
 /** 选中的资料：缩略图 + 名字 + 一行简介，右边放操作。 */

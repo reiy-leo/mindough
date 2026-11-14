@@ -1499,3 +1499,122 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px 12px;
 }
+
+/* ── 影人 ↔ 影片（Rei 2026-11-14 影人库）：影人详情「作品」、影视详情「主创」。一行：图 + 名字 / 年份 · 角色 + 状态 + 「…」 ── */
+.flink-section .section-head {
+  align-items: center;
+}
+.flink-add {
+  margin-left: auto;
+}
+.flink-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.flink-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.flink-row:last-child {
+  border-bottom: none;
+}
+.flink-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.flink-main:hover .flink-name {
+  color: var(--accent);
+}
+.flink-main:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.flink-art {
+  width: 40px;
+}
+.flink-art.art-poster {
+  width: 34px;
+}
+.flink-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.flink-name {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flink-meta {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flink-status {
+  flex: none;
+  font-size: var(--fs-small);
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.flink-status.is-doing {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+.flink-status.is-done {
+  color: var(--success);
+}
+.flink-status.is-none {
+  background: none;
+  color: var(--text-3);
+  padding-inline: 0;
+}
+.flink-more {
+  flex: none;
+}
+.flink-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.flink-pick-hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+.autofill-next.is-long {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+[data-layout='mobile'] .flink-row {
+  gap: 8px;
+}
+[data-layout='mobile'] .flink-main {
+  gap: 10px;
+}

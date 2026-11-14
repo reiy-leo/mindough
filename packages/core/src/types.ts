@@ -431,6 +431,21 @@ export interface Milestone extends BaseRow {
   created_at: Timestamp;
 }
 
+/**
+ * 资料之间的关联（Rei 2026-11-14 影人库，docs/FILM-PEOPLE.md）：一行是一对「资料 → 资料」，带一句角色。
+ * 现在只用在影人 ↔ 影片：from_item = 影人，to_item = 影片，role 是随手写的一句（「导演」「主演·饰某某」「编剧」，可空）。
+ * 全部手动连，不自动匹配。sort 是同一部片里主创的先后（新连的排最后）。
+ * id 由这一对算出（library-link.ts 的 libraryLinkId），两台设备各自连同一对得到同一行，按 LWW 合并；断开 = 墓碑，再连上 = 同一行翻回来。
+ * SQLite 迁移 v25。老客户端不认这张表，拉到的行直接忽略。
+ */
+export interface LibraryLink extends BaseRow {
+  from_item: string;
+  to_item: string;
+  role: string;
+  sort: number;
+  created_at: Timestamp;
+}
+
 export interface TaskPerson extends BaseRow {
   task_id: string;
   person_id: string;
@@ -570,6 +585,7 @@ export interface TableMap {
   group_library: GroupLibrary;
   milestone: Milestone;
   calendar_sub: CalendarSub;
+  library_link: LibraryLink;
 }
 
 export type TableName = keyof TableMap;
@@ -596,6 +612,7 @@ export const TABLES: readonly TableName[] = [
   'group_library',
   'milestone',
   'calendar_sub',
+  'library_link',
 ];
 
 /** 写入时调用方提供的部分：id / updated_at / deleted 由存储层补齐。 */
