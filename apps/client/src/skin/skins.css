@@ -1699,12 +1699,12 @@
 /* ───────── 手机抽屉侧栏（Rei 2026-11-15，styles/app.css .drawer）───────── */
 /* Apple：iPadOS 侧栏那样的半透明毛玻璃，直角贴左边，右边一道阴影；大标题、44pt 行高、圆角选中底，抽屉按钮用强调色 */
 [data-skin='apple'] {
-  --drawer-bg: rgba(242, 242, 247, 0.9);
+  --drawer-bg: rgba(242, 242, 247, 0.97);
   --drawer-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 8px 0 32px rgba(0, 0, 0, 0.16);
   --drawer-w: 304px;
 }
 [data-skin='apple'][data-theme='dark'] {
-  --drawer-bg: rgba(28, 28, 30, 0.9);
+  --drawer-bg: rgba(28, 28, 30, 0.97);
   --drawer-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 8px 0 32px rgba(0, 0, 0, 0.5);
 }
 [data-skin='apple'] .drawer {
@@ -1738,6 +1738,7 @@
   font-weight: 600;
 }
 [data-skin='winui'] .drawer .nav-item {
+  height: 44px;
   font-size: 15px;
 }
 /* Material 3：模态导航抽屉，surface-container-low 底（--sidebar-bg，素净档跟着换灰），右边 16dp 圆角，最宽 360dp；56dp 胶囊行 */

@@ -5445,3 +5445,10 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   margin-left: calc(-1 * var(--space-3));
   color: var(--text);
 }
+/* 触屏上关抽屉后焦点回到按钮：安卓返回关抽屉是一下合成的 Esc（lib/back-layers），React Aria 会当成键盘操作给它画焦点环，
+   手指用户看着像按钮卡住了。没有鼠标悬停的触屏设备上这个按钮不画焦点环（接了键盘的平板宽屏不走这里）。 */
+@media (hover: none) and (pointer: coarse) {
+  .topbar .topbar-menu[data-focus-visible] {
+    box-shadow: none;
+  }
+}
