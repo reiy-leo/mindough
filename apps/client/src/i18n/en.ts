@@ -186,6 +186,8 @@ export const EN: Record<string, EnValue> = {
   "普通：选类型时按最近用过的先后排。": "Normal: sorted by how recently you used it when you pick a category.",
   // ── 类型（统一的分类，2026-10-26）──
   "导航|管理": "Manage",
+  // 手机抽屉侧栏按钮（Rei 2026-11-15）
+  "打开侧边栏": "Open Sidebar",
   "在侧边栏显示": "Show in Sidebar",
   "取消在侧边栏显示": "Hide from Sidebar",
   "资料库操作": "Collection Actions",

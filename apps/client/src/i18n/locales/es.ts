@@ -237,6 +237,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "普通：选类型时按最近用过的先后排。": "Normal: se ordena según cuándo la usaste por última vez.",
   // ── 类型（统一的分类，2026-10-26）──
   "导航|管理": "Gestionar",
+  // 手机抽屉侧栏按钮（Rei 2026-11-15）
+  "打开侧边栏": "Abrir barra lateral",
   "在侧边栏显示": "Mostrar en la barra lateral",
   "取消在侧边栏显示": "Quitar de la barra lateral",
   "资料库操作": "Acciones de la colección",

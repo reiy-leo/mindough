@@ -1,9 +1,9 @@
 import { installStrictGuard, useStrictSync } from './lib/strict';
-import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Button as RacButton } from 'react-aria-components';
-import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
-import { href, navigate, useRoute, type Route, type SettingsSection } from './lib/router';
+import { Dialog, Heading, Modal, ModalOverlay, Button as RacButton } from 'react-aria-components';
+import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, PanelLeft, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { href, navigate, parseHash, useRoute, type Route, type SettingsSection } from './lib/router';
 import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
 import { isTauri } from './store/sqlite-tauri';
@@ -21,7 +21,7 @@ import { GroupDetailPage, GroupsPage } from './pages/Groups';
 import { PersonDetailPage } from './pages/People';
 import { LibraryItemPage, LibraryPage } from './pages/Library';
 import { BUILTIN_TYPE_IDS, libraryCopy, type Group, type Store } from '@mindough/core';
-import { activeGroupEntry, activeLibraryEntry, groupIconName, isMobileTab, libraryRoute, manageEntries, mobileTabItems, planEntries } from './lib/nav';
+import { activeGroupEntry, activeLibraryEntry, groupIconName, libraryRoute, manageEntries, mobileTabItems, planEntries } from './lib/nav';
 import { typeIcon } from './lib/icons';
 import { librarySidebarAction } from './lib/library-sidebar';
 import { useColorLevel, useDetailTint, vividVar } from './lib/color-level';
@@ -59,13 +59,14 @@ import { useAppMenu } from './lib/app-menu';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
 import { pinnedGrid, type PinnedStyleKind } from './lib/pinned-style';
 import { PINNED_LINE_ICON, pinnedGroupIconSize } from './lib/pinned-tile';
+import { swipeAxis, swipeOffset, swipeShouldClose } from './lib/drawer-swipe';
 
 const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) => ({ default: m.DidaImportSheet })));
 
 import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
 import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
-import { mobileTopbar } from './lib/mobile-topbar';
+import { hasDrawerButton, mobileTopbar, topbarState } from './lib/mobile-topbar';
 import { TOPBAR_LEAD_ID, TOPBAR_SLOT_ID } from './lib/topbar-slot';
 interface NavItem {
   page: Route['page'];
@@ -193,7 +194,7 @@ function navSections(store: Store): NavSection[] {
   });
 }
 const SETTINGS: NavItem = { page: 'settings', get label() { return tr('设置'); }, icon: Settings, match: ['settings'] };
-/** 搜索页（Rei 2026-11-12）：手机「更多」页最上面一行进（标签栏是定好的四项 + 更多，不加第五项）；宽屏侧栏顶上照旧是 ⌘F 浮层。 */
+/** 搜索页（Rei 2026-11-12）：手机底栏最后一格（2026-11-15 换掉「更多」）；宽屏侧栏顶上照旧是 ⌘F 浮层。 */
 const SEARCH: NavItem = { page: 'search', get label() { return tr('搜索'); }, icon: Search, match: ['search'] };
 /** 有任务列表的页面：宽屏上右列常驻（没选中时是空状态）；别的页面（日记、资料库、设置…）只在打开任务时才出现右列。
  *  项目总览页（groups）只有项目卡片，不算（Rei 2026-11-11「项目列表页 不显示任务详情侧边栏」，详情走浮层，见 detailInModal）。 */
@@ -478,7 +479,8 @@ const Page = memo(function Page({ route }: { route: Route }) {
     case 'done':
       return <DonePage />;
     case 'more':
-      return <MorePage />;
+      // 「更多」页 2026-11-15 删了：App 里一进来就换成我的一天并拉出抽屉
+      return null;
     case 'search':
       return <SearchPage />;
   }
@@ -488,54 +490,147 @@ const Page = memo(function Page({ route }: { route: Route }) {
  * 手机顶栏（Rei 2026-11-12 09:41「页面都不用header」）：不写页名，左格（我的一天的日期 + 农历）、右格（页面送上来的按钮）由页面用
  * lib/topbar-slot 填。两格都空就加 is-empty，收成只剩状态栏那一截，顶上不空出一行；只有按钮加 no-lead，矮一点；读屏的页名放 sr-only。
  */
-function MobileTopbarRow({ label }: { label: string }) {
+function MobileTopbarRow({ label, menu }: { label: string; menu?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<'' | ' is-empty' | ' no-lead'>('');
+  const hasMenu = !!menu;
+  const [state, setState] = useState<'' | ' is-empty' | ' no-lead'>(hasMenu ? ' no-lead' : '');
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const check = () => {
-      const lead = !!el.querySelector('.topbar-lead > *');
-      const acts = !!el.querySelector('.topbar-actions > *');
-      setState(lead ? '' : acts ? ' no-lead' : ' is-empty');
-    };
+    // 有抽屉按钮（顶级页，Rei 2026-11-15）就不收成空行（lib/mobile-topbar topbarState）
+    const check = () => setState(topbarState({ menu: hasMenu, lead: !!el.querySelector('.topbar-lead > *'), actions: !!el.querySelector('.topbar-actions > *') }));
     check();
     const mo = new MutationObserver(check);
     mo.observe(el, { childList: true, subtree: true });
     return () => mo.disconnect();
-  }, []);
+  }, [hasMenu]);
   return (
-    <div ref={ref} className={`topbar${state}`}>
+    <div ref={ref} className={`topbar${state}${hasMenu ? ' has-menu' : ''}`}>
       <span className="sr-only">{label}</span>
+      {menu}
       <span className="topbar-lead" id={TOPBAR_LEAD_ID} />
       <span className="topbar-actions" id={TOPBAR_SLOT_ID} />
     </div>
   );
 }
 
-function MorePage() {
-  const store = useStore();
-  const sections = [
-    // 搜索放最上面一行，自成一组（Rei 2026-11-12：手机各页不再有搜索按钮）
-    { id: 'search', title: '', items: [SEARCH] },
-    ...navSections(store).map((sec) => ({ id: sec.id, title: sec.title, items: sec.items.filter((n) => n.key || !isMobileTab(n.page)) })),
-    { id: 'settings', title: '', items: [SETTINGS] },
-  ].filter((sec) => sec.items.length > 0);
+/** 侧栏各节：电脑侧栏和手机抽屉（Rei 2026-11-15）共用。小节标题能点开收起，收起状态两边共用一份（本机）。 */
+function NavSections({
+  sections,
+  isActive,
+  narrow,
+  collapsed,
+  onToggle,
+  badge,
+  idPrefix = '',
+}: {
+  sections: NavSection[];
+  isActive: (n: NavItem) => boolean;
+  narrow: boolean;
+  collapsed: string[];
+  onToggle: (id: string) => void;
+  badge: (n: NavItem) => number | undefined;
+  idPrefix?: string;
+}) {
   return (
-    <div className="page">
-      {/* 手机不放页头（Rei 2026-11-12 09:41「页面都不用header」），读屏留 h1 */}
-      <h1 className="sr-only">{tr('更多')}</h1>
-      {sections.map((sec) => (
-        <section key={sec.id} className="more-section" aria-label={sec.title || sec.items[0]?.label}>
-          {sec.title && <h2 className="more-section-title">{sec.title}</h2>}
-          <div className="card more-list">
-            <PinnedScope items={sec.items}>
-              <MoreItems items={sec.items} />
-            </PinnedScope>
+    <nav className="nav" aria-label={tr('主导航')}>
+      {sections.map((sec) => {
+        const isCollapsed = !narrow && collapsed.includes(sec.id) && !sec.items.some(isActive);
+        const titleId = `${idPrefix}nav-sec-${sec.id}`;
+        return (
+          <div key={sec.id} className="nav-section" role="group" aria-labelledby={titleId}>
+            <RacButton id={titleId} className="nav-section-title" aria-expanded={!isCollapsed} onPress={() => onToggle(sec.id)}>
+              <span>{sec.title}</span>
+              <ChevronRight size={12} aria-hidden className={`nav-section-chevron${isCollapsed ? '' : ' is-open'}`} />
+            </RacButton>
+            {!isCollapsed && (
+              <PinnedScope items={sec.items}>
+                <SidebarItems items={sec.items} narrow={narrow} render={(n, compact) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} compact={compact} rail={narrow} badge={badge(n)} />} />
+              </PinnedScope>
+            )}
           </div>
-        </section>
-      ))}
-    </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * 手机抽屉侧栏（Rei 2026-11-15「手机端导航改版」）：顶级页顶栏左边的按钮拉出来，内容就是电脑侧栏（分组、角标、放进侧边栏的项目 / 资料库，设置在底部）。
+ * - 用 React Aria 的 ModalOverlay + Modal + Dialog：读屏是模态对话框，打开时焦点进抽屉、关掉回到按钮；Esc、点遮罩关。
+ * - 安卓系统返回：弹层进一条浏览记录（lib/back-layers），返回就关抽屉，不退页面。
+ * - 点导航项：先换页再关（router.navigate 会换掉弹层那条记录，返回不用多按一下）。
+ * - 向左滑关（lib/drawer-swipe）：抽屉跟手，松手拖过三成宽或甩得快就关。
+ * - 外观在皮肤层（skin/skins.css .drawer），动画看 prefers-reduced-motion。
+ */
+function MobileDrawer({ isOpen, onOpenChange, children }: { isOpen: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
+  const body = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; y: number; t: number; axis: 'x' | 'y' | null; dx: number; v: number } | null>(null);
+  const panel = () => body.current?.closest<HTMLElement>('.drawer') ?? null;
+  const close = () => onOpenChange(false);
+  const onClick = (e: ReactMouseEvent) => {
+    if (e.defaultPrevented) return;
+    const a = (e.target as Element).closest('a[href]');
+    const h = a?.getAttribute('href') ?? '';
+    if (!h.startsWith('#')) return;
+    e.preventDefault();
+    navigate(parseHash(h));
+    close();
+  };
+  const onTouchStart = (e: ReactTouchEvent) => {
+    const t = e.touches[0];
+    drag.current = e.touches.length === 1 && t ? { x: t.clientX, y: t.clientY, t: e.timeStamp, axis: null, dx: 0, v: 0 } : null;
+  };
+  const onTouchMove = (e: ReactTouchEvent) => {
+    const d = drag.current;
+    const t = e.touches[0];
+    const el = panel();
+    if (!d || !t || !el || d.axis === 'y') return;
+    const dx = t.clientX - d.x;
+    d.axis ??= swipeAxis(dx, t.clientY - d.y);
+    if (d.axis !== 'x') return;
+    const dt = Math.max(1, e.timeStamp - d.t);
+    d.v = (dx - d.dx) / dt;
+    d.dx = dx;
+    d.t = e.timeStamp;
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${swipeOffset(dx, el.offsetWidth)}px)`;
+  };
+  const onTouchEnd = () => {
+    const d = drag.current;
+    drag.current = null;
+    const el = panel();
+    if (!d || d.axis !== 'x' || !el) return;
+    const off = swipeOffset(d.dx, el.offsetWidth);
+    el.style.transition = '';
+    if (swipeShouldClose(off, d.v, el.offsetWidth)) {
+      // 退场动画从手指松开的位置接着往左走（.drawer[data-exiting] 的 --drawer-from）
+      el.style.setProperty('--drawer-from', `${off}px`);
+      el.style.transform = '';
+      close();
+    } else el.style.transform = '';
+  };
+  return (
+    <ModalOverlay isOpen={isOpen} onOpenChange={onOpenChange} isDismissable className="drawer-overlay">
+      <Modal className="drawer">
+        <Dialog className="drawer-dialog" aria-labelledby="drawer-title">
+          <div
+            ref={body}
+            className="drawer-body"
+            onClick={onClick}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={onTouchEnd}
+          >
+            <Heading slot="title" id="drawer-title" className="drawer-title">
+              {appName()}
+            </Heading>
+            {children}
+          </div>
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
   );
 }
 
@@ -600,178 +695,6 @@ function SidebarItems({ items, narrow, render }: { items: NavItem[]; narrow: boo
   }
   flush();
   return <>{out}</>;
-}
-
-/** 「更多」页一节里的行；放进侧栏的项目 / 资料库同侧栏一样按各自的「显示为」排（手机没有图标栏，只看设置）。 */
-function MoreItems({ items }: { items: NavItem[] }) {
-  const { settings } = useSettings();
-  const has = (k: PinnedStyleKind) => items.some((n) => pinnedKindOf(n) === k);
-  const out: ReactNode[] = [];
-  let run: NavItem[] = [];
-  let runKind: PinnedStyleKind | null = null;
-  const flush = () => {
-    if (!run.length || !runKind) return;
-    const k = runKind;
-    if (pinnedGrid(settings, k, false))
-      out.push(
-        <div key={`pinned-${k}`} className="more-item more-pinned-grid" data-reorder-layout="grid" role="group" aria-label={PINNED_GRID_LABEL[k]()}>
-          {run.map((n) => (
-            <MoreTile key={n.key} item={n} />
-          ))}
-        </div>,
-      );
-    else out.push(...run.map((n) => <MoreLink key={n.key} item={n} />));
-    run = [];
-    runKind = null;
-  };
-  for (const n of items) {
-    const k = pinnedKindOf(n);
-    if (k) {
-      if (k !== runKind) flush();
-      runKind = k;
-      run.push(n);
-      continue;
-    }
-    flush();
-    const anchor = anchorKindOf(n);
-    out.push(<MoreLink key={n.key ?? n.page} item={n} {...(anchor && has(anchor) ? { menu: anchor } : {})} />);
-  }
-  flush();
-  return <>{out}</>;
-}
-
-/** 「更多」页的一行；置顶的项目 / 资料库能长按拖动排序（Rei 2026-11-10），长按没挪就松开什么也不做。menu：「项目」/「资料库」那行右边放哪一串的 ···。 */
-function MoreLink({ item: n, menu }: { item: NavItem; menu?: PinnedStyleKind }) {
-  const store = useStore();
-  const g = n.groupId ? store.get('group', n.groupId) : null;
-  if (g) return <MoreGroupRow item={n} group={g} />;
-  if (n.libraryId) return <MoreLibraryRow item={n} />;
-  return <MoreLinkPlain item={n} {...(menu ? { menu } : {})} />;
-}
-
-/** 「更多」页放进侧栏的项目，列表样式：行右边常显 ···，点开项目菜单（Rei 2026-11-11 02:56）；长按只拖动排序，拿起没挪松开什么也不做。 */
-function MoreGroupRow({ item: n, group: g }: { item: NavItem; group: Group }) {
-  const store = useStore();
-  const actions = useProjectActions(store, g);
-  return (
-    <MorePinnedRow item={n} reorderId={g.id} items={actions.items}>
-      {actions.dialogs}
-    </MorePinnedRow>
-  );
-}
-
-/** 「更多」页放进侧栏的资料库：同项目，行右边常显 ··· 开原来那个菜单（取消在侧边栏显示，Rei 2026-11-11 04:27）；长按只拖动排序。 */
-function MoreLibraryRow({ item: n }: { item: NavItem }) {
-  const store = useStore();
-  const t = n.libraryId ? store.get('task_type', n.libraryId) : null;
-  const action = t ? librarySidebarAction(store, t) : null;
-  return <MorePinnedRow item={n} reorderId={n.libraryId} items={action ? [action] : []} />;
-}
-
-function MorePinnedRow({ item: n, reorderId, items, children }: { item: NavItem; reorderId: string | undefined; items: MenuAction[]; children?: ReactNode }) {
-  const reorder = usePinnedReorder(reorderId);
-  const Icon = n.icon;
-  return (
-    <div className="more-item more-item-split more-item-sub" {...reorder.props}>
-      <a className="more-item-link" href={href(n.to!)} draggable={false}>
-        <span className="more-icon">
-          <Icon size={20} />
-        </span>
-        <span className="grow">{n.label}</span>
-        <ChevronRight size={16} className="muted" />
-      </a>
-      {items.length > 0 && <RowMoreMenu label={tr('「{name}」的更多操作', { name: n.label })} items={items} className="more-item-more" />}
-      {children}
-    </div>
-  );
-}
-
-function MoreLinkPlain({ item: n, menu }: { item: NavItem; menu?: PinnedStyleKind }) {
-  const Icon = n.icon;
-  const reorder = usePinnedReorder(n.groupId ?? n.libraryId);
-  const link = (
-    <a className={`${menu ? 'more-item-link' : 'more-item'}${n.libraryId || n.groupId ? ' more-item-sub' : ''}`} href={href(n.to ?? ({ page: n.page } as Route))} draggable={false} {...reorder.props}>
-      <span className="more-icon">
-        <Icon size={20} />
-      </span>
-      <span className="grow">{n.label}</span>
-      <ChevronRight size={16} className="muted" />
-    </a>
-  );
-  if (!menu) return link;
-  return (
-    <div className="more-item more-item-split">
-      {link}
-      <PinnedStyleMenu kind={menu} className="more-item-more" />
-    </div>
-  );
-}
-
-/** 「更多」页「显示为：图标」时的一个项目 / 资料库图标：读屏名、悬停提示是名字；长按拿起没挪就松开，出它的菜单（顶上写名字）。 */
-function MoreTile({ item: n }: { item: NavItem }) {
-  const store = useStore();
-  const g = n.groupId ? store.get('group', n.groupId) : null;
-  if (g) return <MoreTileOf item={n} group={g} />;
-  return n.libraryId ? <MoreLibraryTile item={n} /> : null;
-}
-
-/** 「更多」页放进来的资料库，「显示为：图标」（Rei 2026-11-12）：同项目图标，菜单是原来那个「取消在侧边栏显示」。图标同「更多」页列表行。 */
-function MoreLibraryTile({ item: n }: { item: NavItem }) {
-  const store = useStore();
-  const menu = useContextMenuAt({ longPress: false });
-  const reorder = usePinnedReorder(n.libraryId, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
-  const t = n.libraryId ? store.get('task_type', n.libraryId) : null;
-  const action = t ? librarySidebarAction(store, t) : null;
-  const Icon = n.icon;
-  return (
-    <>
-      <a
-        className="more-tile more-tile-lib"
-        href={href(n.to!)}
-        draggable={false}
-        {...menu.props}
-        {...reorder.props}
-        onClick={(e) => {
-          if (menu.consumeLongPress()) e.preventDefault();
-        }}
-        aria-label={n.label}
-        title={n.label}
-      >
-        <span className="more-icon">
-          <Icon size={PINNED_LINE_ICON.mobile} />
-        </span>
-      </a>
-      {action && <MenuAt at={menu.at} label={n.label} heading={n.label} items={[action]} onClose={menu.close} />}
-    </>
-  );
-}
-
-function MoreTileOf({ item: n, group: g }: { item: NavItem; group: Group }) {
-  const store = useStore();
-  const menu = useContextMenuAt({ longPress: false });
-  const reorder = usePinnedReorder(g.id, { onContextMenu: menu.props.onContextMenu, openMenu: menu.open });
-  const actions = useProjectActions(store, g);
-  const plain = useColorLevel() === 'plain';
-  return (
-    <>
-      <a
-        className="more-tile"
-        href={href(n.to!)}
-        draggable={false}
-        {...menu.props}
-        {...reorder.props}
-        onClick={(e) => {
-          if (menu.consumeLongPress()) e.preventDefault();
-        }}
-        aria-label={n.label}
-        title={n.label}
-      >
-        <GroupIcon group={g} size={pinnedGroupIconSize(true, plain)} />
-      </a>
-      <MenuAt at={menu.at} label={n.label} heading={n.label} items={actions.items} onClose={menu.close} />
-      {actions.dialogs}
-    </>
-  );
 }
 
 /** 一节里置顶的项目 / 资料库组成一串拖动范围（「计划」里是项目，「管理」里是资料库）；没有置顶的就原样。 */
@@ -878,7 +801,7 @@ export function App() {
     [uiToast],
   );
   const { setDidaImportOpen } = ui;
-  const { layout, platform, settings } = useSettings();
+  const { layout, platform, settings, skin } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面
   const settingsInWindow = isTauri() && (platform === 'macos' || platform === 'windows' || platform === 'linux');
   const openSettings = useCallback(
@@ -900,6 +823,17 @@ export function App() {
   // 归档项目里藏起来的不算（lib/project-archive）
   // 置顶的任务也算（Rei 2026-11-08，lib/myday-items）
   const todayCount = dayItems(store).length;
+  // 手机抽屉侧栏（Rei 2026-11-15）：顶级页顶栏左边的按钮拉出来
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (layout !== 'mobile') setDrawerOpen(false);
+  }, [layout]);
+  // 「更多」页删了（2026-11-15）：旧链接 #/more 换成我的一天，手机上顺手拉出抽屉（原来「更多」里的入口都在那）
+  useEffect(() => {
+    if (route.page !== 'more') return;
+    location.replace(`${location.pathname}${location.search}${href({ page: 'myday' })}`);
+    if (layout === 'mobile') setDrawerOpen(true);
+  }, [route.page, layout]);
 
   // 快捷键：⌘F / Ctrl+F 搜索（lib/global-keys.ts，编辑器里也开；⌘K 只留给编辑器加链接）；⌘, / Ctrl+, 设置；N 快速新建（不在输入框时）
   useEffect(() => {
@@ -922,6 +856,7 @@ export function App() {
   }, [ui, store, route, settingsInWindow, openSettings, settings.myDayDefaultToday]);
 
   const backlogCount = store.backlog(store.today()).length;
+  const navBadge = (n: NavItem) => (n.key ? undefined : n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined);
   const current = [...nav, SETTINGS].find(isActive);
   // 中等宽度：侧边栏是图标栏，小节标题不显示，收起的小节也照样列出来（不然点不开）
   const narrow = useNarrow();
@@ -955,24 +890,7 @@ export function App() {
             <span className="grow">{tr('搜索')}</span>
             <kbd className="kbd">{searchKeyLabel()}</kbd>
           </RacButton>
-          <nav className="nav" aria-label={tr('主导航')}>
-            {sections.map((sec) => {
-              const isCollapsed = !narrow && collapsed.includes(sec.id) && !sec.items.some(isActive);
-              return (
-                <div key={sec.id} className="nav-section" role="group" aria-labelledby={`nav-sec-${sec.id}`}>
-                  <RacButton id={`nav-sec-${sec.id}`} className="nav-section-title" aria-expanded={!isCollapsed} onPress={() => toggleSection(sec.id)}>
-                    <span>{sec.title}</span>
-                    <ChevronRight size={12} aria-hidden className={`nav-section-chevron${isCollapsed ? '' : ' is-open'}`} />
-                  </RacButton>
-                  {!isCollapsed && (
-                    <PinnedScope items={sec.items}>
-                      <SidebarItems items={sec.items} narrow={narrow} render={(n, compact) => <NavLink key={n.key ?? n.page} item={n} active={isActive(n)} compact={compact} rail={narrow} badge={n.page === 'myday' ? todayCount : n.page === 'backlog' ? backlogCount : undefined} />} />
-                    </PinnedScope>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
+          <NavSections sections={sections} isActive={isActive} narrow={narrow} collapsed={collapsed} onToggle={toggleSection} badge={navBadge} />
           <div className="sidebar-foot">
             {settingsInWindow ? <NavLink item={SETTINGS} active={false} onOpen={() => openSettings()} /> : <NavLink item={SETTINGS} active={isActive(SETTINGS)} />}
           </div>
@@ -992,18 +910,23 @@ export function App() {
       </div>
     );
   } else {
-    const tabs = mobileTabItems(NAV);
-    // 双击「我的一天」立即同步（lib/tab-sync）：单击不拦，照常切页
-    const moreActive = !tabs.some(isActive);
+    // 底栏：固定四项 + 最后一格「搜索」（Rei 2026-11-15 换掉「更多」）
+    const tabs = [...mobileTabItems(NAV), SEARCH];
     const topbar = mobileTopbar(route.page);
+    // 顶级页顶栏左边的抽屉按钮（Rei 2026-11-15）：Apple 用侧栏图标（iOS「sidebar.left」），WinUI / Material 用三道杠（汉堡）
+    const drawerButton = hasDrawerButton(route) ? (
+      <RacButton className="icon-btn topbar-menu" aria-label={tr('打开侧边栏')} aria-haspopup="dialog" aria-expanded={drawerOpen} onPress={() => setDrawerOpen(true)}>
+        {skin === 'apple' ? <PanelLeft size={22} aria-hidden /> : <Menu size={22} aria-hidden />}
+      </RacButton>
+    ) : undefined;
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
-        {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在「更多」页进单独的搜索页），也不写页名（09:41），只放我的一天的日期和页面送上来的按钮；
+        {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在底栏），也不写页名（09:41），只放抽屉按钮（顶级页，2026-11-15）、我的一天的日期和页面送上来的按钮；
             有自己页头的页整行不要，只留状态栏那一截（lib/mobile-topbar） */}
         {topbar === 'none' ? (
           <div className="topbar-inset" aria-hidden />
         ) : (
-          <MobileTopbarRow label={current?.label ?? appName()} />
+          <MobileTopbarRow label={current?.label ?? appName()} menu={drawerButton} />
         )}
         <main className="main" data-hide-scrollbar={HIDE_SCROLLBAR_PAGES.includes(route.page) || undefined}>
           <MovedBanner />
@@ -1013,6 +936,7 @@ export function App() {
         <nav className="tabbar" aria-label={tr('主导航')}>
           {tabs.map((n) => {
             const Icon = n.icon;
+            // 双击「我的一天」立即同步（lib/tab-sync）：单击不拦，照常切页
             const myday = n.page === 'myday';
             return (
               <a
@@ -1030,15 +954,15 @@ export function App() {
               </a>
             );
           })}
-          <a href="#/more" draggable={false} className={`tab-item${moreActive ? ' is-active' : ''}`} onClick={(e) => { if (route.page === 'more') { e.preventDefault(); navigate({ page: 'myday' }); } }}>
-            <span className="tab-icon">
-              <Menu size={20} />
-            </span>
-            <span className="tab-label">{tr('更多')}</span>
-          </a>
         </nav>
         {/* 手机：任务详情整页推入（不是底部弹窗），返回 / 右滑 / 系统返回键回到列表 */}
         <ErrorBoundary resetKey={ui.editingId}><TaskDetail mode="page" /></ErrorBoundary>
+        <MobileDrawer isOpen={drawerOpen} onOpenChange={setDrawerOpen}>
+          <NavSections sections={sections} isActive={isActive} narrow={false} collapsed={collapsed} onToggle={toggleSection} badge={navBadge} idPrefix="drawer-" />
+          <div className="sidebar-foot drawer-foot">
+            <NavLink item={SETTINGS} active={isActive(SETTINGS)} />
+          </div>
+        </MobileDrawer>
       </div>
     );
   }

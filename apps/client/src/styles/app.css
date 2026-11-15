@@ -5334,3 +5334,114 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
 .app-mobile .done-page > .sr-only:first-child + .section {
   margin-top: var(--space-3);
 }
+
+/* ───────── 手机抽屉侧栏（Rei 2026-11-15「手机端导航改版」，App MobileDrawer）─────────
+   顶级页顶栏左边的按钮拉出来，内容和电脑侧栏一样。遮罩 --overlay、抽屉 --drawer-bg / --drawer-shadow / --drawer-r 在皮肤层（skin/skins.css）。
+   进场从左滑入、遮罩淡入；退场滑回左边，手指拖到一半松手关时从 --drawer-from 接着走（lib/drawer-swipe）。减少动态效果时不滑，直接出现 / 消失。 */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--overlay);
+}
+.drawer-overlay[data-entering] {
+  animation: fade 0.25s var(--ease);
+}
+.drawer-overlay[data-exiting] {
+  animation: fade 0.2s var(--ease) reverse forwards;
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(var(--drawer-w, 304px), calc(100vw - 56px));
+  display: flex;
+  flex-direction: column;
+  background: var(--drawer-bg, var(--bg));
+  box-shadow: var(--drawer-shadow, none);
+  border-radius: 0 var(--drawer-r, 0) var(--drawer-r, 0) 0;
+  outline: none;
+  /* 横着拖归抽屉（向左滑关），竖着照常滚 */
+  touch-action: pan-y;
+  transition: transform 0.2s var(--ease);
+}
+.drawer[data-entering] {
+  animation: drawer-in 0.28s var(--ease);
+}
+.drawer[data-exiting] {
+  animation: drawer-out 0.2s var(--ease) forwards;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes drawer-out {
+  from {
+    transform: translateX(var(--drawer-from, 0px));
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawer-overlay {
+    transition: none;
+  }
+  .drawer[data-entering],
+  .drawer[data-exiting],
+  .drawer-overlay[data-entering],
+  .drawer-overlay[data-exiting] {
+    animation: none;
+  }
+}
+.drawer-dialog {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+.drawer-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: calc(env(safe-area-inset-top) + var(--space-3)) var(--space-3) calc(env(safe-area-inset-bottom) + var(--space-3));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.drawer-body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+.drawer-title {
+  margin: var(--space-1) var(--space-3) 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+.drawer .nav-item {
+  height: max(var(--nav-h), 44px);
+  font-size: 16px;
+}
+.drawer .nav-section-title {
+  height: 32px;
+}
+.drawer-foot {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+/* 顶栏左边的抽屉按钮：点击区 44×44，往左挪一点让图标贴近页边（页面内容左边距 16px） */
+.topbar .icon-btn.topbar-menu {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  margin-left: calc(-1 * var(--space-3));
+  color: var(--text);
+}

@@ -75,14 +75,14 @@ export { groupIconName } from '@mindough/core';
 // ───────────── 手机底部标签栏（Rei 2026-11-10） ─────────────
 
 /**
- * 手机底部标签栏的固定几项，按这个顺序排，最后再放「更多」（Rei 2026-11-10 11:44「安卓端 tabbar默认显示：我的一天、待安排、打卡、日记、更多」）。
+ * 手机底部标签栏的固定几项，按这个顺序排，最后再放「搜索」（Rei 2026-11-10 11:44 定了前四项；2026-11-15 最后一格「更多」换成「搜索」）。
  * 以前是 我的一天 · 等待安排 · 打卡 · 时间轴 · 更多；时间轴挪进「更多」，日记从「更多」挪出来。
  * 标签栏不能自定义，所有手机布局（安卓、iOS、窄屏网页）共用这一份，不分平台。
- * 不在这里的入口都在「更多」页，按侧边栏的分组和顺序列。
+ * 其他入口都在左边拉出来的抽屉侧栏里（顶级页顶栏左边的按钮，2026-11-15），和电脑侧栏一样分组。
  */
 export const MOBILE_TABS = ['myday', 'backlog', 'checkin', 'journal'] as const satisfies readonly Route['page'][];
 
-/** 是不是标签栏上的入口（「更多」页用它把这几项去掉）。 */
+/** 是不是标签栏上的入口。 */
 export function isMobileTab(page: Route['page']): boolean {
   return (MOBILE_TABS as readonly string[]).includes(page);
 }

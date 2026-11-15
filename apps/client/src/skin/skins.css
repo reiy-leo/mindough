@@ -1695,3 +1695,70 @@
 [data-skin='material'] .modal-detail {
   --pane-bg: var(--surface-2);
 }
+
+/* ───────── 手机抽屉侧栏（Rei 2026-11-15，styles/app.css .drawer）───────── */
+/* Apple：iPadOS 侧栏那样的半透明毛玻璃，直角贴左边，右边一道阴影；大标题、44pt 行高、圆角选中底，抽屉按钮用强调色 */
+[data-skin='apple'] {
+  --drawer-bg: rgba(242, 242, 247, 0.9);
+  --drawer-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 8px 0 32px rgba(0, 0, 0, 0.16);
+  --drawer-w: 304px;
+}
+[data-skin='apple'][data-theme='dark'] {
+  --drawer-bg: rgba(28, 28, 30, 0.9);
+  --drawer-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 8px 0 32px rgba(0, 0, 0, 0.5);
+}
+[data-skin='apple'] .drawer {
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+[data-skin='apple'] .drawer-title {
+  font-size: 28px;
+  letter-spacing: 0.01em;
+}
+[data-skin='apple'] .drawer .nav-item {
+  border-radius: 10px;
+  font-size: 17px;
+}
+[data-skin='apple'][data-layout='mobile'] .topbar .icon-btn.topbar-menu {
+  color: var(--accent);
+}
+/* WinUI：NavigationView 的浮出窗格，亚克力那种实心浅底，右边 8px 圆角、细边框和浮层阴影；选中项左边强调色竖条照旧 */
+[data-skin='winui'] {
+  --drawer-bg: #f9f9f9;
+  --drawer-shadow: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --drawer-r: 8px;
+  --drawer-w: 320px;
+}
+[data-skin='winui'][data-theme='dark'] {
+  --drawer-bg: #2c2c2c;
+  --drawer-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+[data-skin='winui'] .drawer-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+[data-skin='winui'] .drawer .nav-item {
+  font-size: 15px;
+}
+/* Material 3：模态导航抽屉，surface-container-low 底（--sidebar-bg，素净档跟着换灰），右边 16dp 圆角，最宽 360dp；56dp 胶囊行 */
+[data-skin='material'] {
+  --drawer-bg: var(--sidebar-bg);
+  --drawer-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --drawer-r: 16px;
+  --drawer-w: 360px;
+}
+[data-skin='material'] .drawer-body {
+  padding-inline: var(--space-3);
+}
+[data-skin='material'] .drawer-title {
+  margin: var(--space-2) var(--space-4) var(--space-1);
+  font-size: 22px;
+  font-weight: 400;
+}
+[data-skin='material'] .drawer .nav-item {
+  height: 56px;
+  font-size: 14px;
+}
+[data-skin='material'] .drawer-foot {
+  border-top-color: var(--border);
+}
