@@ -4236,8 +4236,10 @@ html:not(:lang(zh)):not(:lang(ja)) .heatmap {
   max-height: none;
 }
 
-/* 放进侧边栏的资料库（Rei 2026-10-26）和项目（2026-10-28）：挂在「资料库」/「项目」下面，图标往里缩一点；图标栏（中等宽度）不缩 */
+/* 放进侧边栏的资料库（Rei 2026-10-26）和项目（2026-10-28）：挂在「资料库」/「项目」下面，图标往里缩一点；图标栏（中等宽度）不缩。
+   手机抽屉（.drawer，Rei 2026-11-15）用同一套侧栏，但它挂在 body 下的弹层里、不在 .app-desktop 里面，要单独写上，不然子项和「项目」/「资料库」左对齐 */
 .app-desktop:not(.is-narrow) .nav-item-sub .nav-icon,
+.drawer .nav-item-sub .nav-icon,
 .more-item-sub .more-icon {
   margin-inline-start: 18px;
 }
@@ -5140,7 +5142,8 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   gap: 0;
   justify-content: center;
 }
-.app-desktop:not(.is-narrow) .nav-item-tile .nav-icon {
+.app-desktop:not(.is-narrow) .nav-item-tile .nav-icon,
+.drawer .nav-item-tile .nav-icon {
   margin-inline-start: 0;
 }
 /* 「更多」页：「项目」那行右边的 ···，和放进来的项目的图标网格 */
