@@ -2690,6 +2690,13 @@ html[data-skin] .is-closed .row-main .row-title[class*='is-mark-'] {
   white-space: nowrap;
   font-weight: 500;
 }
+/* 搜索结果里完成 / 关闭的任务（Rei 2026-11-16）：标题和别的列表一样只变灰，不划线、不加粗、不变色；关闭的缩略图变淡同 .is-closed .thumb。
+   行尾不放「加入我的一天」（SearchResults.tsx）。 */
+.palette-item.is-done .palette-title,
+.palette-item.is-closed .palette-title {
+  color: var(--text-3);
+  text-decoration: none;
+}
 .palette-snippet {
   font-size: 12px;
   color: var(--text-2);

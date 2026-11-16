@@ -62,7 +62,10 @@ interface RowProps {
   onHover?: () => void;
 }
 
-/** 一件任务：缩略图、标题、类型 · 状态 · 片段，右边「加入我的一天」。 */
+/**
+ * 一件任务：缩略图、标题、类型 · 状态 · 片段，右边「加入我的一天」。
+ * 完成 / 关闭的（Rei 2026-11-16）：行上挂 is-done / is-closed，标题变灰（和别的列表一样，不划线、不加粗、不变色），不放「加入我的一天」。
+ */
 export function SearchTaskRow({ id, title, snippet, active, onHover, onOpen }: RowProps & { id: string; title: string; snippet: string; onOpen: () => void }) {
   const store = useStore();
   const ui = useUi();
@@ -71,8 +74,10 @@ export function SearchTaskRow({ id, title, snippet, active, onHover, onOpen }: R
   const v = viewOf(store, t);
   // 置顶的每天都在我的一天里（Rei 2026-11-08）
   const inDay = store.isPinned(t) || store.isInMyDay(id);
+  const ended = isFinished(t.status);
+  const endCls = t.status === '完成' ? ' is-done' : t.status === '关闭' ? ' is-closed' : '';
   return (
-    <li className={`palette-item${active ? ' is-active' : ''}`} onMouseEnter={onHover}>
+    <li className={`palette-item palette-task${endCls}${active ? ' is-active' : ''}`} onMouseEnter={onHover}>
       <RacButton className="palette-main" onPress={onOpen}>
         <TaskThumb media={v.media} layout={v.thumbLayout} isAvatar={v.mediaIsAvatar} color={v.type?.color} icon={v.type?.icon} hasItem={v.hasItem} />
         <span className="palette-text">
@@ -84,10 +89,12 @@ export function SearchTaskRow({ id, title, snippet, active, onHover, onOpen }: R
           </span>
         </span>
       </RacButton>
-      <RacButton className={`btn btn-tonal palette-add${inDay ? ' is-on' : ''}`} onPress={() => toggleMyDay(store, ui, id)} aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')}>
-        {inDay ? <Sun size={15} /> : <SunDim size={15} />}
-        {inDay ? tr('已在今天') : tr('加入我的一天')}
-      </RacButton>
+      {!ended && (
+        <RacButton className={`btn btn-tonal palette-add${inDay ? ' is-on' : ''}`} onPress={() => toggleMyDay(store, ui, id)} aria-label={inDay ? tr('移出我的一天') : tr('加入我的一天')}>
+          {inDay ? <Sun size={15} /> : <SunDim size={15} />}
+          {inDay ? tr('已在今天') : tr('加入我的一天')}
+        </RacButton>
+      )}
     </li>
   );
 }
