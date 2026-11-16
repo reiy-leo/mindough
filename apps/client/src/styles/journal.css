@@ -799,11 +799,17 @@ html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-recent {
 .jmood-pop .popover-dialog {
   padding: var(--space-2);
 }
-/* 选心情：一行，左右滑（Rei 2026-11-16，参照 .icon-grid）。上下左右各留 3px 给焦点环，不然被 overflow 裁掉 */
+/* 选心情：三行，按列从上往下排，左右滑（Rei 2026-11-16「用 3 行」，电脑手机一样；排法同 .icon-grid）。
+   三行等高（1fr 按最高的那格）。上下左右各留 3px 给焦点环，不然被 overflow 裁掉 */
 .jmood-grid {
   --jmood-fade: 24px;
+  --jmood-rows: 3;
+  --jmood-cell: 68px;
   position: relative;
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--jmood-rows), 1fr);
+  grid-auto-columns: var(--jmood-cell);
   gap: 2px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -838,7 +844,8 @@ html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-recent {
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  width: 68px;
+  width: var(--jmood-cell);
+  min-width: 0;
   padding: 8px 2px 6px;
   border: 0;
   border-radius: var(--radius-md);
@@ -876,9 +883,11 @@ html[data-layout='mobile'] .popover.popover-panel.is-sheet .jriver-recent {
   line-clamp: 2;
   overflow: hidden;
 }
-/* 手机底部弹出时格子大一点，手指好点 */
+/* 手机上格子按手指算，至少 64 高 */
+html[data-layout='mobile'] .jmood-grid {
+  --jmood-cell: 64px;
+}
 html[data-layout='mobile'] .jmood-opt {
-  width: 64px;
   min-height: 64px;
 }
 

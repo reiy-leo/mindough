@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-/** 选心情改成一行横滑（Rei 2026-11-16）：31 个排一行，键盘 ← → / Home / End 挪，竖着滚的滚轮横着走。 */
+/** 选心情横滑（Rei 2026-11-16）：31 个排三行、按列从上往下排（18:34「用 3 行」），键盘 ↑ ↓ 同列、← → 隔壁列、Home / End 挪，竖着滚的滚轮横着走。 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -25,7 +25,7 @@ const opts = () => [...host.querySelectorAll<HTMLButtonElement>('.jmood-opt')];
 const key = (k: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })));
 
 describe('MoodGrid', () => {
-  it('31 个按 MOOD_IDS 的顺序（从最积极到最消极）排成一行，已选的标出来', () => {
+  it('31 个按 MOOD_IDS 的顺序（从最积极到最消极）排，已选的标出来', () => {
     act(() => root.render(<MoodGrid value="sick" onPick={() => {}} />));
     expect(opts()).toHaveLength(31);
     expect(opts().map((b) => b.querySelector('svg')!.getAttribute('class')!.match(/mood-(?!icon\b)([a-z]+)/)![1])).toEqual([...MOOD_IDS]);
@@ -36,14 +36,20 @@ describe('MoodGrid', () => {
     expect(opts()[30]!.textContent).toBe('崩溃');
   });
 
-  it('键盘：→ 下一个，← 上一个，End 最后，Home 第一个', () => {
+  it('键盘：↓ 同一列下一个，→ 隔壁一列（跳 3 个），← 回来，↑ 上一个，End 最后，Home 第一个', () => {
     act(() => root.render(<MoodGrid value={null} onPick={() => {}} />));
     act(() => opts()[0]!.focus());
-    key('ArrowRight');
+    key('ArrowDown');
     expect(document.activeElement).toBe(opts()[1]);
+    key('ArrowRight');
+    expect(document.activeElement).toBe(opts()[4]);
     key('ArrowLeft');
+    expect(document.activeElement).toBe(opts()[1]);
+    key('ArrowUp');
     expect(document.activeElement).toBe(opts()[0]);
     key('ArrowLeft');
+    expect(document.activeElement).toBe(opts()[0]);
+    key('ArrowUp');
     expect(document.activeElement).toBe(opts()[0]);
     key('End');
     expect(document.activeElement).toBe(opts()[30]);

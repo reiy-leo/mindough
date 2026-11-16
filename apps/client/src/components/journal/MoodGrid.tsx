@@ -2,10 +2,12 @@
  * 选心情（日记输入框和任务的「心情」属性、详情顶栏心情按钮、新建面板共用，Rei 2026-11-08「日记的心情属性在普通任务属性中也可以添加」）。
  * 点已选的那格 = 取消（onPick(null)）。样式 .jmood-grid / .jmood-opt 在 journal.css。
  *
- * 2026-11-16（Rei 加到 31 个心情，「选择器改成一行横向滚动，参照项目图标 lucide 选择器」）：原来四列的格子改成一行，左右滑。
+ * 2026-11-16（Rei 加到 31 个心情，「选择器改成一行横向滚动，参照项目图标 lucide 选择器」）：原来四列的格子改成横着滑。
+ * 同天 18:34 又改成三行（「应该是和 PC 端保持一致，用 3 行」）：电脑手机都是三行，排法同 IconPicker——
+ * 按 MOOD_IDS 一列从上往下排满三个再排下一列，所以积极的在左、消极的在右，整块左右滑。
  * - 手机手指横滑；电脑触控板横滑，竖着滚的滚轮也会横着走（lib/hscroll wheelDelta），滚到头再滚就交给外面。
  * - 还能往哪边滑，那边渐隐一点（data-more-start / data-more-end）；打开时已选的那个滚到中间。
- * - 键盘：← → 挪到隔壁一个，Home / End 到头尾，挪到的那个滚进视野。
+ * - 键盘：↑ ↓ 同一列上下挪，← → 挪到隔壁一列，Home / End 到头尾，挪到的那个滚进视野。
  */
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
 import { Button as RacButton } from 'react-aria-components';
@@ -13,6 +15,12 @@ import { MOOD_IDS, moodLabel, type MoodId } from '@mindough/core';
 import { tr } from '../../lib/i18n';
 import { markMore, reveal, wheelDelta } from '../../lib/hscroll';
 import { MoodIcon } from './MoodIcon';
+
+/** 网格几行：读 CSS 的 --jmood-rows（测试环境没有布局，读不到就按 3）。 */
+const rowsOf = (box: HTMLElement) => {
+  const n = parseInt(getComputedStyle(box).getPropertyValue('--jmood-rows'), 10);
+  return n > 0 ? n : 3;
+};
 
 export function MoodGrid({ value, onPick }: { value: string | null | undefined; onPick: (mood: MoodId | null) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -44,13 +52,15 @@ export function MoodGrid({ value, onPick }: { value: string | null | undefined; 
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const box = ref.current;
-    if (!box || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    if (!box || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
     const cells = [...box.querySelectorAll<HTMLElement>('.jmood-opt')];
     const i = cells.indexOf(document.activeElement as HTMLElement);
     if (i < 0) return;
+    const rows = rowsOf(box);
     const rtl = getComputedStyle(box).direction === 'rtl';
-    const next = rtl ? -1 : 1;
-    const j = e.key === 'Home' ? 0 : e.key === 'End' ? cells.length - 1 : i + (e.key === 'ArrowRight' ? next : -next);
+    const col = rtl ? -rows : rows;
+    const step: Record<string, number> = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -col, ArrowRight: col };
+    const j = e.key === 'Home' ? 0 : e.key === 'End' ? cells.length - 1 : i + step[e.key]!;
     if (j < 0 || j >= cells.length) return;
     e.preventDefault();
     cells[j]!.focus({ preventScroll: true });

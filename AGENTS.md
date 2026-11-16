@@ -70,7 +70,7 @@ apps/client/src/
   components/library/   资料库共用件：占位图 ItemArt、选择框 LibraryPicker、资料编辑 ItemEditor / ItemSheet、资料卡 ItemCard
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
-  components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情选择 MoodGrid（一行横滑，日记和任务共用）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
+  components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情选择 MoodGrid（三行横滑、按列排，日记和任务共用）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
   lib/calendar-subs.ts  日历订阅（同步表 calendar_sub）：经 Worker 代拉、事件存本机、到点刷新（useCalendarSubScheduler 挂在 App）、日历页用 useCalendarEvents；设置在 components/CalendarSubs.tsx，样式 styles/calendar.css
   lib/lunar.ts          节假日订阅（原「农历订阅」）：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DateGrid 的 LunarMark（DatePanel 也导出），日期标题用 components/LunarLine，设置在 components/CalendarSettings（设置 → 日历）；样式 styles/lunar.css
   pages/Calendar.tsx    日历页（侧栏「计划 → 日历」，路由 id 还是 agenda，地址 #/calendar）
