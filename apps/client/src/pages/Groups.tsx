@@ -25,6 +25,7 @@ import { useSettings } from '../lib/settings';
 import { useColorLevel } from '../lib/color-level';
 import { PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
 import { useProjectPrefs } from '../lib/view-hooks';
+import { DrawerButton } from '../components/DrawerButton';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
 
@@ -114,6 +115,8 @@ export function GroupsPage() {
       {/* 一行：左边类型筛选胶囊，多了横着滑；右边「新建项目」图标按钮钉住不动。
           没有类型可筛（没项目、项目都没设类型）时这行只剩按钮，靠右，电脑和手机都一样，新建入口不会没了 */}
       <div className="filter-row groups-toolbar">
+        {/* 手机：抽屉按钮在这一行最左边（Rei 2026-11-16 17:33） */}
+        <DrawerButton className="is-inline" />
         <div className="groups-filter">
           {usedCats.length > 0 && (
             <ChipPicker
@@ -249,6 +252,8 @@ function GroupDetail({
       <div className={`project-head-sticky${head.stuck ? ' is-stuck' : ''}`}>
       <PageHeader
         compact
+        // 手机：项目名左边放抽屉按钮（Rei 2026-11-16 17:31「项目页也要添加侧边栏按钮」），电脑不画
+        lead={<DrawerButton className="is-inline" />}
         title={g.name}
         titleNode={<ProjectTitle key={g.id} store={store} group={g} />}
         subtitle={

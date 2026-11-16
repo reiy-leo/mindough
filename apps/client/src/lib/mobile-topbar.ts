@@ -5,14 +5,29 @@ import type { Route } from './router';
 export const HEADERLESS_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'checkin', 'agenda', 'groups', 'countdown', 'journal', 'library', 'people', 'types', 'done', 'settings'];
 
 /**
- * 顶级页：底栏、侧栏能直接进的页（Rei 2026-11-15「手机端导航改版」）。手机顶栏最左边放抽屉按钮，点了从左边拉出侧栏。
- * 任务详情、项目详情、资料 / 人物详情、设置子页这些有「返回」的二级页不放；搜索页顶上是搜索框，也不放。
+ * 有抽屉按钮的页：底栏、侧栏能直接进的页（Rei 2026-11-15「手机端导航改版」），加上项目详情页（2026-11-16 17:31「项目页也要添加侧边栏按钮」，
+ * 放进侧边栏的项目从抽屉直接进，页里又没有「返回」）。点了从左边拉出侧栏。
+ * 任务详情、资料 / 人物详情、设置子页这些有「返回」的二级页不放；搜索页顶上是搜索框，也不放。
  */
-export const DRAWER_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'groups', 'checkin', 'countdown', 'journal', 'library', 'people', 'types', 'done', 'settings'];
+export const DRAWER_PAGES: Route['page'][] = ['myday', 'backlog', 'doable', 'agenda', 'groups', 'group', 'checkin', 'countdown', 'journal', 'library', 'people', 'types', 'done', 'settings'];
+
+/**
+ * 抽屉按钮放在页面自己第一行最左边、不在顶栏的页（Rei 2026-11-16 17:33「抽屉按钮单独占了一行……放在同一行」）：
+ * 打卡（按今天 ⌄ · + · 筛选）、倒数日（视图 / 排序 / 分区 · +）、日历（‹ 今天 › 日期段 · 视图）、项目列表（类型胶囊 · +）、
+ * 项目详情（项目名 · 视图 / 排序 / 分区 / ···）、资料库和人物库（库标签 · ··· · +）、类型（搜索框 · 列表 ⌄；窄屏详情是「‹ 全部类型」那一行）。
+ * 这些页顶栏这一行不再有东西，收成只剩状态栏那一截（topbarState is-empty）。
+ * 我的一天（日期左边）、等待安排（右边是分区按钮）照旧在顶栏；过期积压、已完成、日记、设置首页顶上没有工具行，抽屉按钮还是单独一行。
+ */
+export const INLINE_DRAWER_PAGES: Route['page'][] = ['checkin', 'countdown', 'agenda', 'groups', 'group', 'library', 'people', 'types'];
 
 export function hasDrawerButton(route: Route): boolean {
   if (route.page === 'settings') return !route.section;
   return DRAWER_PAGES.includes(route.page);
+}
+
+/** 抽屉按钮放在顶栏（true），还是页面自己的工具行里 / 没有（false）。 */
+export function drawerInTopbar(route: Route): boolean {
+  return hasDrawerButton(route) && !INLINE_DRAWER_PAGES.includes(route.page);
 }
 
 /**

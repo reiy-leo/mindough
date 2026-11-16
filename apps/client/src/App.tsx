@@ -2,7 +2,7 @@ import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dialog, Heading, Modal, ModalOverlay, Button as RacButton } from 'react-aria-components';
-import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, Menu, MoreHorizontal, NotebookPen, PanelLeft, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
+import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, parseHash, useRoute, type Route, type SettingsSection } from './lib/router';
 import { dayItems } from './lib/myday-items';
 import { openSettingsWindow } from './lib/windows';
@@ -67,7 +67,8 @@ const DidaImportSheet = lazy(() => import('./components/DidaImport').then((m) =>
 import { appName, tr, trc } from './lib/i18n';
 import { typingKey } from './lib/ime';
 import { isSearchShortcut, searchKeyLabel } from './lib/global-keys';
-import { hasDrawerButton, mobileTopbar, topbarState } from './lib/mobile-topbar';
+import { drawerInTopbar, mobileTopbar, topbarState } from './lib/mobile-topbar';
+import { DrawerButton, DrawerProvider } from './components/DrawerButton';
 import { TOPBAR_LEAD_ID, TOPBAR_SLOT_ID } from './lib/topbar-slot';
 interface NavItem {
   page: Route['page'];
@@ -802,7 +803,7 @@ export function App() {
     [uiToast],
   );
   const { setDidaImportOpen } = ui;
-  const { layout, platform, settings, skin } = useSettings();
+  const { layout, platform, settings } = useSettings();
   // 桌面 app（Tauri）：设置是单独的窗口（Rei 2026-10-26）；Web 和手机仍是页面
   const settingsInWindow = isTauri() && (platform === 'macos' || platform === 'windows' || platform === 'linux');
   const openSettings = useCallback(
@@ -826,6 +827,7 @@ export function App() {
   const todayCount = dayItems(store).length;
   // 手机抽屉侧栏（Rei 2026-11-15）：顶级页顶栏左边的按钮拉出来
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
   useEffect(() => {
     if (layout !== 'mobile') setDrawerOpen(false);
   }, [layout]);
@@ -915,12 +917,9 @@ export function App() {
     // 底栏：固定四项 + 最后一格「搜索」（Rei 2026-11-15 换掉「更多」）
     const tabs = [...mobileTabItems(NAV), SEARCH];
     const topbar = mobileTopbar(route.page);
-    // 顶级页顶栏左边的抽屉按钮（Rei 2026-11-15）：Apple 用侧栏图标（iOS「sidebar.left」），WinUI / Material 用三道杠（汉堡）
-    const drawerButton = hasDrawerButton(route) ? (
-      <RacButton className="icon-btn topbar-menu" aria-label={tr('打开侧边栏')} aria-haspopup="dialog" aria-expanded={drawerOpen} onPress={() => setDrawerOpen(true)}>
-        {skin === 'apple' ? <PanelLeft size={22} aria-hidden /> : <Menu size={22} aria-hidden />}
-      </RacButton>
-    ) : undefined;
+    // 抽屉按钮（Rei 2026-11-15）：顶上没有自己工具行的页放在顶栏左边；打卡、日历、项目这些放在页面自己第一行的最左边（2026-11-16，lib/mobile-topbar drawerInTopbar），
+    // 按钮本身是 components/DrawerButton，开关经 DrawerProvider 传下去
+    const drawerButton = drawerInTopbar(route) ? <DrawerButton /> : undefined;
     shell = (
       <div className={`app app-mobile${selected ? ' has-detail' : ''}`}>
         {/* 顶栏不放搜索按钮（Rei 2026-11-12，搜索在底栏），也不写页名（09:41），只放抽屉按钮（顶级页，2026-11-15）、我的一天的日期和页面送上来的按钮；
@@ -970,7 +969,7 @@ export function App() {
   }
 
   return (
-    <>
+    <DrawerProvider isOpen={drawerOpen} open={openDrawer}>
       {shell}
       <TaskComposer />
       <ReminderHost />
@@ -982,6 +981,6 @@ export function App() {
       )}
       <Toasts />
       <DeepLinks />
-    </>
+    </DrawerProvider>
   );
 }

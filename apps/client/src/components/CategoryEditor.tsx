@@ -110,9 +110,11 @@ export interface CategoryListProps {
   view?: 'list' | 'icons';
   /** 搜索框右边同一行放的控件（类型页的「显示为」下拉，Rei 2026-11-12 类型页去掉页头）。 */
   searchAside?: ReactNode;
+  /** 搜索框左边的东西（类型页手机上的抽屉按钮，Rei 2026-11-16）。 */
+  searchLead?: ReactNode;
 }
 
-export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, view = 'list', searchAside }: CategoryListProps) {
+export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, view = 'list', searchAside, searchLead }: CategoryListProps) {
   const icons = view === 'icons';
   const store = useStore();
   const ui = useUi();
@@ -273,8 +275,9 @@ export function CategoryList({ selectedId, onOpen, onActive, mobile, searchRef, 
 
   return (
     <div className="cat-list">
-      {searchAside ? (
+      {searchAside || searchLead ? (
         <div className="cat-list-search-row">
+          {searchLead}
           {search}
           {searchAside}
         </div>

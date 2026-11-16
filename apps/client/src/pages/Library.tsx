@@ -45,6 +45,7 @@ import { imageUrl } from '../lib/view';
 import { longPressNow, longPressStillValid } from '../lib/long-press';
 import { tileSubText } from '../lib/lib-tile';
 import { StickyHead, useScrolledPast } from '../components/StickyHead';
+import { DrawerButton } from '../components/DrawerButton';
 
 import { dataLabel, tr } from '../lib/i18n';
 function useLibraries(): TaskType[] {
@@ -199,6 +200,8 @@ export function LibraryPage({ typeId }: { typeId?: string }) {
       <h1 className="sr-only">{tr('资料库')}</h1>
       {/* 一行：左边库标签，多了在里面横滑；右边「…」和加号钉住不动（flex: none，types.css .lib-tabs-row）。标签条总有（至少当前库），所以这行一直在 */}
       <div className="lib-tabs-row">
+      {/* 手机：抽屉按钮在这一行最左边（Rei 2026-11-16 17:33） */}
+      <DrawerButton className="is-inline" />
       <nav className="lib-tabs" aria-label={tr('资料库')}>
         {libs.map((t) => (
           <LibTab key={t.id} type={t} active={t.id === type.id} onOpen={() => setQuery('')} />

@@ -21,6 +21,7 @@ import { typeIcon } from '../lib/icons';
 import { tr } from '../lib/i18n';
 import { trx } from '../lib/trx';
 import { createBlankTask } from '../lib/blank-task';
+import { DrawerButton } from '../components/DrawerButton';
 
 
 /**
@@ -370,6 +371,8 @@ export function CountdownsPage() {
       {/* 没有可见标题，读屏还是要有页面名（同打卡页） */}
       <h1 className="sr-only">{tr('倒数日')}</h1>
       <div className="filter-row checkin-toolbar countdown-toolbar">
+        {/* 手机：抽屉按钮在这一行最左边（Rei 2026-11-16 17:33） */}
+        <DrawerButton className="is-inline" />
         <div className="countdown-menus">
           {countdowns.length > 0 && (
             <>

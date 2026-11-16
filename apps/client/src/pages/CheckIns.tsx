@@ -6,6 +6,7 @@ import { useNow, useStore } from '../store/StoreProvider';
 import { CategoryLabel, CategoryLabels, NO_CATEGORY } from '../components/CategoryPicker';
 import { useUi } from '../lib/ui';
 import { useSettings } from '../lib/settings';
+import { DrawerButton } from '../components/DrawerButton';
 import { Button, Empty, MenuAt, NewButton, Section, Tip, TipButton, useContextMenuAt, type MenuAction } from '../ui/primitives';
 import { useColorLevel, vividVar } from '../lib/color-level';
 import { habitMenu } from '../lib/task-menu';
@@ -192,6 +193,8 @@ export function CheckInsPage() {
       {/* has-heat：顶部活动图开着时，下面第一个分区离图的间距照旧（见 app.css .checkin-head-sticky + .section） */}
       <div className={`checkin-head-sticky${head.stuck ? ' is-stuck' : ''}${view === 'today' && settings.checkInsYearHeatmap ? ' has-heat' : ''}`}>
       <div className="filter-row checkin-toolbar">
+        {/* 手机：抽屉按钮在这一行最左边，不再单独占一行（Rei 2026-11-16 17:33） */}
+        <DrawerButton className="is-inline" />
         {view !== 'today' ? (
           <RacButton className="btn btn-quiet checkin-back" onPress={() => setView('today')}>
             <ArrowLeft size={16} aria-hidden />

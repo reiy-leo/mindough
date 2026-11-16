@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasDrawerButton, mobileTopbar, topbarState } from './mobile-topbar';
+import { drawerInTopbar, hasDrawerButton, INLINE_DRAWER_PAGES, mobileTopbar, topbarState } from './mobile-topbar';
 import type { Route } from './router';
 
 describe('手机顶栏（Rei 2026-11-12：哪一页都不放搜索按钮、不写页名）', () => {
@@ -17,12 +17,26 @@ describe('抽屉按钮（Rei 2026-11-15 手机导航改版）', () => {
       expect(hasDrawerButton({ page } as Route)).toBe(true);
     expect(hasDrawerButton({ page: 'library', typeId: 't1' })).toBe(true);
   });
+  it('项目详情页也有（Rei 2026-11-16 17:31「项目页也要添加侧边栏按钮」）', () => {
+    expect(hasDrawerButton({ page: 'group', id: 'g' })).toBe(true);
+  });
+  it('有自己工具行的页放在那一行最左边，不在顶栏（Rei 2026-11-16 17:33「抽屉按钮单独占了一行」）', () => {
+    for (const page of ['checkin', 'countdown', 'agenda', 'groups', 'library', 'people', 'types'] as const) expect(drawerInTopbar({ page } as Route)).toBe(false);
+    expect(drawerInTopbar({ page: 'group', id: 'g' })).toBe(false);
+    expect(drawerInTopbar({ page: 'library', typeId: 't1' })).toBe(false);
+    expect(drawerInTopbar({ page: 'types', id: 'c1' })).toBe(false);
+    for (const page of INLINE_DRAWER_PAGES) expect(hasDrawerButton({ page, id: 'x' } as Route)).toBe(true);
+  });
+  it('顶上没有工具行的页照旧在顶栏', () => {
+    for (const page of ['myday', 'backlog', 'doable', 'journal', 'done', 'settings'] as const) expect(drawerInTopbar({ page } as Route)).toBe(true);
+  });
   it('有「返回」的二级页和搜索页没有', () => {
     expect(hasDrawerButton({ page: 'settings', section: 'appearance' })).toBe(false);
-    expect(hasDrawerButton({ page: 'group', id: 'g' })).toBe(false);
     expect(hasDrawerButton({ page: 'libitem', typeId: 't', id: 'i' })).toBe(false);
     expect(hasDrawerButton({ page: 'person', id: 'p' })).toBe(false);
     expect(hasDrawerButton({ page: 'search' })).toBe(false);
+    expect(drawerInTopbar({ page: 'settings', section: 'appearance' })).toBe(false);
+    expect(drawerInTopbar({ page: 'person', id: 'p' })).toBe(false);
   });
   it('有抽屉按钮就不收成空行', () => {
     expect(topbarState({ menu: true, lead: false, actions: false })).toBe(' no-lead');

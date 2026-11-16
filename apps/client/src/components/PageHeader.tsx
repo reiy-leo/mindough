@@ -15,6 +15,7 @@ export function PageHeader({
   icon,
   actions,
   compact = false,
+  lead,
 }: {
   title: string;
   /** compact 页头里代替「图标 + h1」的整块（项目页：点图标换图标、点名字改名，Rei 2026-11-01）。 */
@@ -23,6 +24,8 @@ export function PageHeader({
   icon?: ReactNode;
   actions?: ReactNode;
   compact?: boolean;
+  /** compact 页头最左边、标题前面的东西（项目详情页手机上的抽屉按钮，Rei 2026-11-16）。 */
+  lead?: ReactNode;
 }) {
   const { layout } = useSettings();
   if (!compact && layout === 'mobile')
@@ -35,6 +38,7 @@ export function PageHeader({
   if (compact)
     return (
       <header className="page-header is-compact">
+        {lead}
         <div className="page-heading">
           {titleNode ?? (
             <>

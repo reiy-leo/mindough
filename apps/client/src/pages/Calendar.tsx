@@ -41,6 +41,7 @@ import { intlLocale, tr, trc } from '../lib/i18n';
 import '../styles/calendar.css';
 import { clipName } from '../lib/toast-text';
 import { cutLanes, fitLanes, useBoxSize, yearLayout } from '../lib/cal-fit';
+import { DrawerButton } from '../components/DrawerButton';
 
 interface TaskItem {
   kind: 'task';
@@ -134,6 +135,8 @@ export function CalendarPage() {
   const toolbar = (
     <div className="cal-toolbar">
       <div className="cal-nav">
+        {/* 手机：抽屉按钮在这一行最左边（Rei 2026-11-16 17:33） */}
+        <DrawerButton className="is-inline" />
         <IconButton label={tr('上一段')} onPress={() => go(-1)}>
           <ChevronLeft size={18} />
         </IconButton>

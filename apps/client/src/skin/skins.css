@@ -1719,7 +1719,7 @@
   border-radius: 10px;
   font-size: 17px;
 }
-[data-skin='apple'][data-layout='mobile'] .topbar .icon-btn.topbar-menu {
+[data-skin='apple'][data-layout='mobile'] .icon-btn.topbar-menu {
   color: var(--accent);
 }
 /* WinUI：NavigationView 的浮出窗格，亚克力那种实心浅底，右边 8px 圆角、细边框和浮层阴影；选中项左边强调色竖条照旧 */

@@ -28,6 +28,7 @@ import { imeBusy, typingKey } from '../lib/ime';
 import { ViewStyleDropdown } from '../components/ViewStyleDropdown';
 import { CategoryGroupCombo } from '../components/CategoryGroupCombo';
 import { useCategoryViewStyle } from '../lib/category-view';
+import { DrawerButton } from '../components/DrawerButton';
 
 const STATES: CategoryState[] = ['frequent', 'normal', 'hidden'];
 
@@ -75,6 +76,8 @@ export function CategoriesPage({ id }: { id?: string }) {
       <div className="page types-page">
         {/* 返回条固定在顶上，详情往下滚也点得到（Rei 2026-11-04「固定，现在点了返回不了」） */}
         <div className="types-back-bar">
+          {/* 抽屉按钮在「全部类型」左边（Rei 2026-11-16 17:33） */}
+          <DrawerButton className="is-inline" />
           <RacButton className="btn btn-quiet types-back" onPress={() => navigate({ page: 'types' })}>
             <ChevronLeft size={16} aria-hidden />
             {tr('全部类型')}
@@ -98,6 +101,7 @@ export function CategoriesPage({ id }: { id?: string }) {
             mobile={mobile}
             searchRef={searchRef}
             view={view}
+            searchLead={<DrawerButton className="is-inline" />}
             searchAside={<ViewStyleDropdown label={tr('类型显示方式')} value={view} onChange={setView} className="types-view-btn" />}
           />
         </div>

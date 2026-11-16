@@ -5448,17 +5448,54 @@ html.is-nav-reordering .nav-pinned-row .nav-item-more {
   border-top: 1px solid var(--border);
 }
 /* 顶栏左边的抽屉按钮：点击区 44×44，往左挪一点让图标贴近页边（页面内容左边距 16px） */
-.topbar .icon-btn.topbar-menu {
+[data-layout='mobile'] .icon-btn.topbar-menu {
+  flex: none;
   width: 44px;
   height: 44px;
   min-width: 44px;
   margin-left: calc(-1 * var(--space-3));
   color: var(--text);
 }
+/* 放在页面自己第一行最左边的抽屉按钮（Rei 2026-11-16 17:33「抽屉按钮和这些功能按钮放在同一行」，components/DrawerButton，lib/mobile-topbar INLINE_DRAWER_PAGES）：
+   点击区照旧 44×44，上下各收 4px，不把那一行（多是 34–40 高）撑高；左边同顶栏往外挪 12px，图标和顶栏里的位置一样。
+   后面紧跟的那个控件原来为了字和下面对齐往左挪了 11px（打卡「按今天」、倒数日下拉、类型「全部类型」），跟在按钮后面就不挪了，免得叠上去 */
+[data-layout='mobile'] .icon-btn.topbar-menu.is-inline {
+  margin-block: -4px;
+}
+[data-layout='mobile'] .icon-btn.topbar-menu.is-inline + * {
+  margin-inline-start: 0;
+}
+/* 打卡、倒数日这一行原来是左右两头（space-between），中间多了按钮：右边的 + / 筛选靠 margin-inline-start: auto 照旧贴右 */
+.checkin-toolbar > .topbar-menu ~ .checkin-head-actions {
+  margin-inline-start: auto;
+}
 /* 触屏上关抽屉后焦点回到按钮：安卓返回关抽屉是一下合成的 Esc（lib/back-layers），React Aria 会当成键盘操作给它画焦点环，
    手指用户看着像按钮卡住了。没有鼠标悬停的触屏设备上这个按钮不画焦点环（接了键盘的平板宽屏不走这里）。 */
 @media (hover: none) and (pointer: coarse) {
-  .topbar .topbar-menu[data-focus-visible] {
+  .topbar-menu[data-focus-visible] {
     box-shadow: none;
   }
+}
+
+/* 手机项目列表页、倒数日页：抽屉按钮挪进第一行以后（Rei 2026-11-16 17:33），这一行跟着固定在顶上，往下滚也点得到抽屉（原来顶栏那一行本来就不动）。
+   做法同 .checkin-head-sticky：不透明页面底、左右多铺一点盖住卡片，上边距挪进来（页面原来上边距 --space-2），滚动后不画线。打卡、日历、资料库、类型、项目详情本来就固定。 */
+.app-mobile .groups-page,
+.app-mobile .countdown-page {
+  padding-top: 0;
+}
+.app-mobile .groups-toolbar,
+.app-mobile .countdown-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  margin-inline: calc(-1 * var(--space-2));
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
+}
+/* 手机倒数日页：左边多了抽屉按钮，三个下拉左右内边距收一点（10 / 8 → 8 / 5），390 宽三皮肤都放在一行（Apple 字宽，原来差 3px 折行）；
+   360 宽照旧折到第二行。打卡页只有一个下拉，不动。 */
+[data-skin][data-layout='mobile'] .checkin-toolbar.countdown-toolbar .checkin-arrange-btn {
+  padding-inline: 8px 5px;
 }
