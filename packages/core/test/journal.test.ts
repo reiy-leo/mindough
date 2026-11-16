@@ -26,6 +26,7 @@ import {
   monthGrid,
   moodLabel,
   moods,
+  moodTone,
   normalizeDayStart,
   splitConflictBlocks,
 } from '../src/journal';
@@ -99,15 +100,21 @@ describe('日记：日期与 id', () => {
 });
 
 describe('日记：心情', () => {
-  it('12 个，id 稳定、各不相同，中英文都有名字', () => {
-    expect(MOOD_IDS).toHaveLength(12);
-    expect(new Set(MOOD_IDS).size).toBe(12);
+  it('31 个，id 稳定、各不相同，中英文都有名字', () => {
+    expect(MOOD_IDS).toHaveLength(31);
+    expect(new Set(MOOD_IDS).size).toBe(31);
     const zh = moods().map((m) => m.label);
-    expect(new Set(zh).size).toBe(12);
+    expect(new Set(zh).size).toBe(31);
+    expect(zh.every(Boolean)).toBe(true);
     setLocale('en');
     try {
       const en = moods().map((m) => m.label);
-      expect(en).toEqual(['Happy', 'Excited', 'Grateful', 'Content', 'Calm', 'Okay', 'Bored', 'Tired', 'Anxious', 'Sad', 'Irritated', 'Angry']);
+      expect(en).toEqual([
+        'Happy', 'Excited', 'Grateful', 'Content', 'Calm', 'Okay', 'Bored', 'Tired', 'Anxious', 'Sad', 'Irritated', 'Angry',
+        'Hopeful', 'Smitten', 'Warm', 'Proud', 'Touched', 'Relaxed', 'Celebrating',
+        'Surprised', 'Torn', 'Speechless', 'Zoned out',
+        'Awkward', 'Disgusted', 'Queasy', 'Scared', 'Disappointed', 'Wronged', 'Overwhelmed', 'Sick',
+      ]);
     } finally {
       setLocale('zh');
     }
@@ -117,6 +124,18 @@ describe('日记：心情', () => {
     expect(isMoodId(3)).toBe(false);
     // 正面、平、负面都有
     expect(new Set(moods().map((m) => m.tone))).toEqual(new Set(['positive', 'neutral', 'negative']));
+  });
+
+  it('2026-11-16 加的 19 个：接在原来 12 个后面，按 Rei 给的顺序和归类', () => {
+    expect(MOOD_IDS.slice(0, 12)).toEqual(['happy', 'excited', 'grateful', 'content', 'calm', 'okay', 'bored', 'tired', 'anxious', 'sad', 'irritated', 'angry']);
+    const added = moods().slice(12);
+    expect(added.map((m) => m.label)).toEqual(['期待', '心动', '温暖', '得意', '感动', '放松', '庆祝', '惊讶', '纠结', '无语', '放空', '尴尬', '厌恶', '恶心', '害怕', '失望', '委屈', '崩溃', '生病']);
+    expect(added.map((m) => m.tone)).toEqual([...Array(7).fill('positive'), ...Array(4).fill('neutral'), ...Array(8).fill('negative')]);
+    for (const m of added) {
+      expect(m.id).toMatch(/^[a-z]+$/);
+      expect(isMoodId(m.id)).toBe(true);
+      expect(moodTone(m.id)).toBe(m.tone);
+    }
   });
 });
 

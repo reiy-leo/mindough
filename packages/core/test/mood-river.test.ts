@@ -169,3 +169,11 @@ describe('toneOklab：河流色调（2026-11-13 浅色要浅、深色不发黑�
     expect(oklabLightness('nope')).toBeNull();
   });
 });
+
+describe('2026-11-16 加的心情', () => {
+  it('新心情照样成一股水流，一样多时排在老心情后面', () => {
+    const d = riverData([post('2026-11-05', 'celebrating'), post('2026-11-05', 'sad'), post('2026-11-04', 'celebrating'), post('2026-11-04', 'scared')], ['2026-11-05', '2026-11-04']);
+    expect(d.lanes).toEqual(['celebrating', 'sad', 'scared']);
+    expect(d.total).toBe(4);
+  });
+});

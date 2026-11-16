@@ -394,3 +394,24 @@ describe('Feed 流：搜索', () => {
     expect(search(input, '平静').map((h) => h.kind)).toEqual(['journal']);
   });
 });
+
+describe('2026-11-16 加的心情：导入导出、搜索、心情列表照常', () => {
+  it('日记条目和任务记了新心情，导出再导入原样回来；搜心情名搜得到；心情列表排在老心情后面', async () => {
+    const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 11, 16, 9) });
+    const p = s.addJournalPost({ body_md: '加班到半夜', mood: 'overwhelmed' })!;
+    s.addJournalPost({ body_md: '吃药', mood: 'sick' });
+    s.addJournalPost({ body_md: '晴天', mood: 'happy' });
+    const t = s.createTask({ body_md: '等快递' }, { joinMyDay: false });
+    s.updateTask(t.id, { mood: 'hopeful' });
+    const { files } = exportArchive(s, {});
+    const dst = await Store.open(new MemoryAdapter(), { deviceId: 'dev2', now: () => local(2026, 11, 16, 10) });
+    const plan = planImport(dst, files);
+    expect(plan.issues.filter((i) => i.level === 'error').map((i) => i.message)).toEqual([]);
+    applyImport(dst, plan);
+    expect(dst.get('journal_post', p.id)!.mood).toBe('overwhelmed');
+    expect(dst.list('task').find((x) => x.body_md === '等快递')!.mood).toBe('hopeful');
+    const input = { tasks: s.list('task'), types: [], people: [], groups: [], taskPeople: [], journal: s.list('journal_post') };
+    expect(search(input, '崩溃').map((h) => h.id)).toEqual([p.id]);
+    expect(moodCounts(s.journalPosts()).map((m) => m.id)).toEqual(['happy', 'overwhelmed', 'sick']);
+  });
+});

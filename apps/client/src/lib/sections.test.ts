@@ -15,8 +15,11 @@ describe('列表分区 sections', () => {
   it('心情名次：好到坏，没记 / 认不出的最后', () => {
     expect(moodRank('happy')).toBe(0);
     expect(moodRank('angry')).toBe(11);
-    expect(moodRank(null)).toBe(12);
-    expect(moodRank('xx')).toBe(12);
+    // 2026-11-16 加的 19 个排在老的后面
+    expect(moodRank('hopeful')).toBe(12);
+    expect(moodRank('sick')).toBe(30);
+    expect(moodRank(null)).toBe(31);
+    expect(moodRank('xx')).toBe(31);
     const list = [t({ mood: null }), t({ mood: 'sad' }), t({ mood: 'happy' }), t({ mood: 'sad' })];
     expect(sortByMood(list).map((x) => x.mood)).toEqual(['happy', 'sad', 'sad', null]);
     expect(sortByMood(list)[1]).toBe(list[1]);

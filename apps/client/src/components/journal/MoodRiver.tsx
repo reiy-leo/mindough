@@ -12,6 +12,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { Button as RacButton } from 'react-aria-components';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
+  MOOD_IDS,
   fillRiverGaps,
   formatDate,
   getLocale,
@@ -90,12 +91,12 @@ function usePalette(host: HTMLElement | null): Palette | null {
     const bg = toHex(read(v('--bg'), dark ? [28, 28, 30] : [255, 255, 255]));
     const text = toHex(read(v('--text'), dark ? [242, 242, 247] : [28, 28, 30]));
     const moods: Record<string, string> = {};
-    for (const name of Object.keys(MOOD_FALLBACK)) moods[name] = toHex(read(v(`--mood-${name}`), MOOD_FALLBACK[name]!));
+    for (const name of MOOD_IDS) moods[name] = toHex(read(v(`--mood-${name}`), MOOD_FALLBACK[name]));
     setP({ dark, bg, text, moods, plain: document.documentElement.dataset.colorLevel === 'plain' });
   }, [host, skin, theme, colorLevel]);
   return p;
 }
-const MOOD_FALLBACK: Record<string, Rgb> = {
+const MOOD_FALLBACK: Record<MoodId, Rgb> = {
   happy: [247, 201, 92],
   excited: [255, 159, 10],
   grateful: [244, 160, 181],
@@ -108,6 +109,26 @@ const MOOD_FALLBACK: Record<string, Rgb> = {
   sad: [100, 168, 255],
   irritated: [245, 158, 114],
   angry: [255, 105, 97],
+  // 2026-11-16 加的 19 个：同 Apple 暗色令牌
+  hopeful: [220, 188, 51],
+  smitten: [253, 158, 176],
+  warm: [254, 164, 129],
+  proud: [108, 201, 253],
+  touched: [251, 153, 210],
+  relaxed: [88, 217, 168],
+  celebrating: [252, 169, 66],
+  surprised: [17, 214, 231],
+  torn: [210, 187, 140],
+  speechless: [171, 192, 219],
+  blank: [171, 195, 201],
+  awkward: [254, 160, 162],
+  disgusted: [188, 197, 135],
+  nauseous: [156, 207, 127],
+  scared: [182, 181, 253],
+  disappointed: [150, 196, 229],
+  wronged: [212, 173, 230],
+  overwhelmed: [255, 162, 143],
+  sick: [129, 208, 190],
 };
 
 /**

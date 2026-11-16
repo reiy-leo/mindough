@@ -354,7 +354,8 @@
   --fs-body: 15px;
 }
 
-/* 心情颜色（日记，Rei 2026-10-17）：12 个心情 × 三套皮肤 × 明暗。图标线条和月历小点都用它。 */
+/* 心情颜色（日记，Rei 2026-10-17）：12 个心情 × 三套皮肤 × 明暗。图标线条和月历小点都用它。
+   2026-11-16 加 19 个（hopeful 起）：OKLCH 定色相，亮色对白底都 ≥ 3:1；Material 的新颜色不用紫（害怕挪到蓝、感动 / 委屈挪到玫瑰色）。生成脚本在项目工作区 work/mood-more/colors.py。 */
 /* Apple 亮色的开心、满足原来对白底不到 3:1（2.51 / 3.07，在 #f5f5f7 上更低），2026-11-08 心情色用到任务上时加深：#d29a00 → #b07f00、#2fa84f → #28a046 */
 [data-skin='apple'] {
   --mood-happy: #b07f00;
@@ -369,6 +370,25 @@
   --mood-sad: #2e7cf6;
   --mood-irritated: #d4602a;
   --mood-angry: #e0352b;
+  --mood-hopeful: #8d7608;
+  --mood-smitten: #c54064;
+  --mood-warm: #c24e16;
+  --mood-proud: #0481b3;
+  --mood-touched: #b34c8c;
+  --mood-relaxed: #098d66;
+  --mood-celebrating: #a76700;
+  --mood-surprised: #158791;
+  --mood-torn: #8c7440;
+  --mood-speechless: #637995;
+  --mood-blank: #637c83;
+  --mood-awkward: #bd4d56;
+  --mood-disgusted: #767e39;
+  --mood-nauseous: #52882d;
+  --mood-scared: #716abf;
+  --mood-disappointed: #4b7da0;
+  --mood-wronged: #8e64a1;
+  --mood-overwhelmed: #c8452f;
+  --mood-sick: #268977;
 }
 [data-skin='apple'][data-theme='dark'] {
   --mood-happy: #ffd60a;
@@ -383,6 +403,25 @@
   --mood-sad: #64a8ff;
   --mood-irritated: #ff8a50;
   --mood-angry: #ff6961;
+  --mood-hopeful: #dcbc33;
+  --mood-smitten: #fd9eb0;
+  --mood-warm: #fea481;
+  --mood-proud: #6cc9fd;
+  --mood-touched: #fb99d2;
+  --mood-relaxed: #58d9a8;
+  --mood-celebrating: #fca942;
+  --mood-surprised: #11d6e7;
+  --mood-torn: #d2bb8c;
+  --mood-speechless: #abc0db;
+  --mood-blank: #abc3c9;
+  --mood-awkward: #fea0a2;
+  --mood-disgusted: #bcc587;
+  --mood-nauseous: #9ccf7f;
+  --mood-scared: #b6b5fd;
+  --mood-disappointed: #96c4e5;
+  --mood-wronged: #d4ade6;
+  --mood-overwhelmed: #ffa28f;
+  --mood-sick: #81d0be;
 }
 [data-skin='winui'] {
   --mood-happy: #b37a00;
@@ -397,6 +436,25 @@
   --mood-sad: #0063b1;
   --mood-irritated: #c25c1a;
   --mood-angry: #c42b1c;
+  --mood-hopeful: #7f6a0c;
+  --mood-smitten: #b03d5b;
+  --mood-warm: #ad491c;
+  --mood-proud: #0975a2;
+  --mood-touched: #a0477d;
+  --mood-relaxed: #067f5c;
+  --mood-celebrating: #975d04;
+  --mood-surprised: #037a84;
+  --mood-torn: #7e693c;
+  --mood-speechless: #5a6d86;
+  --mood-blank: #5a7076;
+  --mood-awkward: #a9484f;
+  --mood-disgusted: #6a7136;
+  --mood-nauseous: #4c7b2d;
+  --mood-scared: #6661aa;
+  --mood-disappointed: #46718f;
+  --mood-wronged: #7f5b90;
+  --mood-overwhelmed: #b2422e;
+  --mood-sick: #297b6c;
 }
 [data-skin='winui'][data-theme='dark'] {
   --mood-happy: #fce100;
@@ -411,6 +469,25 @@
   --mood-sad: #60cdff;
   --mood-irritated: #f2a074;
   --mood-angry: #ff99a4;
+  --mood-hopeful: #d8bd51;
+  --mood-smitten: #fd9eb0;
+  --mood-warm: #fea480;
+  --mood-proud: #6cc9fd;
+  --mood-touched: #f49fcf;
+  --mood-relaxed: #6cd6ab;
+  --mood-celebrating: #f5ad5a;
+  --mood-surprised: #4ad3e1;
+  --mood-torn: #cfbb93;
+  --mood-speechless: #adbfd7;
+  --mood-blank: #aec2c7;
+  --mood-awkward: #fda0a3;
+  --mood-disgusted: #bcc48f;
+  --mood-nauseous: #a1cd89;
+  --mood-scared: #b7b5fa;
+  --mood-disappointed: #9cc3e0;
+  --mood-wronged: #d1afe1;
+  --mood-overwhelmed: #ffa28f;
+  --mood-sick: #8acdbe;
 }
 [data-skin='material'] {
   --mood-happy: #8a6d00;
@@ -425,6 +502,25 @@
   --mood-sad: #1f62c9;
   --mood-irritated: #9c4a1e;
   --mood-angry: #ba1a1a;
+  --mood-hopeful: #756208;
+  --mood-smitten: #9a4156;
+  --mood-warm: #984a2a;
+  --mood-proud: #046b96;
+  --mood-touched: #924666;
+  --mood-relaxed: #087554;
+  --mood-celebrating: #8b5500;
+  --mood-surprised: #0b707a;
+  --mood-torn: #71613f;
+  --mood-speechless: #566578;
+  --mood-blank: #56676b;
+  --mood-awkward: #94494d;
+  --mood-disgusted: #62683b;
+  --mood-nauseous: #4b6f35;
+  --mood-scared: #386695;
+  --mood-disappointed: #46687f;
+  --mood-wronged: #875256;
+  --mood-overwhelmed: #9c4535;
+  --mood-sick: #347063;
 }
 [data-skin='material'][data-theme='dark'] {
   --mood-happy: #f2c94c;
@@ -439,6 +535,25 @@
   --mood-sad: #a8c7fa;
   --mood-irritated: #ffb59a;
   --mood-angry: #ffb4ab;
+  --mood-hopeful: #d8c477;
+  --mood-smitten: #fda9b8;
+  --mood-warm: #f9b094;
+  --mood-proud: #81cffc;
+  --mood-touched: #f4acc7;
+  --mood-relaxed: #8ad7b6;
+  --mood-celebrating: #efb87c;
+  --mood-surprised: #78d5e0;
+  --mood-torn: #d2c2a4;
+  --mood-speechless: #b7c6d8;
+  --mood-blank: #b8c7cb;
+  --mood-awkward: #f6aeaf;
+  --mood-disgusted: #c2c9a0;
+  --mood-nauseous: #aed09c;
+  --mood-scared: #a0c8f4;
+  --mood-disappointed: #abc9df;
+  --mood-wronged: #e8b5b8;
+  --mood-overwhelmed: #feac9b;
+  --mood-sick: #9ed0c4;
 }
 
 /* 文件类型颜色（附件图标，Rei 2026-10-17）：9 种 × 三套皮肤 × 明暗。图标描边、扩展名、淡色底都用它。 */

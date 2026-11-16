@@ -50,7 +50,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、Agenda 分组 agendaBuckets
   date-grid.ts          日期面板的月历格子（Rei 2026-11-01 方案 A）：公历 / 农历月都排 42 格（含闰月）、翻页 stepView、键盘翻页落点 shiftFocus、点格子规则 clickDay、拖选 dragRange
   timezone.ts           任务时区（Rei 2026-10-25）：task.time_zone（IANA，空 = 跟着设备）、常用 / 全部时区、那天的偏移（夏令时）、taskToday / isTaskOverdue / timeZoneBadge；中文城市名在 timezone-names.ts
-  journal.ts            日记（Rei 2026-10-17）：日期 → 固定 id、「一天从几点开始」、将来不能写、12 个心情 id、字数、同步保护（两边都改时输家收进折叠块，base_at 判断有没有看到对方）
+  journal.ts            日记（Rei 2026-10-17）：日期 → 固定 id、「一天从几点开始」、将来不能写、31 个心情 id（2026-11-16 从 12 个加到 31 个，新的排在后面）、字数、同步保护（两边都改时输家收进折叠块，base_at 判断有没有看到对方）
   merge.ts              资料 / 人物合并：合并后的值与冲突、可能重复的分组、merged_into 解析与成环处理（写入在 Store.mergeLibraryItems / mergePeople）
   links.ts money.ts episode.ts  字段种类的逻辑：站点编号（IMDb / 豆瓣）与更多链接、金额 + 币种、看到第几季第几集
   lookup.ts             在线找资料的纯逻辑：结果形状、按什么找（去季标记、电影 / 剧集）、库里的同一条、自动补全逐项计划；来源存 fields._source
@@ -70,7 +70,7 @@ apps/client/src/
   components/library/   资料库共用件：占位图 ItemArt、选择框 LibraryPicker、资料编辑 ItemEditor / ItemSheet、资料卡 ItemCard
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
-  components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
+  components/journal/   日记：心情图标 MoodIcon（手写 SVG + journal.css 动画，颜色令牌 --mood-*）、心情选择 MoodGrid（一行横滑，日记和任务共用）、心情轮 MoodWheel（半圆、键盘可选）、情绪月历 JournalCalendar + 分布条 MoodSummary、我的一天小卡 JournalCard
   lib/calendar-subs.ts  日历订阅（同步表 calendar_sub）：经 Worker 代拉、事件存本机、到点刷新（useCalendarSubScheduler 挂在 App）、日历页用 useCalendarEvents；设置在 components/CalendarSubs.tsx，样式 styles/calendar.css
   lib/lunar.ts          节假日订阅（原「农历订阅」）：经 Worker /api/calendar/ics 代拉、存 localStorage、到点同步（useLunarSubScheduler 挂在 App）、useLunar(store).day(date)；日期格子小字用 DateGrid 的 LunarMark（DatePanel 也导出），日期标题用 components/LunarLine，设置在 components/CalendarSettings（设置 → 日历）；样式 styles/lunar.css
   pages/Calendar.tsx    日历页（侧栏「计划 → 日历」，路由 id 还是 agenda，地址 #/calendar）

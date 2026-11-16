@@ -83,8 +83,15 @@ export class JournalPostLockedError extends Error {
 
 // ───────────── 心情 ─────────────
 
-/** 心情的稳定 id（存进数据库，不改名）。顺序 = 显示顺序，从好到不好。 */
-export const MOOD_IDS = ['happy', 'excited', 'grateful', 'content', 'calm', 'okay', 'bored', 'tired', 'anxious', 'sad', 'irritated', 'angry'] as const;
+/** 心情的稳定 id（存进数据库，不改名）。顺序 = 显示顺序：原来 12 个从好到不好，2026-11-16 加的 19 个接在后面。 */
+export const MOOD_IDS = [
+  // 2026-10-17 的 12 个，从好到不好
+  'happy', 'excited', 'grateful', 'content', 'calm', 'okay', 'bored', 'tired', 'anxious', 'sad', 'irritated', 'angry',
+  // 2026-11-16 Rei 加的 19 个，接在后面、按他给的顺序（积极 7、中性 4、消极 8）
+  'hopeful', 'smitten', 'warm', 'proud', 'touched', 'relaxed', 'celebrating',
+  'surprised', 'torn', 'speechless', 'blank',
+  'awkward', 'disgusted', 'nauseous', 'scared', 'disappointed', 'wronged', 'overwhelmed', 'sick',
+] as const;
 export type MoodId = (typeof MOOD_IDS)[number];
 export type MoodTone = 'positive' | 'neutral' | 'negative';
 
@@ -107,6 +114,25 @@ const MOOD_TONE: Record<MoodId, MoodTone> = {
   sad: 'negative',
   irritated: 'negative',
   angry: 'negative',
+  hopeful: 'positive',
+  smitten: 'positive',
+  warm: 'positive',
+  proud: 'positive',
+  touched: 'positive',
+  relaxed: 'positive',
+  celebrating: 'positive',
+  surprised: 'neutral',
+  torn: 'neutral',
+  speechless: 'neutral',
+  blank: 'neutral',
+  awkward: 'negative',
+  disgusted: 'negative',
+  nauseous: 'negative',
+  scared: 'negative',
+  disappointed: 'negative',
+  wronged: 'negative',
+  overwhelmed: 'negative',
+  sick: 'negative',
 };
 
 /** 心情的名字（按当前语言）。 */
@@ -136,6 +162,44 @@ export function moodLabel(id: string | null | undefined): string {
       return tr('烦躁');
     case 'angry':
       return tr('生气');
+    case 'hopeful':
+      return tr('期待');
+    case 'smitten':
+      return tr('心动');
+    case 'warm':
+      return tr('温暖');
+    case 'proud':
+      return tr('得意');
+    case 'touched':
+      return tr('感动');
+    case 'relaxed':
+      return tr('放松');
+    case 'celebrating':
+      return tr('庆祝');
+    case 'surprised':
+      return tr('惊讶');
+    case 'torn':
+      return tr('纠结');
+    case 'speechless':
+      return tr('无语');
+    case 'blank':
+      return tr('放空');
+    case 'awkward':
+      return tr('尴尬');
+    case 'disgusted':
+      return tr('厌恶');
+    case 'nauseous':
+      return tr('恶心');
+    case 'scared':
+      return tr('害怕');
+    case 'disappointed':
+      return tr('失望');
+    case 'wronged':
+      return tr('委屈');
+    case 'overwhelmed':
+      return tr('崩溃');
+    case 'sick':
+      return tr('生病');
     default:
       return '';
   }

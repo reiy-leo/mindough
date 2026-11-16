@@ -48,6 +48,25 @@
   --mood-sad: #838388;
   --mood-irritated: #3f3f42;
   --mood-angry: #2a2a2c;
+  --mood-hopeful: #2f2f32;
+  --mood-smitten: #59595c;
+  --mood-warm: #444447;
+  --mood-proud: #6d6d70;
+  --mood-touched: #37373a;
+  --mood-relaxed: #616164;
+  --mood-celebrating: #4c4c4f;
+  --mood-surprised: #767679;
+  --mood-torn: #333336;
+  --mood-speechless: #5d5d60;
+  --mood-blank: #48484b;
+  --mood-awkward: #727275;
+  --mood-disgusted: #3b3b3e;
+  --mood-nauseous: #656568;
+  --mood-scared: #505053;
+  --mood-disappointed: #7a7a7d;
+  --mood-wronged: #404043;
+  --mood-overwhelmed: #69696c;
+  --mood-sick: #555558;
 }
 :root[data-color-level='plain'][data-theme='dark'] {
   --accent: #ececf0;
@@ -81,6 +100,25 @@
   --mood-sad: #8e8e93;
   --mood-irritated: #c0c0c5;
   --mood-angry: #dcdce0;
+  --mood-hopeful: #ececf0;
+  --mood-smitten: #bebec2;
+  --mood-warm: #d5d5d9;
+  --mood-proud: #a8a8ac;
+  --mood-touched: #e3e3e7;
+  --mood-relaxed: #b5b5b9;
+  --mood-celebrating: #ccccd0;
+  --mood-surprised: #9f9fa3;
+  --mood-torn: #e7e7eb;
+  --mood-speechless: #bababe;
+  --mood-blank: #d1d1d5;
+  --mood-awkward: #a3a3a7;
+  --mood-disgusted: #dedee2;
+  --mood-nauseous: #b1b1b5;
+  --mood-scared: #c8c8cc;
+  --mood-disappointed: #9a9a9e;
+  --mood-wronged: #dadade;
+  --mood-overwhelmed: #acacb0;
+  --mood-sick: #c3c3c7;
 }
 /* 焦点圈：Apple / Material 原来是半透明强调色，换成半透明正文色（WinUI 本来就是黑白双线） */
 :root[data-color-level='plain']:not([data-skin='winui']) {

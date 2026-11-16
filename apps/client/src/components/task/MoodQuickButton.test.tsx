@@ -45,7 +45,7 @@ describe('详情顶栏心情按钮', () => {
     expect(btn().classList.contains('is-set')).toBe(false);
     click(btn());
     const opts = document.querySelectorAll('.jmood-opt');
-    expect(opts.length).toBe(12);
+    expect(opts.length).toBe(31);
     click(opts[0]!);
     expect(store.get('task', t.id)!.mood).toBeTruthy();
   });
