@@ -25,13 +25,15 @@ const opts = () => [...host.querySelectorAll<HTMLButtonElement>('.jmood-opt')];
 const key = (k: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })));
 
 describe('MoodGrid', () => {
-  it('31 个按 MOOD_IDS 的顺序排成一行，已选的标出来', () => {
+  it('31 个按 MOOD_IDS 的顺序（从最积极到最消极）排成一行，已选的标出来', () => {
     act(() => root.render(<MoodGrid value="sick" onPick={() => {}} />));
     expect(opts()).toHaveLength(31);
     expect(opts().map((b) => b.querySelector('svg')!.getAttribute('class')!.match(/mood-(?!icon\b)([a-z]+)/)![1])).toEqual([...MOOD_IDS]);
     expect(opts().filter((b) => b.classList.contains('is-selected'))).toHaveLength(1);
-    expect(opts()[30]!.classList.contains('is-selected')).toBe(true);
-    expect(opts()[30]!.textContent).toBe('生病');
+    expect(opts()[20]!.classList.contains('is-selected')).toBe(true);
+    expect(opts()[20]!.textContent).toBe('生病');
+    expect(opts()[0]!.textContent).toBe('庆祝');
+    expect(opts()[30]!.textContent).toBe('崩溃');
   });
 
   it('键盘：→ 下一个，← 上一个，End 最后，Home 第一个', () => {
@@ -64,7 +66,7 @@ describe('MoodGrid', () => {
   it('点已选的那个 = 取消', () => {
     const onPick = vi.fn();
     act(() => root.render(<MoodGrid value="hopeful" onPick={onPick} />));
-    const b = opts()[12]!;
+    const b = opts()[MOOD_IDS.indexOf('hopeful')]!;
     act(() => {
       b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0, pointerId: 1, isPrimary: true }));
       b.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0, pointerId: 1, isPrimary: true }));

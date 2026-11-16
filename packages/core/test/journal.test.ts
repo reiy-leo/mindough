@@ -110,10 +110,9 @@ describe('日记：心情', () => {
     try {
       const en = moods().map((m) => m.label);
       expect(en).toEqual([
-        'Happy', 'Excited', 'Grateful', 'Content', 'Calm', 'Okay', 'Bored', 'Tired', 'Anxious', 'Sad', 'Irritated', 'Angry',
-        'Hopeful', 'Smitten', 'Warm', 'Proud', 'Touched', 'Relaxed', 'Celebrating',
-        'Surprised', 'Torn', 'Speechless', 'Zoned out',
-        'Awkward', 'Disgusted', 'Queasy', 'Scared', 'Disappointed', 'Wronged', 'Overwhelmed', 'Sick',
+        'Celebrating', 'Excited', 'Happy', 'Smitten', 'Hopeful', 'Proud', 'Grateful', 'Touched', 'Warm', 'Content', 'Relaxed',
+        'Calm', 'Okay', 'Zoned out', 'Surprised', 'Speechless', 'Torn', 'Bored',
+        'Tired', 'Awkward', 'Sick', 'Disappointed', 'Sad', 'Wronged', 'Anxious', 'Scared', 'Irritated', 'Disgusted', 'Queasy', 'Angry', 'Overwhelmed',
       ]);
     } finally {
       setLocale('zh');
@@ -126,12 +125,14 @@ describe('日记：心情', () => {
     expect(new Set(moods().map((m) => m.tone))).toEqual(new Set(['positive', 'neutral', 'negative']));
   });
 
-  it('2026-11-16 加的 19 个：接在原来 12 个后面，按 Rei 给的顺序和归类', () => {
-    expect(MOOD_IDS.slice(0, 12)).toEqual(['happy', 'excited', 'grateful', 'content', 'calm', 'okay', 'bored', 'tired', 'anxious', 'sad', 'irritated', 'angry']);
-    const added = moods().slice(12);
-    expect(added.map((m) => m.label)).toEqual(['期待', '心动', '温暖', '得意', '感动', '放松', '庆祝', '惊讶', '纠结', '无语', '放空', '尴尬', '厌恶', '恶心', '害怕', '失望', '委屈', '崩溃', '生病']);
-    expect(added.map((m) => m.tone)).toEqual([...Array(7).fill('positive'), ...Array(4).fill('neutral'), ...Array(8).fill('negative')]);
-    for (const m of added) {
+  it('从最积极到最消极排成梯度（Rei 2026-11-16）：积极 11、中性 7、消极 13，tone 不变', () => {
+    expect(moods().map((m) => m.label)).toEqual(['庆祝', '兴奋', '开心', '心动', '期待', '得意', '感恩', '感动', '温暖', '满足', '放松', '平静', '一般', '放空', '惊讶', '无语', '纠结', '无聊', '疲惫', '尴尬', '生病', '失望', '难过', '委屈', '焦虑', '害怕', '烦躁', '厌恶', '恶心', '生气', '崩溃']);
+    expect(moods().map((m) => m.tone)).toEqual([...Array(11).fill('positive'), ...Array(7).fill('neutral'), ...Array(13).fill('negative')]);
+    // 老 12 个的 tone 没变
+    expect(['happy', 'excited', 'grateful', 'content'].map(moodTone)).toEqual(Array(4).fill('positive'));
+    expect(['calm', 'okay', 'bored'].map(moodTone)).toEqual(Array(3).fill('neutral'));
+    expect(['tired', 'anxious', 'sad', 'irritated', 'angry'].map(moodTone)).toEqual(Array(5).fill('negative'));
+    for (const m of moods()) {
       expect(m.id).toMatch(/^[a-z]+$/);
       expect(isMoodId(m.id)).toBe(true);
       expect(moodTone(m.id)).toBe(m.tone);

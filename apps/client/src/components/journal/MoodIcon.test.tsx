@@ -6,6 +6,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MOOD_IDS } from '@mindough/core';
 import { MoodIcon } from './MoodIcon';
 
+/** 2026-11-16 新加的 19 个（显示顺序改成梯度后不再是 MOOD_IDS 的后 19 个）。 */
+const ADDED_1116 = ['hopeful', 'smitten', 'warm', 'proud', 'touched', 'relaxed', 'celebrating', 'surprised', 'torn', 'speechless', 'blank', 'awkward', 'disgusted', 'nauseous', 'scared', 'disappointed', 'wronged', 'overwhelmed', 'sick'] as const;
+
 const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 describe('心情图标', () => {
@@ -63,7 +66,7 @@ describe('心情样式（2026-11-16 加到 31 个）', () => {
     };
     const mat = [...tokens.matchAll(/\[data-skin='material'\](?:\[data-theme='dark'\])? \{([^}]*)\}/g)].map((m) => m[1] ?? '').filter((b) => b.includes('--mood-happy'));
     for (const b of mat) {
-      for (const id of MOOD_IDS.slice(12)) {
+      for (const id of ADDED_1116) {
         const hex = new RegExp(`--mood-${id}: (#[0-9a-f]{6})`).exec(b)![1]!;
         const h = hue(hex);
         if (h !== null) expect(h < 270 || h > 330, `${id} ${hex} 色相 ${h.toFixed(0)}`).toBe(true);

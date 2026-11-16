@@ -83,14 +83,18 @@ export class JournalPostLockedError extends Error {
 
 // ───────────── 心情 ─────────────
 
-/** 心情的稳定 id（存进数据库，不改名）。顺序 = 显示顺序：原来 12 个从好到不好，2026-11-16 加的 19 个接在后面。 */
+/**
+ * 心情的稳定 id（存进数据库，不改名）。顺序 = 显示顺序：从最积极到最消极排成一道梯度
+ * （Rei 2026-11-16「新加的心情不要放在后面，而是按照 positive、negative 的梯度来排」）。
+ * 选择器、按心情分区、按心情排序、心情河流同样多时的先后，都跟这个顺序走；数据里只存 id，换顺序不动数据。
+ */
 export const MOOD_IDS = [
-  // 2026-10-17 的 12 个，从好到不好
-  'happy', 'excited', 'grateful', 'content', 'calm', 'okay', 'bored', 'tired', 'anxious', 'sad', 'irritated', 'angry',
-  // 2026-11-16 Rei 加的 19 个，接在后面、按他给的顺序（积极 7、中性 4、消极 8）
-  'hopeful', 'smitten', 'warm', 'proud', 'touched', 'relaxed', 'celebrating',
-  'surprised', 'torn', 'speechless', 'blank',
-  'awkward', 'disgusted', 'nauseous', 'scared', 'disappointed', 'wronged', 'overwhelmed', 'sick',
+  // 积极 11 个
+  'celebrating', 'excited', 'happy', 'smitten', 'hopeful', 'proud', 'grateful', 'touched', 'warm', 'content', 'relaxed',
+  // 中性 7 个：平静、一般挨着积极，无聊挨着消极
+  'calm', 'okay', 'blank', 'surprised', 'speechless', 'torn', 'bored',
+  // 消极 13 个
+  'tired', 'awkward', 'sick', 'disappointed', 'sad', 'wronged', 'anxious', 'scared', 'irritated', 'disgusted', 'nauseous', 'angry', 'overwhelmed',
 ] as const;
 export type MoodId = (typeof MOOD_IDS)[number];
 export type MoodTone = 'positive' | 'neutral' | 'negative';

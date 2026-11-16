@@ -396,7 +396,7 @@ describe('Feed 流：搜索', () => {
 });
 
 describe('2026-11-16 加的心情：导入导出、搜索、心情列表照常', () => {
-  it('日记条目和任务记了新心情，导出再导入原样回来；搜心情名搜得到；心情列表排在老心情后面', async () => {
+  it('日记条目和任务记了新心情，导出再导入原样回来；搜心情名搜得到；心情列表一样多时按梯度顺序', async () => {
     const s = await Store.open(new MemoryAdapter(), { deviceId: 'dev1', now: () => local(2026, 11, 16, 9) });
     const p = s.addJournalPost({ body_md: '加班到半夜', mood: 'overwhelmed' })!;
     s.addJournalPost({ body_md: '吃药', mood: 'sick' });
@@ -412,6 +412,6 @@ describe('2026-11-16 加的心情：导入导出、搜索、心情列表照常',
     expect(dst.list('task').find((x) => x.body_md === '等快递')!.mood).toBe('hopeful');
     const input = { tasks: s.list('task'), types: [], people: [], groups: [], taskPeople: [], journal: s.list('journal_post') };
     expect(search(input, '崩溃').map((h) => h.id)).toEqual([p.id]);
-    expect(moodCounts(s.journalPosts()).map((m) => m.id)).toEqual(['happy', 'overwhelmed', 'sick']);
+    expect(moodCounts(s.journalPosts()).map((m) => m.id)).toEqual(['happy', 'sick', 'overwhelmed']);
   });
 });

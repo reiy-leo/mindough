@@ -50,7 +50,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   date-range.ts         日期段（Rei 2026-10-26）：task.end_date（可空、只会晚于 scheduled_date）、normalizeRange、taskEndDate（到期看它）、formatDateRange（「10月26日 – 30日」）、Agenda 分组 agendaBuckets
   date-grid.ts          日期面板的月历格子（Rei 2026-11-01 方案 A）：公历 / 农历月都排 42 格（含闰月）、翻页 stepView、键盘翻页落点 shiftFocus、点格子规则 clickDay、拖选 dragRange
   timezone.ts           任务时区（Rei 2026-10-25）：task.time_zone（IANA，空 = 跟着设备）、常用 / 全部时区、那天的偏移（夏令时）、taskToday / isTaskOverdue / timeZoneBadge；中文城市名在 timezone-names.ts
-  journal.ts            日记（Rei 2026-10-17）：日期 → 固定 id、「一天从几点开始」、将来不能写、31 个心情 id（2026-11-16 从 12 个加到 31 个，新的排在后面）、字数、同步保护（两边都改时输家收进折叠块，base_at 判断有没有看到对方）
+  journal.ts            日记（Rei 2026-10-17）：日期 → 固定 id、「一天从几点开始」、将来不能写、31 个心情 id（2026-11-16 从 12 个加到 31 个，`MOOD_IDS` 顺序从最积极到最消极，就是显示顺序）、字数、同步保护（两边都改时输家收进折叠块，base_at 判断有没有看到对方）
   merge.ts              资料 / 人物合并：合并后的值与冲突、可能重复的分组、merged_into 解析与成环处理（写入在 Store.mergeLibraryItems / mergePeople）
   links.ts money.ts episode.ts  字段种类的逻辑：站点编号（IMDb / 豆瓣）与更多链接、金额 + 币种、看到第几季第几集
   lookup.ts             在线找资料的纯逻辑：结果形状、按什么找（去季标记、电影 / 剧集）、库里的同一条、自动补全逐项计划；来源存 fields._source
