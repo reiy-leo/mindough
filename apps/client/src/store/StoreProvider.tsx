@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useSyncExternalStore, t
 import { DEMO_STAMP_META, SqlAdapter, Store, TABLES, WebStorageAdapter, migrateStorage, seedDemo, type BaseRow, type StorageAdapter } from '@mindough/core';
 import { bindSync } from '../lib/sync';
 import { installCalViewMigration } from '../lib/calendar-view';
+import { installViewPrefsMigration } from '../lib/view-prefs';
 import { installUploader } from '../lib/attachments';
 import { installAttachmentCache } from '../lib/attachment-cache';
 import { installWindowSync, isAuxWindow } from '../lib/windows';
@@ -121,6 +122,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => (store && !isAuxWindow() ? bindSync(store) : undefined), [store]);
   // 日历视图改成同步偏好（Rei 2026-11-13）：登录后第一次同步完，账户里还没有就把本机老设置写上去
   useEffect(() => (store && !isAuxWindow() ? installCalViewMigration(store) : undefined), [store]);
+  // 我的一天 / 等待安排 / 项目页的视图、分区、排序改成同步偏好（Rei 2026-11-16 17:01）：同上，账户里没有才把本机老设置写上去（lib/view-prefs）
+  useEffect(() => (store && !isAuxWindow() ? installViewPrefsMigration(store) : undefined), [store]);
   useEffect(() => (store ? installWindowSync(store) : undefined), [store]);
   useEffect(() => (store ? installWidgetSnapshot(store) : undefined), [store]);
   // 附件上传队列：只在主窗口跑（和同步一样）

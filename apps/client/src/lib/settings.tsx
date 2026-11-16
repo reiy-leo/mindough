@@ -37,7 +37,9 @@ export interface Settings {
   habitHeatmapOpen: string[];
   /**
    * 每个项目选的视图和排序（Rei 2026-10-26「每个项目的视图支持列表、看板、时间轴」）：项目 id → 视图 / 排序 / 正倒序 / 时间轴缩放。
-   * 只记在本机，不同步，不改项目的数据结构。读写经 lib/project-view 的 normalizePrefs（认不出的值、以前的关系图都回落成列表）。
+   * 2026-11-16 17:01 起视图、排序、正倒序、缩放、分区改存同步偏好 project_view.<id>.*（Rei「项目的视图、分区、排序这些设置也要同步」，lib/view-prefs）：
+   * 这里的这几项只当老值——登录同步完、账户里这个项目一项都没有时写上去一次，没登录时读它，不再写。
+   * 只在本机的还是这里：collapsed（收起了哪几段）、endedOpen（「已结束」展开没有）。读写经 lib/view-hooks 的 useProjectPrefs。
    */
   projectViews: Record<string, unknown>;
   /**
@@ -71,7 +73,9 @@ export interface Settings {
   strictMode: boolean;
   /**
    * 别的列表页的分区 / 排序（Rei 2026-11-08「我的一天、项目中 右上角功能区添加一个分区」「所有列表支持不分区」）：
-   * 页名（myday / doable）→ { section, sort, collapsed }；已完成 2026-11-12 起固定按日期、不再存（旧的 done 键留着不读）。只记在本机，不同步（同 projectViews）。读写经 lib/list-views。
+   * 页名（myday / backlog / doable / countdown）→ { section, sort, collapsed … }；已完成 2026-11-12 起固定按日期、不再存（旧的 done 键留着不读）。
+   * 2026-11-16 17:01 起我的一天、等待安排的分区 / 排序改存同步偏好 list_view.<页>.*（lib/view-prefs），这里的只当老值迁移 / 没登录时的退路；
+   * 收起了哪几段（collapsed）还在这里，只在本机。倒数日（countdown）整份仍只在本机（lib/countdown-view）。读写经 lib/view-hooks 的 useListView。
    */
   listViews: Record<string, unknown>;
   /**

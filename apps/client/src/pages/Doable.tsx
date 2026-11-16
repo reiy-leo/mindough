@@ -3,7 +3,7 @@ import { useStore } from '../store/StoreProvider';
 import { Empty } from '../ui/primitives';
 import { TaskRow } from '../components/TaskRow';
 import { SectionedList } from '../components/SectionedList';
-import { useListView } from '../lib/list-views';
+import { useListView } from '../lib/view-hooks';
 import { backlogSections } from '../lib/sections';
 
 import { tr } from '../lib/i18n';

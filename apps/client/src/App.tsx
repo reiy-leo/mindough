@@ -39,6 +39,7 @@ import { SearchPage } from './pages/Search';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
 import { useMentionSource } from './lib/task-mention';
+import { projectPrefsOf } from './lib/view-hooks';
 import { detailInModal, JOURNAL_MIN, listMinFor, paneFits, WIDE_MIN } from './lib/detail-pane';
 import { DetailModal } from './components/task/DetailModal';
 import { DeepLinks } from './components/DeepLinks';
@@ -865,7 +866,8 @@ export function App() {
   // 切进看板那一下把开着的详情收起来；切回列表右列照旧（空状态或之后点开的任务）。
   // 日记页：右列放上去日记还剩 JOURNAL_MIN 才并排，不然详情用浮层盖在日记上，不挤日记（Rei 2026-11-13 01:21「正确应该不要挤压」）。
   const journalFits = useJournalPaneFits();
-  const boardModal = layout === 'desktop' && detailInModal(route, settings.projectViews, journalFits ? Infinity : 0);
+  // 项目视图是同步偏好（lib/view-prefs），收起状态在本机设置：两边合起来看（projectPrefsOf）
+  const boardModal = layout === 'desktop' && detailInModal(route, route.page === 'group' ? { [route.id]: projectPrefsOf(store, settings.projectViews, route.id) } : {}, journalFits ? Infinity : 0);
   const wasBoardModal = useRef(boardModal);
   const wasJournalFits = useRef(journalFits);
   useEffect(() => {

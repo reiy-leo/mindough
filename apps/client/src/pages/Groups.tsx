@@ -23,7 +23,8 @@ import { SectionedList } from '../components/SectionedList';
 import { categorySectionOrder, milestoneSectionOrder, sectionTasks } from '../lib/sections';
 import { useSettings } from '../lib/settings';
 import { useColorLevel } from '../lib/color-level';
-import { normalizePrefs, PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
+import { PROJECT_SECTIONS, sortTasks, type ProjectViewPrefs } from '../lib/project-view';
+import { useProjectPrefs } from '../lib/view-hooks';
 
 import { dataLabel, tr, trc } from '../lib/i18n';
 
@@ -164,13 +165,12 @@ export function GroupsPage() {
  * 单个项目的任务页（Rei 2026-10-26：「每个项目的视图支持列表、看板、时间轴，排序支持创建时间、修改时间、开始时间、到期时间，正序、倒序。
  * 视图和排序放在右上角图标按钮，点击dropdown。新建任务也统一换成输入框。标题和图标左上角，小一点，和右侧图标对齐」；
  * 同日「关系图完全去掉」「添加另外一个视图：任务链」「把项目中的任务关系按照任务链排列」）。
- * 视图、排序每个项目单独记在本机设置（settings.projectViews，不同步）；逻辑见 lib/project-view。
+ * 视图、排序、分区每个项目各记一份，跟着账户同步（Rei 2026-11-16 17:01，同步偏好 project_view.<id>.*，lib/view-prefs）；
+ * 分区收起状态、「已结束」展开没有只在本机（settings.projectViews）。逻辑见 lib/project-view。
  */
 export function GroupDetailPage({ id }: { id: string }) {
   const store = useStore();
-  const { settings, set } = useSettings();
-  const prefs = normalizePrefs(settings.projectViews[id]);
-  const setPrefs = (patch: Partial<ProjectViewPrefs>) => set('projectViews', { ...settings.projectViews, [id]: { ...prefs, ...patch } });
+  const [prefs, setPrefs] = useProjectPrefs(id);
   const g = store.get('group', id);
   if (!g) return <Empty title={tr('找不到这个项目')} hint={tr('可能已经删除了')} />;
   const tasks: Task[] = sortTasks(
