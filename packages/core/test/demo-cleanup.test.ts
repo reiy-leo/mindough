@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Store, MemoryAdapter, seedDemo, clearOldDemoRows, oldDemoRows, TABLES, type BaseRow } from '../src';
+import { Store, MemoryAdapter, seedDemo, clearOldDemoRows, demoBatchWrites, oldDemoRows, TABLES, type BaseRow } from '../src';
 
 async function seeded() {
   let t = Date.parse('2026-11-01T08:00:00Z');
@@ -30,13 +30,50 @@ describe('清除旧演示数据', () => {
     expect(oldDemoRows(store, stamp)).toEqual([]);
   });
 
-  it('改过的演示任务留着，它挂着的演示行也留着', async () => {
+  it('不给 outbox 记录：改过的演示任务认不出来，留着（同步过的设备）', async () => {
     const { store, stamp } = await seeded();
     const withGroup = store.tasks().find((t) => t.group_id)!;
     store.updateTask(withGroup.id, { body_md: '我改过这件\n' });
     clearOldDemoRows(store, stamp);
     expect(store.get('task', withGroup.id)).toBeTruthy();
     expect(store.get('group', withGroup.group_id!)).toBeTruthy();
+  });
+
+  it('outbox 里还有当初那一笔：改过的演示任务也删，它的项目也删（Rei 2026-11-19「不要留」）', async () => {
+    const { store, stamp } = await seeded();
+    await store.flush();
+    const withGroup = store.tasks().find((t) => t.group_id)!;
+    store.updateTask(withGroup.id, { body_md: '我改过这件\n' });
+    await store.flush();
+    const batch = await demoBatchWrites(store, stamp);
+    expect(batch.size).toBeGreaterThan(0);
+    clearOldDemoRows(store, stamp, batch);
+    expect(store.get('task', withGroup.id)).toBeFalsy();
+    expect(store.get('group', withGroup.group_id!)).toBeFalsy();
+    expect(store.tasks().length).toBe(0);
+    expect(oldDemoRows(store, stamp, await demoBatchWrites(store, stamp))).toEqual([]);
+  });
+
+  it('在演示打卡上新打的卡、打卡存档出来的任务：跟着删', async () => {
+    const { store, stamp } = await seeded();
+    await store.flush();
+    const habit = store.tasks().find((t) => t.completion_mode === 'count' || t.completion_mode === 'times') ?? store.tasks().find((t) => t.recurrence)!;
+    store.updateTask(habit.id, { body_md: '演示打卡\n\n今天的心得' });
+    store.insert('check_in', { task_id: habit.id, period_key: '2026-11-02', kind: 'done', value: 1, note: '', at: new Date().toISOString() } as never);
+    await store.flush();
+    const batch = await demoBatchWrites(store, stamp);
+    clearOldDemoRows(store, stamp, batch);
+    expect(store.get('task', habit.id)).toBeFalsy();
+    expect(store.list('check_in').filter((c) => (c as { task_id: string }).task_id === habit.id)).toEqual([]);
+    expect(store.tasks().length).toBe(0);
+  });
+
+  it('演示建的类型不删，改成不显示', async () => {
+    const { store, stamp } = await seeded();
+    const before = store.categories().filter((c) => !c.hidden && store.categoryState(c.id) !== 'hidden').length;
+    clearOldDemoRows(store, stamp);
+    const after = store.categories().filter((c) => store.categoryState(c.id) !== 'hidden').length;
+    expect(after).toBeLessThan(before);
   });
 
   it('自己新建的任务挂着演示人物：人物留着', async () => {

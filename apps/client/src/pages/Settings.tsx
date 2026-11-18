@@ -14,7 +14,7 @@ import { useUi } from '../lib/ui';
 import { autostartEnabled, autostartSupported, minimizeOnAutostart, setAutostart, setMinimizeOnAutostart } from '../lib/autostart';
 import { normalizeStartPage, START_PAGES, type StartPage } from '../lib/start-page';
 import { normalizeToastPosition, TOAST_POSITIONS, type ToastPosition } from '../lib/toast-position';
-import { addDays, clearOldDemoRows, DATE_DISPLAYS, DEMO_STAMP_META, formatTaskDate, isChineseLocale, oldDemoRows, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
+import { addDays, clearOldDemoRows, DATE_DISPLAYS, demoBatchWrites, DEMO_STAMP_META, formatTaskDate, isChineseLocale, oldDemoRows, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
 import { Button, ConfirmDialog, Section, Segmented, Select, Switch } from '../ui/primitives';
 import { DemoOffDialog } from '../components/DemoMode';
 import { isDemoMode, switchDemoMode } from '../lib/demo-mode';
@@ -746,7 +746,7 @@ function DateDisplaySection() {
  * - 开关：开了换到演示库（演示库保留上次的样子，没生成过就生成），关之前弹确认。都会整页重载。
  * - 重置演示数据：只在演示模式下有，只清演示库、重新生成。生产库里原来那个「重置演示数据」（清空本机全部）去掉了。
  * - 清除旧演示数据：只在生产库、而且查到以前混进来的演示数据时有（core demo-cleanup.ts）。清完这一行就不见了。
- *   【代定】只删没动过的演示行；Rei 还没最终确认是不是要全删。
+ *   Rei 2026-11-19 定：全删，改过的也删（演示那一批写进来的都算，见 core demo-cleanup.ts）。
  */
 function DemoModeRows() {
   const store = useStore();
@@ -757,12 +757,17 @@ function DemoModeRows() {
   const [resetOpen, setResetOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [stamp, setStamp] = useState<string | null>(null);
+  // outbox 里演示那一批写的行：认出改过的演示行（Rei 2026-11-19「不要留」）
+  const [batch, setBatch] = useState<ReadonlySet<string>>(new Set());
   useEffect(() => {
     if (demo) return;
-    void store.adapter.getMeta(DEMO_STAMP_META).then((v) => setStamp(v ?? ''));
+    void store.adapter.getMeta(DEMO_STAMP_META).then(async (v) => {
+      setBatch(await demoBatchWrites(store, v));
+      setStamp(v ?? '');
+    });
   }, [store, demo]);
   // 只在生产库算；数据一变重算（清完就是 0，这一行跟着消失）
-  const oldRows = useMemo(() => (demo || !stamp ? 0 : oldDemoRows(store, stamp).length), [store, store.version, demo, stamp]);
+  const oldRows = useMemo(() => (demo || !stamp ? 0 : oldDemoRows(store, stamp, batch).length), [store, store.version, demo, stamp, batch]);
   return (
     <>
       <div className="setting">
@@ -792,7 +797,7 @@ function DemoModeRows() {
           <div className="setting-text">
             <div className="setting-name">{tr('清除旧演示数据')}</div>
             <div className="setting-hint">
-              {tr('这台设备第一次打开时生成的演示数据还混在你的数据里。只清没动过的 {n} 条，改过的留着。', { n: oldRows })}
+              {tr('这台设备第一次打开时生成的演示数据还混在你的数据里，一共 {n} 条，改过的也算在内。', { n: oldRows })}
               {sync.enabled ? ` ${tr('已登录：删除会同步到你的其他设备。')}` : ''}
             </div>
           </div>
@@ -819,11 +824,11 @@ function DemoModeRows() {
         isOpen={clearOpen}
         onOpenChange={setClearOpen}
         title={tr('清除旧演示数据？')}
-        message={tr('删掉没动过的 {n} 条演示数据。你自己建的、改过的都留着。', { n: oldRows })}
+        message={tr('删掉这 {n} 条旧演示数据，改过的也删。你自己建的不动。', { n: oldRows })}
         confirmLabel={tr('清除')}
         danger
         onConfirm={() => {
-          const n = clearOldDemoRows(store, stamp);
+          const n = clearOldDemoRows(store, stamp, batch);
           toast({ tone: 'success', message: tr('已清除 {n} 条旧演示数据', { n }) });
         }}
       />
