@@ -203,6 +203,26 @@
 [data-skin='winui'][data-theme='dark'] .app-desktop .main {
   background: rgba(58, 58, 58, 0.3);
 }
+/* 顶部固定块（我的一天/等待安排/项目/打卡/日记/资料库/人物/搜索/过期积压）：内容层是叠在 Mica 上的半透明白，
+   固定块原来涂不透明的页面底色，就显出一块灰（Rei 2026-11-18）。没滚动时透明，和内容层一样；
+   滚动后（is-stuck）才用半透明 + 模糊盖住底下滚过的行，像 WinUI 的亚克力。手机布局不改。 */
+[data-skin='winui'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky) {
+  background: transparent;
+  background-image: none;
+}
+[data-skin='winui'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck {
+  background: rgba(249, 249, 249, 0.82);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+[data-skin='winui'][data-theme='dark'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck {
+  background: rgba(44, 44, 44, 0.82);
+}
+[data-skin='winui'] .app-desktop .project-head-sticky .add-bar-sticky.is-stuck {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 [data-skin='winui'] .page-icon {
   background: transparent;
   width: 28px;
