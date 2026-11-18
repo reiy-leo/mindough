@@ -57,7 +57,7 @@ describe('清除旧演示数据', () => {
   it('在演示打卡上新打的卡、打卡存档出来的任务：跟着删', async () => {
     const { store, stamp } = await seeded();
     await store.flush();
-    const habit = store.tasks().find((t) => t.completion_mode === 'count' || t.completion_mode === 'times') ?? store.tasks().find((t) => t.recurrence)!;
+    const habit = store.tasks().find((t) => t.completion_mode === 'count') ?? store.tasks().find((t) => t.recurrence)!;
     store.updateTask(habit.id, { body_md: '演示打卡\n\n今天的心得' });
     store.insert('check_in', { task_id: habit.id, period_key: '2026-11-02', kind: 'done', value: 1, note: '', at: new Date().toISOString() } as never);
     await store.flush();
