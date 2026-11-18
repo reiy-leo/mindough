@@ -1,10 +1,11 @@
 //! 桌面菜单栏：File → Import → Dida365（中文界面：文件 → 导入 → 滴答清单）；「设置…」（⌘, / Ctrl+,，Rei 2026-10-26）。
 //! - macOS：全局菜单，保留标准的 App / 编辑 / 窗口菜单（复制粘贴、撤销、全选的快捷键靠「编辑」菜单）。
-//! - Windows / Linux：只给主窗口加一条「文件」菜单（导入、退出），不加编辑菜单，免得抢 WebView 自己的快捷键。
+//! - Linux：只给主窗口加一条「文件」菜单（导入、退出），不加编辑菜单，免得抢 WebView 自己的快捷键。
+//! - Windows：不显示菜单栏（Rei 2026-11-18）；滴答清单导入在 设置 → 数据，Ctrl+, 由前端接。
 //! 启动时先用英文建好（macOS 一开窗就要有编辑菜单）；前端定下界面语言后调 set_app_menu 换成对应文字（文字走前端的 tr()）。
 //! 点「Dida365」发事件 `mindough:menu`（payload `import-dida365`）给主窗口，前端打开导入窗口。
 //! 点「设置…」发 `open-settings` 给主窗口，前端开（或叫到前面）设置窗口（label settings，lib/windows.ts）。
-//! macOS 的「设置…」在 App 菜单「关于」下面；Windows / Linux 在「文件」菜单里。
+//! macOS 的「设置…」在 App 菜单「关于」下面；Linux 在「文件」菜单里。
 
 use serde::Deserialize;
 
@@ -72,9 +73,11 @@ impl Default for MenuLabels {
 #[cfg(desktop)]
 mod desktop {
     use super::*;
+    #[cfg(not(windows))]
     use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
     use tauri::{AppHandle, Emitter, Manager, Runtime};
 
+    #[cfg(not(windows))]
     fn build<R: Runtime>(app: &AppHandle<R>, l: &MenuLabels) -> tauri::Result<Menu<R>> {
         let dida = MenuItem::with_id(app, IMPORT_DIDA_ID, &l.dida365, true, None::<&str>)?;
         let import = Submenu::with_items(app, &l.import, true, &[&dida])?;
@@ -153,7 +156,9 @@ mod desktop {
         }
     }
 
-    /// 建好菜单并装上（macOS 全局；其他只装在主窗口上）。
+    /// 建好菜单并装上（macOS 全局；Linux 只装在主窗口上）。
+    /// Windows 不装菜单栏（Rei 2026-11-18「Windows中不显示菜单栏」）：滴答清单导入在 设置 → 数据，Ctrl+, 由前端 App.tsx 接。
+    #[cfg(not(windows))]
     pub fn install<R: Runtime>(app: &AppHandle<R>, labels: &MenuLabels) -> tauri::Result<()> {
         let menu = build(app, labels)?;
         #[cfg(target_os = "macos")]
@@ -166,6 +171,11 @@ mod desktop {
                 w.set_menu(menu)?;
             }
         }
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    pub fn install<R: Runtime>(_app: &AppHandle<R>, _labels: &MenuLabels) -> tauri::Result<()> {
         Ok(())
     }
 
