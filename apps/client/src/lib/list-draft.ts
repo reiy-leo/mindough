@@ -9,8 +9,10 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { imeComposing } from './live-save';
+import { isDemoMode } from './demo-mode';
 
 export const DRAFT_PREFIX = 'mindough:draft:';
+export const DEMO_DRAFT_PREFIX = 'mindough:demo:draft:';
 
 export interface ListDraft {
   text: string;
@@ -19,7 +21,8 @@ export interface ListDraft {
 
 /** 草稿的键：页面名，项目页再带上项目 id。 */
 export function draftKey(page: string, id?: string | null): string {
-  return DRAFT_PREFIX + (id ? `${page}:${id}` : page);
+  // 演示模式的草稿另放（Rei 2026-11-18）：演示里打的字不会出现在生产库的添加框里
+  return (isDemoMode() ? DEMO_DRAFT_PREFIX : DRAFT_PREFIX) + (id ? `${page}:${id}` : page);
 }
 
 function kv(): Storage | null {

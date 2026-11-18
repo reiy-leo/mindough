@@ -15,6 +15,7 @@
  *   日历「+」的草稿同样：什么都没碰关掉直接丢；只写了字又删光、属性没动，删（已落盘，写墓碑）；改了日期等属性没写字，留下。
  *   我的一天行不算（新建时会自动放进去）。旧会话里只记了 id 没记签名的，照原来的规则（正文空就删）。
  */
+import { modeKey } from './demo-mode';
 import { formatRecurrence, newCountConfig, type NewTaskInput, type Store, type Task } from '@mindough/core';
 
 export type BlankKind = 'checkin' | 'countdown';
@@ -24,7 +25,7 @@ const SIG_KEY = 'mindough:blank-sigs';
 
 function readDrafts(): string[] {
   try {
-    const v = JSON.parse(sessionStorage.getItem(KEY) ?? '[]');
+    const v = JSON.parse(sessionStorage.getItem(modeKey(KEY)) ?? '[]');
     return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
   } catch {
     return [];
@@ -33,8 +34,8 @@ function readDrafts(): string[] {
 
 function writeDrafts(ids: string[]) {
   try {
-    if (ids.length) sessionStorage.setItem(KEY, JSON.stringify(ids));
-    else sessionStorage.removeItem(KEY);
+    if (ids.length) sessionStorage.setItem(modeKey(KEY), JSON.stringify(ids));
+    else sessionStorage.removeItem(modeKey(KEY));
   } catch {
     /* 存不了就算了：最多留下一条空任务 */
   }
@@ -42,7 +43,7 @@ function writeDrafts(ids: string[]) {
 
 function readSigs(): Record<string, string> {
   try {
-    const v = JSON.parse(sessionStorage.getItem(SIG_KEY) ?? '{}');
+    const v = JSON.parse(sessionStorage.getItem(modeKey(SIG_KEY)) ?? '{}');
     return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string>) : {};
   } catch {
     return {};
@@ -51,8 +52,8 @@ function readSigs(): Record<string, string> {
 
 function writeSigs(sigs: Record<string, string>) {
   try {
-    if (Object.keys(sigs).length) sessionStorage.setItem(SIG_KEY, JSON.stringify(sigs));
-    else sessionStorage.removeItem(SIG_KEY);
+    if (Object.keys(sigs).length) sessionStorage.setItem(modeKey(SIG_KEY), JSON.stringify(sigs));
+    else sessionStorage.removeItem(modeKey(SIG_KEY));
   } catch {
     /* 存不了：离开时按原规则（正文空就删） */
   }

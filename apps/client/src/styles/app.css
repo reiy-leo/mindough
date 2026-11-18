@@ -188,6 +188,62 @@ button {
   border-right: 1px solid var(--border);
   overflow-y: auto;
 }
+/* 演示模式小徽标（Rei 2026-11-18，components/DemoMode.tsx）：侧栏最上面、手机抽屉标题下面。
+   小胶囊，灰底细边，烧瓶图标用 --warning（素净档里 --warning 本来就是灰）。不抢眼，点了弹确认关闭。 */
+.demo-badge {
+  display: inline-flex;
+  flex: none; /* 侧栏、抽屉都是会滚动的竖排 flex，别被压扁 */
+  align-items: center;
+  align-self: flex-start;
+  gap: 5px;
+  height: 24px;
+  max-width: 100%;
+  padding: 0 9px 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.demo-badge[data-hovered] {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.demo-badge[data-pressed] {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+.demo-badge[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.demo-badge-icon {
+  flex: none;
+  color: var(--warning);
+}
+.demo-badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 中等宽度的图标栏：只留图标，居中 */
+.demo-badge.is-compact {
+  align-self: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+}
+/* 手机抽屉：和标题对齐，稍大一点好点 */
+.demo-badge.is-drawer {
+  height: 28px;
+  margin: 0 0 var(--space-2) var(--space-3);
+  padding: 0 11px 0 9px;
+  font-size: 13px;
+}
 .sidebar-search {
   display: flex;
   align-items: center;

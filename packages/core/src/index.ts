@@ -60,6 +60,7 @@ export * from './category-prefs';
 export * from './task-match';
 export * from './task-mention';
 export * from './seed/demo';
+export * from './demo-cleanup';
 export * from './sync/protocol';
 export * from './sync/engine';
 export * from './sync/memory-remote';

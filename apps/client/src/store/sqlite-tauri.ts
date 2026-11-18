@@ -14,17 +14,27 @@ export function isTauri(): boolean {
  * 「cannot start a transaction within a transaction」（Rei 2026-10-26 在 pnpm tauri dev 里遇到）。
  * 所以同一个窗口只建一次驱动，后来的调用拿同一个。
  */
-let shared: Promise<SqlDriver> | null = null;
+const shared = new Map<string, Promise<SqlDriver>>();
 
-export function openTauriSqlite(): Promise<SqlDriver> {
-  shared ??= (async () => {
-    const { invoke } = await import('@tauri-apps/api/core');
-    return {
-      kind: 'tauri-rusqlite',
-      exec: (sql: string) => invoke<void>('db_exec', { sql }),
-      run: (sql: string, params: readonly SqlValue[] = []) => invoke<void>('db_run', { sql, params }),
-      all: <T,>(sql: string, params: readonly SqlValue[] = []) => invoke<T[]>('db_all', { sql, params }),
-    };
-  })();
-  return shared;
+/**
+ * file 不给 = 生产库 mindough.db；演示模式给 mindough-demo.db（Rei 2026-11-18，Rust 端 db.rs 只认这两个名字）。
+ * 每条命令都带上 file，Rust 那边每个文件一条连接。
+ */
+export function openTauriSqlite(file?: string): Promise<SqlDriver> {
+  const k = file ?? '';
+  let p = shared.get(k);
+  if (!p) {
+    p = (async () => {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const f = file ? { file } : {};
+      return {
+        kind: 'tauri-rusqlite',
+        exec: (sql: string) => invoke<void>('db_exec', { sql, ...f }),
+        run: (sql: string, params: readonly SqlValue[] = []) => invoke<void>('db_run', { sql, params, ...f }),
+        all: <T,>(sql: string, params: readonly SqlValue[] = []) => invoke<T[]>('db_all', { sql, params, ...f }),
+      };
+    })();
+    shared.set(k, p);
+  }
+  return p;
 }

@@ -7,13 +7,14 @@
  * - account：登录 / 退出了，别的窗口重新查账户
  * - sync-view / sync-view-request / sync-now：同步只在主窗口跑，设置窗口要看状态、按「立即同步」
  * - reload：设置窗口里重置了演示数据，主窗口也要重新载入
+ * - mode：开 / 关了演示模式，别的窗口存好手上的改动后也重新载入（lib/demo-mode.ts）
  * Web 端不是 Tauri，什么都不发（同一浏览器的别的标签页靠 storage 事件，见 lib/settings.tsx）。
  */
 import { isTauri } from '../store/sqlite-tauri';
 
 const EVENT = 'mindough:relay';
 
-export type RelayKind = 'settings' | 'reminders' | 'account' | 'sync-view' | 'sync-view-request' | 'sync-now' | 'reload';
+export type RelayKind = 'settings' | 'reminders' | 'account' | 'sync-view' | 'sync-view-request' | 'sync-now' | 'reload' | 'mode';
 
 interface RelayMsg {
   from: string;

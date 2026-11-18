@@ -1,6 +1,8 @@
 import { installStrictGuard, useStrictSync } from './lib/strict';
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { DemoModeBadge } from './components/DemoMode';
+import { isDemoMode } from './lib/demo-mode';
 import { Dialog, Heading, Modal, ModalOverlay, Button as RacButton } from 'react-aria-components';
 import { Calendar, CalendarCheck2, CalendarClock, CircleCheck, ChevronRight, Hourglass, Library, MoreHorizontal, NotebookPen, Search, Settings, Inbox, Shapes, Sun, Tags, X, type LucideIcon } from 'lucide-react';
 import { href, navigate, parseHash, useRoute, type Route, type SettingsSection } from './lib/router';
@@ -628,6 +630,8 @@ function MobileDrawer({ isOpen, onOpenChange, children }: { isOpen: boolean; onO
             <Heading slot="title" id="drawer-title" className="drawer-title">
               {appName()}
             </Heading>
+            {/* 演示模式（Rei 2026-11-18）：手机没有悬停，点按就弹确认 */}
+            <DemoModeBadge className="is-drawer" />
             {children}
           </div>
         </Dialog>
@@ -789,6 +793,8 @@ export function App() {
       if (!myDayTap.current(e.timeStamp)) return;
       const show = (t: TapSyncToast) =>
         uiToast({ tone: t.tone, message: t.message, actions: t.toSettings ? [{ label: tr('去设置'), onPress: () => navigate({ page: 'settings', section: 'account' }) }] : undefined });
+      // 演示模式完全不同步（Rei 2026-11-18）
+      if (isDemoMode()) return show({ tone: 'info', message: tr('演示模式下不同步'), toSettings: true });
       const gate = tapSyncGate(getAccount(), getSyncView(), navigator.onLine !== false, tapBusy.current);
       if (gate) return show(gate);
       tapBusy.current = true;
@@ -889,6 +895,8 @@ export function App() {
         <aside className="sidebar">
           {/* macOS 无标题栏时给红绿灯让位、可拖动窗口（双击放大）；其他平台不显示 */}
           <div className="titlebar-space" data-tauri-drag-region aria-hidden />
+          {/* 演示模式（Rei 2026-11-18）：侧栏最上面一个小徽标，点了确认关闭 */}
+          <DemoModeBadge compact={narrow} />
           <RacButton className="sidebar-search" aria-label={tr('搜索')} onPress={() => ui.setPaletteOpen(true)}>
             <Search size={15} />
             <span className="grow">{tr('搜索')}</span>

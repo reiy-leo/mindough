@@ -1783,3 +1783,19 @@
 [data-skin='material'] .drawer-foot {
   border-top-color: var(--border);
 }
+
+/* 演示模式小徽标（Rei 2026-11-18）：Apple 胶囊（默认）；WinUI 是 4px 圆角的小标签，底色跟着 Mica 侧栏半透明；Material 是 8dp 圆角的 assist chip 样子 */
+[data-skin='winui'] .demo-badge {
+  border-radius: 4px;
+  background: var(--surface);
+}
+[data-skin='material'] .demo-badge {
+  height: 26px;
+  border-radius: 8px;
+  border-color: var(--border-strong);
+  background: transparent;
+}
+[data-skin='material'] .demo-badge.is-drawer {
+  height: 32px;
+  margin-left: var(--space-4);
+}

@@ -89,6 +89,13 @@ export async function openWebSqlite(file = WEB_DB_FILE): Promise<SqlDriver | nul
   return driver;
 }
 
+/** 关掉本页的数据库（放开 OPFS 句柄），好换另一个库文件（演示模式第一次启动时用）。 */
+export async function closeWebSqlite(): Promise<void> {
+  const d = current;
+  current = null;
+  await d?.close();
+}
+
 /** 被别的标签页「在这里用」抢走时：停掉本页的数据库线程。 */
 export function terminateWebSqlite() {
   current?.terminate();

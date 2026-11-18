@@ -3,6 +3,7 @@
  * 离线、没登录、传失败都不丢；传好了就删。也是没传上去之前本机看图、下载的来源。
  * 没有 IndexedDB 的环境（测试、隐私模式）退回内存（关掉页面就没了，界面照样能用）。
  */
+import { isDemoMode } from './demo-mode';
 export interface PendingFile {
   id: string;
   file: Blob;
@@ -28,6 +29,8 @@ export function memoryQueue(): PendingQueue {
 }
 
 const DB = 'mindough-files';
+/** 演示模式的附件另放一个库（Rei 2026-11-18）：生产库的上传队列看不到演示附件，不会传上云，也不会当成「行已删」清掉。 */
+const DEMO_DB = 'mindough-files-demo';
 const STORE = 'pending';
 
 function req<T>(r: IDBRequest<T>): Promise<T> {
@@ -37,11 +40,11 @@ function req<T>(r: IDBRequest<T>): Promise<T> {
   });
 }
 
-export function idbQueue(factory: IDBFactory = indexedDB): PendingQueue {
+export function idbQueue(factory: IDBFactory = indexedDB, name: string = isDemoMode() ? DEMO_DB : DB): PendingQueue {
   let opened: Promise<IDBDatabase> | null = null;
   const db = () =>
     (opened ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const r = factory.open(DB, 1);
+      const r = factory.open(name, 1);
       r.onupgradeneeded = () => {
         if (!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE, { keyPath: 'id' });
       };

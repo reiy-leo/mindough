@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Radio, RadioGroup } from 'react-aria-components';
 import { AlertCircle, ArrowLeftRight, Bell, Calendar as CalendarIcon, CalendarCheck2, ChevronLeft, ChevronRight, CircleUser, Clock, CloudCheck, CloudOff, Database, Info, Laptop, NotebookPen, ListTodo, LogIn, LogOut, MonitorCog, MonitorSmartphone, Palette, RefreshCw, Settings as SettingsIcon, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { href, isSettingsSection, navigate, useRoute, type SettingsSection } from '../lib/router';
@@ -14,8 +14,10 @@ import { useUi } from '../lib/ui';
 import { autostartEnabled, autostartSupported, minimizeOnAutostart, setAutostart, setMinimizeOnAutostart } from '../lib/autostart';
 import { normalizeStartPage, START_PAGES, type StartPage } from '../lib/start-page';
 import { normalizeToastPosition, TOAST_POSITIONS, type ToastPosition } from '../lib/toast-position';
-import { addDays, DATE_DISPLAYS, formatTaskDate, isChineseLocale, resetSyncState, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
-import { Button, Section, Segmented, Select, Switch } from '../ui/primitives';
+import { addDays, clearOldDemoRows, DATE_DISPLAYS, DEMO_STAMP_META, formatTaskDate, isChineseLocale, oldDemoRows, syncedAgo, toDateKey, type DateDisplay } from '@mindough/core';
+import { Button, ConfirmDialog, Section, Segmented, Select, Switch } from '../ui/primitives';
+import { DemoOffDialog } from '../components/DemoMode';
+import { isDemoMode, switchDemoMode } from '../lib/demo-mode';
 import { DAY_START_PREF, JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
 import { formatRemindTime } from '../components/task/RemindPanel';
 import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPermission, setRemindersEnabled, type NotifyPermission } from '../lib/reminders';
@@ -43,7 +45,7 @@ import type { LocalePref } from '../lib/i18n';
  * 又说「农历、类型、日记这三个可以放在一个」；同一天又说「这个页面的底部的关于念头团的说明，可以放在一个单独的选项卡：关于」「设置中日记单独一个tab」）：
  * - 账户：登录、同步状态、数据怎么走
  * - 外观：皮肤、语言、明暗、色彩、布局、热力图每月 1 号标记
- * - 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据
+ * - 数据：本机存储、导出、导入、从滴答清单导入、演示模式（开关、重置演示数据、清除旧演示数据）
  * - 提醒：提醒通知开关（这台设备）、什么时候提醒、通知位置（app 里的提示放哪儿，只存本机，Rei 2026-11-13）
  * - 时间：一天从几点开始（Rei 2026-11-13 01:16 从「日记」挪过来，全局生效：我的一天、过期积压、日历、项目、打卡、倒数日、日记的「今天」都按它算）
  * - 系统：开机时启动、开机自启时最小化应用（这两项只在 macOS / Windows 桌面 App 有）、启动时打开哪一页（Rei 2026-11-13，都只记在本机）
@@ -441,10 +443,9 @@ function AppearanceSection() {
   );
 }
 
-/** 数据：本机存储、导出、导入、从滴答清单导入、重置演示数据。 */
+/** 数据：本机存储、导出、导入、从滴答清单导入、演示模式（开关、重置演示数据、清除旧演示数据）。 */
 function DataSection() {
   const store = useStore();
-  const sync = useSyncView();
   const [pending, setPending] = useState<number | null>(null);
   useEffect(() => {
     store.adapter.pendingOutbox(100000).then((o) => setPending(o.length));
@@ -463,32 +464,14 @@ function DataSection() {
               : storageInfo.fallbackReason
                 ? tr('浏览器 localStorage（{reason}）', { reason: storageInfo.fallbackReason })
                 : tr('浏览器 localStorage')}
+            {storageInfo.demo && tr(' · 演示库')}
             {tr(' · 设备 {id}', { id: store.deviceId })}
             {pending !== null && pending > 0 && tr(' · {pending} 处改动还没同步', { pending })}
           </div>
         </div>
       </div>
       <ArchiveRows />
-      <div className="setting">
-        <div className="setting-text">
-          <div className="setting-name">{tr('重置演示数据')}</div>
-          <div className="setting-hint">
-            {sync.enabled ? tr('登录同步时不能重置：会影响你的其他设备。先退出登录再重置。') : tr('清空本机所有任务，重新生成一份演示数据')}
-          </div>
-        </div>
-        <Button
-          variant="danger"
-          isDisabled={sync.enabled}
-          onPress={async () => {
-            if (!confirm(tr('确定清空本机数据并重新生成演示数据？'))) return;
-            await store.adapter.clear();
-            await store.adapter.setMeta('demo_seeded', ''); // 空值 = 未生成，刷新后重新生成
-            await resetSyncState(store.adapter); // 下次登录重新合并，云端数据会回来
-            reloadAfterReset();
-          }}
-        >
-          {tr('重置')}</Button>
-      </div>
+      <DemoModeRows />
     </div>
     </>
   );
@@ -758,7 +741,97 @@ function DateDisplaySection() {
   );
 }
 
-/** 重置演示数据之后重新载入。设置窗口里点的：先让主窗口重新载入，等它生成好演示数据再载入自己，免得生成两份。 */
+/**
+ * 演示模式（Rei 2026-11-18，docs/DEMO-MODE.md）：
+ * - 开关：开了换到演示库（演示库保留上次的样子，没生成过就生成），关之前弹确认。都会整页重载。
+ * - 重置演示数据：只在演示模式下有，只清演示库、重新生成。生产库里原来那个「重置演示数据」（清空本机全部）去掉了。
+ * - 清除旧演示数据：只在生产库、而且查到以前混进来的演示数据时有（core demo-cleanup.ts）。清完这一行就不见了。
+ *   【代定】只删没动过的演示行；Rei 还没最终确认是不是要全删。
+ */
+function DemoModeRows() {
+  const store = useStore();
+  const sync = useSyncView();
+  const { toast } = useUi();
+  const demo = isDemoMode();
+  const [offOpen, setOffOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [stamp, setStamp] = useState<string | null>(null);
+  useEffect(() => {
+    if (demo) return;
+    void store.adapter.getMeta(DEMO_STAMP_META).then((v) => setStamp(v ?? ''));
+  }, [store, demo]);
+  // 只在生产库算；数据一变重算（清完就是 0，这一行跟着消失）
+  const oldRows = useMemo(() => (demo || !stamp ? 0 : oldDemoRows(store, stamp).length), [store, store.version, demo, stamp]);
+  return (
+    <>
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('演示模式')}</div>
+          <div className="setting-hint">
+            {demo
+              ? tr('现在看到的是演示数据，可以随便改。改动只存在这台设备的演示库里，不会同步。关掉就回到你自己的数据。')
+              : tr('打开后换成一份演示数据，可以随便试。你自己的数据不受影响，演示数据也不会混进来。')}
+          </div>
+        </div>
+        <Switch label={tr('演示模式')} isSelected={demo} onChange={(on) => (on ? void switchDemoMode(store, true) : setOffOpen(true))} />
+      </div>
+      {demo && (
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('重置演示数据')}</div>
+            <div className="setting-hint">{tr('清空演示库，重新生成一份演示数据。你自己的数据不受影响。')}</div>
+          </div>
+          <Button variant="danger" onPress={() => setResetOpen(true)}>
+            {tr('重置')}
+          </Button>
+        </div>
+      )}
+      {!demo && oldRows > 0 && (
+        <div className="setting">
+          <div className="setting-text">
+            <div className="setting-name">{tr('清除旧演示数据')}</div>
+            <div className="setting-hint">
+              {tr('这台设备第一次打开时生成的演示数据还混在你的数据里。只清没动过的 {n} 条，改过的留着。', { n: oldRows })}
+              {sync.enabled ? ` ${tr('已登录：删除会同步到你的其他设备。')}` : ''}
+            </div>
+          </div>
+          <Button variant="danger" onPress={() => setClearOpen(true)}>
+            {tr('清除')}
+          </Button>
+        </div>
+      )}
+      <DemoOffDialog isOpen={offOpen} onOpenChange={setOffOpen} store={store} />
+      <ConfirmDialog
+        isOpen={resetOpen}
+        onOpenChange={setResetOpen}
+        title={tr('重置演示数据？')}
+        message={tr('演示库里的改动都会清掉，换成一份新的演示数据。')}
+        confirmLabel={tr('重置')}
+        danger
+        onConfirm={async () => {
+          await store.adapter.clear();
+          await store.adapter.setMeta('demo_seeded', ''); // 空值 = 未生成，刷新后重新生成
+          reloadAfterReset();
+        }}
+      />
+      <ConfirmDialog
+        isOpen={clearOpen}
+        onOpenChange={setClearOpen}
+        title={tr('清除旧演示数据？')}
+        message={tr('删掉没动过的 {n} 条演示数据。你自己建的、改过的都留着。', { n: oldRows })}
+        confirmLabel={tr('清除')}
+        danger
+        onConfirm={() => {
+          const n = clearOldDemoRows(store, stamp);
+          toast({ tone: 'success', message: tr('已清除 {n} 条旧演示数据', { n }) });
+        }}
+      />
+    </>
+  );
+}
+
+/** 重置演示数据之后重新载入（演示模式里）。设置窗口里点的：先让主窗口重新载入，等它生成好演示数据再载入自己，免得生成两份。 */
 function reloadAfterReset() {
   if (isSettingsWindow() && isTauri()) {
     relay('reload');
@@ -885,12 +958,29 @@ function AccountSection() {
   const { toast } = useUi();
   const storage = useCloudStorage();
   const native = isTauri();
+  const store = useStore();
+  // 演示模式下不同步，也不让登录（Rei 2026-11-18）：先关闭演示模式
+  const demo = isDemoMode();
+  const [offOpen, setOffOpen] = useState(false);
   const login = () => {
+    if (demo) return;
     if (native) void startNativeLogin().catch(() => toast({ message: tr('没能打开浏览器，请再试一次。'), tone: 'error' }));
     else window.location.href = loginUrl();
   };
   return (
     <div className="card settings-card">
+        {demo && (
+          <div className="setting">
+            <div className="setting-text">
+              <div className="setting-name">{tr('演示模式下不同步')}</div>
+              <div className="setting-hint">{tr('演示数据只存在这台设备的演示库里。要登录、同步你自己的数据，先关闭演示模式。')}</div>
+            </div>
+            <Button variant="secondary" onPress={() => setOffOpen(true)}>
+              {tr('关闭演示模式')}
+            </Button>
+            <DemoOffDialog isOpen={offOpen} onOpenChange={setOffOpen} store={store} />
+          </div>
+        )}
         <div className="setting account-row">
           {acc.status === 'in' ? (
             <>
@@ -925,13 +1015,13 @@ function AccountSection() {
                   {tr('不登录也能完整使用，数据都存在这台设备上。')}
                 </div>
               </div>
-              <Button variant="primary" isDisabled={acc.status !== 'out'} onPress={login}>
+              <Button variant="primary" isDisabled={acc.status !== 'out' || demo} onPress={login}>
                 <LogIn size={15} />
                 {tr('用 Google 登录')}</Button>
             </>
           )}
         </div>
-        {acc.status === 'in' && sync.enabled && <SyncRow sync={sync} onLogin={login} />}
+        {acc.status === 'in' && sync.enabled && !demo && <SyncRow sync={sync} onLogin={login} />}
         <DataFlowRow signedIn={acc.status === 'in'} storage={storage} />
     </div>
   );
