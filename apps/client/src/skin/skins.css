@@ -1260,25 +1260,37 @@
   background: color-mix(in srgb, var(--bg) 88%, transparent);
 }
 
-/* WinUI：像 Mail 的阅读窗格——内容层右边再一块圆角 8 的卡片，和列表之间留缝 */
+/* WinUI：第二、三列合起来是一整块内容层，浮在 Mica 上（Windows 11 NavigationView 的做法）。
+   只有靠侧栏那一侧的左上角圆 8px，贴窗口边的角不圆；两列之间一条 1px 分隔线，不再各自做成圆角卡片。
+   原来右列是一块四角都圆、四周留 8px 缝的卡片，和中间列的直角右上角、通到底的下边对不齐，
+   两列交界露出一截 Mica（Rei 2026-11-18「Windows 皮肤 第二列第三列的圆角有问题」）。 */
 [data-skin='winui'] {
-  --pane-bg: rgba(255, 255, 255, 0.72);
+  --pane-bg: transparent;
   --row-selected-bg: rgba(0, 0, 0, 0.055);
 }
 [data-skin='winui'][data-theme='dark'] {
-  --pane-bg: rgba(255, 255, 255, 0.05);
   --row-selected-bg: rgba(255, 255, 255, 0.08);
 }
 [data-skin='winui'] .app-desktop .detail-pane {
-  padding: 8px 8px 8px 4px;
+  /* 和中间列 .main 同一层：同样的半透明底、上边框，顶上同样空出 8px 露 Mica */
+  height: auto;
+  margin-top: 8px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid var(--border);
+}
+[data-skin='winui'][data-theme='dark'] .app-desktop .detail-pane {
+  background: rgba(58, 58, 58, 0.3);
 }
 [data-skin='winui'] .detail-pane-box {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
 }
+/* 拖动条的强调色竖线正好压在分隔线上 */
 [data-skin='winui'] .pane-resizer {
-  left: -2px;
+  left: -5px;
 }
 [data-skin='winui'] .pane-detail .pane-foot {
   padding: var(--space-4) var(--space-5);
