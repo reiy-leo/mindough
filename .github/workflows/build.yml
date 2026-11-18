@@ -16,33 +16,46 @@ permissions:
   contents: write
 
 jobs:
+  # 决定这次出哪些包：附注标签说明里有一行「只发：windows」（可写多个，逗号分隔；可选 macos、windows、linux、android）就只出这些，
+  # 没有就全出（Rei 2026-11-19 发 v0.3.0-alpha.3「只发win」）
+  plan:
+    name: 决定平台
+    runs-on: ubuntu-latest
+    outputs:
+      desktop: ${{ steps.p.outputs.desktop }}
+      android: ${{ steps.p.outputs.android }}
+    steps:
+      - id: p
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          only=""
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME")
+            if [ "$(echo "$ref" | jq -r .object.type)" = "tag" ]; then
+              msg=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$(echo "$ref" | jq -r .object.sha)" --jq .message)
+              only=$(echo "$msg" | sed -n 's/^只发[：:][[:space:]]*//p' | head -1 | sed 's/，/,/g' | tr 'A-Z' 'a-z' | tr -d ' ')
+            fi
+          fi
+          [ -z "$only" ] && only="macos,windows,linux,android"
+          echo "只发：$only"
+          all='[
+            {"name":"macOS（universal）","os":"macos-latest","platform":"macos","args":"--target universal-apple-darwin","rust-targets":"aarch64-apple-darwin,x86_64-apple-darwin","artifact":"mindough-macos","bundle":"apps/client/src-tauri/target/universal-apple-darwin/release/bundle"},
+            {"name":"Windows","os":"windows-latest","platform":"windows","args":"","rust-targets":"","artifact":"mindough-windows","bundle":"apps/client/src-tauri/target/release/bundle"},
+            {"name":"Linux","os":"ubuntu-22.04","platform":"linux","args":"","rust-targets":"","artifact":"mindough-linux","bundle":"apps/client/src-tauri/target/release/bundle"}
+          ]'
+          desktop=$(echo "$all" | jq -c --arg only ",$only," '[.[] | select(.platform as $p | $only | contains("," + $p + ","))]')
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          case ",$only," in *,android,*) echo "android=true" >> "$GITHUB_OUTPUT";; *) echo "android=false" >> "$GITHUB_OUTPUT";; esac
+
   desktop:
     name: 桌面 ${{ matrix.name }}
+    needs: plan
+    if: needs.plan.outputs.desktop != '[]'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: macOS（universal）
-            os: macos-latest
-            platform: macos
-            args: --target universal-apple-darwin
-            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
-            artifact: mindough-macos
-            bundle: apps/client/src-tauri/target/universal-apple-darwin/release/bundle
-          - name: Windows
-            os: windows-latest
-            platform: windows
-            args: ''
-            rust-targets: ''
-            artifact: mindough-windows
-            bundle: apps/client/src-tauri/target/release/bundle
-          - name: Linux
-            os: ubuntu-22.04
-            platform: linux
-            args: ''
-            rust-targets: ''
-            artifact: mindough-linux
-            bundle: apps/client/src-tauri/target/release/bundle
+        include: ${{ fromJSON(needs.plan.outputs.desktop) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -103,6 +116,8 @@ jobs:
 
   android:
     name: Android（release APK）
+    needs: plan
+    if: needs.plan.outputs.android == 'true'
     runs-on: ubuntu-latest
     env:
       NDK_VERSION: 27.2.12479018
@@ -215,8 +230,8 @@ jobs:
   # 推标签时，把 APK 也挂到桌面端建好的 Release 草稿上（alpha 也建 Release，Rei 2026-10-17 定）
   release-android:
     name: APK 挂到 Release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [desktop, android]
+    if: startsWith(github.ref, 'refs/tags/') && needs.plan.outputs.android == 'true'
+    needs: [plan, desktop, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -250,8 +265,8 @@ jobs:
   # 发到自建 F-Droid 源（docs/ANDROID-RELEASE.md）：推标签时发正式源；手动触发勾了 fdroid_test 就发到试跑目录 _test/
   fdroid:
     name: 发到 F-Droid 源
-    if: startsWith(github.ref, 'refs/tags/') || inputs.fdroid_test
-    needs: [android]
+    if: needs.plan.outputs.android == 'true' && (startsWith(github.ref, 'refs/tags/') || inputs.fdroid_test)
+    needs: [plan, android]
     runs-on: ubuntu-latest
     concurrency: fdroid-repo
     steps:
@@ -281,3 +296,22 @@ jobs:
           # 不能写成 startsWith(...) && '' || '_test/'：'' 在表达式里算假，推标签也会落到 '_test/'（alpha.18 第一次发源就发进了 _test/）
           FDROID_PREFIX: ${{ !startsWith(github.ref, 'refs/tags/') && '_test/' || '' }}
         run: scripts/fdroid/publish.sh apk/*.apk
+
+  # 不出 APK 的标签（只发桌面）：Release 说明照样用附注标签的说明
+  release-notes:
+    name: Release 说明（不出 APK 时）
+    if: startsWith(github.ref, 'refs/tags/') && needs.plan.outputs.android != 'true'
+    needs: [plan, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME")
+          if [ "$(echo "$ref" | jq -r .object.type)" = "tag" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/tags/$(echo "$ref" | jq -r .object.sha)" --jq .message > notes.md
+            gh release edit "$GITHUB_REF_NAME" --notes-file notes.md -R "$GITHUB_REPOSITORY"
+          fi
+          if [[ "$GITHUB_REF_NAME" != *-* ]]; then
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease=false --latest -R "$GITHUB_REPOSITORY"
+          fi
