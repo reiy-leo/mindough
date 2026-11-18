@@ -8,6 +8,7 @@ export * from './date-display';
 export * from './date-range';
 export * from './date-grid';
 export * from './dag';
+export * from './dep-reverse';
 export * from './related';
 export * from './recurrence';
 export * from './checkin';

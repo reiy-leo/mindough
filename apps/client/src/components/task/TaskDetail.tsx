@@ -26,6 +26,7 @@ import { wantsTitleFocus } from '../../lib/quick-add';
 import { detailMenu, type DetailMenuId } from '../../lib/task-menu';
 import { Attachments, DropOverlay, useAddFiles, useFileDrop } from '../attachments/Attachments';
 import { ChainToggle, TaskChainInline } from './TaskChain';
+import { DepList, type DepKind } from './DepList';
 import { PropChips } from './PropChips';
 import { DateQuickButton } from './TaskDatePicker';
 import { MoodQuickButton } from './MoodQuickButton';
@@ -628,6 +629,9 @@ function RelationPicker({ store, task, kind, onClose }: { store: Store; task: Ta
 function Relations({ store, task }: { store: Store; task: Task }) {
   const ui = useUi();
   const { settings, set } = useSettings();
+  const locked = useLocked(task);
+  // 正在从哪一组拖（Rei 2026-11-18 拖到另一组换方向，DepList）：另一组空着也亮出来当落点
+  const [dragging, setDragging] = useState<DepKind | null>(null);
   const edges = store.edges();
   const preds = predecessorsOf(edges, task.id).map((id) => store.get('task', id)).filter((t): t is Task => !!t);
   const succs = successorsOf(edges, task.id).map((id) => store.get('task', id)).filter((t): t is Task => !!t);
@@ -696,8 +700,20 @@ function Relations({ store, task }: { store: Store; task: Task }) {
         <TaskChainInline store={store} task={task} />
       ) : (
         <>
-          {group('pred', preds, derived?.state === '被阻塞' ? <span className="rel-count">{tr('还差 {length} 件', { length: derived.missing.length })}</span> : null)}
-          {group('succ', succs)}
+          {(['pred', 'succ'] as const).map((k) => (
+            <DepList
+              key={k}
+              store={store}
+              task={task}
+              kind={k}
+              list={k === 'pred' ? preds : succs}
+              label={REL_LABEL[k]}
+              {...(k === 'pred' && derived?.state === '被阻塞' ? { extra: <span className="rel-count">{tr('还差 {length} 件', { length: derived.missing.length })}</span> } : {})}
+              locked={locked}
+              dragging={dragging}
+              onDragging={setDragging}
+            />
+          ))}
         </>
       )}
       {group(

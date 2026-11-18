@@ -1,4 +1,4 @@
-import { CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, formatDate, isFinished, type CompleteResult, type Store, type Task, type TaskStatus } from '@mindough/core';
+import { AutoDependencyError, CheckInMetError, CycleError, DuplicateEdgeError, LinkedByDependencyError, SelfLinkError, SelfLoopError, formatDate, isFinished, StrictModeError, type CompleteResult, type Store, type Task, type TaskStatus } from '@mindough/core';
 import type { useUi } from './ui';
 import { titleOf as taskTitleOf } from './view';
 
@@ -115,6 +115,28 @@ export function tryAddDependency(store: Store, ui: Ui, predId: string, succId: s
       const path = e.path.map((id) => clipName(titleOf(store, id))).join(' → ');
       ui.toast({ tone: 'error', message: tr('没有连上：这样会绕成一个圈（{path}）', { path }) });
     } else if (e instanceof SelfLoopError || e instanceof DuplicateEdgeError) {
+      ui.toast({ tone: 'error', message: e.message });
+    } else throw e;
+    return false;
+  }
+}
+
+/**
+ * 前后关系换方向（Rei 2026-11-18「前置任务和后置任务可以拖拽更换」）：predId → succId 换成 succId → predId。
+ * 换了提示新方向；会绕成圈、自动连上的（打卡存档、循环倒数日的记录）、严格模式锁住的都不换，给一句。返回换没换。
+ */
+export function tryReverseDependency(store: Store, ui: Ui, predId: string, succId: string): boolean {
+  // 拖动途中别处已经改了（同步、另一个窗口）：这条已经不在，就什么都不做
+  if (!store.edges().some((e) => e.pred_id === predId && e.succ_id === succId)) return false;
+  try {
+    store.reverseDependency(predId, succId);
+    ui.toast({ tone: 'info', message: tr('已换方向：做完「{titleOf}」，就能开始「{titleOf2}」', { titleOf: clipName(titleOf(store, succId)), titleOf2: clipName(titleOf(store, predId)) }) });
+    return true;
+  } catch (e) {
+    if (e instanceof CycleError) {
+      const path = e.path.map((id) => clipName(titleOf(store, id))).join(' → ');
+      ui.toast({ tone: 'error', message: tr('换不了方向：这样会绕成一个圈（{path}）', { path }) });
+    } else if (e instanceof AutoDependencyError || e instanceof StrictModeError) {
       ui.toast({ tone: 'error', message: e.message });
     } else throw e;
     return false;

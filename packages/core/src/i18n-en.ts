@@ -94,6 +94,7 @@ export const CORE_EN: Record<string, V> = {
   // ── 依赖 / 相关 ──
   '不能这样连：会绕成一个圈': 'Can’t connect these — it would make a loop',
   一件任务不能排在自己前面: 'A task can’t come before itself',
+  '这条前后关系是自动连上的，不能换方向': 'This link was added automatically, so its direction can’t be swapped',
   这两件任务已经连上了: 'These tasks are already connected',
   不能和自己相关: 'A task can’t be related to itself',
   这两件事已经有前后关系了: 'These tasks already have an order',

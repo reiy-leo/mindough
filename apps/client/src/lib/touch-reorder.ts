@@ -1,6 +1,7 @@
 /**
  * 手指拖动排序（Rei 2026-11-14 05:54「手机端 拖 drag handle 没反应；长按会变灰，之后什么操作也没反应」，小米 12S Ultra 安卓）。
- * 用在 React Aria GridList 做的可拖列表上：我的一天（两段各自排）、待安排、看板（跨列改状态）、资料库类型、字段。
+ * 用在 React Aria GridList 做的可拖列表上：我的一天（两段各自排）、待安排、看板（跨列改状态）、资料库类型、字段、
+ * 任务详情的「先做完这些 / 做完后解锁」（两组上下叠，拖到另一组换方向，Rei 2026-11-18）。
  *
  * 为什么不交给 React Aria：它的鼠标 / 手指拖动全靠浏览器原生 HTML5 拖放（行上 draggable="true"）。
  * - 手指按住把手一挪：原生拖放要长按才起，挪动先被当成滚页面，把手「没反应」；把手上的 onPress 只认键盘 / 读屏。
@@ -52,6 +53,11 @@ export type TouchReorderOptions = {
   onReorder?: (e: ReorderLike) => void;
   /** 从同组别的列表拖进来。 */
   onReceive?: (keys: string[]) => void;
+  /**
+   * 同组的几个列表怎么排：x 并排（看板各列，默认），y 上下叠（任务详情「先做完这些 / 做完后解锁」，Rei 2026-11-18）。
+   * 拖到哪个列表按这个方向算（pickColumn）。
+   */
+  axis?: 'x' | 'y';
 };
 
 type Guard = { ref: RefObject<HTMLElement | null>; handlers: { onDragStart: () => void; onDragEnd: () => void } };
@@ -248,17 +254,21 @@ function setOver(d: Drag, list: HTMLElement | null) {
 
 function layout(d: Drag) {
   const rect = d.row.getBoundingClientRect();
-  const x = d.solo ? rect.left : d.cx - d.offX;
+  // 只有自己一个列表、或几个列表上下叠（axis y）：卡片只上下走
+  const x = d.solo || d.entry.current.opts.axis === 'y' ? rect.left : d.cx - d.offX;
   d.ghost.style.transform = `translate(${x - parseFloat(d.ghost.style.left)}px, ${d.cy - d.offY - parseFloat(d.ghost.style.top)}px)`;
   const group = d.entry.current.opts.group;
   let list = d.list;
   if (!d.solo) {
     const lists = [...registry.keys()].filter((l) => l.isConnected && l.getAttribute('data-touch-reorder') === group);
+    const vertical = d.entry.current.opts.axis === 'y';
     list = pickColumn(lists.map((l) => {
       const zone = (l.closest('[data-touch-reorder-zone]') as HTMLElement | null) ?? l;
       const r = zone.getBoundingClientRect();
-      return { item: l, left: r.left, right: r.right };
-    }), d.cx) ?? d.list;
+      // 没画出来的（隐藏着的空列表）不算
+      if (!r.width && !r.height) return { item: l, left: Infinity, right: Infinity };
+      return vertical ? { item: l, left: r.top, right: r.bottom } : { item: l, left: r.left, right: r.right };
+    }), vertical ? d.cy : d.cx) ?? d.list;
   }
   if (list !== d.list) {
     const ok = !!registry.get(list)?.current.opts.onReceive;

@@ -31,6 +31,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   types.ts              全部表的行类型（UUIDv7 id + HLC updated_at + deleted）
   uuid.ts hlc.ts        UUIDv7 生成、混合逻辑时钟
   dag.ts                环检测、派生状态（可开始/被阻塞+缺哪些）、解锁后续、任务链 taskChain 与每一步的相对时间 chainStepWhen / chainWhenLabel
+  dep-reverse.ts        前后关系换方向（Rei 2026-11-18 拖到另一组）：自动连上的认法 isAutoDependency（打卡存档、循环倒数日的记录，不能换）、换了会不会成圈 reverseCycle；写入 Store.reverseDependency（一批：旧行墓碑 + 反方向一条），界面 client components/task/DepList.tsx + lib/actions tryReverseDependency
   related.ts            相关任务（task_link，无方向、不阻塞）：规范顺序、确定 id、前后关系优先
   recurrence.ts         RRULE 子集、周期键、连续天数
   checkin.ts            check_in 事件折叠出进度（计时/计量/点一下/倒数日）、热力图比例索引
@@ -66,7 +67,7 @@ apps/client/src/
   skin/                 皮肤层：tokens.css（三套令牌 × 明暗）、skins.css（平台形状）、platform.ts（检测）
   styles/app.css        结构样式（只用令牌变量）
   ui/primitives.tsx     React Aria 包装（Button、Sheet、PopoverPanel、OverflowMenu、ConfirmDialog、InlineNumber、AutoTextarea、Tip…）
-  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel（月历是 DateGrid，自己画的 role=grid，公历 / 农历月共用）、挑任务 TaskSearch
+  components/task/      新建面板 TaskComposer、任务详情 TaskDetail（属性胶囊行 PropChips，外框 DetailFrame：右列 / 手机整页；「关系」里先做完这些 / 做完后解锁两组是 DepList，能拖到另一组换方向）、三列布局右列 DetailPane、共用选择件 pickers、日期面板 DatePanel（月历是 DateGrid，自己画的 role=grid，公历 / 农历月共用）、挑任务 TaskSearch
   components/library/   资料库共用件：占位图 ItemArt、选择框 LibraryPicker、资料编辑 ItemEditor / ItemSheet、资料卡 ItemCard
                         LinkFields（站点编号 / 更多链接 / 链接小标签）、MoneyField（金额 + 可搜索币种）、NoteField（Markdown 备注）
   components/attachments/  附件区 Attachments（bare = 任务详情里没标题没按钮；拖放 useFileDrop + DropOverlay、图片网格、文件列表、重命名）、灯箱 Lightbox、文件类型图标 FileIcon（手写 SVG，颜色令牌 --file-*）；样式 styles/attachments.css
@@ -77,6 +78,7 @@ apps/client/src/
   pages/Journal.tsx     日记页（docs/JOURNAL.md）
   pages/Library.tsx     资料库页与资料详情（人物库沿用 pages/People.tsx 的人物详情）
   components/ pages/    业务组件与页面（不写死平台样式）
+  lib/touch-reorder.ts  手指拖动（长按拿起，不走原生拖放）：我的一天、待安排、看板跨列、类型 / 字段、详情前后关系两组（axis: 'y' 上下叠）；鼠标、键盘照旧走 React Aria
   lib/nav-reorder.ts    侧栏 / 「更多」页置顶项拖动排序（Rei 2026-11-10）：鼠标拖、手指长按拿起再拖、⌥↑↓，直接改 DOM 做让位和占位格；范围和右键菜单衔接在 components/NavReorderScope.tsx
   styles/task.css       新建面板与详情的结构样式
   styles/library.css    资料库（占位图、选择框、资料卡、资料库页）的结构样式

@@ -1544,8 +1544,48 @@ html[data-layout='mobile'] .date-panel .date-clear {
   padding: 6px 0;
   outline: none;
 }
-.rel-title[data-hovered] {
+.rel-title[data-hovered],
+.rel-item[data-hovered] .rel-title {
   color: var(--accent);
+}
+/* 前后关系拖到另一组换方向（Rei 2026-11-18，DepList）：先做完这些 / 做完后解锁两组是 GridList，整行能拖、能点开 */
+.rel-list[role='grid'] {
+  outline: none;
+  border-radius: var(--radius-sm);
+}
+.rel-list .rel-item {
+  cursor: pointer;
+  outline: none;
+}
+.rel-list .rel-item[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.rel-list .rel-item[data-dragging] {
+  opacity: 0.4;
+}
+.rel-group.is-idle-empty {
+  display: none;
+}
+.rel-group.is-idle-empty + .rel-group {
+  margin-top: 0;
+}
+/* 拖动中：另一组整块是落点，先描一圈虚线；拖到它上面再垫一层强调色淡底 */
+.rel-group.is-drop-zone .rel-list {
+  outline: 1.5px dashed var(--border-strong);
+  outline-offset: 2px;
+}
+.rel-group.is-drop-zone .rel-list[data-drop-target],
+.rel-group.is-drop-zone .rel-list.is-touch-drop-target {
+  background: var(--accent-soft);
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+.rel-drop-empty {
+  display: grid;
+  place-items: center;
+  min-height: 36px;
+  font-size: 13px;
+  color: var(--text-3);
 }
 .rel-item.is-done .rel-title,
 .rel-item.is-closed .rel-title {

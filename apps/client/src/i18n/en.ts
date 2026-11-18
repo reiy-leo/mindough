@@ -741,6 +741,8 @@ export const EN: Record<string, EnValue> = {
   '然后呢？': 'What’s Next?',
   '已连上：做完「{titleOf}」，就能开始「{titleOf2}」': 'Linked: “{titleOf2}” can start once “{titleOf}” is done',
   '没有连上：这样会绕成一个圈（{path}）': 'Not linked — that would make a loop ({path})',
+  '已换方向：做完「{titleOf}」，就能开始「{titleOf2}」': 'Direction swapped: “{titleOf2}” can start once “{titleOf}” is done',
+  '换不了方向：这样会绕成一个圈（{path}）': 'Direction not swapped — that would make a loop ({path})',
   已移出我的一天: 'Removed from My Day',
   '已加入我的一天：「{titleOf}」': 'Added “{titleOf}” to My Day',
 

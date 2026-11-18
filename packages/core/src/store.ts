@@ -13,7 +13,7 @@ import { AUTO_MY_DAY_HLC, type PinOf, autoMyDayTasks, autoSort, groupAutoMyDay, 
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
 import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, isAutoRecordDoneAt, isCountdownRecordEdge, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
-import { assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
+import { CycleError, assertCanAddEdge, deriveAll, findCycleEdges, unlockedSuccessors, type DerivedStatus, type Edge } from './dag';
 import { capCheckIn, CheckInMetError, computeProgress, habitRule, isHabit, periodKeyForTask, type Progress } from './checkin';
 import { periodKeyFor } from './recurrence';
 import { addDays } from './dates';
@@ -56,6 +56,7 @@ import type { Change, StorageAdapter } from './storage/adapter';
 import { dataLabel, tr } from './i18n';
 import { fieldText, firstLine, itemTitleOf, needsTitleLine, untitledLabel, withTitleLine } from './preview';
 import { parseHlc } from './hlc';
+import { AutoDependencyError, isAutoDependency, reverseCycle } from './dep-reverse';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, type MoodId } from './journal';
 import { DAY_START_PREF, bindDayStart, dayOf, logicalToday, normalizeDayStart } from './day-start';
 import type { Attachment, AttachmentOwnerType, Group, JournalEntry, JournalPost } from './types';
@@ -2447,6 +2448,33 @@ export class Store {
 
   removeDependency(predId: string, succId: string): void {
     for (const d of this.list('dependency')) if (d.pred_id === predId && d.succ_id === succId) this.remove('dependency', d.id);
+  }
+
+  /**
+   * 这条前后关系是不是系统自动连的（core dep-reverse isAutoDependency）：打卡达标存正文生成的那条、循环倒数日每次的记录那条。
+   * 这种不能换方向（Rei 2026-11-18 拖动换方向）。
+   */
+  isAutoDependency(predId: string, succId: string): boolean {
+    const pred = this.tables.task.get(predId);
+    return this.list('dependency').some((d) => d.pred_id === predId && d.succ_id === succId && isAutoDependency(d, pred));
+  }
+
+  /**
+   * 前后关系换方向（Rei 2026-11-18「前置任务和后置任务可以拖拽更换」）：predId → succId 换成 succId → predId。
+   * 一批写入：这一对的旧行都打墓碑，再连一条反方向的（反方向已经有一条没删的行——同步冲突时——就不再加）。
+   * 自动连上的抛 AutoDependencyError；换了会绕成圈抛 CycleError（path 从 predId 出发回到 predId）；都不写。
+   * 严格模式下碰到锁住的任务，write 照常抛 StrictModeError。
+   */
+  reverseDependency(predId: string, succId: string): TableMap['dependency'] {
+    const rows = this.list('dependency').filter((d) => d.pred_id === predId && d.succ_id === succId);
+    if (!rows.length) throw new Error(tr('找不到记录：{table}/{id}', { table: 'dependency', id: `${predId} → ${succId}` }));
+    if (this.isAutoDependency(predId, succId)) throw new AutoDependencyError();
+    const cycle = reverseCycle(this.edges(), predId, succId);
+    if (cycle) throw new CycleError(cycle);
+    const back = this.list('dependency').find((d) => d.pred_id === succId && d.succ_id === predId);
+    const fresh = back ? null : ({ id: uuidv7(this.now().getTime()), pred_id: succId, succ_id: predId, type: 'FS', lag: 0, deleted: false, updated_at: '' } as BaseRow);
+    this.write([...rows.map((d) => ({ table: 'dependency' as const, row: { ...d, deleted: true } as BaseRow })), ...(fresh ? [{ table: 'dependency' as const, row: fresh }] : [])]);
+    return this.tables.dependency.get(fresh?.id ?? back!.id)!;
   }
 
   // ───────────── 相关任务（无方向、不阻塞） ─────────────
