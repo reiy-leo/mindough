@@ -72,7 +72,13 @@ pub fn run() {
             Ok(())
         })
         .manage(db::Db::new())
-        .invoke_handler(tauri::generate_handler![db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file, autostart::autostart_minimize_get, autostart::autostart_minimize_set])
+        // 窗口关了就关掉它的数据库连接（连接按窗口分，见 db.rs）；没收尾的事务随连接回滚，不会一直占着写锁
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                db::forget_window(window);
+            }
+        })
+        .invoke_handler(tauri::generate_handler![db::db_open, db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file, autostart::autostart_minimize_get, autostart::autostart_minimize_set])
         .run(tauri::generate_context!())
         .expect("启动 Mindough 失败");
 }
