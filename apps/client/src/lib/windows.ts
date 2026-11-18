@@ -2,7 +2,7 @@
  * 多窗口（Tauri 桌面）：主窗口 + 设置窗口（?window=settings，Rei 2026-10-26）。
  * 置顶小窗 2026-11-04 按 Rei 的要求删了。
  *
- * 两个窗口各有一份 Store 内存快照，底下是同一个 rusqlite 连接（src-tauri/src/db.rs）。
+ * 两个窗口各有一份 Store 内存快照，底下是同一个库文件，各用各的 rusqlite 连接（src-tauri/src/db.rs，2026-11-19 起按窗口分）。
  * 一个窗口写了什么，经 Tauri 事件 `mindough:changes` 发给另一个，对方用 store.applyRemote 合进内存
  * （LWW、不进 outbox——写的那个窗口已经进过了；落盘是同一行，WHERE updated_at > 不会重复写）。
  * 设置窗口不跑同步、不排提醒（都交给主窗口）。

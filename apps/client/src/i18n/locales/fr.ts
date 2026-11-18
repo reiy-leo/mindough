@@ -1310,7 +1310,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "打开后换成一份演示数据，可以随便试。你自己的数据不受影响，演示数据也不会混进来。": "Passe à des données de démo pour tout essayer. Vos propres données ne sont pas touchées et les données de démo ne s’y mélangent jamais.",
   "清空演示库，重新生成一份演示数据。你自己的数据不受影响。": "Vide la base de démo et crée de nouvelles données de démo. Vos propres données ne sont pas touchées.",
   "清除旧演示数据": "Effacer les anciennes données de démo",
-  "这台设备第一次打开时生成的演示数据还混在你的数据里，一共 {n} 条，改过的也算在内。": "Les données de démo créées à la première ouverture sur cet appareil sont encore mêlées à vos données : {n} au total, modifiées comprises.",
+  "这台设备第一次打开时生成的演示数据还混在你的数据里，一共 {n} 条，改过的也算在内。": "Les données de démo créées à la première ouverture sur cet appareil sont encore mêlées à vos données : {n} au total, modifiées comprises.",
   "已登录：删除会同步到你的其他设备。": "Vous êtes connecté : la suppression sera synchronisée avec vos autres appareils.",
   "重置演示数据？": "Réinitialiser les données de démo ?",
   "演示库里的改动都会清掉，换成一份新的演示数据。": "Toutes les modifications de la base de démo seront effacées et remplacées par de nouvelles données de démo.",
