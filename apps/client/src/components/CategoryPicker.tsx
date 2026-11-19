@@ -16,7 +16,7 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type K
 import { Button as RacButton } from 'react-aria-components';
 import { Check, ChevronDown, Plus, Search, X } from 'lucide-react';
 import { PopoverPanel } from '../ui/primitives';
-import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, isBuiltinCategory, normCategoryName, type Category, type Store } from '@mindough/core';
+import { categoryGroupOf, categoryIcon, categoryMatchRank, categoryMatches, dataEnglish, exclusiveMarks, isBuiltinCategory, normCategoryName, type Category, type Store } from '@mindough/core';
 import { typeIcon } from '../lib/icons';
 import { navigate } from '../lib/router';
 import { dataLabel, tr, trc } from '../lib/i18n';
@@ -148,7 +148,8 @@ export function CategoryList({
       onDone?.();
       return;
     }
-    onChange(isOn(id) ? value.filter((x) => store.category(x)?.id !== id) : [...value, id]);
+    // 收藏 / 紧急 / 重要三选一（Rei 2026-11-19）：挂上一个，另外两个自动摘掉
+    onChange(isOn(id) ? value.filter((x) => store.category(x)?.id !== id) : exclusiveMarks([...value.map((x) => store.category(x)?.id ?? x), id]));
   };
   const choose = (r: Row | undefined) => {
     if (!r) return;

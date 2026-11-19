@@ -125,6 +125,21 @@ export const MARK_ORDER: readonly [TitleMark, string][] = [
   ['star', STAR_CATEGORY_ID],
 ];
 
+const MARK_IDS = new Set(MARK_ORDER.map(([, id]) => id));
+/** 是不是收藏 / 紧急 / 重要之一。 */
+export const isTitleMarkCategory = (id: string | null | undefined): boolean => !!id && MARK_IDS.has(id);
+/**
+ * 收藏、紧急、重要三选一（Rei 2026-11-19「收藏、紧急、重要这三个是互斥的」）：一组类型 id 里挂了好几个，只留最后一个
+ * （新挂的总在最后），其余照原顺序。只认已经解析过合并的 id。
+ */
+export function exclusiveMarks(ids: readonly string[]): string[] {
+  let last = -1;
+  ids.forEach((id, k) => {
+    if (MARK_IDS.has(id)) last = k;
+  });
+  return last < 0 ? [...ids] : ids.filter((id, k) => k === last || !MARK_IDS.has(id));
+}
+
 /** 内置类型：置顶、收藏、紧急、重要（新库只预置这四个，都锁定）。 */
 export const BUILTIN_CATEGORIES: readonly Category[] = [PIN_CATEGORY, STAR_CATEGORY, URGENT_CATEGORY, IMPORTANT_CATEGORY];
 const BUILTIN_BY_ID = new Map(BUILTIN_CATEGORIES.map((c) => [c.id, c]));

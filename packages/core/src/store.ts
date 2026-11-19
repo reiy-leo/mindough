@@ -44,7 +44,7 @@ import {
   type LibraryEntry,
 } from './library';
 import { LEGACY_BUILTIN_FIELDS, TypeDeleteError, addField, cleanOptions, isEditableType, isTypeContentEmpty, orderTypes, typeDeleteBlock, updateField, type NewFieldInput, type TypeContent, type TypeDeleteBlock } from './typedef';
-import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID, formerBuiltinCategory, type TitleMark } from './seed/builtin-checkin-categories';
+import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID, exclusiveMarks, formerBuiltinCategory, type TitleMark } from './seed/builtin-checkin-categories';
 import { BUILTIN_CATEGORY_GROUP_ZH, CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isBuiltinCategoryGroup, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
 import { CategoryDeleteError, builtinCategoryDrifted, canonicalBuiltinCategory, isBuiltinCategory, isMarkerCategory, titleMarkOf, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
@@ -1101,9 +1101,9 @@ export class Store {
     else this.removeTaskItem(taskId, entry.id);
   }
 
-  /** 改任务的类型（整组，按给的顺序；第一个写进单值）。 */
+  /** 改任务的类型（整组，按给的顺序；第一个写进单值）。收藏 / 紧急 / 重要三选一，留最后一个（exclusiveMarks）。 */
   setTaskCategories(taskId: string, ids: readonly string[]): void {
-    const want = [...new Set(ids.map((id) => this.resolveCat(id)).filter((x): x is string => !!x))];
+    const want = exclusiveMarks([...new Set(ids.map((id) => this.resolveCat(id)).filter((x): x is string => !!x))]);
     const now = this.now().toISOString();
     const rows: Array<{ table: TableName; row: BaseRow }> = [];
     for (const l of this.list('task_category')) {

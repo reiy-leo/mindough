@@ -9,7 +9,7 @@ import { Store } from '../src/store';
 import { MemoryAdapter } from '../src/storage/memory';
 import { SyncEngine } from '../src/sync/engine';
 import { MemoryRemote } from '../src/sync/memory-remote';
-import { FORMER_BUILTIN_CATEGORIES, FORMER_BUILTIN_CATEGORY_IDS, IMPORTANT_CATEGORY_ID, PIN_CATEGORY, PIN_CATEGORY_ID, STAR_CATEGORY, STAR_CATEGORY_ID, URGENT_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
+import { FORMER_BUILTIN_CATEGORIES, FORMER_BUILTIN_CATEGORY_IDS, IMPORTANT_CATEGORY_ID, PIN_CATEGORY, exclusiveMarks, PIN_CATEGORY_ID, STAR_CATEGORY, STAR_CATEGORY_ID, URGENT_CATEGORY_ID } from '../src/seed/builtin-checkin-categories';
 import { CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF } from '../src/category-prefs';
 import { prefId } from '../src/related';
 import { isBuiltinCategory, titleMarkOf } from '../src/categories';
@@ -163,10 +163,24 @@ describe('收藏 / 紧急 / 重要（Rei 2026-11-12 04:41）', () => {
     expect(titleMarkOf([IMPORTANT_CATEGORY_ID, URGENT_CATEGORY_ID, STAR_CATEGORY_ID])).toBe('urgent');
   });
 
+  it('三选一（Rei 2026-11-19）：挂上一个，另外两个摘掉；置顶和别的类型不动', async () => {
+    const { store } = await open();
+    const t = store.createTask({ body_md: '交房租', category_id: SPORT });
+    store.addTaskCategory(t.id, PIN_CATEGORY_ID);
+    store.addTaskCategory(t.id, STAR_CATEGORY_ID);
+    store.addTaskCategory(t.id, URGENT_CATEGORY_ID);
+    expect(store.categoryIdsOfTask(t.id)).toEqual([SPORT, PIN_CATEGORY_ID, URGENT_CATEGORY_ID]);
+    store.addTaskCategory(t.id, IMPORTANT_CATEGORY_ID);
+    expect(store.categoryIdsOfTask(t.id)).toEqual([SPORT, PIN_CATEGORY_ID, IMPORTANT_CATEGORY_ID]);
+    store.setTaskCategories(t.id, [URGENT_CATEGORY_ID, SPORT, STAR_CATEGORY_ID]);
+    expect(store.categoryIdsOfTask(t.id)).toEqual([SPORT, STAR_CATEGORY_ID]);
+    expect(exclusiveMarks([STAR_CATEGORY_ID, SPORT])).toEqual([STAR_CATEGORY_ID, SPORT]);
+  });
+
   it('挂上就变色，不当主类型，不进列表第二行的类型；锁定改不了', async () => {
     const { store } = await open();
     const t = store.createTask({ body_md: '交房租', category_id: SPORT });
-    store.setTaskCategories(t.id, [URGENT_CATEGORY_ID, SPORT, STAR_CATEGORY_ID]);
+    store.setTaskCategories(t.id, [URGENT_CATEGORY_ID, SPORT]);
     expect(store.titleMark(t.id)).toBe('urgent');
     expect(store.get('task', t.id)!.category_id).toBe(SPORT);
     expect(store.categoriesOfTaskNoPin(t.id).map((c) => c.id)).toEqual([SPORT]);
