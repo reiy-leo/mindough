@@ -167,8 +167,24 @@ export function baseVersionFromConf() {
   return JSON.parse(readFileSync(join(TAURI_DIR, 'tauri.conf.json'), 'utf8')).version;
 }
 
+/**
+ * 非标签构建（网页版、本地、手动跑 Actions）的基础版本：取当前提交往前最近的 v* 标签的 x.y.z，
+ * 拿不到（没有标签、浅克隆）才用 tauri.conf.json 的 version。
+ * 以前只读 tauri.conf.json，它一直是 0.1.0，网页版就一直显示 v0.1.0-dev（Rei 2026-11-19「web端的版本号怎么一直没有更新」）。
+ */
+export function baseVersionForBuild() {
+  try {
+    const tag = execSync('git describe --tags --abbrev=0 --match "v*"', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const t = parseTag(tag);
+    if (t) return t.base;
+  } catch {
+    // 没有标签，退回 tauri.conf.json
+  }
+  return baseVersionFromConf();
+}
+
 function main(argv) {
-  const v = versionFromEnv(process.env, baseVersionFromConf());
+  const v = versionFromEnv(process.env, baseVersionForBuild());
   if (argv[0] !== 'apply') {
     console.log(v.display);
     return;

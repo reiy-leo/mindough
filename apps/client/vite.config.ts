@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { baseVersionFromConf, versionFromEnv } from '../../scripts/app-version.mjs';
+import { baseVersionForBuild, versionFromEnv } from '../../scripts/app-version.mjs';
 
 // 界面上显示的完整版本（设置底部、关于）：推标签的 Actions 构建是标签「v0.1.0-alpha.13」，
 // 别的构建（手动 Actions、本地、网页版）是「v0.1.0-dev+短哈希」。规则在 scripts/app-version.mjs；
 // CI 上一步已算好写进 MINDOUGH_VERSION 的就直接用。
-const resolved = versionFromEnv(process.env, baseVersionFromConf());
+const resolved = versionFromEnv(process.env, baseVersionForBuild());
 const appVersion = process.env.MINDOUGH_VERSION?.trim() || resolved.display;
 const gitSha = resolved.sha;
 
