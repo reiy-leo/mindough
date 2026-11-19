@@ -246,7 +246,59 @@ export interface MenuAction {
   separator?: boolean;
   /** 灰掉不能点 */
   disabled?: boolean;
+  /**
+   * 开关项（Rei 2026-11-19 收藏 / 紧急 / 重要）：写了就是开关，true 右边打勾。连着的几个开关项合成一个可多选的 section，
+   * 点一下切换（调 onAction），菜单不关，方便连着点几个。
+   */
+  checked?: boolean;
   onAction: () => void;
+}
+
+/** 菜单内容：普通项照常；连着的开关项合成一个 selectionMode="multiple" 的 MenuSection。 */
+function overflowMenuChildren(items: MenuAction[]) {
+  const out: ReactNode[] = [];
+  for (let n = 0; n < items.length; n++) {
+    const i = items[n]!;
+    if (i.separator && n > 0) out.push(<Separator key={`sep-${i.id}`} className="menu-sep" />);
+    if (i.checked === undefined) {
+      out.push(
+        <MenuItem key={i.id} id={i.id} className={`menu-item${i.danger ? ' is-danger' : ''}`} textValue={i.label}>
+          {i.icon}
+          <span>{i.label}</span>
+        </MenuItem>,
+      );
+      continue;
+    }
+    const group: MenuAction[] = [i];
+    while (n + 1 < items.length && items[n + 1]!.checked !== undefined && !items[n + 1]!.separator) group.push(items[++n]!);
+    const selected = group.filter((g) => g.checked).map((g) => g.id);
+    out.push(
+      <MenuSection
+        key={`sec-${i.id}`}
+        selectionMode="multiple"
+        selectedKeys={selected}
+        onSelectionChange={(keys) => {
+          const now = new Set([...(keys === 'all' ? group.map((g) => g.id) : keys)].map(String));
+          for (const g of group) if (now.has(g.id) !== !!g.checked) g.onAction();
+        }}
+      >
+        {group.map((g) => (
+          <MenuItem key={g.id} id={g.id} className="menu-item menu-check" textValue={g.label}>
+            {({ isSelected }) => (
+              <>
+                {g.icon}
+                <span className="menu-check-text">{g.label}</span>
+                <span className="menu-check-mark" aria-hidden>
+                  {isSelected && <Check size={15} />}
+                </span>
+              </>
+            )}
+          </MenuItem>
+        ))}
+      </MenuSection>,
+    );
+  }
+  return out;
 }
 
 /** ··· 更多菜单。 */
@@ -272,14 +324,16 @@ export function OverflowMenu({
         {icon ?? <MoreHorizontal size={18} />}
       </RacButton>
       <Popover className="popover menu-popover" placement="bottom end" offset={4}>
-        <Menu className="menu" disabledKeys={items.filter((i) => i.disabled).map((i) => i.id)} onAction={(k) => items.find((i) => i.id === k)?.onAction()}>
-          {items.flatMap((i, n) => [
-            ...(i.separator && n > 0 ? [<Separator key={`sep-${i.id}`} className="menu-sep" />] : []),
-            <MenuItem key={i.id} id={i.id} className={`menu-item${i.danger ? ' is-danger' : ''}`} textValue={i.label}>
-              {i.icon}
-              <span>{i.label}</span>
-            </MenuItem>,
-          ])}
+        <Menu
+          className="menu"
+          disabledKeys={items.filter((i) => i.disabled).map((i) => i.id)}
+          onAction={(k) => {
+            const i = items.find((x) => x.id === k);
+            // 开关项走 section 的 onSelectionChange，这里不再调一次
+            if (i && i.checked === undefined) i.onAction();
+          }}
+        >
+          {overflowMenuChildren(items)}
         </Menu>
       </Popover>
     </MenuTrigger>

@@ -71,3 +71,22 @@ describe('任务置顶（Rei 2026-11-08）', () => {
     expect(line(habitMenu(true, false, true))).toBe('open |unarchive');
   });
 });
+
+describe('收藏 / 紧急 / 重要开关（Rei 2026-11-19「单独一个section」）', () => {
+  const t = { status: '待办', recurrence: null, completion_mode: 'once' } as const;
+  it('传了 marks：我的一天那组后面单独一组，挂着的打勾', () => {
+    const m = detailMenu(t, false, { pinned: false, enabled: true }, { star: true, urgent: false, important: true });
+    expect(ids(m)).toBe('myday pin |star urgent important |close |delete');
+    expect(m.filter((e) => e.checked !== undefined).map((e) => `${e.id}:${e.checked}`).join(' ')).toBe('star:true urgent:false important:true');
+  });
+  it('置顶了的也有这组，跟在取消置顶后面', () => {
+    expect(ids(detailMenu(t, true, { pinned: true, enabled: true }, { star: false, urgent: false, important: false }))).toBe('unpin |star urgent important |close |delete');
+  });
+  it('没传 marks（锁住的任务）就没有这组', () => {
+    expect(ids(detailMenu(t, false))).toBe('myday pin |close |delete');
+  });
+  it('归档了的打卡只剩取消归档，不给这组', () => {
+    const m = detailMenu({ status: '待办', recurrence: { freq: 'daily' } as never, completion_mode: 'count', archived_at: '2026-11-01' } as never, false, undefined, { star: true, urgent: false, important: false });
+    expect(ids(m)).toBe('unarchive |delete');
+  });
+});

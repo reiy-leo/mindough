@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type TouchEvent, type ReactNode, type RefObject } from 'react';
 import { Autocomplete, Button as RacButton, Disclosure, DisclosurePanel, Heading, Input, ListBox, ListBoxItem, SearchField, useFilter } from 'react-aria-components';
-import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleCheckBig, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ChevronLeft, Gauge, Hash, ListChecks, Tv, Type, CalendarDays, CornerLeftUp, CornerRightDown, Network, Check, ChevronDown, ChevronRight, CircleCheckBig, CircleHelp, CircleSlash, Archive, ArchiveRestore, Link2, ListPlus, Pause, Pin, PinOff, Star, Siren, Flag, Play, Plus, RotateCcw, Square, Sun, SunDim, Trash2, X } from 'lucide-react';
 import { logicalToday, PLAIN_TYPE_ID, countdownPhrase, findEpisode, firstLine, formatEpisode, formatAmount, formatDuration, formatTarget, formatTaskDate, type DateDisplay, isFinished, predecessorsOf, wouldCreateCycle, successorsOf, taskStreak, hasLibrary, isPersonLibrary, libraryCopy, taskFieldsFor, isMovieItem, type FieldDef, type FieldValue, type LibraryEntry, type Store, type Task, type TaskType } from '@mindough/core';
+import { STAR_CATEGORY, STAR_CATEGORY_ID, URGENT_CATEGORY, URGENT_CATEGORY_ID, IMPORTANT_CATEGORY, IMPORTANT_CATEGORY_ID } from '@mindough/core';
 import { CheckInMetError, checkInMode, isHabit, plainTitleMarkdown, shownFields } from '@mindough/core';
 import { navigate } from '../../lib/router';
 import { ItemCard, ItemSheet, artShape, entryArt } from '../library/Library';
@@ -917,11 +918,18 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     );
 
   // 「关闭」在这里，不在底部（Rei 2026-10-17）；顺序和分隔见 lib/task-menu.ts
-  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };
+  // 收藏 / 紧急 / 重要（Rei 2026-11-19）：「…」里单独一组开关，挂上 / 摘掉内置类型；图标用类型自己的颜色
+  const catIds = store.categoryIdsOfTask(task.id);
+  const marks = { star: catIds.includes(STAR_CATEGORY_ID), urgent: catIds.includes(URGENT_CATEGORY_ID), important: catIds.includes(IMPORTANT_CATEGORY_ID) };
+  const toggleMark = (id: string, on: boolean) => (on ? store.removeTaskCategory(task.id, id) : store.addTaskCategory(task.id, id));
+  const MENU_ICON = { myday: inDay ? <SunDim size={16} /> : <Sun size={16} />, pin: <Pin size={16} />, unpin: <PinOff size={16} />, star: <Star size={16} style={{ color: STAR_CATEGORY.color ?? undefined }} />, urgent: <Siren size={16} style={{ color: URGENT_CATEGORY.color ?? undefined }} />, important: <Flag size={16} style={{ color: IMPORTANT_CATEGORY.color ?? undefined }} />, done: <Check size={16} />, close: <CircleSlash size={16} />, reopen: <RotateCcw size={16} />, archive: <Archive size={16} />, unarchive: <ArchiveRestore size={16} />, delete: <Trash2 size={16} /> };
   const MENU_DO: Record<DetailMenuId, () => void> = {
     myday: () => toggleMyDay(store, ui, task.id),
     pin: () => togglePin(store, ui, task.id),
     unpin: () => togglePin(store, ui, task.id),
+    star: () => toggleMark(STAR_CATEGORY_ID, marks.star),
+    urgent: () => toggleMark(URGENT_CATEGORY_ID, marks.urgent),
+    important: () => toggleMark(IMPORTANT_CATEGORY_ID, marks.important),
     done: complete,
     close: () => {
       closeTask(store, ui, task.id);
@@ -935,7 +943,7 @@ function Detail({ task, mode }: { task: Task; mode: DetailMode }) {
     unarchive: () => archiveHabit(store, ui, task.id, false),
     delete: () => setConfirmDelete(true),
   };
-  const menu: MenuAction[] = detailMenu(task, inDay, { pinned, enabled: store.pinEnabled() })
+  const menu: MenuAction[] = detailMenu(task, inDay, { pinned, enabled: store.pinEnabled() }, locked ? undefined : marks)
     .filter((e) => !locked || !(e.id === 'myday' || e.id === 'pin' || e.id === 'unpin'))
     .map((e) => ({ ...e, icon: MENU_ICON[e.id], onAction: MENU_DO[e.id] }));
 

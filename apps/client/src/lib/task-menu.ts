@@ -6,12 +6,16 @@
  * 归档了的只剩「取消归档」，不再给「不再打卡」（先取消归档再决定）。
  * 置顶（Rei 2026-11-08）：「置顶 / 取消置顶」跟在我的一天后面、同一组；置顶了的每天都在我的一天，不再给「加入 / 移出我的一天」。
  * 2026-11-12 起置顶是挂上 / 摘掉内置类型「置顶」。它是锁定的内置类型（04:20 起不能设成不显示），pinEnabled 总是 true，参数留着。
+ * 收藏 / 紧急 / 重要（Rei 2026-11-19「也放在任务详情页右上角的"..."中，单独一个section」）：我的一天那组后面单独一组，
+ * 三个都是开关（挂上 / 摘掉内置类型），挂着的打勾。归档了的打卡只剩「取消归档」，不给这组。
  * 纯逻辑，好测；TaskDetail 按 id 接上动作和图标。
  */
 import { isFinished, type Task } from '@mindough/core';
-import { tr } from './i18n';
+import { dataLabel, tr } from './i18n';
 
-export type DetailMenuId = 'myday' | 'pin' | 'unpin' | 'done' | 'close' | 'reopen' | 'archive' | 'unarchive' | 'delete';
+export type MarkMenuId = 'star' | 'urgent' | 'important';
+
+export type DetailMenuId = 'myday' | 'pin' | 'unpin' | MarkMenuId | 'done' | 'close' | 'reopen' | 'archive' | 'unarchive' | 'delete';
 
 export interface DetailMenuEntry {
   id: DetailMenuId;
@@ -19,6 +23,24 @@ export interface DetailMenuEntry {
   danger?: boolean;
   /** 这一项前面画一条分隔线（换了一组） */
   separator?: boolean;
+  /** 开关项：true 打勾、false 不打勾；不是开关不写 */
+  checked?: boolean;
+}
+
+/** 任务挂着哪几个标记类型（收藏、紧急、重要）。 */
+export interface MarkState {
+  star: boolean;
+  urgent: boolean;
+  important: boolean;
+}
+
+/** 收藏 / 紧急 / 重要这一组（第一项前画分隔线）。顺序同类型页：收藏、紧急、重要。 */
+function markGroup(marks: MarkState): DetailMenuEntry[] {
+  return [
+    { id: 'star', label: dataLabel('收藏'), checked: marks.star, separator: true },
+    { id: 'urgent', label: dataLabel('紧急'), checked: marks.urgent },
+    { id: 'important', label: dataLabel('重要'), checked: marks.important },
+  ];
 }
 
 /** 我的一天这一组：没置顶的「加入 / 移出我的一天」+「置顶」；置顶了的只有「取消置顶」。置顶类型不显示了：只有我的一天。 */
@@ -32,11 +54,13 @@ export function detailMenu(
   task: Pick<Task, 'status' | 'recurrence' | 'completion_mode' | 'archived_at' | 'pinned_at'>,
   inDay: boolean,
   pin: { pinned: boolean; enabled: boolean } = { pinned: !!task.pinned_at, enabled: true },
+  marks?: MarkState,
 ): DetailMenuEntry[] {
   const finished = isFinished(task.status);
   // 重复的倒数日（Rei 2026-11-12）不是打卡：还是「关闭」，没有归档
   const recurring = !!task.recurrence && task.completion_mode !== 'countdown';
   const out: DetailMenuEntry[] = dayGroup<DetailMenuId>(inDay, pin.pinned, pin.enabled);
+  if (marks) out.push(...markGroup(marks));
   const status: DetailMenuEntry[] = [];
   if (recurring && !finished && task.archived_at) {
     // 归档了：不进我的一天，只能取消归档
