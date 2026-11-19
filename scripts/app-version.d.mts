@@ -27,3 +27,4 @@ export declare function mergePatch(target: unknown, patch: unknown): unknown;
 export declare function versionFromEnv(env: Record<string, string | undefined>, baseVersion: string, gitSha?: () => string): ResolvedVersion;
 export declare function localGitSha(): string;
 export declare function baseVersionFromConf(): string;
+export declare function baseVersionForBuild(): string;
