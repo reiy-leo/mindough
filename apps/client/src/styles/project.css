@@ -615,14 +615,19 @@
 .groups-toolbar .groups-new {
   flex: none;
 }
-/* 项目面板的「资料库」多选（Rei 2026-11-10）：已关联别的项目的库在名字下面写一行小字 */
-.project-libs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* 项目面板的「资料库」多选（Rei 2026-11-10）：已关联别的项目的库在名字下面写一行小字。
+   2026-11-19 起和上面两个开关一样是一行设置（左字右下拉）；下拉不撑满，选多了截断 */
+.project-libs-select {
+  width: 180px;
+  max-width: 100%;
 }
-.project-libs-hint {
-  margin: 0;
+.project-libs-select .select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-libs-count {
+  margin-top: 2px;
 }
 .project-libs-popover .project-libs-item {
   min-height: 36px;

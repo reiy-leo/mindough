@@ -3,6 +3,7 @@
  * 列出能挂资料的库（没归档的，含人物；已经关联这个项目的归档库也列出来，方便取消）。
  * 一个库只能关联一个项目：已关联别的项目的那行写「已关联：项目名」，选它先弹确认，确认了才勾上（保存时改关联过来）。
  * 只改面板里的选择，真正关联、挪任务在保存时（ProjectSheet → store.setGroupLibraries）。
+ * 样子和上面两个开关一样是一行设置（Rei 2026-11-19「关联资料库样式要和其他项统一」）：左边名字和说明，右边下拉。
  */
 import { useMemo, useState } from 'react';
 import { Button as RacButton, Label, ListBox, ListBoxItem, Popover, Select as RacSelect, type Key } from 'react-aria-components';
@@ -40,8 +41,13 @@ export function LibrarySelect({ store, groupId, value, onChange }: { store: Stor
   };
   const joining = store.libraryJoinCount(groupId, value);
   return (
-    <div className="project-libs">
-      <RacSelect className="field multi-select project-libs-select" selectionMode="multiple" isOpen={open} onOpenChange={setOpen} value={value} onChange={(keys) => change(keys as Key[])} placeholder={tr('不关联')}>
+    <div className="setting project-edit-myday project-libs">
+      <div className="setting-text">
+        <div className="setting-name">{tr('资料库')}</div>
+        <div className="setting-hint">{tr('选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。')}</div>
+        {joining > 0 && <div className="setting-hint project-libs-count">{tr('会有 {n} 件任务放进来。', { n: joining })}</div>}
+      </div>
+      <RacSelect className="field multi-select setting-select project-libs-select" selectionMode="multiple" isOpen={open} onOpenChange={setOpen} value={value} onChange={(keys) => change(keys as Key[])} placeholder={tr('不关联')}>
         <Label className="field-label">{tr('资料库')}</Label>
         <RacButton className="input select-btn">
           <span className={`select-value${text ? '' : ' is-placeholder'}`}>{text || tr('不关联')}</span>
@@ -66,8 +72,6 @@ export function LibrarySelect({ store, groupId, value, onChange }: { store: Stor
           </ListBox>
         </Popover>
       </RacSelect>
-      <p className="setting-hint project-libs-hint">{tr('选中的资料库里的任务会自动放进这个项目，以后加进库里的也会。')}</p>
-      {joining > 0 && <p className="setting-hint project-libs-hint project-libs-count">{tr('会有 {n} 件任务放进来。', { n: joining })}</p>}
       <ConfirmDialog
         isOpen={!!confirm}
         onOpenChange={(o) => !o && setConfirm(null)}
