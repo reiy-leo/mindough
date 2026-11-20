@@ -89,7 +89,7 @@ function build() {
   const md = new Marked({
     gfm: true,
     breaks: true,
-    extensions: [blockMath, inlineMath, appLink],
+    extensions: [blockMath, inlineMath, appLink, highlightEq],
     renderer: {
       link(this: { parser: { parseInline: (t: Tokens.Link['tokens']) => string } }, token: Tokens.Link) {
         // @ 提及（Rei 2026-11-10）：画成胶囊的占位，字先用存着的标题，Markdown.tsx 挂上后按 id 换成现在的标题（lib/task-mention.ts）
@@ -142,6 +142,33 @@ const instance = () => {
 };
 
 /** 未消毒的 HTML（测试用；界面请用 renderMarkdown）。 */
+/**
+ * 高亮 `==字==`（Rei 2026-11-20，和编辑器 highlight.ts 一样）：黄色；别的颜色存成 `<mark data-color="…">`，当 HTML 原样过。
+ * 等号要紧贴着字，三个以上的等号不算；`\=\=` 转义过的不算（marked 先吃掉转义）。
+ */
+interface HighlightToken {
+  type: 'highlightEq';
+  raw: string;
+  tokens: Tokens.Generic[];
+}
+const HIGHLIGHT_EQ_RE = /^==(?!=)(?=\S)([\s\S]*?\S)(?<!=)==(?!=)/;
+const highlightEq: TokenizerAndRendererExtension = {
+  name: 'highlightEq',
+  level: 'inline',
+  start: (src) => {
+    const i = src.indexOf('==');
+    return i < 0 ? undefined : i;
+  },
+  tokenizer(this: { lexer: { inlineTokens(src: string): Tokens.Generic[] } }, src) {
+    const m = HIGHLIGHT_EQ_RE.exec(src);
+    if (!m) return undefined;
+    return { type: 'highlightEq', raw: m[0], tokens: this.lexer.inlineTokens(m[1]!) } as HighlightToken as never;
+  },
+  renderer(this: { parser: { parseInline(t: Tokens.Generic[]): string } }, t) {
+    return `<mark class="md-highlight" data-color="yellow">${this.parser.parseInline((t as unknown as HighlightToken).tokens)}</mark>`;
+  },
+};
+
 export function markdownHtml(source: string): string {
   return instance().parse(source, { async: false }) as string;
 }

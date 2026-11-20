@@ -162,8 +162,9 @@ interface SFrame {
  * （强调、粗体、链接、删除线）。顺序决定 `***粗斜***`、`[**粗**](…)` 这类嵌套怎么写。
  * 下划线（`<u>`）放最外面：写成 `这是<u>**重点**</u>内容`。反过来写 `这是**<u>重点</u>**内容`，`**` 紧挨着 `<`、前面又是汉字，
  * CommonMark 不认它是粗体的开头，读回来粗体就没了。
+ * 高亮（`==` / `<mark>`，Rei 2026-11-20）比下划线还靠外，同样的道理：`==**粗**和字==`，不写成 `**==粗==**==和字==`。
  */
-const MARK_RANK: Record<string, number> = { underline: -1, italic: 0, bold: 1, link: 2, strike: 3, code: 100 };
+const MARK_RANK: Record<string, number> = { highlight: -2, underline: -1, italic: 0, bold: 1, link: 2, strike: 3, code: 100 };
 const rankOf = (m: Mark) => MARK_RANK[m.type.name] ?? 50;
 
 /** 和 Milkdown 的 SerializerState 一样（含相邻同样 mark 合并、mark 两头的空格挪到外面）。 */

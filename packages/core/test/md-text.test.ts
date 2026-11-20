@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stripWithLiterals, unescapeMarkdown } from '../src/md-text';
+import { escapeTitleLine, stripUnderlineTags, stripWithLiterals, unescapeMarkdown } from '../src/md-text';
 import { firstLine } from '../src/preview';
 import { plainMarkdown } from '../src/task-match';
 import { journalPlainText, journalPreview } from '../src/journal';
@@ -41,5 +41,20 @@ describe('反斜杠转义', () => {
   });
   it('unescapeMarkdown：只去转义，行内代码不动', () => {
     expect(unescapeMarkdown('draw\\.io `a\\.b` \\\\')).toBe('draw.io `a\\.b` \\');
+  });
+});
+
+describe('高亮（Rei 2026-11-20）', () => {
+  it('标题行里连着的等号都转义，读回来还是原字', () => {
+    expect(escapeTitleLine('==重点== 事')).toBe('\\=\\=重点\\=\\= 事');
+    expect(escapeTitleLine('a === b')).toBe('a \\=\\=\\= b');
+    expect(escapeTitleLine('a = b')).toBe('a = b');
+    expect(firstLine(escapeTitleLine('==重点== 事'))).toBe('==重点== 事');
+  });
+  it('标题、搜索、片段去掉 ==…== 记号和 <mark> 标签，字留下；转义的不动', () => {
+    expect(stripUnderlineTags('看 ==重点== 和 <mark data-color="red">红</mark>')).toBe('看 重点 和 红');
+    expect(stripUnderlineTags('a == b == c')).toBe('a == b == c');
+    expect(firstLine('看 ==重点==')).toBe('看 重点');
+    expect(firstLine('\\=\\=字\\=\\=')).toBe('==字==');
   });
 });

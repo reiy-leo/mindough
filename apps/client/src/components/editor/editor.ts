@@ -19,6 +19,7 @@ import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
 import { moveBlockExtension } from './move-block';
+import { highlightExtension, highlightHandler, recolorHighlightTr, type HighlightColor, highlightParse, highlightSafeText, highlightSerialize, remarkHighlight, type HighlightRange } from './highlight';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
@@ -39,11 +40,12 @@ export function markdownIO(schema: Schema | null | undefined): MarkdownIO {
   let io = ios.get(schema);
   if (!io) {
     io = createMarkdownIO(schema, {
-      remark: [remarkGh, remarkDetails, remarkUnderline, remarkTaskMentions, remarkDateMentions],
-      parse: [...ghParse, ...detailsParse, ...underlineParse, ...mentionParse, ...dateMentionParse],
-      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...mentionSerialize, ...dateMentionSerialize },
-      wrapText: mathSafeText as never,
-      handlers: { underline: underlineHandler },
+      remark: [remarkGh, remarkDetails, remarkUnderline, remarkHighlight, remarkTaskMentions, remarkDateMentions],
+      parse: [...ghParse, ...detailsParse, ...underlineParse, ...highlightParse, ...mentionParse, ...dateMentionParse],
+      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...highlightSerialize, ...mentionSerialize, ...dateMentionSerialize },
+      // 文字里的 $ 不像公式、== 不像高亮（Rei 2026-11-20）
+      wrapText: ((prev: never) => highlightSafeText(mathSafeText(prev) as never)) as never,
+      handlers: { underline: underlineHandler, highlight: highlightHandler },
     });
     ios.set(schema, io);
   }
@@ -186,6 +188,8 @@ export interface MdEditorHandle {
   insertPlain(range: { from: number; to: number }, text: string): void;
   /** 把正在打的 @（range）换成日期胶囊（@ 插入当前时间 / 今天…；第一行是纯文字标题时换成文字）。 */
   insertDate(range: { from: number; to: number }, d: DateMention): void;
+  /** 把一段高亮换成 color（null = 去掉）。 */
+  recolorHighlight(range: { from: number; to: number }, color: HighlightColor | null): void;
   /** 一段的纯文字（链接框预填）。 */
   textOf(range: { from: number; to: number }): string;
   /** 当前选区（链接框新加时用）。 */
@@ -219,6 +223,8 @@ export interface MdEditorOptions {
   onLinkOpen?: (href: string) => void;
   /** 粘贴 / 拖进正文的图片被拦下了（正文不收新图片）。 */
   onImageBlocked?: () => void;
+  /** 点了一段高亮（能编辑时）：弹色板换颜色（highlight.ts，Rei 2026-11-20）。 */
+  onHighlightClick?: (range: HighlightRange) => void;
   /** 给了就能打 @ 提及任务（mention.ts）：正在打的 @ 变了、浮层开着时的按键。 */
   mention?: MentionHooks;
 }
@@ -243,6 +249,7 @@ export class MdController {
       ...(o.plainTitle ? guardTitleInputRules(schemaExtensions()) : schemaExtensions()),
       imeGuardExtension(),
       moveBlockExtension(),
+      highlightExtension(() => ({ onClick: (r) => this.get().onHighlightClick?.(r) })),
       ...(o.mention ? [mentionExtension(() => this.get().mention ?? { onState: () => {}, onKey: () => false })] : []),
       ...(o.plainTitle ? [plainTitleExtension({ io })] : []),
       underlineKeysExtension(),
@@ -371,6 +378,12 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
     },
     insertDate(range, d) {
       insertDateMention(view(), range, d);
+    },
+    recolorHighlight(range, color) {
+      const v = view();
+      const size = v.state.doc.content.size;
+      if (range.from < 0 || range.to > size || range.from >= range.to) return;
+      v.dispatch(recolorHighlightTr(v.state, range, color));
     },
     textOf(range) {
       try {

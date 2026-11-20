@@ -31,15 +31,16 @@ import { createPortal } from 'react-dom';
 import { waitForMotion } from '../../lib/quick-add';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
-import { Calendar, Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
+import { Calendar, Check, Circle, CircleCheck, Clock, Eraser, ExternalLink, Hourglass } from 'lucide-react';
 import { dateMentionFor, mentionStampKinds, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
 import { mentionChoices, mentionInfo } from '../../lib/task-mention';
-import { tr } from '../../lib/i18n';
+import { tr, trc } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
 import { readClipboardLink } from '../../lib/clip-link';
 import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
+import { HIGHLIGHT_COLORS, type HighlightColor, type HighlightRange } from './highlight';
 
 /** @ 下拉里的「插入当前时间」「插入今天 / 明天 / 昨天日期」（不是任务）。 */
 type StampItem = { stamp: MentionStampKind };
@@ -123,6 +124,11 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   };
   const toggleHelpRef = useRef(toggleHelp);
   toggleHelpRef.current = toggleHelp;
+
+  /** 点了的那段高亮：旁边弹小色板换颜色（Rei 2026-11-20 12:16「高亮的点击直接切换颜色就好」）。 */
+  const [hl, setHl] = useState<HighlightRange | null>(null);
+  const hlRef = useRef(false);
+  hlRef.current = !!hl;
 
   /** 正在打的 @（mention.ts 报上来的）、候选里选中第几条、手指 / 鼠标正按在浮层上（这时编辑器失焦不收）。 */
   const [mq, setMq] = useState<MentionState | null>(null);
@@ -224,7 +230,11 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     placeholder,
     readOnly,
     plainTitle,
-    onChange: (md) => cb.current.onChange(md),
+    onChange: (md) => {
+      // 字改了：色板对着的那段可能已经变了，收起
+      if (hlRef.current) setHl(null);
+      cb.current.onChange(md);
+    },
     onFocus: () => setFocused(true),
     onBlur: () => {
       // 点链接框里的输入框不算离开
@@ -232,11 +242,13 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
         if (linkingRef.current || mPointer.current || wrap.current?.contains(document.activeElement)) return;
         setFocused(false);
         setHelp(null);
+        setHl(null);
         cb.current.onBlur?.();
       }, 0);
     },
     // 快捷键浮层开着：Esc 先关它，不收起编辑器 / 关详情
-    onEscape: () => (helpRef.current ? setHelp(null) : cb.current.onEscape?.()),
+    onEscape: () => (hlRef.current ? setHl(null) : helpRef.current ? setHelp(null) : cb.current.onEscape?.()),
+    onHighlightClick: (r) => setHl(r),
     onHelpShortcut: () => toggleHelpRef.current(),
     onLinkShortcut: () => openRef.current(undefined, true),
     ...(onModEnter ? { onModEnter: () => cb.current.onModEnter?.() } : {}),
@@ -440,6 +452,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
             </table>
             {plainTitle && <p className="md-keys-note">{t.title1}</p>}
             <p className="md-keys-note">{t.combo}</p>
+            <p className="md-keys-note">{t.highlight}</p>
             <p className="md-keys-note">{t.clipLink}</p>
             {mention && <p className="md-keys-note">{t.mention}</p>}
             <p className="md-keys-note">{t.close}</p>
@@ -573,6 +586,91 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
         </RacButton>
       </div>
     </form>
+  );
+
+  // 高亮色板：贴在那段高亮下面（放不下翻到上面），和 @ 浮层一样的放法（mention-place.ts），fixed 的参照先量出来再减掉
+  const hlEl = useRef<HTMLDivElement>(null);
+  const [hlPos, setHlPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = hlEl.current;
+    const h = handle.current;
+    if (!hl || !el || !h) return setHlPos(null);
+    const c = h.coordsOf({ from: hl.from, to: hl.from }, 1) ?? h.coordsOf(h.selection());
+    if (!c) return;
+    const vv = window.visualViewport;
+    const vTop = vv ? vv.offsetTop : 0;
+    const vBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    const p = placeMentionPop(c, { width: el.offsetWidth, height: el.offsetHeight }, { top: vTop, bottom: vBottom, width: window.innerWidth });
+    const prevL = el.style.left;
+    const prevT = el.style.top;
+    el.style.left = '0px';
+    el.style.top = '0px';
+    const o = el.getBoundingClientRect();
+    el.style.left = prevL;
+    el.style.top = prevT;
+    setHlPos({ left: p.left - o.left, top: p.top - o.top });
+  }, [hl]);
+  // 点别处、滚动收起（Esc 走编辑器的 onEscape）
+  useEffect(() => {
+    if (!hl) return;
+    const down = (e: PointerEvent) => {
+      if (hlEl.current?.contains(e.target as Node)) return;
+      // 点在别的高亮上：编辑器的点击会换成那一段，这里先不收
+      if ((e.target as HTMLElement | null)?.closest?.('.ProseMirror mark') && wrap.current?.contains(e.target as Node)) return;
+      setHl(null);
+    };
+    const close = () => setHl(null);
+    document.addEventListener('pointerdown', down, true);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [hl]);
+  const pickHighlight = (color: HighlightColor | null) => {
+    if (hl) handle.current?.recolorHighlight(hl, color);
+    setHl(null);
+  };
+  const hlNames: Record<HighlightColor, () => string> = {
+    gray: () => trc('高亮颜色', '灰'),
+    brown: () => trc('高亮颜色', '棕'),
+    orange: () => trc('高亮颜色', '橙'),
+    yellow: () => trc('高亮颜色', '黄'),
+    green: () => trc('高亮颜色', '绿'),
+    blue: () => trc('高亮颜色', '蓝'),
+    purple: () => trc('高亮颜色', '紫'),
+    pink: () => trc('高亮颜色', '粉'),
+    red: () => trc('高亮颜色', '红'),
+  };
+  const hlPop = hl && !readOnly && (
+    <div
+      ref={hlEl}
+      className="md-hl-pop"
+      role="toolbar"
+      aria-label={tr('高亮颜色')}
+      style={hlPos ? { left: hlPos.left, top: hlPos.top } : { left: 0, top: 0, visibility: 'hidden' }}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {HIGHLIGHT_COLORS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          className="md-hl-dot"
+          data-color={c}
+          aria-label={hlNames[c]()}
+          aria-pressed={hl.color === c}
+          title={hlNames[c]()}
+          onClick={() => pickHighlight(c)}
+        >
+          {hl.color === c && <Check size={14} aria-hidden />}
+        </button>
+      ))}
+      <button type="button" className="md-hl-clear" aria-label={tr('去掉高亮')} title={tr('去掉高亮')} onClick={() => pickHighlight(null)}>
+        <Eraser size={15} aria-hidden />
+      </button>
+    </div>
   );
 
   // @ 浮层：贴在光标那一行下面、和 @ 对齐（下面放不下就放上面，手机按键盘上沿算），收在视口里（mention-place.ts）。
@@ -752,6 +850,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       <EditorContent editor={editor} className="md-editor-root" />
       {helpPop}
       {mentionPop}
+      {hlPop}
       {(pop || (dialog && !dialog.sheet)) && (
         <div
           ref={popEl}

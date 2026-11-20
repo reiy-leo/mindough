@@ -49,6 +49,8 @@ export function shortcutRows(): ShortcutRow[] {
     { label: trc('格式', '波浪线'), md: null, keys: [['mod', 'U'], ['1']] },
     { label: trc('格式', '双线'), md: null, keys: [['mod', 'U'], ['2']] },
     { label: trc('格式', '删除线'), md: `~~${text}~~`, keys: [['mod', 'alt', 'X']] },
+    // Rei 2026-11-20：==文字== 黄色高亮，⌘⇧H 切换；换颜色点高亮（highlight.ts）
+    { label: trc('格式', '高亮'), md: `==${text}==`, keys: [['mod', 'shift', 'H']] },
     { label: trc('格式', '行内代码'), md: `\`${trc('格式', '代码')}\``, keys: [['mod', 'E']] },
     { label: trc('格式', '链接'), md: `[${text}](${trc('格式', '网址')})`, keys: [['mod', 'K']] },
     { label: trc('格式', '标题'), md: '# ', keys: [['mod', 'alt', '1–6']] },
@@ -73,6 +75,8 @@ export const shortcutTexts = (mac: boolean) => ({
   /** 任务正文才显示（第一行纯文字，Rei 2026-11-03）。 */
   title1: tr('第一行是标题，只能是纯文字'),
   combo: tr('波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。', { mod: modName(mac) }),
+  /** 高亮换颜色（Rei 2026-11-20 12:16「高亮的点击直接切换颜色就好」）。 */
+  highlight: tr('点一下高亮，可以换颜色或去掉。'),
   /** ⌘K 读剪贴板（Rei 2026-11-04）。 */
   clipLink: tr('{keys} 加链接时，剪贴板里的链接会自动填上。', { keys: formatChord(['mod', 'K'], mac) }),
   /** 能打 @ 的编辑器才显示（任务正文、日记，Rei 2026-11-10）。 */

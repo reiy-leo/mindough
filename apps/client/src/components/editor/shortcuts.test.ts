@@ -25,6 +25,8 @@ describe('快捷键的写法', () => {
     expect(shortcutTexts(false).combo).toContain('Ctrl');
     expect(shortcutTexts(true).clipLink).toContain('⌘K');
     expect(shortcutTexts(false).clipLink).toContain('Ctrl+K');
+    expect(formatChord(['mod', 'shift', 'H'], false)).toBe('Ctrl+Shift+H');
+    expect(shortcutTexts(true).highlight).toBe('点一下高亮，可以换颜色或去掉。');
   });
 
   it('⌘? / ⌘/ / Ctrl+? 都算，带 ⌥ 或不带 ⌘ 不算', () => {
@@ -38,8 +40,8 @@ describe('快捷键的写法', () => {
   it('列的写法和快捷键都是编辑器真有的', () => {
     const rows = shortcutRows();
     const keys = rows.flatMap((r) => r.keys.map((c) => formatChord(c, true)));
-    expect(keys).toEqual(['⌘B', '⌘I', '⌘U', '⌘U', '1', '⌘U', '2', '⌘⌥X', '⌘E', '⌘K', '⌘⌥1–6', '⌘⌥8', '⌘⌥7', '⌘⇧B', '⌘⌥C', '⇧↩', '⌃↑↓']);
-    expect(rows.map((r) => r.md).filter(Boolean)).toEqual(['**文字**', '*文字*', '~~文字~~', '`代码`', '[文字](网址)', '# ', '- ', '1. ', '[] ', '> ', '```', '---', '|3x2| ', '>> ', '$x^2$']);
+    expect(keys).toEqual(['⌘B', '⌘I', '⌘U', '⌘U', '1', '⌘U', '2', '⌘⌥X', '⌘⇧H', '⌘E', '⌘K', '⌘⌥1–6', '⌘⌥8', '⌘⌥7', '⌘⇧B', '⌘⌥C', '⇧↩', '⌃↑↓']);
+    expect(rows.map((r) => r.md).filter(Boolean)).toEqual(['**文字**', '*文字*', '~~文字~~', '==文字==', '`代码`', '[文字](网址)', '# ', '- ', '1. ', '[] ', '> ', '```', '---', '|3x2| ', '>> ', '$x^2$']);
   });
 });
 

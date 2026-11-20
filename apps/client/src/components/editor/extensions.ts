@@ -44,6 +44,7 @@ import { clipboardPlugin } from './clipboard';
 import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
+import { Highlight } from './highlight';
 import { isHelpShortcut } from './shortcuts';
 import { guardTitleRules } from './title';
 
@@ -352,6 +353,7 @@ export function schemaExtensions(): AnyExtension[] {
     MdItalic,
     MdStrike,
     Underline,
+    Highlight,
     MdCode,
     MdHardBreak,
     MdCodeBlock.configure({ enableTabIndentation: false }),

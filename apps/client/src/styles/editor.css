@@ -697,3 +697,105 @@
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ───────── 高亮（Rei 2026-11-20「固定几种light dark theme都适合的颜色，可以参考Notion的颜色」）───────── */
+/* 九种颜色照 Notion 的背景色：亮色用 Notion 的浅底，暗色用 Notion 深色模式的暗底；字还是正文色。三种皮肤、素净档都一样，不用 color-mix()。
+   编辑器（mark.md-highlight）和只读 Markdown（.md mark，含存成 <mark data-color> 的）共用。 */
+:root {
+  --hl-gray: #f1f1ef;
+  --hl-brown: #f4eeee;
+  --hl-orange: #fbecdd;
+  --hl-yellow: #fbf3db;
+  --hl-green: #edf3ec;
+  --hl-blue: #e7f3f8;
+  --hl-purple: #f4f0f7;
+  --hl-pink: #faf1f5;
+  --hl-red: #fdebec;
+}
+[data-theme='dark'] {
+  --hl-gray: #373737;
+  --hl-brown: #4a3228;
+  --hl-orange: #5c3b23;
+  --hl-yellow: #564328;
+  --hl-green: #243d30;
+  --hl-blue: #143a4e;
+  --hl-purple: #3c2d49;
+  --hl-pink: #4e2c3c;
+  --hl-red: #522e2a;
+}
+.ProseMirror mark,
+.md mark {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: var(--hl-yellow);
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.ProseMirror mark { cursor: pointer; }
+:is(.ProseMirror, .md) mark[data-color='gray'] { background: var(--hl-gray); }
+:is(.ProseMirror, .md) mark[data-color='brown'] { background: var(--hl-brown); }
+:is(.ProseMirror, .md) mark[data-color='orange'] { background: var(--hl-orange); }
+:is(.ProseMirror, .md) mark[data-color='yellow'] { background: var(--hl-yellow); }
+:is(.ProseMirror, .md) mark[data-color='green'] { background: var(--hl-green); }
+:is(.ProseMirror, .md) mark[data-color='blue'] { background: var(--hl-blue); }
+:is(.ProseMirror, .md) mark[data-color='purple'] { background: var(--hl-purple); }
+:is(.ProseMirror, .md) mark[data-color='pink'] { background: var(--hl-pink); }
+:is(.ProseMirror, .md) mark[data-color='red'] { background: var(--hl-red); }
+
+/* 点高亮弹的小色板：一排九个色点 + 去掉高亮 */
+.md-hl-pop {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+}
+.md-hl-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text);
+  cursor: pointer;
+}
+.md-hl-dot:focus-visible,
+.md-hl-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.md-hl-dot[data-color='gray'] { background: var(--hl-gray); }
+.md-hl-dot[data-color='brown'] { background: var(--hl-brown); }
+.md-hl-dot[data-color='orange'] { background: var(--hl-orange); }
+.md-hl-dot[data-color='yellow'] { background: var(--hl-yellow); }
+.md-hl-dot[data-color='green'] { background: var(--hl-green); }
+.md-hl-dot[data-color='blue'] { background: var(--hl-blue); }
+.md-hl-dot[data-color='purple'] { background: var(--hl-purple); }
+.md-hl-dot[data-color='pink'] { background: var(--hl-pink); }
+.md-hl-dot[data-color='red'] { background: var(--hl-red); }
+.md-hl-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.md-hl-clear:hover {
+  background: var(--surface-hover);
+}

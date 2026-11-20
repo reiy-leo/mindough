@@ -49,13 +49,19 @@ export function unescapeMarkdown(md: string): string {
  * 标题、搜索、片段里去掉，不留空格（「这是<u>重点</u>」搜「这是重点」也对得上）。
  */
 export const UNDERLINE_TAG_RE = /<\/?u(?:\s+class=(["'])(?:wavy|double)\1)?\s*>/gi;
-export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '');
+/** 高亮的标签（Rei 2026-11-20：黄色存 `==字==`，别的颜色存 `<mark data-color="red">字</mark>`）。 */
+export const MARK_TAG_RE = /<\/?mark(?:\s+data-color=(["'])[a-z]+\1)?\s*>/gi;
+/** `==字==`：两个等号紧贴着字（前后不是空白），不是三个以上的等号。转义过的 `\=\=` 在 stripWithLiterals 里已经换成占位符，碰不到。 */
+export const HIGHLIGHT_MARKS_RE = /(?<!=)==(?!=)(?=\S)([\s\S]*?\S)(?<!=)==(?!=)/g;
+/** 去掉下划线、高亮的标签和 `==` 记号（标题、搜索、片段用），字留下。 */
+export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '').replace(MARK_TAG_RE, '').replace(HIGHLIGHT_MARKS_RE, '$1');
 
 /**
  * 任务标题（正文第一行）存成字面文字（Rei 2026-11-03「任务标题是纯文本不渲染md」）。
  * 第一行写进 markdown 前把会被读成格式的字符加反斜杠，读回来、在列表里显示都是原来那几个字：
  * - 哪里都转：`\` `*` `_` `` ` `` `~` `[` `$`；`<` 后面跟字母、`/`、`!`、`?` 时（HTML、`<u>`、`<网址>`）；`&` 像实体时（`&amp;`）。
  * - 只在行首转：`#` `-` `+` `>` `=` `|`，`1.` / `1)` 的 `.` `)`。
+ * - 两个以上连着的等号每个都转（`==` 会读成高亮，Rei 2026-11-20）。
  * 前后的空白去掉（行首四个空格会变成代码块）。中间的换行当空格。
  */
 export function escapeTitleLine(line: string): string {
@@ -64,7 +70,8 @@ export function escapeTitleLine(line: string): string {
   let out = s
     .replace(/[\\*_`~[$]/g, (c) => `\\${c}`)
     .replace(/<(?=[A-Za-z/!?])/g, '\\<')
-    .replace(/&(?=#?[A-Za-z0-9]+;)/g, '\\&');
+    .replace(/&(?=#?[A-Za-z0-9]+;)/g, '\\&')
+    .replace(/={2,}/g, (run) => run.replace(/=/g, '\\='));
   out = out.replace(/^([#\-+>=|])/, '\\$1').replace(/^(\d{1,9})([.)])/, '$1\\$2');
   return out;
 }
