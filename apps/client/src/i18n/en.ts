@@ -1455,6 +1455,8 @@ export const EN: Record<string, EnValue> = {
   "提到一件任务": "Mention a task",
   "插入当前时间": "Insert current time",
   "插入今天日期": "Insert today’s date",
+  "插入明天日期": "Insert tomorrow’s date",
+  "插入昨天日期": "Insert yesterday’s date",
   "打 @ 提到一件任务，点它就打开那件任务。": "Type @ to mention a task; click it to open that task.",
   "{source} 查询次数超了，过一会儿再试（{status}）": "{source} hit its request limit. Try again later ({status})",
   "高德地图只有中文结果": "Amap results are in Chinese only",

@@ -99,11 +99,14 @@ export function mentionQueryAt(textBefore: string): { at: number; query: string 
 // Rei 2026-11-12 07:09：@ 下拉里加「插入当前时间」，打 @现在、@now、@time、@xianzai 都能出来，排在最上面；
 // 选了把 @ 和后面的字换成本机时区的「2026-11-12 07:09」纯文字（24 小时制），不是胶囊。
 // 07:17 追加：@datetime 也是这一项；@date（日期、今天、riqi、jintian）另一项「插入今天日期」，只插「2026-11-12」。
+// 2026-11-20「加上 @today @tomorrow @yesterday」：@today 归到今天日期；另加「插入明天日期」「插入昨天日期」两项，也只插日期。
 
 /** 能叫出各项的词（i18n-ignore：匹配用的原文，不显示）。 */
 export const MENTION_STAMP_WORDS = {
   datetime: ['现在', 'now', 'time', 'xianzai', 'datetime'], // i18n-ignore 匹配用的原文
-  date: ['date', '日期', '今天', 'riqi', 'jintian'], // i18n-ignore 匹配用的原文
+  date: ['date', 'today', '日期', '今天', 'riqi', 'jintian'], // i18n-ignore 匹配用的原文
+  tomorrow: ['tomorrow', '明天', 'mingtian'], // i18n-ignore 匹配用的原文
+  yesterday: ['yesterday', '昨天', 'zuotian'], // i18n-ignore 匹配用的原文
 } as const;
 
 export type MentionStampKind = keyof typeof MENTION_STAMP_WORDS;
@@ -111,7 +114,7 @@ export type MentionStampKind = keyof typeof MENTION_STAMP_WORDS;
 /**
  * @ 后面打的字能叫出哪几项（按顺序）：是某个词的开头（不分大小写）。
  * 太短的不算，免得按拼音找任务时总冒出来：字母至少 3 个（now、tim、xia、dat、riq），汉字至少 2 个（打全「现在」「日期」「今天」）。
- * 两项都对上（@dat、@date）时，整个词对上的在前（@date → 今天日期在前），都只是开头就日期 + 时间在前。
+ * 几项都对上（@dat、@date）时，整个词对上的在前（@date → 今天日期在前），都只是开头就按上面的顺序：时间、今天、明天、昨天。
  */
 export function mentionStampKinds(query: string): MentionStampKind[] {
   const q = query.trim().toLowerCase();
@@ -140,4 +143,23 @@ export function formatDateStamp(d: Date = new Date()): string {
 /** 本机时区的「YYYY-MM-DD HH:mm」（24 小时制）。 */
 export function formatNowStamp(d: Date = new Date()): string {
   return `${formatDateStamp(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/** 本机日历上往后挪 days 天（跨夏令时也按日历日算，不按 24 小时）。 */
+function shiftLocalDay(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, 12);
+}
+
+/** 选了某一项插进去的纯文字：当前时间「YYYY-MM-DD HH:mm」，今天 / 明天 / 昨天「YYYY-MM-DD」（都按本机时区）。 */
+export function mentionStampText(kind: MentionStampKind, now: Date = new Date()): string {
+  switch (kind) {
+    case 'datetime':
+      return formatNowStamp(now);
+    case 'tomorrow':
+      return formatDateStamp(shiftLocalDay(now, 1));
+    case 'yesterday':
+      return formatDateStamp(shiftLocalDay(now, -1));
+    default:
+      return formatDateStamp(now);
+  }
 }

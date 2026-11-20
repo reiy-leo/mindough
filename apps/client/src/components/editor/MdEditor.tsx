@@ -32,7 +32,7 @@ import { waitForMotion } from '../../lib/quick-add';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
 import { Calendar, Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
-import { formatDateStamp, formatNowStamp, mentionStampKinds, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
+import { mentionStampKinds, mentionStampText, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
 import { mentionChoices, mentionInfo } from '../../lib/task-mention';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
@@ -41,12 +41,15 @@ import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
 
-/** @ 下拉里的「插入当前时间」「插入今天日期」（不是任务）。 */
+/** @ 下拉里的「插入当前时间」「插入今天 / 明天 / 昨天日期」（不是任务）。 */
 type StampItem = { stamp: MentionStampKind };
-const STAMP_ITEMS: Record<MentionStampKind, StampItem> = { datetime: { stamp: 'datetime' }, date: { stamp: 'date' } };
+const STAMP_ITEMS: Record<MentionStampKind, StampItem> = { datetime: { stamp: 'datetime' }, date: { stamp: 'date' }, tomorrow: { stamp: 'tomorrow' }, yesterday: { stamp: 'yesterday' } };
 type MentionItem = MentionCandidate | StampItem;
 const isStampItem = (c: MentionItem): c is StampItem => 'stamp' in c;
-const stampText = (k: MentionStampKind) => (k === 'date' ? formatDateStamp() : formatNowStamp());
+const stampText = (k: MentionStampKind) => mentionStampText(k);
+/** 每项的名字（每次取：换语言后跟着变）。 */
+const stampLabel = (k: MentionStampKind) =>
+  k === 'datetime' ? tr('插入当前时间') : k === 'tomorrow' ? tr('插入明天日期') : k === 'yesterday' ? tr('插入昨天日期') : tr('插入今天日期');
 import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
 
 export interface MdEditorProps {
@@ -698,19 +701,19 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
         {items.length ? (
           items.map((c, i) => {
             if (isStampItem(c)) {
-              const StampIcon = c.stamp === 'date' ? Calendar : Clock;
+              const StampIcon = c.stamp === 'datetime' ? Clock : Calendar;
               return (
                 <div
                   key={`stamp-${c.stamp}`}
                   id={`${mUid}-opt-${i}`}
                   role="option"
                   aria-selected={i === mActive}
-                  className={`mention-item is-stamp is-${c.stamp === 'date' ? 'date' : 'now'}${i === mActive ? ' is-active' : ''}`}
+                  className={`mention-item is-stamp is-${c.stamp === 'datetime' ? 'now' : 'date'}${i === mActive ? ' is-active' : ''}`}
                   onMouseMove={() => i !== mActive && setMActive(i)}
                   onClick={() => pickMention(c)}
                 >
                   <StampIcon size={14} aria-hidden className="mention-item-icon" />
-                  <span className="grow ellipsis">{c.stamp === 'date' ? tr('插入今天日期') : tr('插入当前时间')}</span>
+                  <span className="grow ellipsis">{stampLabel(c.stamp)}</span>
                   <span className="mention-item-meta">{stampText(c.stamp)}</span>
                 </div>
               );

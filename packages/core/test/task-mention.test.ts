@@ -1,6 +1,6 @@
 /** 正文里 @ 提及任务（Rei 2026-11-10）：地址、候选范围、过滤和排序、光标前的 @。 */
 import { describe, expect, it } from 'vitest';
-import { formatDateStamp, formatNowStamp, mentionCandidates, mentionStampKinds, mentionHref, mentionIdOf, mentionKind, mentionNowMatches, mentionQueryAt, mentionable } from '../src/task-mention';
+import { formatDateStamp, formatNowStamp, mentionCandidates, mentionStampText, mentionStampKinds, mentionHref, mentionIdOf, mentionKind, mentionNowMatches, mentionQueryAt, mentionable } from '../src/task-mention';
 import { taskTitle } from '../src/preview';
 import { mkTask } from './helpers';
 
@@ -129,6 +129,28 @@ describe('@ 插入当前时间', () => {
     expect(mentionStampKinds('dat')).toEqual(['datetime', 'date']);
     expect(mentionStampKinds('datetime')).toEqual(['datetime']);
     expect(mentionStampKinds('now')).toEqual(['datetime']);
+  });
+  it('@today 也叫出「今天日期」', () => {
+    for (const q of ['today', 'TODAY', 'tod', 'toda']) expect(mentionStampKinds(q), q).toEqual(['date']);
+  });
+  it('@tomorrow / 明天 / mingtian 叫出「明天日期」，@yesterday / 昨天 / zuotian 叫出「昨天日期」', () => {
+    for (const q of ['tomorrow', 'Tomorrow', 'tom', 'tomo', '明天', 'mingtian', 'min', 'ming']) expect(mentionStampKinds(q), q).toEqual(['tomorrow']);
+    for (const q of ['yesterday', 'yes', 'yest', '昨天', 'zuotian', 'zuo']) expect(mentionStampKinds(q), q).toEqual(['yesterday']);
+    for (const q of ['to', 'ye', 'mi', 'zu', '明', '昨', '明天见', 'tomorrows', 'yesterdays']) {
+      expect(mentionStampKinds(q), q).not.toContain('tomorrow');
+      expect(mentionStampKinds(q), q).not.toContain('yesterday');
+    }
+  });
+  it('插入的文字：今天 / 明天 / 昨天是本机日期，跨月、跨年、闰年照日历算', () => {
+    const now = new Date(2026, 10, 20, 11, 59);
+    expect(mentionStampText('datetime', now)).toBe('2026-11-20 11:59');
+    expect(mentionStampText('date', now)).toBe('2026-11-20');
+    expect(mentionStampText('tomorrow', now)).toBe('2026-11-21');
+    expect(mentionStampText('yesterday', now)).toBe('2026-11-19');
+    expect(mentionStampText('tomorrow', new Date(2026, 11, 31, 23, 59))).toBe('2027-01-01');
+    expect(mentionStampText('yesterday', new Date(2027, 0, 1, 0, 0))).toBe('2026-12-31');
+    expect(mentionStampText('tomorrow', new Date(2028, 1, 28, 8))).toBe('2028-02-29');
+    expect(mentionStampText('yesterday', new Date(2026, 2, 1, 0, 30))).toBe('2026-02-28');
   });
   it('日期格式 YYYY-MM-DD', () => {
     expect(formatDateStamp(new Date(2026, 10, 12, 23, 59))).toBe('2026-11-12');

@@ -1759,6 +1759,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "提到一件任务": "Mentionner une tâche",
   "插入当前时间": "Insérer l’heure actuelle",
   "插入今天日期": "Insérer la date du jour",
+  "插入明天日期": "Insérer la date de demain",
+  "插入昨天日期": "Insérer la date d’hier",
   "打 @ 提到一件任务，点它就打开那件任务。": "Tapez @ pour mentionner une tâche ; cliquez dessus pour l’ouvrir.",
   "高德地图": "Amap",
   "B0FFKKRXAZ，或粘贴高德链接": "B0FFKKRXAZ ou collez un lien Amap",
