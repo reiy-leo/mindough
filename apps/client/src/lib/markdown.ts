@@ -12,7 +12,7 @@ import { ALERT_MARKER_RE, alertTitleHtml, type AlertKind } from './gh-alerts';
 import { BLOCK_MATH_RE, INLINE_MATH_RE, renderMath, validInlineMath } from './math';
 import { getLocale, tr } from './i18n';
 import { SANITIZE_URI_RE, findBareAppLinks, isBlockedHref } from './link-scheme';
-import { mentionIdOf } from '@mindough/core';
+import { dateMentionMsOf, mentionIdOf } from '@mindough/core';
 
 const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
@@ -96,6 +96,12 @@ function build() {
         const text = this.parser.parseInline(token.tokens);
         const mention = mentionIdOf(token.href);
         if (mention) return `<a href="#/task/${escAttr(mention)}" class="task-mention" data-task-mention="${escAttr(mention)}">${text.replace(/<[^>]*>/g, '')}</a>`;
+        // @ 插进去的日期（Rei 2026-11-20）：画成日期胶囊的占位，不是链接；Markdown.tsx 挂上后按设置换成绝对 / 相对显示（lib/date-mention.ts）
+        const dateMs = dateMentionMsOf(token.href);
+        if (dateMs != null) {
+          const label = text.replace(/<[^>]*>/g, '');
+          return `<span class="date-mention" data-date-mention="${dateMs}" data-label="${escAttr(label)}">${label}</span>`;
+        }
         const title = token.title ? ` title="${escAttr(token.title)}"` : '';
         // 挡掉的协议（javascript: file: …）不留 href，不只靠 DOMPurify
         if (isBlockedHref(token.href)) return `<a${title}>${text}</a>`;

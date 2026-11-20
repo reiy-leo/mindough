@@ -59,6 +59,7 @@ export * from './categories';
 export * from './category-prefs';
 export * from './task-match';
 export * from './task-mention';
+export * from './date-mention';
 export * from './seed/demo';
 export * from './demo-cleanup';
 export * from './sync/protocol';

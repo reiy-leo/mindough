@@ -12,6 +12,7 @@ import { Editor, getSchema, type AnyExtension, type EditorOptions } from '@tipta
 import { Node as PMNode, type Schema } from '@tiptap/pm/model';
 import { TextSelection, type EditorState } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
+import type { DateMention } from '@mindough/core';
 import { createMarkdownIO, sameMarkdown, type MarkdownIO } from './markdown';
 import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type LinkRange } from './extensions';
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
@@ -22,6 +23,7 @@ import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
 import { usableRect } from './mention-place';
+import { dateMentionParse, dateMentionSerialize, insertDateMention, remarkDateMentions } from './date-mention';
 import { insertMention, mentionExtension, mentionParse, mentionSerialize, remarkTaskMentions, type MentionHooks } from './mention';
 export type { MentionState } from './mention';
 export { LINK_INPUT_RE, tableCells, withProtocol, linkRangeAt, type LinkRange } from './extensions';
@@ -37,9 +39,9 @@ export function markdownIO(schema: Schema | null | undefined): MarkdownIO {
   let io = ios.get(schema);
   if (!io) {
     io = createMarkdownIO(schema, {
-      remark: [remarkGh, remarkDetails, remarkUnderline, remarkTaskMentions],
-      parse: [...ghParse, ...detailsParse, ...underlineParse, ...mentionParse],
-      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...mentionSerialize },
+      remark: [remarkGh, remarkDetails, remarkUnderline, remarkTaskMentions, remarkDateMentions],
+      parse: [...ghParse, ...detailsParse, ...underlineParse, ...mentionParse, ...dateMentionParse],
+      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...mentionSerialize, ...dateMentionSerialize },
       wrapText: mathSafeText as never,
       handlers: { underline: underlineHandler },
     });
@@ -180,8 +182,10 @@ export interface MdEditorHandle {
   applyLink(range: { from: number; to: number }, text: string, href: string): boolean;
   /** 把正在打的 @（range）换成提及（第一行是纯文字标题时换成标题文字）。 */
   insertMention(range: { from: number; to: number }, task: { id: string; title: string }): void;
-  /** 把 [from, to) 换成一段纯文字（@ 插入当前时间），光标放在后面。 */
+  /** 把 [from, to) 换成一段纯文字，光标放在后面。 */
   insertPlain(range: { from: number; to: number }, text: string): void;
+  /** 把正在打的 @（range）换成日期胶囊（@ 插入当前时间 / 今天…；第一行是纯文字标题时换成文字）。 */
+  insertDate(range: { from: number; to: number }, d: DateMention): void;
   /** 一段的纯文字（链接框预填）。 */
   textOf(range: { from: number; to: number }): string;
   /** 当前选区（链接框新加时用）。 */
@@ -364,6 +368,9 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
     },
     insertMention(range, task) {
       insertMention(view(), range, task);
+    },
+    insertDate(range, d) {
+      insertDateMention(view(), range, d);
     },
     textOf(range) {
       try {

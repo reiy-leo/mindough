@@ -12,6 +12,7 @@
  * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6）；2026-11-03 加了下划线 ⌘U（+1 波浪线、+2 双线）和 ⌘? 快捷键提示。
  */
 import { TaskMention } from './mention';
+import { DateMentionNode } from './date-mention';
 import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, type AnyExtension } from '@tiptap/core';
 import { Document } from '@tiptap/extension-document';
 import { Paragraph } from '@tiptap/extension-paragraph';
@@ -366,6 +367,7 @@ export function schemaExtensions(): AnyExtension[] {
     MdTableCell,
     Html,
     TaskMention,
+    DateMentionNode,
     FootnoteReference,
     FootnoteDefinition,
     ...ghExtensions,

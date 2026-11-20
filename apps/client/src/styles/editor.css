@@ -669,3 +669,31 @@
 [data-layout='mobile'] .mention-item {
   min-height: 40px;
 }
+
+/* ───────── @ 插进去的日期胶囊（Rei 2026-11-20）───────── */
+/* 编辑器里（.date-mention-node 里那个）和只读 Markdown（span.date-mention）长得一样：
+   强调色淡底 + 细边 + 深色字，比正文小一号；上下不加高，不把行撑高；不折行。点它不做事。没用 color-mix()。 */
+.date-mention-node {
+  white-space: nowrap;
+}
+.date-mention-node.ProseMirror-selectednode .date-mention {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.date-mention {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0 0.42em;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5em;
+  background: var(--accent-soft);
+  color: var(--accent-soft-text, var(--text));
+  font-size: 0.86em;
+  line-height: 1.35;
+  vertical-align: baseline;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}

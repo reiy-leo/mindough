@@ -18,7 +18,7 @@ import { addDays, clearOldDemoRows, DATE_DISPLAYS, demoBatchWrites, DEMO_STAMP_M
 import { Button, ConfirmDialog, Section, Segmented, Select, Switch } from '../ui/primitives';
 import { DemoOffDialog } from '../components/DemoMode';
 import { isDemoMode, switchDemoMode } from '../lib/demo-mode';
-import { DAY_START_PREF, JOURNAL_PREFS, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
+import { DATE_MENTION_DISPLAY_PREF, DAY_START_PREF, JOURNAL_PREFS, normalizeDateMentionDisplay, type DateMentionDisplay, JOURNAL_REMIND_TIME_DEFAULT, normalizeRemindTime } from '@mindough/core';
 import { formatRemindTime } from '../components/task/RemindPanel';
 import { notifyPermission, onReminderSettings, remindersEnabled, requestNotifyPermission, setRemindersEnabled, type NotifyPermission } from '../lib/reminders';
 import { PageHeader } from '../components/PageHeader';
@@ -1140,6 +1140,7 @@ function journalTimeOptions(cur: string) {
  * 这个会更改我的一天、过期积压、日历、项目、打卡、倒数日、日记中的"一天"的范围」）：
  * 「一天从几点开始」（0–23 整点，默认 5 点），同步的偏好，键还是 journal.day_start（老数据照用）。还没到这个点就算前一天（core day-start.ts）。
  * 提醒照真实时钟响，不受它影响。
+ * 「编辑器里的日期」（Rei 2026-11-20）：绝对日期（默认）/ 相对日期，同步的偏好 editor.date_display（core date-mention.ts）。
  */
 function TimeSection() {
   const store = useStore();
@@ -1158,6 +1159,22 @@ function TimeSection() {
           value={String(dayStart)}
           onChange={(v) => store.setPref(DAY_START_PREF, Number(v))}
           options={Array.from({ length: 24 }, (_, h) => ({ id: String(h), label: hourLabel(h) }))}
+        />
+      </div>
+      {/* 编辑器里的日期（Rei 2026-11-20 12:08「如果设置中设定相对日期，则显示成相对日期+时区」）：@ 插进正文的日期胶囊怎么显示，同步的偏好 */}
+      <div className="setting">
+        <div className="setting-text">
+          <div className="setting-name">{tr('编辑器里的日期')}</div>
+          <div className="setting-hint">{tr('正文里用 @ 插入的日期和时间怎么显示。相对日期像「今天 12:03 · UTC+8」，按这台设备的时区算；存的内容不变。')}</div>
+        </div>
+        <Segmented<DateMentionDisplay>
+          label={tr('编辑器里的日期')}
+          value={normalizeDateMentionDisplay(store.pref(DATE_MENTION_DISPLAY_PREF))}
+          onChange={(v) => store.setPref(DATE_MENTION_DISPLAY_PREF, v)}
+          options={[
+            { id: 'absolute', label: tr('绝对日期') },
+            { id: 'relative', label: tr('相对日期') },
+          ]}
         />
       </div>
     </div>

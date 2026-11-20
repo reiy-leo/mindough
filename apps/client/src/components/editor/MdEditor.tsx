@@ -32,7 +32,7 @@ import { waitForMotion } from '../../lib/quick-add';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Button as RacButton, Input, Label, TextField } from 'react-aria-components';
 import { Calendar, Circle, CircleCheck, Clock, ExternalLink, Hourglass } from 'lucide-react';
-import { mentionStampKinds, mentionStampText, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
+import { dateMentionFor, mentionStampKinds, type MentionCandidate, type MentionScope, type MentionStampKind } from '@mindough/core';
 import { mentionChoices, mentionInfo } from '../../lib/task-mention';
 import { tr } from '../../lib/i18n';
 import { externalHref, openExternal } from '../../lib/external';
@@ -46,7 +46,7 @@ type StampItem = { stamp: MentionStampKind };
 const STAMP_ITEMS: Record<MentionStampKind, StampItem> = { datetime: { stamp: 'datetime' }, date: { stamp: 'date' }, tomorrow: { stamp: 'tomorrow' }, yesterday: { stamp: 'yesterday' } };
 type MentionItem = MentionCandidate | StampItem;
 const isStampItem = (c: MentionItem): c is StampItem => 'stamp' in c;
-const stampText = (k: MentionStampKind) => mentionStampText(k);
+const stampText = (k: MentionStampKind) => dateMentionFor(k).label;
 /** 每项的名字（每次取：换语言后跟着变）。 */
 const stampLabel = (k: MentionStampKind) =>
   k === 'datetime' ? tr('插入当前时间') : k === 'tomorrow' ? tr('插入明天日期') : k === 'yesterday' ? tr('插入昨天日期') : tr('插入今天日期');
@@ -146,7 +146,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   const pickMention = (c: MentionItem) => {
     const cur = mRef.current.mq;
     if (!cur) return;
-    if (isStampItem(c)) handle.current?.insertPlain({ from: cur.from, to: cur.to }, stampText(c.stamp));
+    if (isStampItem(c)) handle.current?.insertDate({ from: cur.from, to: cur.to }, dateMentionFor(c.stamp));
     else handle.current?.insertMention({ from: cur.from, to: cur.to }, { id: c.id, title: c.title });
     mPointer.current = false;
   };

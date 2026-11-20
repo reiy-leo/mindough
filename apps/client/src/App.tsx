@@ -41,6 +41,7 @@ import { SearchPage } from './pages/Search';
 import { TaskDetail } from './components/task/TaskDetail';
 import { DetailPane } from './components/task/DetailPane';
 import { useMentionSource } from './lib/task-mention';
+import { useDateMentionSource } from './lib/date-mention';
 import { projectPrefsOf } from './lib/view-hooks';
 import { detailInModal, JOURNAL_MIN, listMinFor, paneFits, WIDE_MIN } from './lib/detail-pane';
 import { DetailModal } from './components/task/DetailModal';
@@ -784,6 +785,8 @@ export function App() {
   const { toast: uiToast, openEditor: uiOpenEditor } = ui;
   const mentionNotFound = useCallback(() => uiToast({ tone: 'error', message: tr('找不到这件任务') }), [uiToast]);
   useMentionSource(store, uiOpenEditor, mentionNotFound);
+  // @ 插进正文的日期胶囊（Rei 2026-11-20）：跟着「编辑器里的日期」偏好显示绝对 / 相对（lib/date-mention.ts）
+  useDateMentionSource(store);
   // 手机标签栏双击「我的一天」立即同步（Rei 2026-11-13，lib/tab-sync）：单击照常切页，300ms 内第二下才同步，结果用 toast 说
   const [tapSyncing, setTapSyncing] = useState(false);
   const tapBusy = useRef(false);
