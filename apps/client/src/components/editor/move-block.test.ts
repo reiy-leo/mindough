@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-/** Ctrl+↑ / Ctrl+↓ 上下移动当前行（Rei 2026-11-20）：顶层块、列表项连子项、多块选区、到头不动、光标跟着走、一步撤销、标题不动、组字不管。 */
+/** Ctrl+↑ / Ctrl+↓（Mac ⌥↑↓）上下移动当前行（Rei 2026-11-20）：顶层块、列表项连子项、多块选区、到头不动、光标跟着走、一步撤销、标题不动、组字不管。 */
 import { describe, expect, it } from 'vitest';
 import { TextSelection } from '@tiptap/pm/state';
 import { undo } from '@tiptap/pm/history';
@@ -44,13 +44,23 @@ const caretText = (view: EditorView) => {
 };
 
 describe('按键识别', () => {
-  it('只认 Ctrl+↑ / Ctrl+↓，带别的修饰键不算', () => {
-    expect(moveKeyDir({ key: 'ArrowUp', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe('up');
-    expect(moveKeyDir({ key: 'ArrowDown', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBe('down');
-    expect(moveKeyDir({ key: 'ArrowUp', ctrlKey: false, metaKey: true, altKey: false, shiftKey: false })).toBeNull();
-    expect(moveKeyDir({ key: 'ArrowUp', ctrlKey: true, metaKey: false, altKey: false, shiftKey: true })).toBeNull();
-    expect(moveKeyDir({ key: 'ArrowUp', ctrlKey: true, metaKey: false, altKey: true, shiftKey: false })).toBeNull();
-    expect(moveKeyDir({ key: 'ArrowLeft', ctrlKey: true, metaKey: false, altKey: false, shiftKey: false })).toBeNull();
+  it('别的系统只认 Ctrl+↑ / Ctrl+↓，带别的修饰键不算', () => {
+    const k = (key: string, m: Partial<Record<'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey', boolean>>) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...m });
+    expect(moveKeyDir(k('ArrowUp', { ctrlKey: true }), false)).toBe('up');
+    expect(moveKeyDir(k('ArrowDown', { ctrlKey: true }), false)).toBe('down');
+    expect(moveKeyDir(k('ArrowUp', { metaKey: true }), false)).toBeNull();
+    expect(moveKeyDir(k('ArrowUp', { altKey: true }), false)).toBeNull();
+    expect(moveKeyDir(k('ArrowUp', { ctrlKey: true, shiftKey: true }), false)).toBeNull();
+    expect(moveKeyDir(k('ArrowUp', { ctrlKey: true, altKey: true }), false)).toBeNull();
+    expect(moveKeyDir(k('ArrowLeft', { ctrlKey: true }), false)).toBeNull();
+  });
+  it('Mac 只认 ⌥↑ / ⌥↓，⌃↑↓ 不算', () => {
+    const k = (key: string, m: Partial<Record<'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey', boolean>>) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...m });
+    expect(moveKeyDir(k('ArrowUp', { altKey: true }), true)).toBe('up');
+    expect(moveKeyDir(k('ArrowDown', { altKey: true }), true)).toBe('down');
+    expect(moveKeyDir(k('ArrowUp', { ctrlKey: true }), true)).toBeNull();
+    expect(moveKeyDir(k('ArrowUp', { altKey: true, shiftKey: true }), true)).toBeNull();
+    expect(moveKeyDir(k('ArrowUp', { altKey: true, metaKey: true }), true)).toBeNull();
   });
 });
 

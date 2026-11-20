@@ -7,8 +7,8 @@ import { tr, trc } from '../../lib/i18n';
 import { detectPlatform, type NavigatorLike } from '../../skin/platform';
 
 /** 一下按键：修饰键 + 主键。 */
-/** ctrl：所有系统都是 Ctrl（Mac 上显示 ⌃），不跟着换成 ⌘。 */
-type Mod = 'mod' | 'ctrl' | 'alt' | 'shift';
+/** ctrl：所有系统都是 Ctrl（Mac 上显示 ⌃），不跟着换成 ⌘。move：移动行用的键，Mac 是 ⌥，别的系统是 Ctrl（Rei 2026-11-20）。 */
+type Mod = 'mod' | 'ctrl' | 'alt' | 'shift' | 'move';
 export type Chord = (Mod | string)[];
 
 export interface ShortcutRow {
@@ -26,9 +26,9 @@ export function isAppleKeyboard(nav: NavigatorLike | undefined = typeof navigato
   return p === 'macos' || p === 'ios';
 }
 
-const MAC: Record<Mod, string> = { mod: '⌘', ctrl: '⌃', alt: '⌥', shift: '⇧' };
-const PC: Record<Mod, string> = { mod: 'Ctrl', ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift' };
-const isMod = (k: string): k is Mod => k === 'mod' || k === 'ctrl' || k === 'alt' || k === 'shift';
+const MAC: Record<Mod, string> = { mod: '⌘', ctrl: '⌃', alt: '⌥', shift: '⇧', move: '⌥' };
+const PC: Record<Mod, string> = { mod: 'Ctrl', ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift', move: 'Ctrl' };
+const isMod = (k: string): k is Mod => k === 'mod' || k === 'ctrl' || k === 'alt' || k === 'shift' || k === 'move';
 
 /** 一下按键写成文字：Mac「⌘⌥X」，别的「Ctrl+Alt+X」。回车 Mac 写 ↩，别的写 Enter。 */
 export function formatChord(chord: Chord, mac: boolean): string {
@@ -64,8 +64,8 @@ export function shortcutRows(): ShortcutRow[] {
     { label: trc('格式', '折叠块'), md: '>> ', keys: [] },
     { label: trc('格式', '公式'), md: '$x^2$', keys: [] },
     { label: trc('格式', '换行'), md: null, keys: [['shift', 'Enter']] },
-    // Rei 2026-11-20：Ctrl+↑ / Ctrl+↓ 上下移动当前行（所有系统都是 Ctrl，见 move-block.ts）
-    { label: trc('格式', '上下移动这一行'), md: null, keys: [['ctrl', '↑↓']] },
+    // Rei 2026-11-20：上下移动当前行，Mac ⌥↑↓（12:36 改），别的系统 Ctrl+↑↓（见 move-block.ts）
+    { label: trc('格式', '上下移动这一行'), md: null, keys: [['move', '↑↓']] },
   ];
 }
 

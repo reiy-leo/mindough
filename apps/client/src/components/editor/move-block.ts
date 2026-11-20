@@ -1,5 +1,5 @@
 /**
- * Ctrl+↑ / Ctrl+↓ 上下移动当前行（Rei 2026-11-20「任务+日期编辑器中 Ctrl+上下箭头移动当前行」）。
+ * Ctrl+↑ / Ctrl+↓（Mac 是 ⌥↑ / ⌥↓）上下移动当前行（Rei 2026-11-20「任务+日期编辑器中 Ctrl+上下箭头移动当前行」，12:36 Mac 改 Option）。
  * 所有系统都是 Ctrl，不是 ⌘。任务正文、新建面板、日记输入框、资料备注都是这个编辑器，都能用。
  *
  * 挪的是哪一块：
@@ -17,6 +17,7 @@ import { Plugin, Selection, TextSelection, type EditorState, type Transaction } 
 import { closeHistory } from '@tiptap/pm/history';
 import type { EditorView } from '@tiptap/pm/view';
 import { titleMode } from './title';
+import { isAppleKeyboard } from './shortcuts';
 
 export type MoveDir = 'up' | 'down';
 
@@ -78,9 +79,10 @@ export function moveBlockTr(state: EditorState, dir: MoveDir): Transaction | nul
   return closeHistory(tr).scrollIntoView();
 }
 
-/** 键盘事件是不是 Ctrl+↑ / Ctrl+↓（只按 Ctrl，Mac 上也是 Ctrl）；是就返回方向。 */
-export function moveKeyDir(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>): MoveDir | null {
-  if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return null;
+/** 键盘事件是不是移动行的键：Mac 只按 ⌥（Rei 2026-11-20 12:36「mac上的快捷键换成option+↑↓」，⌃↑↓ 被调度中心占着），别的系统只按 Ctrl；是就返回方向。 */
+export function moveKeyDir(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>, mac = isAppleKeyboard()): MoveDir | null {
+  const ok = mac ? e.altKey && !e.ctrlKey : e.ctrlKey && !e.altKey;
+  if (!ok || e.metaKey || e.shiftKey) return null;
   return e.key === 'ArrowUp' ? 'up' : e.key === 'ArrowDown' ? 'down' : null;
 }
 
