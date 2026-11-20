@@ -92,6 +92,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|折叠块": "Blok lipat",
   "格式|公式": "Rumus",
   "格式|换行": "Ganti baris",
+  "格式|上下移动这一行": "Pindahkan baris ke atas / bawah",
   "写法和快捷键": "Format dan pintasan",
   "第一行是标题，只能是纯文字": "Baris pertama adalah judul dan hanya berupa teks biasa.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Bergelombang dan ganda: tahan {mod}, tekan U, lalu 1 atau 2. Ulangi untuk menghapus.",

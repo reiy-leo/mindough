@@ -92,6 +92,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|折叠块": "Bloc repliable",
   "格式|公式": "Formule",
   "格式|换行": "Saut de ligne",
+  "格式|上下移动这一行": "Déplacer la ligne vers le haut / bas",
   "写法和快捷键": "Mise en forme et raccourcis",
   "第一行是标题，只能是纯文字": "La première ligne est le titre : texte brut uniquement.",
   "波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。": "Ondulé et double : maintenez {mod}, appuyez sur U puis sur 1 ou 2. Recommencez pour le retirer.",

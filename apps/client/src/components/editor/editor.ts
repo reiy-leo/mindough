@@ -17,6 +17,7 @@ import { behaviorExtension, linkRangeAt, schemaExtensions, withProtocol, type Li
 import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
+import { moveBlockExtension } from './move-block';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
 import { guardTitleInputRules, normalizeTitleDoc, plainTitleExtension, serializeWithTitle } from './title';
@@ -237,6 +238,7 @@ export class MdController {
     const extensions: AnyExtension[] = [
       ...(o.plainTitle ? guardTitleInputRules(schemaExtensions()) : schemaExtensions()),
       imeGuardExtension(),
+      moveBlockExtension(),
       ...(o.mention ? [mentionExtension(() => this.get().mention ?? { onState: () => {}, onKey: () => false })] : []),
       ...(o.plainTitle ? [plainTitleExtension({ io })] : []),
       underlineKeysExtension(),
