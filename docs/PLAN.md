@@ -457,7 +457,7 @@ M0 实现时定下的细节（Rei 2026-10-15 已确认）：
 
 ### 附件 ✅（2026-10-17）
 Rei 2026-10-17：「添加附件功能，用户可以拖拽或选择文件作为附件，附件是图片则小图显示点击可放大(有关闭、下载按钮)，其他文件格式上传后显示图标，点击下载」。
-- **挂在哪**：任务详情、日记（每天那篇）。资料项暂不做（待问）。正文下面一块「附件」。
+- **挂在哪**：任务详情、日记（每天那篇）。资料项不做（Rei 2026-11-21 定：封面头像已够用）。正文下面一块「附件」。
 - **数据**：新表 `attachment`（SQLite 迁移 **v7**）：`owner_type`（task / journal）、`owner_id`（任务 id，或日记 `journalEntryId(date)`）、`file_name`、`mime`、`size`、`r2_key`、`thumb_key`、`width` / `height`（原图）、`created_at`，加 `id` / `updated_at` / `deleted`。按现有同步协议加表（云端只存整行 JSON，不动云端 schema），行级 LWW。给日记加附件时先 `Store.ensureJournal(date)` 建一行空日记（导出靠这一行认日期；只有附件的日子在月历和列表里也算写了，列表里写「N 个附件」）。删任务 / 删那天日记一起把附件打墓碑。Store：`attachmentsOf` / `addAttachment` / `setAttachmentFile` / `renameAttachment`（没写扩展名补回原来的）/ `removeAttachment` / `restoreAttachment`。纯逻辑 core `attachments.ts`（文件类型 10 种、大小显示、文件名安全化与去重、`MAX_ATTACHMENT_BYTES`）。测试 core `test/attachments.test.ts`、client `lib/attachments.test.ts`、`components/attachments/FileIcon.test.tsx`、server `test/files.test.ts`。
 - **存储**：原文件原样传 R2 `mindough-assets`（不压缩不改尺寸），图片在本机另生成一张缩略图（长边 480，WebP，编不了退 JPEG）也传上去，网格用它。Worker `apps/server/src/files.ts`：`POST /api/files`（会话或同步凭据；≤ 50 MB，超过 413 内容太大；同内容只存一份）、`GET /api/files/<用户哈希>/f/<sha256>[?name=&dl=1]`（要登录，key 前缀不是自己的都回 404 未找到；安全的图片格式 inline，其余的或 dl=1 都按 attachment 下载，带原文件名；nosniff + CSP sandbox，HTML / SVG 附件里的脚本不跑；`cache-control: private`）。
 - **上传**（client `lib/attachments.ts` + `lib/attachments-queue.ts`）：选进来 / 拖进来 → 先建行（r2_key 空）+ 文件和缩略图存进本机 IndexedDB 队列 `mindough-files` → 登录且在线时传（XMLHttpRequest，有进度；同时 2 个；先传缩略图再传原图）→ 填上 key、删本机那份。界面显示「正在上传 45%」+ 进度条，能取消（停掉上传、删行，不留撤销）；失败显示「上传失败」+ 重试（悬停看原因，带状态码中文说明）；离线「等联网后上传」、没登录「登录后上传」，联网 / 登录后自动接着传；关掉 app 再开，队列里的接着传。别的设备加的、还没传上来的显示「还在另一台设备上」。上传器只在主窗口跑（同同步）。
@@ -469,7 +469,7 @@ Rei 2026-10-17：「添加附件功能，用户可以拖拽或选择文件作为
 - 截图 `work/shots-attachments/`（脚本 `work/shots-tool/attach.mjs`，假 API）。
 - **待 Rei 确认**（我先这样定的）：
   1. 单个附件上限 50 MB（Worker 和客户端同一个数 `MAX_ATTACHMENT_BYTES` / `MAX_FILE_BYTES`）。Worker 一次读进内存算 SHA-256；要更大得改成分片（R2 multipart）。
-  2. 资料项（影视 / 书…）要不要也能挂附件。
+  2. ~~资料项要不要也能挂附件~~：不做（Rei 2026-11-21）。
   3. 附件不占正文：不在 markdown 里插链接（导出时才附一段清单）；要不要支持把附件拖进正文某处当插图。
   4. ~~删掉的附件只打墓碑，R2 里的文件不删~~（2026-10-25 改了）：删掉以后没别的行用着这份文件，Worker 就删 R2 里的文件；另外每天清理一次没人用的。见下面「附件：清理没人用的云端文件」。
   5. 只有附件、没写字的日记那天算「写了」（月历上有点）。
@@ -1566,7 +1566,7 @@ Rei 2026-11-10 11:44：「安卓端 tabbar默认显示：我的一天、待安�
 - ✅ iOS 分发（Rei 2026-10-16 定）：免费 Apple ID + Xcode 个人团队装自己 iPhone（7 天重装，不走 TestFlight），步骤见 docs/IOS.md；小组件要 App Group，先不接。
 - ✅ 日记功能（Rei 2026-10-17 审过：「一天一篇，英文Journal，入口按你推荐的做。只要心情（5个太少了…动画svg图标）。设一个「一天从几点开始」（默认 5点）。「这一天」汇总不放在日记中。日记提醒…晚上9点，不论是不是已经写了。将来这日子不能写。」）：J1 已做完上线，见下面「日记 J1」和 [docs/JOURNAL.md](JOURNAL.md) 第 0 节。
 - 🟡 滴答清单导入待问：见 IMPORT-DIDA.md「待 Rei 确认」。
-- 🟡 附件待问：见上面「附件」的待 Rei 确认（50 MB 上限、资料项要不要附件、Tauri 存到哪）。
+- 🟡 附件待问：见上面「附件」的待 Rei 确认（50 MB 上限、Tauri 存到哪）。
 - 🟡 日期段待问（2026-10-26）：「可做」现在只看前后关系，开始日还没到的任务也列着（单日任务一样）。要不要改成「开始日到了才算可做」？没改，等 Rei 定。
 - 🟡 日记 Feed 流待确认（2026-10-28）：见上面「日记改版：Feed 流」的待确认 8 条。
 - 🟡 日记待问（J1 没做）：~~「一天从几点开始」要不要扩展到我的一天 / 打卡 / 提醒~~（2026-11-13 定了，见「设置「时间」」）；日记页要不要只读的「这一天」；「插入时间」「那年今日」⌘K 按日期跳转。
