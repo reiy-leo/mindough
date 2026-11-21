@@ -523,7 +523,8 @@
 .md-keys-md {
   padding-right: 14px !important;
 }
-.md-keys-md code {
+.md-keys-md code,
+.md-keys-fw code {
   font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   font-size: 0.92em;
   white-space: pre;
@@ -549,6 +550,62 @@
 }
 .md-keys-note + .md-keys-note {
   margin-top: 2px;
+}
+/* 全角写法并在半角后面（界面是中文时，Rei 2026-11-21 15:53）：「> · 》 」。单独一列，中间的点淡一点 */
+.md-keys-fw {
+  padding-right: 14px !important;
+}
+.md-keys-or {
+  margin-right: 5px;
+  color: var(--text-3);
+}
+/* 手机：从格式栏的 info 按钮打开（Rei 2026-11-21 15:55）。整屏宽（左右留 8）、底边贴在格式栏上沿；
+   行多时能上下滑（所以要接触摸），点一下收起；只有标题、名字、写法两列，没有快捷键列。层级在格式栏下面一点，阴影不压到栏上。 */
+.md-keys-pop.is-sheet {
+  z-index: 1000;
+  pointer-events: auto;
+  width: auto;
+  right: 8px;
+  max-width: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 14px 8px;
+  font-size: 13px;
+  line-height: 1.25;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.md-keys-pop.is-sheet .md-keys-title {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.md-keys-pop.is-sheet .md-keys-table th,
+.md-keys-pop.is-sheet .md-keys-table td {
+  padding: 1.5px 0;
+}
+/* 名字一列占满，写法靠右成两列 */
+.md-keys-pop.is-sheet .md-keys-table th {
+  width: 100%;
+}
+.md-keys-pop.is-sheet .md-keys-table td:last-child {
+  padding-right: 0 !important;
+}
+.md-keys-pop.is-sheet .md-keys-note {
+  font-size: 12px;
+}
+[data-skin='apple'] .md-keys-pop.is-sheet {
+  border-radius: 14px;
+}
+[data-skin='winui'] .md-keys-pop.is-sheet {
+  border-radius: 8px;
+}
+/* Material 3：surface container 底、大圆角、不要描边 */
+[data-skin='material'] .md-keys-pop.is-sheet {
+  border-radius: 16px;
+  border-color: transparent;
 }
 
 /* ───────── @ 提及任务（Rei 2026-11-10）───────── */
@@ -807,6 +864,8 @@
 .md-format-bar {
   position: fixed;
   z-index: 1001;
+  display: flex;
+  align-items: center;
   box-sizing: border-box;
   height: 44px;
   padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
@@ -819,6 +878,8 @@
   touch-action: pan-x;
 }
 .md-format-bar-scroll {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -859,6 +920,20 @@
 .md-format-btn.is-active {
   background: var(--accent-soft);
   color: var(--accent-soft-text);
+}
+/* 最右边的 info 按钮（Rei 2026-11-21 15:55）：不跟着横滑，左边一条细分隔线，和前面滑动的按钮分开 */
+.md-format-help {
+  position: relative;
+  margin: 0 6px 0 2px;
+}
+.md-format-help::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--border);
 }
 
 /* Apple：像 iOS 键盘上方的工具条，半透明毛玻璃，选中是强调色淡底 + 强调色图标 */
@@ -907,4 +982,7 @@
 [data-skin='material'] .md-format-btn.is-active {
   background: var(--nav-active-bg);
   color: var(--nav-active-icon);
+}
+[data-skin='material'] .md-format-help {
+  margin: 4px 8px 4px 4px;
 }

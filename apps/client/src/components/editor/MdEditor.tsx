@@ -25,6 +25,8 @@
  * - 外面的值变了（同步下来）且不是自己刚写的：替换内容。
  * - ⌘ / Ctrl + Enter：给了 onModEnter 就交给它（日记输入框发送，Rei 2026-10-29「任务和日记 editor 要行为一致」），不给照常换行。
  * - ⌘? / ⌘/（Windows / Linux 是 Ctrl）：光标旁弹出「写法和快捷键」浮层（Rei 2026-11-03），只看不点；Esc、再按一次、点别处、离开编辑器都收起。
+ *   界面是中文时写法列并上全角写法（「> · 》 」）。手机上点格式栏最右边的 info 按钮开同一个浮层（Rei 2026-11-21 15:55）：
+ *   贴在格式栏上面、整屏宽，只列写法，不列 ⌘ 快捷键和讲 ⌘ 的说明；键盘不收、光标不丢；点任意处或再点 info 收起，键盘收起也收起。
  *   下划线 ⌘U（+1 波浪线、+2 双线）见 underline.ts。
  * - 粘贴进正文的图片：拦下、不上传，提示「正文里不能放图片」（Rei 2026-10-29）。从外面拖进来的文件（包括图片、落在正文上）都是附件，外框先接住，见 Attachments.tsx attachFileDrop。
  * - @ 提及任务（Rei 2026-11-10）：给了 mention（任务正文、日记）就能打 @，光标旁弹出候选（mention.ts 管 @ 和键盘，这里画浮层）；
@@ -60,7 +62,7 @@ const stampText = (k: MentionStampKind) => dateMentionFor(k).label;
 /** 每项的名字（每次取：换语言后跟着变）。 */
 const stampLabel = (k: MentionStampKind) =>
   k === 'datetime' ? tr('插入当前时间') : k === 'tomorrow' ? tr('插入明天日期') : k === 'yesterday' ? tr('插入昨天日期') : tr('插入今天日期');
-import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts } from './shortcuts';
+import { formatChord, isAppleKeyboard, shortcutRows, shortcutTexts, showFullWidth } from './shortcuts';
 
 export interface MdEditorProps {
   value: string;
@@ -138,8 +140,8 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   const textInput = useRef<HTMLInputElement>(null);
   const linkingRef = useRef(false);
   linkingRef.current = !!dialog;
-  /** 「写法和快捷键」浮层：开着时的光标位置（视口坐标）。 */
-  const [help, setHelp] = useState<{ left: number; top: number; bottom: number } | null>(null);
+  /** 「写法和快捷键」浮层：开着时的光标位置（视口坐标）；sheet = 从手机格式栏的 info 按钮打开，贴在格式栏上面。 */
+  const [help, setHelp] = useState<{ left: number; top: number; bottom: number; sheet?: boolean } | null>(null);
   const helpRef = useRef(false);
   helpRef.current = !!help;
   const toggleHelp = () => {
@@ -150,6 +152,16 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     const c = h.coordsOf(h.selection()) ?? (box ? { left: box.right - 16, top: box.top, bottom: box.top } : null);
     if (c) setHelp(c);
   };
+  // 格式栏（放在浮层前面：浮层贴着它放。Rei 2026-11-21 方案 A）：触屏、有焦点、软键盘开着、链接框没开时出现，贴在键盘上沿；收键盘 / 失焦就没了
+  const coarse = useCoarsePointer(formatBar && !readOnly);
+  const [kb, setKb] = useState<KeyboardState>({ open: false, top: 0 });
+  const watchKb = formatBar && coarse && focused && !readOnly;
+  useEffect(() => {
+    if (!watchKb || typeof window === 'undefined') return setKb({ open: false, top: 0 });
+    return watchKeyboard(setKb);
+  }, [watchKb]);
+  /** 格式栏的 info 按钮：开关贴在格式栏上面的那种。 */
+  const toggleHelpSheet = () => setHelp((h) => (h ? null : { left: 0, top: 0, bottom: 0, sheet: true }));
   const toggleHelpRef = useRef(toggleHelp);
   toggleHelpRef.current = toggleHelp;
 
@@ -431,6 +443,19 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   useLayoutEffect(() => {
     const el = helpEl.current;
     if (!help || !el) return setHelpPos(null);
+    if (help.sheet) {
+      // 手机：整屏宽（左右各留 8），底边贴在格式栏上沿往上 6；格式栏量不到就贴键盘上沿
+      // 格式栏的上沿 = 键盘上沿 - 栏高（FormatBar 也这么摆；它自己的位置要下一轮才更新，所以不直接量它）
+      const bar = wrap.current?.querySelector<HTMLElement>('.md-format-bar');
+      const barTop = kb.top - (bar?.offsetHeight || 44);
+      const vv = window.visualViewport;
+      const minTop = (vv ? vv.offsetTop : 0) + 8;
+      const maxH = Math.max(120, barTop - 6 - minTop);
+      el.style.maxHeight = `${maxH}px`;
+      setHelpPos({ left: 8, top: Math.max(minTop, barTop - 6 - Math.min(el.offsetHeight, maxH)) });
+      return;
+    }
+    el.style.maxHeight = '';
     const w = el.offsetWidth;
     const hgt = el.offsetHeight;
     const vw = window.innerWidth;
@@ -439,11 +464,17 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     let top = help.bottom + 6;
     if (top + hgt > vh - 8) top = help.top - 6 - hgt;
     setHelpPos({ left, top: Math.max(8, top) });
-  }, [help]);
+  }, [help, kb.top]);
   useEffect(() => {
     if (!help) return;
-    // 浮层只看不点（pointer-events: none，不挡下面的东西）：点哪儿都收起
-    const down = () => setHelp(null);
+    // 浮层只看不点（pointer-events: none，不挡下面的东西）：点哪儿都收起。
+    // 格式栏的 info 按钮自己开关（不然按下先收起、点完又打开）；手机那种浮层能滑着看，点它本身也收起（onClick）
+    const down = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      if (t?.closest?.('[data-help-toggle]')) return;
+      if (help.sheet && helpEl.current?.contains(t)) return;
+      setHelp(null);
+    };
     const away = () => setHelp(null);
     document.addEventListener('pointerdown', down, true);
     window.addEventListener('resize', away);
@@ -458,38 +489,59 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     createPortal(
       (() => {
         const t = shortcutTexts(mac);
+        const sheet = !!help.sheet;
+        const fw = showFullWidth();
         return (
           <div
             ref={helpEl}
-            className="md-keys-pop"
+            className={`md-keys-pop${sheet ? ' is-sheet' : ''}`}
             role="dialog"
             aria-label={t.title}
             style={helpPos ? { left: helpPos.left, top: helpPos.top } : { left: 0, top: 0, visibility: 'hidden' }}
+            // 手机那种：按下不抢焦点（键盘不收、光标不丢），能滑着看，点一下收起
+            onPointerDown={sheet ? (e) => e.preventDefault() : undefined}
+            onMouseDown={sheet ? (e) => e.preventDefault() : undefined}
+            onClick={sheet ? () => setHelp(null) : undefined}
           >
             <div className="md-keys-title">{t.title}</div>
             <table className="md-keys-table">
               <tbody>
-                {shortcutRows().map((r) => (
+                {shortcutRows({ touch: sheet }).map((r) => (
                   <tr key={r.label}>
                     <th scope="row">{r.label}</th>
                     <td className="md-keys-md">{r.md && <code>{r.md}</code>}</td>
-                    <td className="md-keys-keys">
-                      {r.keys.map((c, i) => (
-                        <kbd key={i} className="kbd">
-                          {formatChord(c, mac)}
-                        </kbd>
-                      ))}
-                    </td>
+                    {/* 全角写法单独一列，半角那列左对齐、上下对齐 */}
+                    {fw && (
+                      <td className="md-keys-fw">
+                        {r.fw && (
+                          <>
+                            <span className="md-keys-or" aria-hidden>
+                              ·
+                            </span>
+                            <code lang="zh">{r.fw}</code>
+                          </>
+                        )}
+                      </td>
+                    )}
+                    {!sheet && (
+                      <td className="md-keys-keys">
+                        {r.keys.map((c, i) => (
+                          <kbd key={i} className="kbd">
+                            {formatChord(c, mac)}
+                          </kbd>
+                        ))}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
             {plainTitle && <p className="md-keys-note">{t.title1}</p>}
-            <p className="md-keys-note">{t.combo}</p>
+            {!sheet && <p className="md-keys-note">{t.combo}</p>}
             <p className="md-keys-note">{t.highlight}</p>
-            <p className="md-keys-note">{t.clipLink}</p>
+            {!sheet && <p className="md-keys-note">{t.clipLink}</p>}
             {mention && <p className="md-keys-note">{t.mention}</p>}
-            <p className="md-keys-note">{t.close}</p>
+            <p className="md-keys-note">{sheet ? t.closeTouch : t.close}</p>
           </div>
         );
       })(),
@@ -876,14 +928,6 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       </div>
   );
 
-  // 格式栏（Rei 2026-11-21 方案 A）：触屏、有焦点、软键盘开着、链接框没开时出现，贴在键盘上沿；收键盘 / 失焦就没了
-  const coarse = useCoarsePointer(formatBar && !readOnly);
-  const [kb, setKb] = useState<KeyboardState>({ open: false, top: 0 });
-  const watchKb = formatBar && coarse && focused && !readOnly;
-  useEffect(() => {
-    if (!watchKb || typeof window === 'undefined') return setKb({ open: false, top: 0 });
-    return watchKeyboard(setKb);
-  }, [watchKb]);
   // 自己记组字（ProseMirror 的 view.composing 有时提前结束，见 ime-guard.ts）
   const imeOn = useRef(false);
   useEffect(() => {
@@ -919,8 +963,20 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     else if (r.kind === 'mention') barAt.current = r.at;
     else if (r.kind === 'palette') setHl(r.range);
   };
+  // 格式栏没了（收键盘、失焦、开链接框）：从 info 按钮开的浮层跟着收
+  useEffect(() => {
+    if (!barOn && help?.sheet) setHelp(null);
+  }, [barOn, help?.sheet]);
   const formatBarEl = barOn && editor && (
-    <FormatBar editor={editor} keyboardTop={kb.top} mention={!!mention} composing={() => imeOn.current} onResult={onBarResult} />
+    <FormatBar
+      editor={editor}
+      keyboardTop={kb.top}
+      mention={!!mention}
+      composing={() => imeOn.current}
+      onResult={onBarResult}
+      onHelp={toggleHelpSheet}
+      helpOpen={!!help?.sheet}
+    />
   );
 
   return (

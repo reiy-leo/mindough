@@ -94,7 +94,7 @@ export function fwTaskEnd(state: EditorState, match: RegExpMatchArray, end: numb
   if (match[1]) return end;
   const $e = state.doc.resolve(end);
   const next = $e.parent.textBetween($e.parentOffset, Math.min($e.parent.content.size, $e.parentOffset + 1), '', '\ufffc');
-  return next === '】' ? end + 1 : null;
+  return next === '】' ? end + 1 : null; // i18n-ignore：全角写法的符号
 }
 
 /** 一行 |a|b|（至少两列，或一列也行）：回车变成表格，这行当表头。 */

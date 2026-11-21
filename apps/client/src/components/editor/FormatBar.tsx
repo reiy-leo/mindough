@@ -6,6 +6,8 @@
  * - 按下不抢焦点（pointerdown / mousedown 都 preventDefault）：键盘不收、光标不丢；按钮也不进 Tab 顺序。
  * - 放在编辑器里面、position: fixed（不放 body：弹层 / 新建面板会把点在外面的当成「点了外面」关掉自己，和 @ 浮层一样）。
  *   外面哪层有 transform 时 fixed 是相对那一层的：先放到 0,0 量出那一层的原点，再减掉。
+ * - 最右边固定一个 info 按钮（Rei 2026-11-21 15:55），不跟前面的按钮一起横滑：点了开关「写法和快捷键」浮层（MdEditor 画，
+ *   手机上只列写法），同样按下不抢焦点。
  * - 三种皮肤各一套样子（styles/editor.css .md-format-bar），亮暗都有；不用 color-mix()。
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react';
@@ -21,6 +23,7 @@ import {
   Heading2,
   Heading3,
   Highlighter,
+  Info,
   Link,
   List,
   ListIndentDecrease,
@@ -102,9 +105,16 @@ export interface FormatBarProps {
   /** 输入法正在组字（MdEditor 自己记的，加上 ProseMirror 的）。 */
   composing: () => boolean;
   onResult: (r: FormatResult) => void;
+  /** 点了最右边的 info 按钮：开关「写法和快捷键」浮层。 */
+  onHelp: () => void;
+  /** 浮层开着（按钮显示按下）。 */
+  helpOpen: boolean;
 }
 
-export function FormatBar({ editor, keyboardTop, mention, composing, onResult }: FormatBarProps) {
+/** info 按钮的读屏名（和浮层标题同一个词）。 */
+export const formatHelpLabel = () => tr('写法和快捷键');
+
+export function FormatBar({ editor, keyboardTop, mention, composing, onResult, onHelp, helpOpen }: FormatBarProps) {
   const el = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<FormatBarState>(() => formatBarState(editor, { mention }));
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
@@ -179,6 +189,20 @@ export function FormatBar({ editor, keyboardTop, mention, composing, onResult }:
           );
         })}
       </div>
+      {/* 固定在最右，不跟着横滑；data-help-toggle：浮层「点哪儿都收起」不管这个按钮，交给它自己开关 */}
+      <button
+        type="button"
+        tabIndex={-1}
+        className={`md-format-btn md-format-help${helpOpen ? ' is-active' : ''}`}
+        data-help-toggle=""
+        aria-label={formatHelpLabel()}
+        title={formatHelpLabel()}
+        aria-haspopup="dialog"
+        aria-expanded={helpOpen}
+        onClick={onHelp}
+      >
+        <Info size={20} strokeWidth={helpOpen ? 2.4 : 2} aria-hidden />
+      </button>
     </div>
   );
 }
