@@ -65,6 +65,8 @@ import { canSendPost, entryIdOfPost, planJournalMigration, sortPosts } from './j
 import { renamedFileName, safeFileName, sortAttachments } from './attachments';
 import { LIB_OPT_OUT, groupLibraryId, manualVia, placeTask, type LibLinkTarget, type LinkOf } from './project-libraries';
 import type { GroupLibrary, Milestone } from './types';
+import type { Asset } from './types';
+import { collectDataImages, replaceDataUrl, replaceInValue, type DataImageRef } from './data-images';
 import { cleanMilestoneName, milestoneNameKey, sortMilestones } from './milestone';
 import { cleanRole, libraryLinkId, sortCredits, sortFilmography } from './library-link';
 export interface StoreOptions {
@@ -1794,6 +1796,50 @@ export class Store {
     return this.tables.task.get(task.id) ?? task;
   }
 
+  /** replaceDataImage 正在换的那张图（日记条目只许这样改正文）。 */
+  private imageRewrite: { from: string; to: string } | null = null;
+
+  /** 库里还有哪些 data: 图片（同一张只算一次；草稿任务、墓碑不算）。见 data-images.ts。 */
+  dataImages(): DataImageRef[] {
+    return collectDataImages((t) => this.tables[t].values() as Iterable<BaseRow>, (t, id) => t === 'task' && this.drafts.has(id));
+  }
+
+  /**
+   * 把一张 data: 图片在所有行里换成 R2 地址（Rei 2026-11-21 旧图搬到 R2）。每行都按现在内存里最新的那版换，
+   * 只换这一段地址，别的字一个不动；照常盖时间戳进 outbox（LWW 同步到别的设备）。asset 行整个地址就是这张图的，
+   * 顺带填上 r2_key / sha256 / mime（宽高不动）。
+   * 这是系统换地址、不是用户改内容：严格模式锁住的任务、发出去不能改的日记条目也照换。返回改了几行。
+   */
+  replaceDataImage(from: string, up: { url: string; r2_key: string; sha256: string; mime: string }): number {
+    if (!from || !up.url || from === up.url) return 0;
+    const rows: Array<{ table: TableName; row: BaseRow }> = [];
+    for (const table of TABLES) {
+      for (const row of (this.tables[table] as Map<string, BaseRow>).values()) {
+        if (row.deleted || (table === 'task' && this.drafts.has(row.id))) continue;
+        let next: Record<string, unknown> | null = null;
+        for (const [k, v] of Object.entries(row as unknown as Record<string, unknown>)) {
+          if (k === 'id' || k === 'updated_at' || k === 'deleted') continue;
+          const nv = replaceInValue(v, from, up.url);
+          if (nv !== v) (next ??= { ...row })[k] = nv;
+        }
+        if (!next) continue;
+        if (table === 'asset' && (row as Asset).url === from) Object.assign(next, { r2_key: up.r2_key, sha256: up.sha256, mime: up.mime });
+        rows.push({ table, row: next as unknown as BaseRow });
+      }
+    }
+    if (!rows.length) return 0;
+    const strict = this.strictDone;
+    this.imageRewrite = { from, to: up.url };
+    this.strictDone = false;
+    try {
+      this.write(rows);
+    } finally {
+      this.strictDone = strict;
+      this.imageRewrite = null;
+    }
+    return rows.length;
+  }
+
   /** 这件任务还是草稿（只在内存里）吗。 */
   isDraftTask(id: string): boolean {
     return this.drafts.has(id);
@@ -3065,6 +3111,9 @@ export class Store {
   private assertPostUnchanged(next: JournalPost) {
     const cur = this.tables.journal_post.get(next.id);
     if (!cur) return;
+    // 旧 data: 图片搬到 R2（replaceDataImage）：正文只是把那段地址换掉，别的一个字没动，放行
+    const rw = this.imageRewrite;
+    if (rw && next.body_md === replaceDataUrl(cur.body_md, rw.from, rw.to) && (cur.mood ?? null) === (next.mood ?? null) && cur.day === next.day && cur.created_at === next.created_at) return;
     if (cur.body_md !== next.body_md || (cur.mood ?? null) !== (next.mood ?? null) || cur.day !== next.day || cur.created_at !== next.created_at) throw new JournalPostLockedError();
   }
 

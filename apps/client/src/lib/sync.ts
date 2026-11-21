@@ -4,9 +4,11 @@
  * - 什么时候同步：本机写入后（防抖 1.5 秒）、回到前台 / 窗口获得焦点、联网、每 60 秒（只在前台）。
  * - 永不挡界面：全部在后台，结果只反映在状态上（设置 → 账户）。
  *
+ * - 每次同步成功后，空下来时把旧的 data: 图片搬几张到 R2（lib/data-image-migrate.ts），搬成了再同步一次推上去。
+ *
  * Web 与原生端只差在凭据怎么取（authInit）和基址（API_BASE），引擎同一份。
  */
-import { migrateDataAssets } from './asset-migrate';
+import { DataImageMigrator, scheduleMigration } from './data-image-migrate';
 import { useSyncExternalStore } from 'react';
 import { SyncEngine, SyncHttpError, type PullResult, type PushResult, type Store, type SyncStatus, type SyncToken, type SyncTransport, type WireRow } from '@mindough/core';
 import { API_BASE, authInit, getAccount, statusZh, subscribeAccount } from './account';
@@ -104,8 +106,22 @@ async function startFor(store: Store, email: string) {
   if (engine && engineAccount === email) return;
   await stopSync();
   engineAccount = email;
-  engine = new SyncEngine(store, httpTransport(tokens), { account: email, onError: (e) => console.warn('同步出错', e), beforePush: () => migrateDataAssets(store).then(() => {}) });
-  unsubEngine = engine.subscribe(() => engine && setView({ enabled: true, ...engine.snapshot }));
+  engine = new SyncEngine(store, httpTransport(tokens), { account: email, onError: (e) => console.warn('同步出错', e) });
+  const migrator = new DataImageMigrator(store);
+  let lastSynced = engine.snapshot.lastSyncedAt;
+  unsubEngine = engine.subscribe(() => {
+    if (!engine) return;
+    setView({ enabled: true, ...engine.snapshot });
+    // 同步成功了一轮（lastSyncedAt 变了，含有大行被扣下的那种）：空下来时搬一批旧 data: 图片
+    const at = engine.snapshot.lastSyncedAt;
+    if (at && at !== lastSynced) {
+      lastSynced = at;
+      const e = engine;
+      scheduleMigration(migrator, () => {
+        if (engine === e) void e.syncNow();
+      });
+    }
+  });
   setView({ enabled: true, ...engine.snapshot, phase: navigator.onLine === false ? 'offline' : 'syncing' });
   window.addEventListener('focus', onForeground);
   document.addEventListener('visibilitychange', onForeground);
