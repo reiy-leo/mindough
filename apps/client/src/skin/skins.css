@@ -192,36 +192,52 @@
 [data-skin='winui'] .nav-icon {
   color: var(--text);
 }
-/* 内容层：圆角左上角 + 比 Mica 亮一层 */
+/* 内容层：比 Mica 亮一层，左边一条线和侧栏分开。顶到窗口最上、不留缝、左上角直角，上边不画线
+   （Rei 2026-11-21「winui顶部的不要留空，占满，不要圆角」；原来顶上空 8px 露 Mica、左上角圆 8px）。
+   Windows 桌面 App 用系统标题栏，内容层在标题栏下面，挡不到拖动区域。 */
 [data-skin='winui'] .app-desktop .main {
   background: rgba(255, 255, 255, 0.5);
-  border-top-left-radius: 8px;
   border-left: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
 }
 [data-skin='winui'][data-theme='dark'] .app-desktop .main {
   background: rgba(58, 58, 58, 0.3);
 }
 /* 顶部固定块（我的一天/等待安排/项目/打卡/日记/资料库/人物/搜索/过期积压）：内容层是叠在 Mica 上的半透明白，
    固定块原来涂不透明的页面底色，就显出一块灰（Rei 2026-11-18）。没滚动时透明，和内容层一样；
-   滚动后（is-stuck）才用半透明 + 模糊盖住底下滚过的行，像 WinUI 的亚克力。手机布局不改。 */
+   滚动后（is-stuck）才用半透明 + 模糊盖住底下滚过的行，像 WinUI 的亚克力。手机布局不改。
+   模糊底撑满整列（Rei 2026-11-21「弄成全宽」）：页面有最大宽度、居中，固定块只比内容多出 8px，两边会露出滚过的行。
+   底色和模糊画在 ::before 上，左右各多铺半个窗口宽，由滚动列（内容层 .main、日记右栏 .jf-main）裁掉多出来的部分；固定块本身和里面的添加框、工具行位置不动。滚动列横向本来就不滚，改成 hidden，
+   免得多铺的那块撑出横向滚动条。分隔线也画在 ::before 底边，跟着撑满。 */
+[data-skin='winui'] .app-desktop :is(.main, .main-scroll, .jf-main) {
+  overflow-x: hidden;
+}
 [data-skin='winui'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky) {
   background: transparent;
   background-image: none;
 }
 [data-skin='winui'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck {
+  border-bottom-color: transparent;
+}
+[data-skin='winui'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: -1px;
+  left: -50vw;
+  right: -50vw;
+  border-bottom: 1px solid var(--border);
   background: rgba(249, 249, 249, 0.82);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   backdrop-filter: blur(24px) saturate(1.2);
+  pointer-events: none;
 }
-[data-skin='winui'][data-theme='dark'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck {
+[data-skin='winui'][data-theme='dark'] .app-desktop :is(.add-bar-sticky, .project-head-sticky, .checkin-head-sticky, .sticky-head, .jf-compose-sticky).is-stuck::before {
   background: rgba(44, 44, 44, 0.82);
 }
-[data-skin='winui'] .app-desktop .project-head-sticky .add-bar-sticky.is-stuck {
-  background: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+/* 项目页头里的添加框跟着页头一起固定，自己不再画底 */
+[data-skin='winui'] .app-desktop .project-head-sticky .add-bar-sticky.is-stuck::before {
+  content: none;
 }
 [data-skin='winui'] .page-icon {
   background: transparent;
@@ -1261,7 +1277,7 @@
 }
 
 /* WinUI：第二、三列合起来是一整块内容层，浮在 Mica 上（Windows 11 NavigationView 的做法）。
-   只有靠侧栏那一侧的左上角圆 8px，贴窗口边的角不圆；两列之间一条 1px 分隔线，不再各自做成圆角卡片。
+   四角都不圆、顶到窗口最上（2026-11-21 起；原来靠侧栏的左上角圆 8px）；两列之间一条 1px 分隔线，不再各自做成圆角卡片。
    原来右列是一块四角都圆、四周留 8px 缝的卡片，和中间列的直角右上角、通到底的下边对不齐，
    两列交界露出一截 Mica（Rei 2026-11-18「Windows 皮肤 第二列第三列的圆角有问题」）。 */
 [data-skin='winui'] {
@@ -1272,12 +1288,10 @@
   --row-selected-bg: rgba(255, 255, 255, 0.08);
 }
 [data-skin='winui'] .app-desktop .detail-pane {
-  /* 和中间列 .main 同一层：同样的半透明底、上边框，顶上同样空出 8px 露 Mica */
+  /* 和中间列 .main 同一层：同样的半透明底，同样顶到窗口最上（Rei 2026-11-21） */
   height: auto;
-  margin-top: 8px;
   padding: 0;
   background: rgba(255, 255, 255, 0.5);
-  border-top: 1px solid var(--border);
 }
 [data-skin='winui'][data-theme='dark'] .app-desktop .detail-pane {
   background: rgba(58, 58, 58, 0.3);
