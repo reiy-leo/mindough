@@ -1948,6 +1948,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有关联的影片。": "Ainda não há filmes vinculados.",
   "还没有关联的影人。": "Ainda não há pessoas vinculadas.",
   "先填名字，或者 TMDB / IMDb 编号": "Preencha primeiro o nome, ou um ID do TMDB / IMDb",
+  "豆瓣单季": "Temporada do Douban",
+  "在 {label} 打开{title}": "Abrir {title} no {label}",
+  "豆瓣单季已并进「{name}」": "Temporadas do Douban mescladas em “{name}”",
+  "豆瓣链接记到了「{name}」{season}": "Link do Douban salvo em {season} de “{name}”",
 };
 
 export const DATA: Record<string, string> = {

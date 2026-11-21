@@ -493,6 +493,8 @@ export const CORE_EN: Record<string, V> = {
   "高德地点编号是 B 开头的 10 位字母数字": "An Amap place ID is 10 letters and digits starting with B",
   // 项目里程碑（Rei 2026-11-13）
   '里程碑「{name}」所在的项目找不到，没导入': (p) => `The project for milestone “${p.name}” wasn’t found, so it wasn’t imported`,
+  // 豆瓣单季并进剧集（Rei 2026-11-21）
+  豆瓣单季: 'Douban season entry',
 };
 
 function ordinal(n: number): string {

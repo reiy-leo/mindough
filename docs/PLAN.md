@@ -2015,6 +2015,23 @@ Rei 2026-11-11 06:56「资料库「影视库」里的剧集显示 seasons」。
 - 新文案：「季 {length}」「特别篇」「{n} 集」，9 种语言（外语待母语者看）。
 - 测试：core `seasons.test.ts` 10 项；Worker `lookup.test.ts` 加 3 项；客户端 `lib/seasons.test.ts` 4 项。
 
+### 豆瓣单季并进剧集，季卡片带豆瓣、IMDb 链接 ✅（2026-11-21）
+Rei 2026-11-21 20:36，两件：豆瓣单季并进 TMDB 剧集；「季」一节每季加豆瓣和 IMDb 链接。
+
+- core `douban-seasons.ts`：每季的豆瓣编号存在资料的保留键 `_douban_seasons`（JSON 文字 `{ v: 1, ids: { 季号: 豆瓣编号 }, tried, at }`），跟着资料同步，不加列、不加迁移。和 `_seasons` 分开存，是因为老客户端补拉季时会整个重写 `_seasons`（`cleanSeason` 丢掉不认识的字段）。
+  - 认单季：`seasonOfName`（`stripEpisode` 认季标记，带集号的不算）；`doubanSeasonOfResult`（豆瓣结果、不是电影、名字带季）；`doubanSeasonOfItem`（影视库、豆瓣来源或只填了豆瓣编号、不是 TMDB 来源）。
+  - 认整部剧：`isSeasonHost`（`isShowItem`，TMDB 剧集编号或 IMDb 编号，自己不是豆瓣单季）。`seasonHostScore`：IMDb 相同或去掉季标记同名（原名也算）；年份按这一季的首播年份比（差 ≤ 1），不知道就看整部剧的年份；同分的两部剧不配。
+  - `seasonHostOfResult` / `seasonHostOfItem` / `seasonItemsOf`；`findLookupTwin` 加一条：豆瓣结果的编号记在某部剧的 `_douban_seasons` 里，就是那部剧。
+  - `seasonLinks`：豆瓣 `movie.douban.com/subject/<id>/`，IMDb `imdb.com/title/<tt>/episodes/?season=N`；第 0 季（特别篇）不给。
+  - 自动配：`doubanSeasonsToSearch`（有首播年份、没编号、30 天内没搜过）、`matchDoubanSeasons`（名字、季号、年份差 ≤ 1、只有一条候选；只有一季的剧，名字不写季、年份完全一样的算第 1 季）、`recordDoubanSearch`、`doubanSeasonQuery`（「星期三 第二季」，中文数字）。
+- 合并：`planItemMerge` 遇到「目标是整部剧、来源是豆瓣单季」，来源只出豆瓣编号（记到季上）、更多链接、备注，别的字段不拿，也不算冲突；两部剧合并时各季编号合起来，目标优先（`mergedDoubanSeasons`）。`Store.absorbDoubanSeasons(hostId)` 找出这部剧的单季条目走 `mergeLibraryItems`，撤销用 `undoMerge`。`Store.duplicateGroups` 给 `duplicateGroups` 传额外配对（剧集 ↔ 单季，理由「豆瓣单季」）和 `first`（剧集排最前）。
+- 客户端 `lib/lookup.ts`：`createItemFromLookup` 返回 `LookupPick`（`season`：豆瓣单季记到了哪一季；`absorbed`：顺手并进来的单季，可撤销）。豆瓣单季先找整部剧，找到就只记编号，不 `enrich`（免得拿单季的海报、编号补到剧上）；选剧集（新建或用库里已有的）后调 `absorbDoubanSeasons`。`lookupPickToast` 给资料库页和挑资料面板弹提示。新建面板里「在线新建的、取消时删掉」不算并了单季的那条（删了单季条目的任务就没处指了）。`searchDoubanMovies`：`/api/lookup/search?kind=movie&source=douban&lang=zh`，界面什么语言都按 zh 问（英文界面的搜索结果本来不列豆瓣）。Worker 没改。
+- 客户端 `lib/douban-seasons.ts` 的 `useDoubanSeasonsRefresh`：「季」一节显示、登录在线、有要搜的季时后台搜一轮（先剧名，没配上的季再逐季，最多 5 次请求），写回资料；豆瓣回的不是 ok（被拦去验证页）就只记配上的、别的下次再搜；同一条资料一次会话只试一次，页面关掉取消的下次还会搜。
+- 界面 `Seasons.tsx`：每张季卡片下面 `.season-links`，两个 `.link-chip.season-link`（22px 高，Material 24px，手机 28px，不带箭头图标）。读屏名「在 豆瓣 打开第 2 季」。
+- 我代定（Rei 没说）：剧集自己的「豆瓣」字段不填；名字不写季的豆瓣条目只在「这部剧只有一季、年份完全一样」时算第 1 季；手动合并不再比名字和年份；英文界面也搜豆瓣（剧名是英文时多半配不上，就不显示）；一次最多 5 次请求、30 天重搜；特别篇不给链接；季卡片链接不带箭头图标；选豆瓣单季并进剧集时提示一句、并单季时提示带撤销。
+- 新文案：「豆瓣单季」「在 {label} 打开{title}」「豆瓣单季已并进「{name}」」「豆瓣链接记到了「{name}」{season}」，9 种语言（外语待母语者看）。
+- 测试：core `douban-seasons.test.ts` 24 项（《星期三》TMDB 119051、IMDb tt13443470、豆瓣第一季 35364243 / 第二季 36208369 / 第三季 36989893 的真实数据）；客户端 `lib/douban-seasons.test.ts` 7 项。
+
 ### 资料库卡片：目的地只显示名字，名字不出卡片 ✅（2026-11-11）
 
 - **需求**（Rei 2026-11-11 07:00，附截图）：目的地卡片网格里地址那行在相邻卡片间叠成一团，名字也伸到隔壁卡片。目的地只显示名字，地址留在详情；名字限制在卡片宽度内，最多两行，超出省略号，长名用 title / 读屏给全名。别的库同类问题按同一规则修。

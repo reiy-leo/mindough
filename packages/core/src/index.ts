@@ -41,6 +41,7 @@ export * from './links';
 export * from './money';
 export * from './episode';
 export * from './seasons';
+export * from './douban-seasons';
 export * from './lookup';
 export * from './group';
 export * from './project-libraries';

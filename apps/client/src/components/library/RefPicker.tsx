@@ -14,7 +14,8 @@ import { Check, Search, X } from 'lucide-react';
 import { isPersonLibrary, libraryCopy, searchLibrary, type LibraryEntry, type LookupResult, type Store, type TaskType } from '@mindough/core';
 import { typeIcon } from '../../lib/icons';
 import { dataLabel, tr } from '../../lib/i18n';
-import { createItemFromLookup } from '../../lib/lookup';
+import { createItemFromLookup, lookupPickToast } from '../../lib/lookup';
+import { useUi } from '../../lib/ui';
 import { ItemSheet, LibraryPicker, artShape, entryArt } from './Library';
 
 const ALL = '__all';
@@ -40,6 +41,7 @@ export function RefPicker({
   /** 从在线结果新建了一条资料（新建面板用来在取消时删掉没用上的）。 */
   onCreatedOnline?: (id: string) => void;
 }) {
+  const ui = useUi();
   const libs = store.refLibraries();
   const [lib, setLib] = useState<string>(defaultLibrary && libs.some((t) => t.id === defaultLibrary) ? defaultLibrary : ALL);
   const [query, setQuery] = useState('');
@@ -89,8 +91,12 @@ export function RefPicker({
             ? {}
             : {
                 onPickOnline: (r: LookupResult) => {
-                  const { id, created } = createItemFromLookup(store, type, r);
-                  if (created) onCreatedOnline?.(id);
+                  const pick = createItemFromLookup(store, type, r);
+                  const { id, created } = pick;
+                  // 并进了豆瓣单季的新剧集不算「没用上可以删」的：删了单季条目的任务就没处指了
+                  if (created && !pick.absorbed) onCreatedOnline?.(id);
+                  const note = lookupPickToast(store, pick);
+                  if (note) ui.toast({ message: note.message, ...(note.undo ? { actions: [{ label: tr('撤销'), onPress: note.undo }] } : {}) });
                   if (!selected.has(id)) onToggle({ kind: 'item', id }, true);
                   setQuery('');
                 },

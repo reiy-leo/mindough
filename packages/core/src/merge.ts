@@ -12,6 +12,7 @@
 import { itemData, normalizeName } from './library';
 import { linksOf, siteIdOf } from './links';
 import type { FieldDef, FieldValue, LibraryItem, LinkValue, Person, TaskType } from './types';
+import { DOUBAN_SEASONS_KEY, mergedDoubanSeasons, seasonMergeOf, type DoubanSeasonRef } from './douban-seasons';
 
 import { tr } from './i18n';
 
@@ -111,8 +112,17 @@ export interface ItemMergePlan {
  * 算合并后的资料：目标优先，空的用来源（按给的顺序）补；choices 覆盖冲突字段的取舍。
  * 类型里已经没有的旧字段（不显示的旧值）同样目标优先、空的补上，不算冲突、不丢。
  */
-export function planItemMerge(type: Pick<TaskType, 'fields'> | null | undefined, target: LibraryItem, sources: readonly LibraryItem[], choices: MergeChoices = {}): ItemMergePlan {
-  const all = [target, ...sources];
+export function planItemMerge(type: (Pick<TaskType, 'fields'> & Partial<Pick<TaskType, 'id'>>) | null | undefined, target: LibraryItem, sources: readonly LibraryItem[], choices: MergeChoices = {}): ItemMergePlan {
+  // 豆瓣单季并进整部剧（Rei 2026-11-21）：单季只留下豆瓣编号（记到那一季上）、更多链接和备注，别的字段（名字、海报、年份、豆瓣编号…）不拿
+  const absorbed: DoubanSeasonRef[] = [];
+  const plain: LibraryItem[] = [];
+  for (const s of sources) {
+    const ref = type?.id ? seasonMergeOf({ id: type.id }, target, s) : null;
+    if (ref) absorbed.push(ref);
+    else plain.push(s);
+  }
+  const seasonOnly = sources.filter((s) => !plain.includes(s));
+  const all = [target, ...plain];
   const datas = all.map((it) => ({ id: it.id, data: itemData(type, it) }));
   const defs = type?.fields ?? [];
   const primary = defs.find((f) => f.primary);
@@ -125,8 +135,9 @@ export function planItemMerge(type: Pick<TaskType, 'fields'> | null | undefined,
   for (const key of keys) {
     const def = defs.find((f) => f.key === key);
     const vals = datas.map((d) => ({ from: d.id, value: d.data[key] }));
+    if (key === DOUBAN_SEASONS_KEY) continue;
     if (def?.kind === 'links') {
-      const u = unionLinks(vals.map((v) => v.value));
+      const u = unionLinks([...vals.map((v) => v.value), ...seasonOnly.map((x) => x.fields[key])]);
       if (u.length) out[key] = u;
       continue;
     }
@@ -135,11 +146,13 @@ export function planItemMerge(type: Pick<TaskType, 'fields'> | null | undefined,
     if (!isEmpty(value)) out[key] = value!;
     if (conflict && def) conflicts.push(conflict);
   }
+  const seasons = mergedDoubanSeasons(target, plain, absorbed);
+  if (seasons) out[DOUBAN_SEASONS_KEY] = seasons;
   const name = primary && typeof out[primary.key] === 'string' && (out[primary.key] as string).trim() ? (out[primary.key] as string) : target.name;
   const image = media && typeof out[media.key] === 'string' ? (out[media.key] as string) : media ? null : target.image;
   const fields: Record<string, FieldValue> = {};
   for (const [k, v] of Object.entries(out)) if (k !== primary?.key && k !== media?.key) fields[k] = v;
-  return { name, image, fields, note_md: mergeNotes(all.map((x) => x.note_md)), conflicts };
+  return { name, image, fields, note_md: mergeNotes([...all, ...seasonOnly].map((x) => x.note_md)), conflicts };
 }
 
 /** 人物能合并的字段（列名）及显示名。 */
@@ -199,7 +212,14 @@ export const groupKey = (ids: readonly string[]) => [...ids].sort().join('|');
 export function duplicateGroups(
   type: Pick<TaskType, 'fields'> | null | undefined,
   rows: ReadonlyArray<{ id: string; name: string; created_at?: string; fields?: Record<string, FieldValue> }>,
-  opts: { uses?: ReadonlyMap<string, number>; dismissed?: ReadonlySet<string> } = {},
+  opts: {
+    uses?: ReadonlyMap<string, number>;
+    dismissed?: ReadonlySet<string>;
+    /** 名字、编号认不出来的额外配对（豆瓣单季 ↔ 整部剧，Rei 2026-11-21）：[a, b, 理由]。 */
+    pairs?: ReadonlyArray<readonly [string, string, string]>;
+    /** 这些排在组里最前（建议留下的：整部剧）。 */
+    first?: ReadonlySet<string>;
+  } = {},
 ): DuplicateGroup[] {
   const parent = new Map<string, string>();
   const find = (x: string): string => {
@@ -240,6 +260,11 @@ export function duplicateGroups(
       } else byKey.set(k, r.id);
     }
   }
+  for (const [a, b, label] of opts.pairs ?? []) {
+    if (!parent.has(a) || !parent.has(b) || a === b) continue;
+    union(a, b);
+    pairReason.push([a, b, label]);
+  }
   const groups = new Map<string, string[]>();
   for (const r of sorted) {
     const root = find(r.id);
@@ -256,6 +281,9 @@ export function duplicateGroups(
     const key = groupKey(ids);
     if (opts.dismissed?.has(key)) continue;
     const ordered = [...ids].sort((a, b) => {
+      const fa = opts.first?.has(a) ? 0 : 1;
+      const fb = opts.first?.has(b) ? 0 : 1;
+      if (fa !== fb) return fa - fb;
       const ua = opts.uses?.get(a) ?? 0;
       const ub = opts.uses?.get(b) ?? 0;
       if (ua !== ub) return ub - ua;

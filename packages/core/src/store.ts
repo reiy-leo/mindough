@@ -48,6 +48,7 @@ import { BUILTIN_CATEGORIES, PIN_CATEGORY_ID, exclusiveMarks, formerBuiltinCateg
 import { BUILTIN_CATEGORY_GROUP_ZH, CATEGORY_FREQUENT_PREF, CATEGORY_GROUP_PREF, CATEGORY_GROUP_ZH, CATEGORY_GROUPS, CUSTOM_GROUP_ID_PREFIX, CUSTOM_GROUP_OF_PREF, CUSTOM_GROUP_PREF_PREFIX, categoryGroupOf, categoryGroupOrder, categoryGroupOverrides, categoryLastUsed, categoryStateOf, customCategoryGroups, customGroupAssignments, frequentCategoryIds, isBuiltinCategoryGroup, isCategoryGroup, normGroupName, orderPickerCategories, withCategoryGroup, withCategoryState, withCustomGroupAssignment, type CategoryGroupId, type CategoryState, type CustomCategoryGroup } from './category-prefs';
 import { CategoryDeleteError, builtinCategoryDrifted, canonicalBuiltinCategory, isBuiltinCategory, isMarkerCategory, titleMarkOf, categoryFromCheckin, categoryNameTaken, fillCategory, planCategoryMerges, resolveCategoryId, sortCategories, DEFAULT_CATEGORY_COLOR, DEFAULT_CATEGORY_ICON } from './categories';
 import { isMirrored, legacyRefPlan, mirrorSaysPinned, refsMirrorOf, sortLinks, taskCategoryId, taskItemId } from './task-refs';
+import { seasonHostOfItem, seasonItemsOf } from './douban-seasons';
 import { mergeCycleSurvivors, planItemMerge, planPersonMerge, resolveMerged, duplicateGroups, type DuplicateGroup, type MergeChoices } from './merge';
 import { isCardColor } from './card-color';
 import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type CheckInCategory, type DateKey, type CheckInKind, type FieldDef, type FieldValue, type LibraryItem, type LibraryLink, type NewRow, type Person, type TableMap, type TableName, type Task, type TaskCategory, type TaskItem, type TaskPerson, type TaskStatus } from './types';
@@ -1497,7 +1498,30 @@ export class Store {
     const dismissed = new Set(Array.isArray(this.pref(NOT_DUPLICATES_PREF)) ? (this.pref(NOT_DUPLICATES_PREF) as string[]) : []);
     const uses = new Map(this.libraryEntries(typeId).map((e) => [e.id, e.uses]));
     if (isPersonLibrary(type)) return duplicateGroups(null, this.list('person').map((p) => ({ id: p.id, name: p.name })), { uses, dismissed });
-    return duplicateGroups(type, this.libraryItems(typeId), { uses, dismissed });
+    const items = this.libraryItems(typeId);
+    // 豆瓣单季 ↔ 整部剧（Rei 2026-11-21）：名字不一样（「星期三 第二季」/「星期三」），单独配
+    const pairs: Array<[string, string, string]> = [];
+    const first = new Set<string>();
+    for (const it of items) {
+      const h = seasonHostOfItem(items, type, it);
+      if (!h) continue;
+      pairs.push([h.id, it.id, tr('豆瓣单季')]);
+      first.add(h.id);
+    }
+    return duplicateGroups(type, items, { uses, dismissed, pairs, first });
+  }
+
+  /**
+   * 选了 TMDB 剧集后（Rei 2026-11-21）：库里属于这部剧的豆瓣单季条目并进来——走资料合并（任务改指剧集、单季打墓碑、
+   * 豆瓣编号记到对应季上），返回合并结果（可撤销）；没有要并的返回 null。
+   */
+  absorbDoubanSeasons(hostId: string): MergeResult | null {
+    const host = this.get('library_item', hostId);
+    if (!host || host.deleted) return null;
+    const type = this.get('task_type', host.type_id);
+    const found = seasonItemsOf(this.libraryItems(host.type_id), type, hostId);
+    if (!found.length) return null;
+    return this.mergeLibraryItems(hostId, found.map((f) => f.id));
   }
 
   /** 「不是同一个」：这一组以后不再提示（跟着账户同步）。 */

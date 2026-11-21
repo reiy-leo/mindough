@@ -9,6 +9,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   findLookupTwin,
   getLocale,
+  seasonHostOfResult,
+  seasonTitle,
+  withDoubanSeason,
+  type MergeResult,
   isPlaceKind,
   itemOfLookup,
   lookupCover,
@@ -26,6 +30,8 @@ import {
 import { API_BASE, authInit, getAccount, subscribeAccount } from './account';
 import { artShape, normalizeImage, type ArtShape } from './image';
 import { uploadImage } from './upload';
+import { tr } from './i18n';
+import { clipName } from './toast-text';
 
 export class LookupHttpError extends Error {
   constructor(
@@ -106,6 +112,14 @@ export function fetchLookupItem(source: LookupSource | 'imdb' | 'isbn', id: stri
   return getJson(`/api/lookup/item?source=${source}&id=${encodeURIComponent(id)}&lang=${lang()}${source === 'amap' && kind ? `&kind=${kind}` : ''}`, signal, fetcher);
 }
 
+/**
+ * 只问豆瓣影视（剧集各季配豆瓣链接用，Rei 2026-11-21）：界面是什么语言都按 lang=zh 问，
+ * 英文界面的搜索结果里本来不列豆瓣。q 原样搜，不去季标记（要的就是「星期三 第二季」这样的条目）。
+ */
+export function searchDoubanMovies(q: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<LookupSearchResponse> {
+  return getJson(`/api/lookup/search?kind=movie&source=douban&q=${encodeURIComponent(q)}&lang=zh`, signal, fetcher);
+}
+
 /** 剧集的季（TMDB）：ref 是「tv/1399」或 IMDb 编号（Rei 2026-11-11）。 */
 export function fetchSeasons(ref: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<SeasonsResponse> {
   return getJson(`/api/lookup/seasons?id=${encodeURIComponent(ref)}&lang=${lang()}`, signal, fetcher);
@@ -141,21 +155,57 @@ export async function importLookupImage(store: Store, url: string, shape: ArtSha
 
 const isEmpty = (v: FieldValue | undefined) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0);
 
+export interface LookupPick {
+  id: string;
+  created: boolean;
+  /** 选的是豆瓣单季、并进了库里的那部剧：记在第几季（Rei 2026-11-21）。 */
+  season?: number;
+  /** 顺手把库里这部剧的豆瓣单季条目并了进来（可撤销）。 */
+  absorbed?: MergeResult;
+}
+
 /**
  * 选中一条在线结果：马上建资料（或用库里已有的同一条），返回资料 id 与是不是新建的；详情与封面在后台补，只补空缺。
+ * 豆瓣单季（Rei 2026-11-21，core douban-seasons.ts）：库里有这部剧就不新建，豆瓣编号记到那部剧对应的季上；
+ * 选的是剧集：库里属于它的豆瓣单季条目并进来（任务改指剧集，可撤销）。
  */
-export function createItemFromLookup(store: Store, type: TaskType, r: LookupResult, deps: { fetchItem?: typeof fetchLookupItem; importImage?: typeof importLookupImage } = {}): { id: string; created: boolean } {
+export function createItemFromLookup(store: Store, type: TaskType, r: LookupResult, deps: { fetchItem?: typeof fetchLookupItem; importImage?: typeof importLookupImage } = {}): LookupPick {
   rememberLookupCity(r);
-  const twin = findLookupTwin(store.list('library_item'), type.id, r);
+  const items = store.list('library_item');
+  const host = seasonHostOfResult(items, type, r);
+  if (host) {
+    const cur = store.get('library_item', host.id);
+    if (cur && !cur.deleted) {
+      const fields = withDoubanSeason(cur.fields, host.season, r.sourceId);
+      if (JSON.stringify(fields) !== JSON.stringify(cur.fields)) store.updateLibraryItem(host.id, { fields });
+    }
+    // 库里原来就有这一季的豆瓣条目：一起并进来
+    const absorbed = store.absorbDoubanSeasons(host.id);
+    return { id: host.id, created: false, season: host.season, ...(absorbed ? { absorbed } : {}) };
+  }
+  const twin = findLookupTwin(items, type.id, r);
+  let id: string;
+  let created = false;
   if (twin) {
     // 库里已有（比如同名）：用它，只补空缺
-    void enrich(store, type, twin, r, deps);
-    return { id: twin, created: false };
+    id = twin;
+  } else {
+    const data = itemOfLookup(type, r);
+    id = store.createLibraryItem(type.id, { name: data.name, fields: data.fields, note_md: data.note_md }).id;
+    created = true;
   }
-  const data = itemOfLookup(type, r);
-  const id = store.createLibraryItem(type.id, { name: data.name, fields: data.fields, note_md: data.note_md }).id;
+  const absorbed = store.absorbDoubanSeasons(id);
   void enrich(store, type, id, r, deps);
-  return { id, created: true };
+  return { id, created, ...(absorbed ? { absorbed } : {}) };
+}
+
+/** 选完在线结果后要不要提示一句（并了豆瓣单季、记了一季的豆瓣链接）；不用提示返回 null。 */
+export function lookupPickToast(store: Store, pick: LookupPick): { message: string; undo?: () => void } | null {
+  const item = store.get('library_item', pick.id);
+  const short = clipName(item?.name ?? '');
+  if (pick.absorbed) return { message: tr('豆瓣单季已并进「{name}」', { name: short }), undo: () => store.undoMerge(pick.absorbed!.undo) };
+  if (pick.season !== undefined) return { message: tr('豆瓣链接记到了「{name}」{season}', { name: short, season: seasonTitle({ number: pick.season }) }) };
+  return null;
 }
 
 async function enrich(store: Store, type: TaskType, id: string, r: LookupResult, deps: { fetchItem?: typeof fetchLookupItem; importImage?: typeof importLookupImage }) {

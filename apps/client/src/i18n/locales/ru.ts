@@ -1948,6 +1948,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有关联的影片。": "Пока нет привязанных фильмов.",
   "还没有关联的影人。": "Пока нет привязанных людей.",
   "先填名字，或者 TMDB / IMDb 编号": "Сначала введите имя или ID TMDB / IMDb",
+  "豆瓣单季": "Сезон с Douban",
+  "在 {label} 打开{title}": "Открыть {title} в {label}",
+  "豆瓣单季已并进「{name}」": "Сезоны с Douban объединены с «{name}»",
+  "豆瓣链接记到了「{name}」{season}": "Ссылка Douban сохранена: «{name}», {season}",
 };
 
 export const DATA: Record<string, string> = {

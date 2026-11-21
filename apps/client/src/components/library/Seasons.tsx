@@ -1,12 +1,13 @@
 /**
  * 资料页的「季」（Rei 2026-11-11「影视库里的剧集显示 seasons」）：剧集按 TMDB 列出各季——
- * 海报小图、第 N 季（特别篇放最后）、首播年份、集数。只显示，不记每季看到哪；电影不显示。
+ * 海报小图、第 N 季（特别篇放最后）、首播年份、集数，下面是这一季的豆瓣、IMDb 小链接（Rei 2026-11-21）。只显示，不记每季看到哪；电影不显示。
  * 数据存在资料的 `_seasons` 里（core/seasons.ts），缺了由 lib/seasons.ts 在后台补拉一次。
  */
 import { useState, type CSSProperties } from 'react';
-import { placeholderArt, seasonMeta, seasonPosterUrl, seasonsOf, seasonSubtitle, seasonTitle, readSeasons, sourceOfFields, type LibraryItem, type SeasonInfo, type Store, type TaskType } from '@mindough/core';
+import { placeholderArt, seasonLinks, seasonMeta, seasonPosterUrl, seasonsOf, seasonSubtitle, seasonTitle, readSeasons, sourceOfFields, type LibraryItem, type SeasonInfo, type Store, type TaskType } from '@mindough/core';
 import { Section } from '../../ui/primitives';
 import { useSeasonsRefresh } from '../../lib/seasons';
+import { useDoubanSeasonsRefresh } from '../../lib/douban-seasons';
 import { ExtLink } from './LinkFields';
 import { tr } from '../../lib/i18n';
 
@@ -25,8 +26,29 @@ function SeasonPoster({ s, label }: { s: SeasonInfo; label: string }) {
   );
 }
 
+/** 这一季的豆瓣、IMDb 链接（Rei 2026-11-21）：小标签，跟资料的链接标签一个样子，只是更小、不带箭头。 */
+function SeasonLinks({ item, s, title }: { item: LibraryItem; s: SeasonInfo; title: string }) {
+  const links = seasonLinks(item, s);
+  if (!links.douban && !links.imdb) return null;
+  return (
+    <span className="season-links">
+      {links.douban && (
+        <ExtLink href={links.douban} className="link-chip season-link" label={tr('在 {label} 打开{title}', { label: tr('豆瓣'), title })}>
+          {tr('豆瓣')}
+        </ExtLink>
+      )}
+      {links.imdb && (
+        <ExtLink href={links.imdb} className="link-chip season-link" label={tr('在 {label} 打开{title}', { label: 'IMDb', title })}>
+          IMDb
+        </ExtLink>
+      )}
+    </span>
+  );
+}
+
 export function SeasonsSection({ store, type, item }: { store: Store; type: TaskType; item: LibraryItem }) {
   useSeasonsRefresh(store, type, item);
+  useDoubanSeasonsRefresh(store, type, item);
   const seasons = seasonsOf(type, item);
   if (!seasons.length) return null;
   const tv = readSeasons(item.fields)?.tv;
@@ -48,6 +70,7 @@ export function SeasonsSection({ store, type, item }: { store: Store; type: Task
                 {sub && <span className="season-sub" title={sub}>{sub}</span>}
                 {meta && <span className="season-meta">{meta}</span>}
               </span>
+              <SeasonLinks item={item} s={s} title={title} />
             </li>
           );
         })}

@@ -37,7 +37,7 @@ import { ItemArt, ItemSheet, artShape, entryArt } from '../components/library/Li
 import { OnlineOptions, SourceNote } from '../components/library/Lookup';
 import { SeasonsSection } from '../components/library/Seasons';
 import { FilmLinksSection } from '../components/library/FilmLinks';
-import { createItemFromLookup, useOnlineSearch } from '../lib/lookup';
+import { createItemFromLookup, lookupPickToast, useOnlineSearch } from '../lib/lookup';
 import { LinkChips } from '../components/library/LinkFields';
 import { DuplicatesSheet, MergeIntoSheet, MergeSheet } from '../components/library/MergeSheet';
 import { PersonDialog } from './People';
@@ -144,6 +144,7 @@ function LibTab({ type: t, active, onOpen }: { type: TaskType; active: boolean; 
 function LibraryOnline({ type, query }: { type: TaskType; query: string }) {
   const store = useStore();
   const kind = lookupKindOf(type);
+  const ui = useUi();
   const online = useOnlineSearch(kind, query);
   const results = useMemo(() => {
     const items = store.list('library_item');
@@ -154,8 +155,10 @@ function LibraryOnline({ type, query }: { type: TaskType; query: string }) {
   const choose = (i: number) => {
     const r = results[i];
     if (!r) return;
-    const { id } = createItemFromLookup(store, type, r);
-    navigate({ page: 'libitem', typeId: type.id, id });
+    const pick = createItemFromLookup(store, type, r);
+    navigate({ page: 'libitem', typeId: type.id, id: pick.id });
+    const note = lookupPickToast(store, pick);
+    if (note) ui.toast({ message: note.message, ...(note.undo ? { actions: [{ label: tr('撤销'), onPress: note.undo }] } : {}) });
   };
   return (
     <ul role="listbox" aria-label={libraryCopy(type).name} className="lib-picker-list lib-page-online">

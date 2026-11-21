@@ -1629,4 +1629,7 @@ export const EN: Record<string, EnValue> = {
   "还没有关联的影片。": "No films linked yet.",
   "还没有关联的影人。": "No people linked yet.",
   "先填名字，或者 TMDB / IMDb 编号": "Enter a name first, or a TMDB / IMDb ID",
+  "在 {label} 打开{title}": "Open {title} in {label}",
+  "豆瓣单季已并进「{name}」": "Douban season entries merged into “{name}”",
+  "豆瓣链接记到了「{name}」{season}": "Douban link saved to {season} of “{name}”",
 };

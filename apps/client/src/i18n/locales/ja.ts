@@ -1948,6 +1948,10 @@ export const MESSAGES: Record<string, MessageValue> = {
   "还没有关联的影片。": "関連付けた作品はまだありません。",
   "还没有关联的影人。": "関連付けた映画人はまだいません。",
   "先填名字，或者 TMDB / IMDb 编号": "先に名前か、TMDB / IMDb の ID を入力",
+  "豆瓣单季": "豆瓣のシーズン",
+  "在 {label} 打开{title}": "{label} で{title}を開く",
+  "豆瓣单季已并进「{name}」": "豆瓣のシーズンを「{name}」にまとめました",
+  "豆瓣链接记到了「{name}」{season}": "豆瓣のリンクを「{name}」{season}に保存しました",
 };
 
 export const DATA: Record<string, string> = {

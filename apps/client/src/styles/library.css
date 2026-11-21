@@ -1489,6 +1489,29 @@
 .season-source {
   margin-top: 12px;
 }
+/* 每季的豆瓣、IMDb 链接（Rei 2026-11-21）：跟资料的链接标签同一套样子，缩小、不带箭头，不抢海报；手机上高一点好点 */
+.season-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.link-chip.season-link {
+  height: 22px;
+  padding: 0 7px;
+  font-size: var(--fs-small);
+}
+[data-skin='winui'] .link-chip.season-link {
+  height: 22px;
+}
+[data-skin='material'] .link-chip.season-link {
+  height: 24px;
+  padding: 0 8px;
+}
+[data-layout='mobile'] .link-chip.season-link {
+  height: 28px;
+  padding: 0 8px;
+}
 [data-skin='winui'] .season-art {
   border-radius: 4px;
 }

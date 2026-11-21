@@ -55,6 +55,7 @@ packages/core/src/      纯逻辑，无 DOM（每个模块都有 test/*.test.ts�
   merge.ts              资料 / 人物合并：合并后的值与冲突、可能重复的分组、merged_into 解析与成环处理（写入在 Store.mergeLibraryItems / mergePeople）
   links.ts money.ts episode.ts  字段种类的逻辑：站点编号（IMDb / 豆瓣）与更多链接、金额 + 币种、看到第几季第几集
   lookup.ts             在线找资料的纯逻辑：结果形状、按什么找（去季标记、电影 / 剧集）、库里的同一条、自动补全逐项计划；来源存 fields._source
+  seasons.ts douban-seasons.ts  剧集的季（TMDB，存 fields._seasons）；豆瓣单季并进剧集、每季的豆瓣 / IMDb 链接（Rei 2026-11-21，存 fields._douban_seasons，自动配在 client lib/douban-seasons.ts）
   store.ts              内存快照 + 领域操作（UI 同步读、写入异步落盘并进 outbox）；applyRemote 合并拉下来的行（不进 outbox）；edges() / conflictEdges()
   sync/                 同步：protocol.ts（WireRow、SyncTransport、SyncHttpError）、engine.ts（SyncEngine：推、拉、第一次合并、状态）、memory-remote.ts（假云端 / 协议参考实现）
   dida/                 从滴答清单导入（单独入口 @mindough/core/dida，docs/IMPORT-DIDA.md）：csv / parse（备份 CSV）、api（Open API，fetchDidaAccount 注入网络函数）、map（时区 / 提醒 / 重复 / 正文）、plan（预览、applyDida、undoDida）

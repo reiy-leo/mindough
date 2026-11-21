@@ -15,6 +15,7 @@ import { amapPoiIdOf, amapShareUrlOf, imdbNameIdOf, isbnOf, linksOf, normalizeUr
 import { normalizeName } from './library';
 import { stripEpisode } from './episode';
 import { tr } from './i18n';
+import { doubanSeasonIds } from './douban-seasons';
 import type { FieldDef, FieldValue, LibraryItem, LinkValue, TaskType } from './types';
 
 /** restaurant / place：餐厅、目的地（高德）；person：影人（TMDB 人物，Rei 2026-11-14）。 */
@@ -138,6 +139,7 @@ export function sourceOfFields(fields: Record<string, FieldValue> | null | undef
 /**
  * 资料库里已经有的同一条：同来源同编号、同一个 IMDb / 豆瓣编号，或同名（规范化后）且年份不冲突、也没记着别的来源。
  * 选中在线结果时直接用它（只补空缺），不再新建；选择框里也不再重复列出。
+ * 豆瓣单季已经并进某部剧（记在那部剧的 `_douban_seasons` 里，Rei 2026-11-21）：那部剧就是它，结果列表里不再列。
  */
 export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id' | 'name' | 'fields' | 'deleted'>[], typeId: string, r: Pick<LookupResult, 'source' | 'sourceId' | 'fields' | 'name' | 'year'>): string | null {
   const ref = sourceRef(r);
@@ -155,6 +157,7 @@ export function findLookupTwin(items: readonly Pick<LibraryItem, 'id' | 'type_id
     if (it.fields[SOURCE_KEY] === ref) return it.id;
     if (imdb && siteIdOf('imdb', it.fields.imdb) === imdb) return it.id;
     if (douban && siteIdOf('douban', it.fields.douban) === douban) return it.id;
+    if (r.source === 'douban' && doubanSeasonIds(it.fields).has(r.sourceId)) return it.id;
     if (isbn && siteIdOf('isbn', it.fields.isbn) === isbn) return it.id;
     if (amap && siteIdOf('amap', it.fields.amap) === amap) return it.id;
     if (tmdbPerson && siteIdOf('tmdb_person', it.fields.tmdb) === tmdbPerson) return it.id;
