@@ -58,6 +58,10 @@ describe('找 data: 图片', () => {
     expect(decodeDataImage('data:application/octet-stream;base64,AAAA')).toBeNull();
     expect(decodeDataImage('data:image/jpg;base64,/9j/4AAQ')?.mime).toBe('image/jpeg');
     expect(sniffImageMime(decodeDataImage(GIF)!.bytes)).toBe('image/gif');
+    // 线上库里现有的那几张就是这种：URL 编码的 SVG，不是 base64
+    const svg = decodeDataImage('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E');
+    expect(svg?.mime).toBe('image/svg+xml');
+    expect(new TextDecoder().decode(svg!.bytes)).toBe('<svg xmlns="http://www.w3.org/2000/svg"/>');
   });
 
   it('一张图的 base64 正好是另一张的开头：只换完整的那张，长的不动', () => {

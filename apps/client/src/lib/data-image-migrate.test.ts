@@ -59,6 +59,15 @@ describe('旧 data: 图片搬到 R2', () => {
     expect(store.get('task', t.id)!.body_md).toBe(body.replace(png(0), r2(1).url));
   });
 
+  it('URL 编码的 SVG（线上库里现有的那种 asset 行）也能搬', async () => {
+    const svg = 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E';
+    const a = store.insert('asset', { sha256: '', mime: 'image/svg+xml', width: 96, height: 96, r2_key: null, url: svg });
+    expect(await new DataImageMigrator(store, deps()).runBatch()).toEqual({ migrated: 1, failed: 0, remaining: 0 });
+    expect(uploads[0]!.type).toBe('image/svg+xml');
+    expect(await uploads[0]!.text()).toBe('<svg xmlns="http://www.w3.org/2000/svg"/>');
+    expect(store.get('asset', a.id)).toMatchObject({ url: r2(1).url, r2_key: 'u/s1', width: 96, height: 96 });
+  });
+
   it('同一张图在几处只传一次，全换掉', async () => {
     const a = store.insert('asset', { sha256: '', mime: 'image/png', width: 1, height: 1, r2_key: null, url: png(0) });
     const t = store.createTask({ body_md: `![](${png(0)})` }, { joinMyDay: false });

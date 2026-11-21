@@ -117,7 +117,7 @@ Rei：「settings中的这个google登录写清楚数据流向，先经过worker
   - 传不上的原样留着：这次打开里按 1、2、4…分钟往后推再试（最多 1 小时），重开 app 从头算。服务器不收的格式（BMP 之类，只收 png / jpeg / gif / webp / avif / svg / heic / heif）、超过 10 MB 而且缩了还超的，这次打开里不再试，图还在原处，照常显示。
   - 解 data: 地址自己做（`decodeDataImage`），不用 `fetch(data:…)`：桌面 App 的 CSP `connect-src` 里没有 data:，以前同步前那段搬图的代码（asset-migrate，只管 asset 行、一次全搬、每轮推送前都要等它）用的是 fetch，在桌面上多半取不到图（按 CSP 推断，没在真机上看过）。那段已经换成现在这套，也不再挡推送。
   - 代码：core `data-images.ts`（找图、换地址、解码、看文件头认格式）和 `Store.dataImages / replaceDataImage`；客户端 `lib/data-image-migrate.ts`（限速、退避、什么时候能搬），`lib/sync.ts` 在同步成功后排一批。Worker 不用改。
-  - 测试：core `data-images.test.ts`（找图、只换那一段、asset 行补字段、幂等、按最新内容换、图被删了不改、日记条目和严格模式、墓碑、前缀相同的两张图）；client `data-image-migrate.test.ts`（只搬 data:、同图只传一次、一批 3 张、失败留着到点再试、幂等、上传时用户改了正文、离线不动、演示模式跳过、不收的格式和太大的图、太大先缩、搬成了才再同步）。
+  - 测试：core `data-images.test.ts`（找图、只换那一段、asset 行补字段、幂等、按最新内容换、图被删了不改、日记条目和严格模式、墓碑、前缀相同的两张图、URL 编码的 SVG 解码）；client `data-image-migrate.test.ts`（只搬 data:、URL 编码的 SVG、同图只传一次、一批 3 张、失败留着到点再试、幂等、上传时用户改了正文、离线不动、演示模式跳过、不收的格式和太大的图、太大先缩、搬成了才再同步）。
 - 附件（2026-10-17）另走 `POST /api/files`（任何格式，≤ 50 MB）/ `GET /api/files/<key>`（要登录、只能读自己的），同一个桶，key = 用户哈希 / `f` / SHA-256，见下面「附件」。
 
 ### 风险与缺口
