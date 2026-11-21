@@ -192,13 +192,34 @@ function toggleBullet(editor: Editor) {
   editor.commands.toggleBulletList();
 }
 
-/** 编号列表按钮：变成编号列表时去掉清单勾（编号列表里不放清单）。 */
+/** 光标所在那个列表（最里面一层）和它在文档里的位置。 */
+function listAt(state: EditorState): { pos: number; node: PMNode } | null {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    const n = $from.node(d);
+    if (n.type.name === 'bulletList' || n.type.name === 'orderedList') return { pos: $from.before(d), node: n };
+  }
+  return null;
+}
+
+/**
+ * 编号列表按钮：列表换成编号列表时，整个列表去掉清单勾（编号列表里不放清单），松紧（项之间空不空一行）照原来的列表；
+ * 段落包成编号列表时同 ⌘⌥7。已经是编号列表再点，去掉列表。
+ */
 function toggleOrdered(editor: Editor) {
-  const was = listItemAt(editor.state)?.list === 'orderedList';
+  const before = listAt(editor.state);
+  const was = before?.node.type.name === 'orderedList';
+  const spread = before?.node.attrs.spread;
   if (!editor.commands.toggleOrderedList() || was) return;
   const s = editor.state;
-  const items = listItemsInSelection(s);
-  if (items.some((i) => i.node.attrs.checked != null)) editor.view.dispatch(setChecked(s.tr, items, null));
+  const list = listAt(s);
+  if (!list || list.node.type.name !== 'orderedList') return;
+  const tr = s.tr;
+  if (before && spread != null && list.node.attrs.spread !== spread) tr.setNodeMarkup(list.pos, undefined, { ...list.node.attrs, spread });
+  list.node.forEach((child, off) => {
+    if (child.type.name === 'listItem' && child.attrs.checked != null) tr.setNodeMarkup(list.pos + 1 + off, undefined, { ...child.attrs, checked: null });
+  });
+  if (tr.docChanged) editor.view.dispatch(tr);
 }
 
 function cycleHeading(editor: Editor) {
