@@ -20,6 +20,7 @@ import { installBackspaceGuard } from './lib/backspace-guard';
 import { installBackLayers } from './lib/back-layers';
 import { installStartPage } from './lib/start-page';
 import { installAndroidBackground } from './lib/android-bg';
+import { installViewportMemory } from './lib/soft-keyboard';
 import { applyLocalePref, initialLocalePref, loadLocale, resolveLocale } from './lib/i18n';
 import { LocaleRoot } from './lib/locale';
 import { preloadMdEditor } from './components/editor/LazyMdEditor';
@@ -71,6 +72,8 @@ if (!isAuxWindow()) installStartPage();
 installBackLayers();
 // 安卓 App：界面底色告诉原生，WebView 和窗口后面那几层跟着换（选字变黑的兜底，lib/android-bg.ts、scripts/android-webview.sh）
 installAndroidBackground();
+// 记下没键盘时的窗口高度（手机编辑器的格式栏靠它判断软键盘开没开，lib/soft-keyboard.ts）
+installViewportMemory();
 
 // 编辑器在空闲时先加载好：新建面板一打开就能写
 const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 3000 }) : setTimeout(cb, 1500));

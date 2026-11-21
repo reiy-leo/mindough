@@ -4,6 +4,10 @@
  * - 写法：直接打 markdown 也会变（「# 」标题、「- 」列表、「[ ] 」清单、「> 」引用、「```」代码、**粗体**…）。
  * - 没有工具栏（Rei 2026-10-25「换成tiptap后，不用显示toolbar」）：格式靠快捷键（⌘B / ⌘I / ⌘⌥X / ⌘⌥1–6 / ⌘⌥8 / ⌘⌥7 / ⌘⇧B / ⌘⌥C）
  *   和手打语法（清单 `[] `、表格 `|3x2| `、折叠块 `<details>` 回车、提示块 `> [!NOTE]`、公式 `$…$`）。⌘K / Ctrl+K 加链接，Esc 收起。
+ * - 手机键盘上方的格式栏（Rei 2026-11-21「先做A」）：给了 formatBar（任务正文、新建面板、日记）时，触屏上编辑器有焦点、软键盘开着、
+ *   链接框没开，就在键盘上沿出一行格式按钮（FormatBar.tsx 画，format-bar.ts 管按钮状态和点了做什么，lib/soft-keyboard.ts 看键盘）。
+ *   电脑上照旧没有工具栏。按钮按下不抢焦点；链接按钮开下面的链接框，高亮按钮在高亮里时开高亮色板，
+ *   @ 按钮打一个 @，这个 @ 后面还没打字时候选先列日期（BAR_STAMPS）。栏开着时 @ 浮层、色板放不到栏下面。
  * - 悬停不变底色（Rei 2026-10-25「hover编辑器不用change bg」），聚焦也不变；只有光标。备注框（.note-editor）聚焦时边框照旧变强调色。
  * - 链接（Rei 2026-10-17「放上去就展示吧，点一下是访问链接」）：点一下打开（Web 新标签页，App 交给系统浏览器）；
  *   鼠标移到链接上出现小浮层：「访问」「编辑」「去掉链接」三个按钮，不显示网址（Rei 2026-11-03），网址在「访问」的悬停提示里；
@@ -41,6 +45,9 @@ import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
 import { HIGHLIGHT_COLORS, type HighlightColor, type HighlightRange } from './highlight';
+import { FormatBar } from './FormatBar';
+import type { FormatResult } from './format-bar';
+import { watchKeyboard, type KeyboardState } from '../../lib/soft-keyboard';
 
 /** @ 下拉里的「插入当前时间」「插入今天 / 明天 / 昨天日期」（不是任务）。 */
 type StampItem = { stamp: MentionStampKind };
@@ -73,6 +80,25 @@ export interface MdEditorProps {
   plainTitle?: boolean;
   /** 能打 @ 提及任务（Rei 2026-11-10）：任务正文 scope task（selfId = 这件任务，不列自己）、日记 scope journal（多列倒数日）。备注不给。 */
   mention?: { scope: MentionScope; selfId?: string | null };
+  /** 触屏上软键盘弹起时，键盘上方出格式栏（Rei 2026-11-21 方案 A）：任务正文、新建面板、日记输入框给；备注不给。电脑上照旧没有工具栏。 */
+  formatBar?: boolean;
+}
+
+/** 从格式栏按 @ 时，候选浮层先列这几项日期（打了字就照常按词找）。 */
+const BAR_STAMPS: MentionStampKind[] = ['date', 'tomorrow', 'yesterday', 'datetime'];
+
+/** 主要输入是触屏（pointer: coarse）：手机、平板都算，跟着变（平板接上鼠标会变）。 */
+function useCoarsePointer(on: boolean): boolean {
+  const [coarse, setCoarse] = useState(() => on && typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  useEffect(() => {
+    if (!on || typeof matchMedia !== 'function') return setCoarse(false);
+    const mq = matchMedia('(pointer: coarse)');
+    const sync = () => setCoarse(mq.matches);
+    sync();
+    mq.addEventListener?.('change', sync);
+    return () => mq.removeEventListener?.('change', sync);
+  }, [on]);
+  return coarse;
 }
 
 /** 链接框：改哪一段（新加时是选区 / 光标）、是不是已有的链接、两栏的值。 */
@@ -91,7 +117,7 @@ interface LinkDialog {
 /** 输入法正在选字时的回车（Safari 选完字的那次 keydown 是 229）不算保存。 */
 const composing = (e: React.KeyboardEvent) => e.nativeEvent.isComposing || e.keyCode === 229;
 
-export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef, plainTitle = false, mention }: MdEditorProps) {
+export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, onBlur, onEscape, className, readOnly = false, onModEnter, handleRef, plainTitle = false, mention, formatBar = false }: MdEditorProps) {
   const ui = useUiOptional();
   const handle = useRef<MdEditorHandle | null>(null);
   const cb = useRef({ onChange, onBlur, onEscape, onModEnter });
@@ -136,6 +162,9 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   const mPointer = useRef(false);
   const mentionRef = useRef(mention);
   mentionRef.current = mention;
+  /** 格式栏按 @ 打进去的那个 @ 的位置：这个 @ 后面还没打字时，候选先列日期（BAR_STAMPS）。 */
+  const barAt = useRef<number | null>(null);
+  const fromBar = !!mq && barAt.current === mq.from;
   const choices: MentionCandidate[] = useMemo(
     () => (mq && mention ? mentionChoices(mention.scope, mention.selfId, mq.query) : []),
     [mq?.query, mq != null, mention?.scope, mention?.selfId], // eslint-disable-line react-hooks/exhaustive-deps
@@ -143,12 +172,15 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   // 「插入当前时间」「插入今天日期」（Rei 2026-11-12 07:09、07:17）：@现在 / @now / @time / @datetime、@date / @日期 / @今天 时排在最上面，
   // 选了换成「2026-11-12 07:09」/「2026-11-12」纯文字
   const items: MentionItem[] = useMemo(
-    () => (mq && mention ? [...mentionStampKinds(mq.query).map((k) => STAMP_ITEMS[k]), ...choices] : choices),
-    [choices, mq?.query], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (mq && mention ? [...(fromBar && !mq.query.trim() ? BAR_STAMPS : mentionStampKinds(mq.query)).map((k) => STAMP_ITEMS[k]), ...choices] : choices),
+    [choices, mq?.query, fromBar], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const mRef = useRef({ mq, items, mActive });
   mRef.current = { mq, items, mActive };
   useEffect(() => setMActive(0), [mq?.query, mq?.from]);
+  useEffect(() => {
+    if (!mq || mq.from !== barAt.current) barAt.current = null;
+  }, [mq?.from, mq == null]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickMention = (c: MentionItem) => {
     const cur = mRef.current.mq;
     if (!cur) return;
@@ -599,7 +631,8 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     if (!c) return;
     const vv = window.visualViewport;
     const vTop = vv ? vv.offsetTop : 0;
-    const vBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    // 格式栏开着：浮层放不到栏下面
+    const vBottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - (wrap.current?.querySelector<HTMLElement>('.md-format-bar')?.offsetHeight ?? 0);
     const p = placeMentionPop(c, { width: el.offsetWidth, height: el.offsetHeight }, { top: vTop, bottom: vBottom, width: window.innerWidth });
     const prevL = el.style.left;
     const prevT = el.style.top;
@@ -713,7 +746,8 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     if (!c) return cancel;
     const vv = window.visualViewport;
     const vTop = vv ? vv.offsetTop : 0;
-    const vBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    // 格式栏开着：浮层放不到栏下面
+    const vBottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - (wrap.current?.querySelector<HTMLElement>('.md-format-bar')?.offsetHeight ?? 0);
     const p = placeMentionPop(c, { width: el.offsetWidth, height: el.offsetHeight }, { top: vTop, bottom: vBottom, width: window.innerWidth });
     mWant.current = p;
     // 浮层放在编辑器里面（不放 body：弹层 / 新建面板会把点在外面的当成「点了外面」关掉自己），position: fixed。
@@ -840,6 +874,53 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       </div>
   );
 
+  // 格式栏（Rei 2026-11-21 方案 A）：触屏、有焦点、软键盘开着、链接框没开时出现，贴在键盘上沿；收键盘 / 失焦就没了
+  const coarse = useCoarsePointer(formatBar && !readOnly);
+  const [kb, setKb] = useState<KeyboardState>({ open: false, top: 0 });
+  const watchKb = formatBar && coarse && focused && !readOnly;
+  useEffect(() => {
+    if (!watchKb || typeof window === 'undefined') return setKb({ open: false, top: 0 });
+    return watchKeyboard(setKb);
+  }, [watchKb]);
+  // 自己记组字（ProseMirror 的 view.composing 有时提前结束，见 ime-guard.ts）
+  const imeOn = useRef(false);
+  useEffect(() => {
+    if (!editor || !formatBar) return;
+    let dom: HTMLElement;
+    try {
+      dom = editor.view.dom;
+    } catch {
+      return;
+    }
+    const start = () => (imeOn.current = true);
+    const end = () => (imeOn.current = false);
+    dom.addEventListener('compositionstart', start);
+    dom.addEventListener('compositionend', end);
+    return () => {
+      dom.removeEventListener('compositionstart', start);
+      dom.removeEventListener('compositionend', end);
+    };
+  }, [editor, formatBar]);
+  const barOn = watchKb && kb.open && !dialog && !!editor && !editor.isDestroyed;
+  // 栏开着时光标滚进来要多让出栏的高度，别躲在栏下面
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    try {
+      const m = barOn ? 64 : 5;
+      editor.view.setProps({ scrollMargin: { top: 5, left: 5, right: 5, bottom: m } });
+    } catch {
+      /* view 还没挂上 */
+    }
+  }, [barOn, editor]);
+  const onBarResult = (r: FormatResult) => {
+    if (r.kind === 'link') openLinkForm();
+    else if (r.kind === 'mention') barAt.current = r.at;
+    else if (r.kind === 'palette') setHl(r.range);
+  };
+  const formatBarEl = barOn && editor && (
+    <FormatBar editor={editor} keyboardTop={kb.top} mention={!!mention} composing={() => imeOn.current} onResult={onBarResult} />
+  );
+
   return (
     <div
       ref={wrap}
@@ -851,6 +932,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       {helpPop}
       {mentionPop}
       {hlPop}
+      {formatBarEl}
       {(pop || (dialog && !dialog.sheet)) && (
         <div
           ref={popEl}

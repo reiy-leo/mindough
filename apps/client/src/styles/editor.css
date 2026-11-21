@@ -799,3 +799,112 @@
 .md-hl-clear:hover {
   background: var(--surface-hover);
 }
+
+/* ───────── 手机键盘上方的格式栏（Rei 2026-11-21 方案 A，FormatBar.tsx）───────── */
+/* 只在触屏、编辑器有焦点、软键盘开着时出现，位置在 MdEditor / FormatBar 里算（position: fixed，贴键盘上沿，整屏宽）。
+   一行图标横着滑，不显示滚动条。三种皮肤各一套：Apple 半透明毛玻璃 + 圆角浅底选中；WinUI 实心底 + 细上边 + 强调色实底选中；
+   Material 3 surface container 底、圆形图标按钮 + 浅色调底选中。亮暗都靠令牌，素净档跟着令牌变灰。不用 color-mix()。 */
+.md-format-bar {
+  position: fixed;
+  z-index: 1001;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  background: var(--tabbar-bg);
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-x;
+}
+.md-format-bar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  padding: 0 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.md-format-bar-scroll::-webkit-scrollbar {
+  display: none;
+}
+.md-format-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.md-format-btn:disabled {
+  color: var(--text-3);
+  opacity: 0.45;
+  cursor: default;
+}
+.md-format-btn:active:not(:disabled) {
+  background: var(--surface-hover);
+}
+.md-format-btn.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+
+/* Apple：像 iOS 键盘上方的工具条，半透明毛玻璃，选中是强调色淡底 + 强调色图标 */
+[data-skin='apple'] .md-format-bar {
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+[data-skin='apple'] .md-format-btn {
+  border-radius: 8px;
+}
+[data-skin='apple'] .md-format-btn.is-active {
+  color: var(--accent);
+}
+
+/* WinUI 3：实心底、细上边；选中的切换按钮是强调色实底、白字（ToggleButton Checked） */
+[data-skin='winui'] .md-format-bar {
+  height: 48px;
+  background: var(--surface);
+}
+[data-skin='winui'] .md-format-btn {
+  width: 40px;
+  height: 36px;
+  border-radius: 4px;
+}
+[data-skin='winui'] .md-format-btn.is-active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* Material 3：surface container 底、没有上边线；48 圆形触控区里 40 的圆形图标按钮，选中是浅色调底（filled tonal） */
+[data-skin='material'] .md-format-bar {
+  height: 56px;
+  border-top: 0;
+}
+[data-skin='material'] .md-format-bar-scroll {
+  gap: 4px;
+  padding: 0 8px;
+}
+[data-skin='material'] .md-format-btn {
+  width: 40px;
+  height: 40px;
+  margin: 4px 0;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+[data-skin='material'] .md-format-btn.is-active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-icon);
+}

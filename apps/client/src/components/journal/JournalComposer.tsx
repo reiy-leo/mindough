@@ -101,6 +101,7 @@ export const JournalComposer = forwardRef<ComposerHandle, { onSend: (body: strin
         className="jcomposer-input"
         // 打 @ 提到任务和倒数日（Rei 2026-11-10）
         mention={{ scope: 'journal' }}
+        formatBar
         label={tr('写一条日记')}
         placeholder={tr('在想什么？记下来…')}
         value={body}

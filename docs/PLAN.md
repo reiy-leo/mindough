@@ -709,7 +709,7 @@ Rei 2026-10-25 原话：「换成tiptap后，不用显示toolbar。hover编辑�
 - 检查：`tiptap.test.ts`、`details.test.ts` 加了用例；真实 Chromium 一个字一个字打（`work/shots-tool/le-syntax2.mjs`，加了 `[] ` `[ ] ` `[x] ` `>> ` `> > ` 和普通引用，共 38 项）；截图 `work/shots-notoolbar/`（脚本 `work/shots-tool/notoolbar.mjs`，三皮肤宽屏 + 手机 390，悬停 / 编辑，亮 + 三张暗；量了悬停、聚焦前后底色都是透明）。
 
 替 Rei 定的细节（不对可以改）：
-1. 手机上不加气泡菜单之类的替代界面（Rei 没要求），全靠手打写法。
+1. 手机上不加气泡菜单之类的替代界面（Rei 没要求），全靠手打写法。（2026-11-21 起触屏有键盘上方的格式栏，见「手机编辑器：键盘上方的格式栏」。）
 2. `>> ` 变成折叠块后，光标停在标题末尾，回车进正文。
 3. 新建面板里 ⌘K 也开链接框（以前那里没有）。
 
@@ -2345,3 +2345,23 @@ Rei 2026-11-13 08:38：「错过的倒数日不要直接设置成"已完成"」�
 - 代码：`lib/view-prefs.ts`（key、读、写、迁移，纯逻辑）、`lib/view-hooks.ts`（`useListView`、`useProjectPrefs`、`projectPrefsOf`）；`lib/list-views.ts` 只留纯规则。App 判断看板浮层用 `projectPrefsOf`。
 - 测试：`lib/view-prefs.test.ts`。
 - 没处理：删了项目，它的 `project_view.<id>.*` 偏好行留在库里（几行，不显示，不影响）。
+
+### 手机编辑器：键盘上方的格式栏 ✅（2026-11-21）
+- Rei 2026-11-21 11:22 看了手机编辑器输入方案后定「先做A」：触屏上软键盘弹起时，键盘上方出一行格式按钮。电脑上照旧没有工具栏（2026-10-25 定的不变）。
+- 哪里有：任务详情正文、新建面板、日记输入框（`MdEditor` 的 `formatBar`）。资料 / 人物备注不给。
+- 什么时候出现：主要输入是触屏（`pointer: coarse`）、编辑器有焦点、软键盘开着、链接框没开。收键盘、失焦就没了。平板也算触屏，也显示（代定）；平板接了实体键盘、软键盘不弹时不显示。
+- 按钮顺序：清单、列表、编号列表、标题、粗体、高亮、引用、行内代码、链接、@、缩进、减少缩进、上移、下移、撤销。一行放不下就横着滑。图标都是 Lucide。
+- 按钮做什么（`components/editor/format-bar.ts`）：
+  - 状态跟着光标：光标在粗体里，粗体按钮显示按下，再点一下去掉；列表、编号列表、清单、标题、引用、行内代码、高亮、链接一样。
+  - 清单：普通段落、列表项、编号项都变成没勾的清单项；已经是清单再点，变回普通列表项。列表按钮在清单项里点，也是变回普通列表项。换成编号列表时去掉勾。
+  - 标题点一下换一级：正文 → 标题 1 → 标题 2 → 标题 3 → 正文（4–6 级点了也回到正文）。按钮图标跟着显示 H1 / H2 / H3。
+  - 高亮：没有高亮就加黄色；光标已经在一段高亮里（或选中的字是同一种高亮），弹现在点高亮出的那个九色色板。
+  - 链接开现有的链接框（手机上是底部面板）。@ 在光标处打一个 @（前面紧挨字母数字就先补个空格），弹现有的候选浮层；从这个按钮打的 @，后面还没打字时先列「插入今天日期 / 明天 / 昨天 / 当前时间」，再列任务（代定）。
+  - 缩进、减少缩进同 Tab / Shift+Tab，只在列表里能点；上移、下移同 ⌥↑↓ / Ctrl+↑↓（`move-block.ts`），到头了灰掉；撤销没东西可撤时灰掉。
+  - 任务第一行是纯文字标题：光标在第一行时格式按钮都灰掉，只剩 @、撤销、上移下移按规则。代码块里格式按钮也灰掉。
+- 按下不抢焦点（栏上 pointerdown、mousedown 都 preventDefault）：键盘不收、光标不丢。输入法正在组字时点按钮什么都不做（ProseMirror 的 `view.composing` 加上自己记的 compositionstart / end）。按钮不进 Tab 顺序，读屏名都经 `trc('格式', …)`，九种语言，`format-bar.test.ts` 查每个按钮在八种外语里都有。
+- 键盘在哪（`lib/soft-keyboard.ts`）：没有「键盘开了」的事件，看窗口。iOS 和新的安卓 WebView（M139 起）键盘弹起时 visualViewport 变矮；adjustResize 那种整个窗口变矮。拿「这个宽度下见过的最高窗口」比（`installViewportMemory` 在 main.tsx 一启动就开始记），被挡住超过 120px 才算键盘，双指放大乘上 scale 不算。栏用 position: fixed 贴在键盘上沿，放在编辑器里面（同 @ 浮层，不放 body），外层有 transform 时量出原点再减。栏开着时 @ 浮层、高亮色板放不到栏下面，编辑器滚光标时下面多让 64px。
+- 安卓 App：`gen/android` 不进仓库，manifest 是 Tauri 模板生成的，没写 `windowSoftInputMode`（就是 adjustUnspecified）。App 是 edge-to-edge（targetSdk ≥ 35），这时 adjustResize 也不缩窗口，改它没用；M139 以前的 WebView 里 visualViewport 也看不到键盘。所以 `scripts/android-webview.sh` 在 `onWebViewCreate` 里加了 `mindoughWatchIme`：API 30+ 在窗口的 OnGlobalLayout 里读 `rootWindowInsets` 的 ime 高度，换成 CSS px 写到 `window.__mindoughIme`，再发 `mindough-ime` 事件；网页那边取 visualViewport 和它里面靠上的那个，不重复算。没另设 insets 监听，免得盖掉 Tauri 自己的。原生这部分要下次发版才进 App；没进之前，安卓上只有 M139 以后的 WebView 能出格式栏。
+- 样子（`styles/editor.css` `.md-format-bar`）：Apple 半透明毛玻璃底（`--tabbar-bg`）、44 高、选中是强调色淡底 + 强调色图标；WinUI 实心 `--surface` 底、细上边、48 高、选中是强调色实底白图标（ToggleButton 选中的样子）；Material 3 surface container 底、没上边、56 高、40 圆形图标按钮、选中是浅色调底（filled tonal）。亮暗靠令牌，素净档跟着令牌变灰，没用 color-mix()。
+- 新文案（九种语言，七种外语待母语者看）：「文字格式」（栏的读屏名）、格式|提到任务或日期、格式|缩进、格式|减少缩进、格式|上移、格式|下移、格式|撤销。别的按钮用「写法和快捷键」浮层里已有的格式名。
+- 测试：`components/editor/format-bar.test.ts`（顺序、九种语言、每个按钮改出来的 markdown、再点取消、按钮状态、组字不动、第一行标题、代码块、只读）、`lib/soft-keyboard.test.ts`（iOS、adjustResize、地址栏、放大、安卓原生报的高度）。

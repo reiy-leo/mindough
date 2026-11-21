@@ -9,6 +9,9 @@
 # 网页那边（apps/client/src/lib/android-bg.ts）换皮肤、深浅色时把 body 的底色发过来。哪一帧露出 WebView 后面，也是界面的颜色。
 # tauri.conf.json 没写 backgroundColor / transparent，wry 不会在 onWebViewCreate 之后再改 WebView 底色（wry 0.57 main_pipe.rs）。
 # proguard-rules.pro 里保住桥接方法，release 包混淆后 JS 照样调得到。
+# 键盘高度报给网页（2026-11-21，手机编辑器的格式栏）：App 是 edge-to-edge（targetSdk ≥ 35），adjustResize 不缩窗口，
+# 老 WebView（M139 以前）里 visualViewport 也看不到键盘。API 30+ 在窗口的 OnGlobalLayout 里读 rootWindowInsets 的 ime 高度，
+# 换成 CSS px 写到 window.__mindoughIme 再发 `mindough-ime` 事件（apps/client/src/lib/soft-keyboard.ts）；不另设 insets 监听，免得盖掉 Tauri 自己的。
 #   scripts/android-webview.sh          # tauri android init 之后、build 之前跑（重复跑不会加两遍）
 #   scripts/android-webview.sh verify   # 只检查改上了没有
 # 原因同 native-icons.sh：gen/ 不进仓库，MainActivity 是 init 从模板生成的。
@@ -24,8 +27,9 @@ if [ "$mode" = verify ]; then
   grep -q "$MARK" "$f" && grep -q 'setSupportZoom(false)' "$f" || { echo "$f 里没有关缩放"; exit 1; }
   grep -q 'setAlgorithmicDarkeningAllowed(false)' "$f" && grep -q 'isForceDarkAllowed = false' "$f" || { echo "$f 里没有关自动压暗"; exit 1; }
   grep -q 'mindoughApplyBackground' "$f" && grep -q 'addJavascriptInterface(MindoughBgBridge' "$f" || { echo "$f 里没有不透明底 / 底色桥"; exit 1; }
+  grep -q 'mindoughWatchIme(webView)' "$f" && grep -q '__mindoughIme' "$f" || { echo "$f 里没有报键盘高度"; exit 1; }
   if [ -f "$pro" ]; then grep -q 'MindoughBgBridge' "$pro" || { echo "$pro 里没有保住底色桥"; exit 1; }; fi
-  echo "WebView 缩放、自动压暗已关，不透明底和底色桥已加：$f"; exit 0
+  echo "WebView 缩放、自动压暗已关，不透明底、底色桥、键盘高度已加：$f"; exit 0
 fi
 
 if grep -q "$MARK" "$f"; then echo "已经改过：$f"; exit 0; fi
@@ -58,6 +62,25 @@ block = f'''
     // 不透明底（2026-11-11，选中文字时内容区变黑的兜底）：先按系统深浅色，网页起来后按界面底色换
     mindoughApplyBackground(webView, mindoughDefaultBackground())
     webView.addJavascriptInterface(MindoughBgBridge(this, webView), "MindoughAndroid")
+    // 键盘高度报给网页（2026-11-21，手机编辑器的格式栏）
+    mindoughWatchIme(webView)
+  }}
+
+  // 键盘高度（CSS px，收起是 0）写到 window.__mindoughIme，再发 mindough-ime 事件；没变不发。API 30 以前没有 ime insets，不报
+  private var mindoughImeLast = -1
+  private fun mindoughWatchIme(webView: android.webkit.WebView) {{
+    if (android.os.Build.VERSION.SDK_INT < 30) return
+    val root = window.decorView
+    root.viewTreeObserver.addOnGlobalLayoutListener {{
+      val insets = root.rootWindowInsets ?: return@addOnGlobalLayoutListener
+      val type = android.view.WindowInsets.Type.ime()
+      val px = if (insets.isVisible(type)) insets.getInsets(type).bottom else 0
+      val css = Math.round(px / resources.displayMetrics.density)
+      if (css != mindoughImeLast) {{
+        mindoughImeLast = css
+        webView.evaluateJavascript("window.__mindoughIme=" + css + ";window.dispatchEvent(new Event('mindough-ime'))", null)
+      }}
+    }}
   }}
 
   // 和 Material 皮肤的 --bg 一样（skin/tokens.css）：亮 #f9f9ff、暗 #111318
@@ -88,4 +111,4 @@ PY
 if [ -f "$pro" ] && ! grep -q MindoughBgBridge "$pro"; then
   printf '\n# mindough: 网页调的底色桥（scripts/android-webview.sh）\n-keepclassmembers class **.MainActivity$MindoughBgBridge {\n  @android.webkit.JavascriptInterface <methods>;\n}\n' >> "$pro"
 fi
-echo "已关掉 WebView 缩放、自动压暗，加上不透明底和底色桥：$f"; cat "$f"
+echo "已关掉 WebView 缩放、自动压暗，加上不透明底、底色桥和键盘高度：$f"; cat "$f"

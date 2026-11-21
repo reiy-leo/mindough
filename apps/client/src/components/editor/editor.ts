@@ -6,7 +6,8 @@
  * - 老数据打开不写回：打开时先记下「这篇文档写出去是什么样」（canon）。没真的改字（展开折叠块、光标进公式、自动补的东西）
  *   写出去还是 canon，就不调 onChange；真的改了才调。所以原文里 `* 列表`、`__粗__` 这种非标准写法，只看不改也不会被改写。
  * - 外面的值变了（同步下来）且不是自己刚写的：整篇替换（不进撤销历史）。
- * - 链接的读写（链接框）、选区坐标（浮层定位）都在 handle 上。没有工具栏（Rei 2026-10-25），格式靠快捷键和手打语法。
+ * - 链接的读写（链接框）、选区坐标（浮层定位）都在 handle 上。电脑上没有工具栏（Rei 2026-10-25），格式靠快捷键和手打语法；
+ *   触屏键盘上方的格式栏见 format-bar.ts（Rei 2026-11-21）。
  */
 import { Editor, getSchema, type AnyExtension, type EditorOptions } from '@tiptap/core';
 import { Node as PMNode, type Schema } from '@tiptap/pm/model';

@@ -260,6 +260,7 @@ export function Body({ store, task, placeholder, readOnly = false }: { store: St
         className="detail-md"
         // 打 @ 提到别的普通任务（Rei 2026-11-10），不列自己
         mention={{ scope: 'task', selfId: task.id }}
+        formatBar
         label={tr('内容')}
         placeholder={placeholder}
         value={body}

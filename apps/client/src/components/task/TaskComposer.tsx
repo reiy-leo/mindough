@@ -464,6 +464,7 @@ function Composer() {
           // 任务的第一行是标题，只能是纯文字（Rei 2026-11-03，挂了资料的任务也一样）
           plainTitle
           mention={{ scope: 'task' }}
+          formatBar
           label={tr('内容')}
           className="composer-body"
           onEscape={() => ui.closeQuickCreate()}
