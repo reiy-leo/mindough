@@ -29,8 +29,8 @@ Rei 2026-11-14 定的：资料库里加一个内置库「影人」，收关注�
 | 英文名 | `name_en` | 文字 | |
 | 生年 | `birth_year` | 数字 | |
 | 身份 | `roles` | 多选 | 默认 演员、导演、编剧、制片、配乐 |
-| TMDB | `tmdb` | 站点编号 `tmdb_person` | 数字，显示成 themoviedb.org/person/… 链接 |
-| IMDb | `imdb` | 站点编号 `imdb_name` | nm 开头，显示成 imdb.com/name/… 链接 |
+| TMDB | `tmdb` | 站点编号 `tmdb_person` | 数字，显示成 themoviedb.org/person/… 链接；输入框占位「编号或链接」（同 IMDb） |
+| IMDb | `imdb` | 站点编号 `imdb_name` | nm 开头，显示成 imdb.com/name/… 链接；输入框占位「编号或链接」（手机 360 宽也放得下，Rei 2026-11-21） |
 | 更多链接 | `links` | 链接组 | |
 
 - 简介写在资料的备注里（Markdown），资料详情照常显示。

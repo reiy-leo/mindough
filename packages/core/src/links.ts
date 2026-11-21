@@ -64,14 +64,14 @@ export const SITES: Record<string, SiteDef> = {
   // 影人（Rei 2026-11-14）：TMDB 人物编号（数字）和 IMDb 影人编号（nm 开头），只存编号，显示成链接
   tmdb_person: {
     label: 'TMDB',
-    get placeholder() { return tr('525，或粘贴链接'); },
+    get placeholder() { return tr('编号或链接'); },
     get hint() { return tr('TMDB 人物编号是一串数字，在链接 person/ 后面'); },
     parse: (input) => tmdbPersonIdOf(input),
     url: (id) => `https://www.themoviedb.org/person/${id}`,
   },
   imdb_name: {
     label: 'IMDb',
-    get placeholder() { return tr('nm0634240，或粘贴链接'); },
+    get placeholder() { return tr('编号或链接'); },
     get hint() { return tr('IMDb 影人编号是 nm 加数字，比如 nm0634240'); },
     parse: (input) => imdbNameIdOf(input),
     url: (id) => `https://www.imdb.com/name/${id}/`,

@@ -248,9 +248,8 @@ export const CORE_EN: Record<string, V> = {
 
   // ── 站点编号 ──
   'tt0816692，或粘贴链接': 'tt0816692, or paste a link',
-  '525，或粘贴链接': '525, or paste a link',
   'TMDB 人物编号是一串数字，在链接 person/ 后面': 'A TMDB person ID is a number, the part after person/ in the link',
-  'nm0634240，或粘贴链接': 'nm0634240, or paste a link',
+  '编号或链接': 'ID or link',
   'IMDb 影人编号是 nm 加数字，比如 nm0634240': 'An IMDb name ID is nm plus digits, like nm0634240',
   'IMDb 编号是 tt 加数字，比如 tt0816692': 'An IMDb ID is “tt” plus digits, like tt0816692',
   豆瓣: 'Douban',
