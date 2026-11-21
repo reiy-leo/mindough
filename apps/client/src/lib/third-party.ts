@@ -83,4 +83,6 @@ export const THIRD_PARTY: ThirdParty[] = [
   { name: 'Serde', license: 'MIT OR Apache-2.0', url: 'https://serde.rs', packages: ['serde', 'serde_json'] },
   { name: 'arboard', license: 'MIT OR Apache-2.0', url: 'https://github.com/1Password/arboard', packages: ['arboard'] },
   { name: 'os_info', license: 'MIT', url: 'https://github.com/stanislav-tkach/os_info', packages: ['os_info'] },
+  // macOS Touch Bar（Rei 2026-11-21，src-tauri/src/touchbar_mac.rs）直接调 AppKit
+  { name: 'objc2', license: 'MIT', url: 'https://github.com/madsmtm/objc2', packages: ['objc2', 'objc2-foundation', 'objc2-app-kit'] },
 ];

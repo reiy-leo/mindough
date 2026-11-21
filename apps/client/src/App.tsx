@@ -60,6 +60,7 @@ import { useAutoMyDay } from './lib/myday-auto';
 import { MenuAt, OverflowMenu, useContextMenuAt, type MenuAction } from './ui/primitives';
 import { NavReorderScope, usePinnedReorder } from './components/NavReorderScope';
 import { useAppMenu } from './lib/app-menu';
+import { useTouchBar } from './lib/touch-bar';
 import { PinnedStyleMenu } from './components/PinnedStyleMenu';
 import { pinnedGrid, type PinnedStyleKind } from './lib/pinned-style';
 import { PINNED_LINE_ICON, pinnedGroupIconSize } from './lib/pinned-tile';
@@ -820,6 +821,8 @@ export function App() {
     [platform],
   );
   useAppMenu({ importDida: useCallback(() => setDidaImportOpen(true), [setDidaImportOpen]), openSettings: useCallback(() => openSettings(), [openSettings]) });
+  // macOS Touch Bar（Rei 2026-11-21）：6 个页面图标，当前页高亮，点了跳页（lib/touch-bar.ts）
+  useTouchBar(route, isTauri() && platform === 'macos');
   // 走到 #/settings（深链 view/settings、手机布局「更多」里的设置、旧链接）：开设置窗口，主窗口退回原来的页面
   useEffect(() => {
     if (!settingsInWindow || route.page !== 'settings') return;

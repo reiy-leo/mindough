@@ -2402,3 +2402,18 @@ Rei 2026-11-13 08:38：「错过的倒数日不要直接设置成"已完成"」�
 - 没加新界面文案：⌘? 浮层还是只列半角写法（要列全角，得加九种语言的说明，等 Rei 定）。
 - 测试：`components/editor/fullwidth.test.ts`（每条变了没有、存出来的 markdown、退格还原、正文中间不变、第一行标题不变、第二行照常变、代码块里不变、组字中不变、「【|】」光标在中间、列表项里、编号接着前面的列表、带语言的代码块、空引用里再打变折叠块、有字的引用里嵌套）；`details.test.ts` 加了「打完 `>> ` 马上退格变回原字」。
 
+
+### macOS Touch Bar：6 个页面图标（代码已推，等下次发版看效果，2026-11-21）
+- Rei 2026-11-21 15:55「touchbar显示我的一天、日历、侧边栏的项目、打卡、倒数日、日记的图标」。Rei 的 2018 款 Intel MacBook Pro 有 Touch Bar。
+- 做法（`src-tauri/src/touchbar.rs` + `touchbar_mac.rs`，只在 macOS 编译）：
+  - 主窗口的 NSWindow 挂一条 NSTouchBar。里面一个 NSCustomTouchBarItem，装一个单选的 NSSegmentedControl，6 段。单选分段控件自带「选中那段高亮」，点击走一个 target-action（`define_class!` 定义的 `MindoughTouchBarTarget`）。
+  - 这一项设成 principal（居中）；默认项里还放了 `NSTouchBarItemIdentifierOtherItemsProxy`，网页里打字时 WKWebView 自己的按钮也能排进来。
+  - 直接用 objc2 0.6 / objc2-app-kit 0.3 / objc2-foundation 0.3，和 Tauri（tao、wry）用的是同一套版本，`default-features = false`，只开用到的类。
+  - NSWindow 指针从 `WebviewWindow::ns_window()` 拿，AppKit 的事都放进 `run_on_main_thread`。
+- 图标用 SF Symbols，挑和侧栏 Lucide 最像的：Sun → `sun.max`，Calendar → `calendar`，Shapes → `square.on.circle`，CalendarCheck2 → `calendar.badge.checkmark`（macOS 13 起，旧系统退到 `checkmark.circle`），Hourglass → `hourglass`，NotebookPen → `square.and.pencil`。为什么不把 Lucide 渲成模板图：SF Symbols 是系统自己画的，Touch Bar 上粗细、大小、按下的样子都和别的 app 一致，不用另做一套 PNG；Touch Bar 是一条单色窄条，和侧栏差一点看不出来。macOS 11 以前没有 SF Symbols，或者某个符号找不到，那一段退成文字。
+- 文字和高亮：前端 `lib/touch-bar.ts` 的 `useTouchBar(route, enabled)`（App.tsx，只在 macOS 桌面 app 主窗口）进来时、每次换到另一个按钮对应的页时调 `set_touch_bar`，带 6 个名字和当前按钮名。名字用侧栏同样的词条（`tr('我的一天')`、`trc('导航', '日历')`、`trc('导航', '项目')`、`trc('导航', '打卡')`、`tr('倒数日')`、`tr('日记')`），没加新文案。名字当提示（`setToolTip:forSegment:`）和图标的无障碍描述。换语言整棵界面重新挂载，会再调一次。
+- 点了：Rust 发 `mindough:touchbar` 给主窗口，payload 是按钮名 `myday` / `calendar` / `projects` / `checkin` / `countdown` / `journal`（和深链 `view/{页面}` 同名），前端 `navigate()` 到 `#/myday`、`#/calendar`、`#/groups`、`#/checkin`、`#/countdown`、`#/journal`。
+- 代定：「侧边栏的项目」按侧栏「项目」入口理解。另一种理解是放进侧边栏的那几个项目各一个按钮：按钮个数不固定，图标是项目自己选的 Lucide 图标或 emoji，没有对应的 SF Symbol，要前端把 SVG 画成 PNG 传给 Rust 做模板图，项目改名、改图标、增删都要重建 Touch Bar。工作量大概是现在的两三倍，Rei 要的话再做。
+- 检查：Linux 目标 `cargo check` 过；AppKit 部分单独放进一个小 crate，在 LightVela 上 `cargo check --target x86_64-apple-darwin`（不用 SDK，只查类型）。真机效果要等下次发版 CI 出 Mac 包才看得到。
+- 测试：`lib/touch-bar.test.ts`（页面 → 按钮、按钮 → 页面再算回来、只认 6 个名字、文字 6 项）。
+- 风险：WKWebView 当前是第一响应者，它自己也有 Touch Bar。网页里没在打字时一般是空的，会显示窗口的这条；万一某个 macOS 版本上 WKWebView 总给一条非空的，可能盖掉这条，到时改成直接设在 WKWebView 上。

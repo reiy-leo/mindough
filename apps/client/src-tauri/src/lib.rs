@@ -8,6 +8,7 @@
 //! - menu：桌面菜单栏 File → Import → Dida365、「设置…」（文字由前端按界面语言传来，点了发 mindough:menu 给主窗口）
 //! - clipboard：剪贴板里的文件 / 图片（clipboard_peek、clipboard_read_file；图片内容走 clipboard-manager 插件的 readImage）
 //! - autostart：开机时启动（桌面，tauri-plugin-autostart，带 --autostart 参数），「开机自启时最小化应用」存 launch.json（src/autostart.rs）
+//! - touchbar：macOS Touch Bar 上 6 个页面图标（文字和当前页由前端传来，点了发 mindough:touchbar 给主窗口；别的平台不做事）
 //! - vibrancy：窗口材质（macOS 侧边栏毛玻璃、Windows 11 Mica），前端问 window_material 决定背景透不透明
 
 mod autostart;
@@ -15,6 +16,7 @@ mod clipboard;
 mod db;
 mod files;
 mod menu;
+mod touchbar;
 mod vibrancy;
 mod widget;
 
@@ -78,7 +80,7 @@ pub fn run() {
                 db::forget_window(window);
             }
         })
-        .invoke_handler(tauri::generate_handler![db::db_open, db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file, autostart::autostart_minimize_get, autostart::autostart_minimize_set])
+        .invoke_handler(tauri::generate_handler![db::db_open, db::db_exec, db::db_run, db::db_all, widget::widget_snapshot, files::save_download, files::save_to_path, files::att_cache_put, files::att_cache_get, files::att_cache_delete, files::att_cache_list, files::att_cache_copy, menu::set_app_menu, touchbar::set_touch_bar, vibrancy::window_material, clipboard::clipboard_peek, clipboard::clipboard_read_file, autostart::autostart_minimize_get, autostart::autostart_minimize_set])
         .run(tauri::generate_context!())
         .expect("启动 Mindough 失败");
 }
