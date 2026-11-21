@@ -141,6 +141,23 @@ describe('折叠块：输入与键', () => {
     await done();
   });
 
+  it('打完 >> 空格马上退格：变回「>> 」（同别的写法）；之后标题开头退格照旧拆开', async () => {
+    const { view, done } = await setup('');
+    type(view, '>> ');
+    expect(key(view, 'Backspace')).toBe(true);
+    expect(nodes(view.state.doc, 'details')).toHaveLength(0);
+    expect(view.state.doc.textContent).toBe('>> ');
+    // 再变一次，挪开光标又回来，退格就是拆开
+    view.dispatch(view.state.tr.delete(1, view.state.doc.content.size - 1));
+    type(view, '>> ');
+    type(view, 'T');
+    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 2)));
+    expect(key(view, 'Backspace')).toBe(true);
+    expect(nodes(view.state.doc, 'details')).toHaveLength(0);
+    expect(view.state.doc.firstChild!.textContent).toBe('T');
+    await done();
+  });
+
   it('已有文字的行首打 >> 空格：这行当标题', async () => {
     const { h, view, done } = await setup('要收起来的');
     view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 1)));

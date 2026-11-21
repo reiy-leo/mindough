@@ -10,10 +10,14 @@
  * - 单换行读成 hardBreak（isInline），显示成空格、写回还是换行；Shift+Enter 是真的换行（写成 `\`）；
  * - 粗体 / 强调记下原来的符号（`*` / `_`），表格格子里只有一段；
  * - 快捷键和以前一样（删除线 ⌘⌥X、列表 ⌘⌥8 / ⌘⌥7、代码块 ⌘⌥C、引用 ⌘⇧B、标题 ⌘⌥1–6）；2026-11-03 加了下划线 ⌘U（+1 波浪线、+2 双线）和 ⌘? 快捷键提示。
+ *
+ * 全角写法（Rei 2026-11-21 方案 B）：中文输入法不用切英文，行首打全角符号再打空格也变格式，和半角写法走同一套规则——
+ * 「》 」引用、「》》 」折叠块（details.ts）、「【】 」清单、「1。 」编号列表、「··· 」代码块。
+ * 只在一块开头认；第一行标题里、代码块里不认；变了以后马上退格变回原来的字；存的还是标准 markdown（`> `、`- [ ]`、`1.`、```` ``` ````）。
  */
 import { TaskMention } from './mention';
 import { DateMentionNode } from './date-mention';
-import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, type AnyExtension } from '@tiptap/core';
+import { Extension, InputRule as TiptapInputRule, Mark, Node, markInputRule, mergeAttributes, textblockTypeInputRule, wrappingInputRule, type AnyExtension } from '@tiptap/core';
 import { Document } from '@tiptap/extension-document';
 import { Paragraph } from '@tiptap/extension-paragraph';
 import { Text } from '@tiptap/extension-text';
@@ -69,6 +73,30 @@ export const ANGLE_LINK_RE = /<([a-z][a-z0-9+.-]{1,31}:[^\s<>]+)>$/i;
  * 除了 http(s) / www，别的 App 的「scheme://…」也认（codex://、obsidian://，Rei 2026-11-03）；挡掉的协议在规则里再判。
  */
 export const BARE_URL_RE = /(?:^|[\s(（])((?:https?:\/\/|www\.|[a-z][a-z0-9+.-]{1,31}:\/\/)[^\s<>]*[^\s<>.,;:!?'"）)\]】，。；：！？、])[.,;:!?'"）)\]】，。；：！？、]*\s$/i;
+/** 全角写法（Rei 2026-11-21 方案 B）：中文输入法打出来的符号，行首打完再打空格。 */
+/** 「》 」：引用（同 `> `）。 */
+export const FW_QUOTE_RE = /^\s*》\s$/;
+/** 「1。 」：编号列表，起始号按数字（同 `1. `）。 */
+export const FW_ORDERED_RE = /^(\d+)。\s$/;
+/** 「··· 」：代码块（三个中点 U+00B7，中文输入法里 ` 键打出来的就是它；同 ```` ``` ````，后面可以带语言）。 */
+export const FW_CODE_RE = /^\u00b7{3}([a-z]+)?[\s\n]$/;
+/**
+ * 「【】 」/「【 】 」：没勾的清单项（同 `[ ] `）。
+ * 中文输入法打「【」常常自动补上「】」、光标停在中间，这时再打空格是「【 」后面跟着「】」——也算（match[1] 为空，由规则检查后面那个「】」）。
+ */
+export const FW_TASK_RE = /^\s*【\s?(】)?\s$/;
+
+/**
+ * 全角清单规则要删的范围：[start, end) 是打的那几个字（不含最后的空格），光标后面紧跟的「】」也一起删。
+ * 不是清单写法（没闭合、后面也没「】」）返回 null。
+ */
+export function fwTaskEnd(state: EditorState, match: RegExpMatchArray, end: number): number | null {
+  if (match[1]) return end;
+  const $e = state.doc.resolve(end);
+  const next = $e.parent.textBetween($e.parentOffset, Math.min($e.parent.content.size, $e.parentOffset + 1), '', '\ufffc');
+  return next === '】' ? end + 1 : null;
+}
+
 /** 一行 |a|b|（至少两列，或一列也行）：回车变成表格，这行当表头。 */
 export const TABLE_ROW_RE = /^\|(?:[^|]*\|)+\s*$/;
 
@@ -106,6 +134,13 @@ const MdStrike = Strike.extend({
   },
 });
 
+/** 引用：多认一个全角「》 」（同 `> `；空引用里再打「》 」变折叠块，见 details.ts，那条优先级更高）。 */
+const MdBlockquote = Blockquote.extend({
+  addInputRules() {
+    return [...(this.parent?.() ?? []), wrappingInputRule({ find: FW_QUOTE_RE, type: this.type })];
+  },
+});
+
 /** 单换行（isInline）显示成一个空格；Shift+Enter 才是真的换行。表格里不换行，代码块里换成 \n。 */
 /** 行内代码外面可以再套粗体 / 链接（`**\`x\`**`），和 markdown 一样；Tiptap 默认不让。 */
 const MdCode = Code.extend({ excludes: '' });
@@ -134,6 +169,9 @@ const MdCodeBlock = CodeBlock.extend({
   addAttributes() {
     return { language: { default: '', rendered: false } };
   },
+  addInputRules() {
+    return [...(this.parent?.() ?? []), textblockTypeInputRule({ find: FW_CODE_RE, type: this.type, getAttributes: (m) => ({ language: m[1] }) })];
+  },
   renderHTML({ node }) {
     const lang = String(node.attrs.language ?? '');
     return ['pre', lang ? { 'data-language': lang } : {}, ['code', lang ? { class: `language-${lang}` } : {}, 0]];
@@ -159,6 +197,11 @@ const MdOrderedList = OrderedList.extend({
   },
   addKeyboardShortcuts() {
     return { 'Mod-Alt-7': () => this.editor.commands.toggleOrderedList() };
+  },
+  // 「1。 」同 `1. `（接在前面的编号列表后面时并进去，规则同官方）
+  addInputRules() {
+    const joinPredicate = (m: RegExpMatchArray, node: PMNode) => node.childCount + Number(node.attrs.start) === +m[1]!;
+    return [...(this.parent?.() ?? []), wrappingInputRule({ find: FW_ORDERED_RE, type: this.type, getAttributes: (m) => ({ start: +m[1]! }), joinPredicate })];
   },
 });
 
@@ -195,24 +238,35 @@ const MdListItem = ListItem.extend({
    * 包进无序列表，再把这一项标成清单。已经在列表项里的交给 behaviorExtension 的 `[ ] ` 规则。存的还是 `- [ ]`。
    */
   addInputRules() {
+    /** 段落开头的这几个字（[from, to)）删掉、整段包进无序列表，这一项标成清单。 */
+    const toTask = (state: EditorState, from: number, to: number, checked: boolean) => {
+      const list = state.schema.nodes.bulletList;
+      const $s = state.doc.resolve(from);
+      if (!list || $s.parent.type.name !== 'paragraph') return null;
+      for (let d = $s.depth; d > 0; d--) if ($s.node(d).type.name === this.name) return null;
+      const tr = state.tr.delete(from, to);
+      const $b = tr.doc.resolve(tr.mapping.map(from));
+      const blockRange = $b.blockRange();
+      const wrapping = blockRange && findWrapping(blockRange, list);
+      if (!blockRange || !wrapping) return null;
+      tr.wrap(blockRange, wrapping);
+      // 包好以后：bulletList(start) > listItem(start + 1)
+      const li = tr.doc.nodeAt(blockRange.start + 1);
+      if (li?.type !== this.type) return null;
+      tr.setNodeMarkup(blockRange.start + 1, undefined, { ...li.attrs, checked });
+      return tr;
+    };
     return [
       new TiptapInputRule({
         find: /^\s*\[([ xX]?)\]\s$/,
+        handler: ({ state, range, match }) => (toTask(state, range.from, range.to, (match[1] ?? '').toLowerCase() === 'x') ? undefined : null),
+      }),
+      // 全角「【】 」「【 】 」，光标夹在「【」「】」中间打空格也算（Rei 2026-11-21）
+      new TiptapInputRule({
+        find: FW_TASK_RE,
         handler: ({ state, range, match }) => {
-          const list = state.schema.nodes.bulletList;
-          const $s = state.doc.resolve(range.from);
-          if (!list || $s.parent.type.name !== 'paragraph') return null;
-          for (let d = $s.depth; d > 0; d--) if ($s.node(d).type.name === this.name) return null;
-          const tr = state.tr.delete(range.from, range.to);
-          const $b = tr.doc.resolve(tr.mapping.map(range.from));
-          const blockRange = $b.blockRange();
-          const wrapping = blockRange && findWrapping(blockRange, list);
-          if (!blockRange || !wrapping) return null;
-          tr.wrap(blockRange, wrapping);
-          // 包好以后：bulletList(start) > listItem(start + 1)
-          const li = tr.doc.nodeAt(blockRange.start + 1);
-          if (li?.type !== this.type) return null;
-          tr.setNodeMarkup(blockRange.start + 1, undefined, { ...li.attrs, checked: (match[1] ?? '').toLowerCase() === 'x' });
+          const to = fwTaskEnd(state, match, range.to);
+          return to != null && toTask(state, range.from, to, false) ? undefined : null;
         },
       }),
     ];
@@ -347,7 +401,7 @@ export function schemaExtensions(): AnyExtension[] {
     Paragraph,
     Text,
     Heading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
-    Blockquote,
+    MdBlockquote,
     HorizontalRule,
     MdBold,
     MdItalic,
@@ -479,6 +533,17 @@ function syntaxRules(): InputRule[] {
       return tr.setSelection(TextSelection.create(tr.doc, $s.before() + 4));
     }),
   ]);
+}
+
+/** 已经在列表项里：项开头的这几个字（[start, end)）删掉，这一项标成清单。已经是清单项的不管。 */
+function itemToTask(state: EditorState, start: number, end: number, checked: boolean) {
+  const $s = state.doc.resolve(start);
+  const d = $s.depth;
+  if (d < 2 || $s.parent.type.name !== 'paragraph' || $s.index(d - 1) !== 0) return null;
+  const li = $s.node(d - 1);
+  if (li.type.name !== 'listItem' || li.attrs.checked != null) return null;
+  const tr = state.tr.delete(start, end);
+  return tr.setNodeMarkup($s.before(d - 1), undefined, { ...li.attrs, checked });
 }
 
 /** 一个表格：第一行是表头（header 里的字），后面 rows - 1 行空的（至少一行）。 */
@@ -713,17 +778,13 @@ export function behaviorExtension(opts: BehaviorOptions) {
         taskToggle(),
         linkPointer(opts),
         inputRules({ rules: syntaxRules() }),
-        // 清单：列表项开头打 [ ] / [x] 再空格
+        // 清单：列表项开头打 [ ] / [x] 再空格；全角「【】 」「【 】 」也算（Rei 2026-11-21）
         inputRules({
           rules: guardTitleRules([
-            new InputRule(/^\[([\sxX]?)\]\s$/, (state, match, start, end) => {
-              const $s = state.doc.resolve(start);
-              const d = $s.depth;
-              if (d < 2 || $s.parent.type.name !== 'paragraph' || $s.index(d - 1) !== 0) return null;
-              const li = $s.node(d - 1);
-              if (li.type.name !== 'listItem' || li.attrs.checked != null) return null;
-              const tr = state.tr.delete(start, end);
-              return tr.setNodeMarkup($s.before(d - 1), undefined, { ...li.attrs, checked: (match[1] ?? '').toLowerCase() === 'x' });
+            new InputRule(/^\[([\sxX]?)\]\s$/, (state, match, start, end) => itemToTask(state, start, end, (match[1] ?? '').toLowerCase() === 'x')),
+            new InputRule(FW_TASK_RE, (state, match, start, end) => {
+              const to = fwTaskEnd(state, match, end);
+              return to == null ? null : itemToTask(state, start, to, false);
             }),
           ]),
         }),

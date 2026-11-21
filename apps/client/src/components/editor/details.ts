@@ -15,8 +15,9 @@
  *     </details>
  *   原文是一行写完、正文只有一段文字的（`<details><summary>标题</summary>内容</details>`），正文还是一段文字时照一行写回去。
  * 输入（没有工具栏了，Rei 2026-10-25）：行首打 `>> `（这行后面的字当标题；空引用里再打 `> ` 也算）；
+ *   全角的「》》 」、空引用里再打「》 」也一样（Rei 2026-11-21）；
  *   或者手打一行 `<details>`（可带 open / <summary>标题</summary>）回车。
- * 键：标题里回车 → 进正文第一行（收起的先展开）；标题开头退格 → 拆开（标题变回一段文字）；
+ * 键：标题里回车 → 进正文第一行（收起的先展开）；标题开头退格 → 拆开（标题变回一段文字）；刚打完 `>> ` 马上退格 → 变回 `>> ` 这几个字；
  *   收起时 ↓ 跳过正文到下一块，下一块开头 ↑ 回到标题；光标不管怎么进了收起的正文都会自动展开。
  */
 import { Extension, InputRule as TiptapInputRule, Node as TiptapNode } from '@tiptap/core';
@@ -203,6 +204,7 @@ export const Details = TiptapNode.create({
   /**
    * 短写法（Rei 2026-10-25 问「collapsible要怎么触发」）：行首打 `>> ` 变成折叠块，这一行后面的字当标题；
    * 先打了 `> ` 变成空引用、再打 `> `，也变成折叠块（不嵌套引用）。引用里已经写了东西，再在某行开头打 `> ` 还是嵌套引用。
+   * 中文输入法打出来的全角「》」同 `>`：「》》 」、空引用里再打「》 」（Rei 2026-11-21）。
    */
   addInputRules() {
     const toDetails = (state: EditorState, from: number, to: number, outer: boolean) => {
@@ -220,17 +222,20 @@ export const Details = TiptapNode.create({
       t.setSelection(TextSelection.create(t.doc, at + 2 + title.length));
       return t;
     };
-    return [
+    // 行首 `>> `（或全角「》》 」）
+    const short = (find: RegExp) =>
       new TiptapInputRule({
-        find: /^\s*>>\s$/,
+        find,
         handler: ({ state, range }) => {
           const $s = state.doc.resolve(range.from);
           if ($s.parent.type.name !== 'paragraph' || hasNode($s.parent, 'hardBreak') || hasNode($s.parent, 'image')) return null;
           if (!toDetails(state, range.from, range.to, false)) return null;
         },
-      }),
+      });
+    // 空引用里再打 `> `（或「》 」）
+    const inQuote = (find: RegExp) =>
       new TiptapInputRule({
-        find: /^\s*>\s$/,
+        find,
         handler: ({ state, range }) => {
           const $s = state.doc.resolve(range.from);
           const d = $s.depth;
@@ -239,8 +244,9 @@ export const Details = TiptapNode.create({
           if (quote.type.name !== 'blockquote' || quote.childCount !== 1) return null;
           if (!toDetails(state, range.from, range.to, true)) return null;
         },
-      }),
-    ];
+      });
+    // 全角写法（Rei 2026-11-21 方案 B）：中文输入法打出来的「》」和 `>` 一样用
+    return [short(/^\s*>>\s$/), short(/^\s*》》\s$/), inQuote(/^\s*>\s$/), inQuote(/^\s*》\s$/)];
   },
 });
 
@@ -409,6 +415,9 @@ function detailsOnEnter(view: EditorView): boolean {
 
 const placeholderKey = new PluginKey('md-details-placeholder');
 
+/** 上一步是输入规则变的、还能退格撤回（Tiptap / ProseMirror 的输入规则插件都记在自己的 state 里）。 */
+const justRuled = (state: EditorState) => state.plugins.some((p) => (p.spec as { isInputRules?: boolean }).isInputRules && p.getState(state));
+
 /** 回车 / 退格 / 上下键；空标题的占位文字；光标进了收起的正文就展开。 */
 const detailsKeys = () =>
     new Plugin({
@@ -446,7 +455,8 @@ const detailsKeys = () =>
             }
             return false;
           }
-          if (event.key === 'Backspace' && empty && inSummary(state) && $from.parentOffset === 0) {
+          // 刚打 `>> ` / 「》》 」变出来的：退格交给 undoInputRule 变回原来的字（同别的 markdown 写法），不拆开
+          if (event.key === 'Backspace' && empty && inSummary(state) && $from.parentOffset === 0 && !justRuled(state)) {
             const cur = detailsAt(state)!;
             view.dispatch(unwrapDetails(state, cur).scrollIntoView());
             event.preventDefault();
