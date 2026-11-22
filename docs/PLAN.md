@@ -2010,7 +2010,7 @@ Rei 2026-11-11 04:27 三件。
 Rei 2026-11-11 06:56「资料库「影视库」里的剧集显示 seasons」。
 
 - Worker：新接口 `GET /api/lookup/seasons?id=tv/1399|tt0903747&lang=zh|en`（`lookup/tmdb.ts` 的 `tmdbSeasons`）。id 是 TMDB 剧集编号，或者 IMDb 编号（先 `find` 出剧集，查到的是电影就回 `{ tv: null, seasons: [] }`）。调 TMDB `/tv/{id}`，每季回 `number`（0 是特别篇）、`name`、`year`（首播年）、`episodes`、`poster`（只留 TMDB 图片路径 `/abc.jpg`，别的不收）。Cache API 缓存 1 天（播出中的剧会加季）。要登录，同别的 lookup 接口。
-- core `seasons.ts`：存在资料的保留键 `_seasons`（JSON 文字 `{ v: 1, ref, tv, at, seasons }`），跟着资料同步，不加列、不加迁移。`isShowItem`（影视库里「电影/剧集」选了剧集，或没选但来源是 `tmdb:tv/…`）；`seasonsRef`（TMDB 剧集编号优先，其次 IMDb 编号，只有豆瓣的没有）；`needsSeasonsFetch`（没存过、`ref` 和现在的编号对不上、存了超过 30 天才重拉）；`seasonsOf` 按第 1、2…季排，特别篇最后；`seasonTitle` / `seasonSubtitle`（TMDB 默认季名「第 1 季」「Season 1」「Specials」等不另外显示）/ `seasonMeta`（「2011 · 10 集」）。
+- core `seasons.ts`：存在资料的保留键 `_seasons`（JSON 文字 `{ v: 1, ref, tv, at, seasons }`），跟着资料同步，不加列、不加迁移。`isShowItem`（影视库里「电影/剧集」选了剧集，或没选但来源是 `tmdb:tv/…`）；`seasonsRef`（TMDB 剧集编号优先，其次 IMDb 编号，只有豆瓣的没有）；`needsSeasonsFetch`（没存过、`ref` 和现在的编号对不上才补拉；原来存满 30 天也重拉，2026-11-22 去掉，改成手动刷新，见下面「季列表的刷新按钮」）；`seasonsOf` 按第 1、2…季排，特别篇最后；`seasonTitle` / `seasonSubtitle`（TMDB 默认季名「第 1 季」「Season 1」「Specials」等不另外显示）/ `seasonMeta`（「2011 · 10 集」）。
 - 客户端 `lib/seasons.ts` 的 `useSeasonsRefresh`：资料详情页打开、登录且在线、需要拉时在后台拉一次，写回资料；拉不到不写，同一条资料这次会话不再试；页面关掉取消的下次还会拉。写之前再看一眼，资料删了或来源又换了就不写。
 - 界面 `components/library/Seasons.tsx`：资料详情页备注下面、「相关任务」上面一节「季 N」，网格卡片：海报小图（TMDB w154 直接加载，加载失败用占位图写 S1 / SP）、季名、TMDB 起的名字、年份 · 集数。宽屏自动排列，手机一行三张。资料来源不是 TMDB 时，下面一行「资料来自 TMDB」（TMDB 要求署名）。
 - 默认的取舍（Rei 没定，按派活时给的默认做）：海报不拉进 R2，直接从 image.tmdb.org 加载（季多，存起来不划算；在线搜索结果的小图也是这样）；季名语言跟拉的那台设备的界面语言（中文界面中文，其他英文），换语言不重拉；不显示每季简介、评分；只显示，不记每季观看进度；卡片不能点。
@@ -2033,6 +2033,23 @@ Rei 2026-11-21 20:36，两件：豆瓣单季并进 TMDB 剧集；「季」一节
 - 我代定（Rei 没说）：剧集自己的「豆瓣」字段不填；名字不写季的豆瓣条目只在「这部剧只有一季、年份完全一样」时算第 1 季；手动合并不再比名字和年份；英文界面也搜豆瓣（剧名是英文时多半配不上，就不显示）；一次最多 5 次请求、30 天重搜；特别篇不给链接；季卡片链接不带箭头图标；选豆瓣单季并进剧集时提示一句、并单季时提示带撤销。
 - 新文案：「豆瓣单季」「在 {label} 打开{title}」「豆瓣单季已并进「{name}」」「豆瓣链接记到了「{name}」{season}」，9 种语言（外语待母语者看）。
 - 测试：core `douban-seasons.test.ts` 24 项（《星期三》TMDB 119051、IMDb tt13443470、豆瓣第一季 35364243 / 第二季 36208369 / 第三季 36989893 的真实数据）；客户端 `lib/douban-seasons.test.ts` 7 项。
+
+### 季列表的刷新按钮 ✅（2026-11-22）
+Rei 2026-11-22 15:15「在季列表旁加个「刷新」按钮，去掉存满 30 天重拉逻辑。」起因：TMDB 后来补了《The Madison》第 2 季，存着的季要等 30 天才会重拉。
+
+- 不再按时间自动重拉：core `needsSeasonsFetch` 只看没存过、编号换了；`SEASONS_MAX_AGE_MS` 删了。`_seasons` 里的 `at` 还记拉的时间，只是不再拿来判断。
+- 刷新按钮：「季」标题右边紧挨着一个 Lucide `RefreshCw` 图标按钮（`.season-refresh`，28px，手机 40px，Material 圆形），悬停提示和读屏名都是「刷新季」，拉的时候变「正在刷新季…」、图标转圈（`.spin`，开了减少动态效果就不转）、按钮禁用。
+- 客户端 `lib/seasons.ts`：
+  - `refreshSeasonsNow`：先看在线、登录（不行直接返回，不发请求），再整份重拉，写回 `_seasons`。新拉的和存着的一样（不比 `at`，core `sameSeasons`）就不写，免得白白同步一次。拉的过程中资料删了、来源换了就不写。失败不动旧的。
+  - 正在拉的资料记在一张表里（`useSeasonsBusy`），后台补拉和手动刷新共用：后台补拉时按钮也转圈、禁用；正在拉时再点不重复发请求。
+  - `seasonsRefreshMessage` 给提示：成功「季已更新」/ 没变化「季已经是最新的」；失败「季没刷新：502 网关错误」（HTTP 状态码带 `httpStatusZh` 的说明，没说明的只写数字）/「季没刷新：没连上服务器」；离线「现在没联网，联网后才能刷新季」；没登录「登录后才能刷新季，到设置里登录」。
+- 豆瓣：刷新成功后在后台顺带重搜一轮豆瓣（`refreshDoubanSeasons(..., { all: true })`，core `doubanSeasonsToSearch` 的第 4 个参数），没配上编号的季不管 30 天内搜没搜过都再搜，已有的编号不动（`recordDoubanSearch` 本来就不覆盖）；同一条资料同时只搜一轮，不等它搜完，搜不到也不提示。
+- 「季」一节什么时候出现：有 TMDB 剧集编号或 IMDb 编号就出现。拉过但一季都没有，写「TMDB 上还没有这部剧的季」；还没拉到（离线、没登录、后台补拉失败）写「还没拉到季」；正在拉写「正在拉季…」。这几种情况标题是「季」，旁边照样有刷新按钮。以前没有季整节不显示，手动刷新就没处点了。
+- Worker：`GET /api/lookup/seasons` 加 `&fresh=1`，不读 Cache API 那 1 天的缓存，直接问 TMDB，新结果写回缓存。手动刷新带它，后台补拉不带。不加这个参数，刷新最多拿到一天前的结果。老 Worker 不认这个参数，照样回缓存。
+- 演示模式：和平常一样。登录了、在线就能刷新，写进演示库，不同步；没登录提示去登录（演示模式下登录按钮是灰的，所以实际刷不了）。离线时点了只提示，不发请求。
+- 新文案 12 条（`季`「刷新季」「正在刷新季…」「正在拉季…」「TMDB 上还没有这部剧的季」「还没拉到季」「季已更新」「季已经是最新的」两条离线 / 登录提示、两条失败提示），9 种语言（外语待母语者看）。
+- 测试：core `seasons.test.ts` 11 项、`douban-seasons.test.ts` 25 项；客户端 `lib/seasons.test.ts` 9 项、`lib/douban-seasons.test.ts` 8 项；Worker `lookup.test.ts` 37 项（加 fresh=1）。
+- 我代定（Rei 没说）：按钮紧挨标题，不推到最右；刷新顺带重搜豆瓣；结果没变不写回；空列表、没拉到也显示这一节；成功也弹一句提示；Worker 加 `fresh=1`。
 
 ### 资料库卡片：目的地只显示名字，名字不出卡片 ✅（2026-11-11）
 
