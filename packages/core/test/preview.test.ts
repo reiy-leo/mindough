@@ -18,6 +18,9 @@ describe('预览', () => {
     expect(firstLine('- [ ] <u class="wavy">**买**</u>牙膏')).toBe('买牙膏');
     expect(firstLine("## <u class='double'>标题</u>")).toBe('标题');
     expect(firstLine('<u></u>\n第二行')).toBe('第二行');
+    // 空段落不当文字（Rei 2026-11-22：列表里标题显示成「<br />」）
+    expect(firstLine('<br />\n\n正文')).toBe('正文');
+    expect(firstLine('&nbsp;\n正文')).toBe('正文');
     // 别的标签不动
     expect(firstLine('<kbd>K</kbd>')).toBe('<kbd>K</kbd>');
   });

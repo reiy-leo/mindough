@@ -11,6 +11,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "未命名倒数日{n}": "Contagem regressiva sem nome {n}",
   "未提供描述": "Sem descrição",
   "未提供描述{n}": "Sem descrição {n}",
+  "未命名标题": "Sem título",
+  "未命名标题 {time}": "Sem título {time}",
   // ── 重复的倒数日（Rei 2026-11-12，待母语者看）──
   "只这一次": "Só desta vez",
   "循环倒数": "Contagem que se repete",

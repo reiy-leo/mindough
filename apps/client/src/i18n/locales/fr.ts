@@ -11,6 +11,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "未命名倒数日{n}": "Compte à rebours sans nom {n}",
   "未提供描述": "Aucune description",
   "未提供描述{n}": "Aucune description {n}",
+  "未命名标题": "Sans titre",
+  "未命名标题 {time}": "Sans titre {time}",
   // ── 重复的倒数日（Rei 2026-11-12，待母语者看）──
   "只这一次": "Juste cette fois",
   "循环倒数": "Compte à rebours récurrent",

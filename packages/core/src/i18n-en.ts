@@ -288,6 +288,9 @@ export const CORE_EN: Record<string, V> = {
   '未命名倒数日{n}': 'Untitled countdown {n}',
   未提供描述: 'No description',
   '未提供描述{n}': 'No description {n}',
+  // 第一行空着、下面有内容时的标题（Rei 2026-11-22 18:26），{time} 是创建时间 YYYY-MM-DD HH:mm
+  未命名标题: 'Untitled',
+  '未命名标题 {time}': 'Untitled {time}',
   '属性|项目': 'Project',
 
   // ── 重复 ──

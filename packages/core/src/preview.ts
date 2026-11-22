@@ -9,6 +9,7 @@ import { episodeOf, formatEpisode } from './episode';
 import type { FieldDef, FieldValue, LinkValue, Task, TaskType } from './types';
 
 import { dataLabel, tr } from './i18n';
+import { isBlankBodyLine } from './checkin-archive';
 
 /** 把字段值解析成显示文本（如人物字段 person_id → 姓名）。 */
 export type FieldResolver = (def: FieldDef, value: FieldValue) => string;
@@ -22,9 +23,11 @@ export const searchableMarkdown = (md: string) => stripWithLiterals(md, stripUnd
 /**
  * 去掉 markdown 行首标记（和下划线标签、反斜杠转义），取第一条非空行。
  * 转义和行内代码先当字面量保护起来（md-text.ts）：`draw\.io` 显示 draw.io，`1\. 不是列表` 不会被当成列表去掉序号，行内代码原样。
+ * 空段落（`<br />`、`&nbsp;`、单个反斜杠，见 isBlankBodyLine）也算空行跳过，不会拿「<br />」当文字。
  */
 export function firstLine(md: string): string {
   for (const raw of md.split(/\r?\n/)) {
+    if (isBlankBodyLine(raw)) continue;
     const line = stripWithLiterals(raw, (s) =>
       stripUnderlineTags(s)
         .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|\d+[.)]\s+)/, '')
@@ -71,10 +74,41 @@ export function untitledLabel(countdown: boolean, n = 1): string {
 }
 
 /**
- * 任务标题：正文第一行（去掉 markdown 记号）→ 没有就是占位（untitledLabel，不带编号）。
+ * 第一行空着、下面还有内容（Rei 2026-11-22 18:26「这种情况的话，标题显示"未命名标题" 然后加上时间戳」）：
+ * 第一行是空行或空段落（isBlankBodyLine：空白、`<br />`、`&nbsp;`、单个反斜杠），后面至少有一行不是空的（图片、链接也算）。
+ * 正文全空的不算，照旧用 untitledLabel。
+ */
+export function hasBlankTitleLine(md: string): boolean {
+  const lines = (md ?? '').split(/\r?\n/);
+  return lines.length > 1 && isBlankBodyLine(lines[0]!) && lines.slice(1).some((l) => !isBlankBodyLine(l));
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** 时间点按本机时区写成 YYYY-MM-DD HH:mm（「未命名标题」后面那段）；解析不了返回空字符串。 */
+export function localStamp(at: string | Date | null | undefined): string {
+  if (!at) return '';
+  const d = at instanceof Date ? at : new Date(at);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/**
+ * 第一行空着时的标题：「未命名标题 2026-11-22 18:26」，时间是任务的创建时间（本机时区）。只显示，不写进正文、不入库。
+ * 时间各语言都写 YYYY-MM-DD HH:mm（和打卡存档标题的日期一样，换了语言也读得懂），前面的字按语言翻。没有创建时间就只写「未命名标题」。
+ */
+export function blankTitleLabel(createdAt: string | null | undefined): string {
+  const time = localStamp(createdAt);
+  return time ? tr('未命名标题 {time}', { time }) : tr('未命名标题');
+}
+
+/**
+ * 任务标题：第一行空着、下面有内容 → 「未命名标题 + 创建时间」（blankTitleLabel）；
+ * 否则正文第一行（去掉 markdown 记号）→ 没有就是占位（untitledLabel，不带编号）。
  * 界面上要带编号的用 Store.titleOfTask；core 的搜索、提醒等不带编号的地方用它。
  */
-export function taskTitle(task: Pick<Task, 'body_md'> & Partial<Pick<Task, 'completion_mode'>>): string {
+export function taskTitle(task: Pick<Task, 'body_md'> & Partial<Pick<Task, 'completion_mode' | 'created_at'>>): string {
+  if (hasBlankTitleLine(task.body_md)) return blankTitleLabel(task.created_at);
   return firstLine(task.body_md) || untitledLabel(task.completion_mode === 'countdown');
 }
 

@@ -55,7 +55,7 @@ import { TABLES, isFinished, normalizeStatus, type BaseRow, type Category, type 
 import type { Change, StorageAdapter } from './storage/adapter';
 
 import { dataLabel, tr } from './i18n';
-import { fieldText, firstLine, itemTitleOf, needsTitleLine, untitledLabel, withTitleLine } from './preview';
+import { blankTitleLabel, fieldText, firstLine, hasBlankTitleLine, itemTitleOf, needsTitleLine, untitledLabel, withTitleLine } from './preview';
 import { parseHlc } from './hlc';
 import { AutoDependencyError, isAutoDependency, reverseCycle } from './dep-reverse';
 import { FutureJournalError, JOURNAL_PREFS, JournalPostLockedError, canWriteJournal, isDateKey, journalEntryId, journalToday, type MoodId } from './journal';
@@ -1777,7 +1777,7 @@ export class Store {
     if (this.untitledCache?.version !== this._version) {
       const value = new Map<string, number>();
       const pools: [Task[], Task[]] = [[], []];
-      for (const t of this.tables.task.values()) if (!t.deleted && !firstLine(t.body_md)) pools[t.completion_mode === 'countdown' ? 0 : 1].push(t);
+      for (const t of this.tables.task.values()) if (!t.deleted && !hasBlankTitleLine(t.body_md) && !firstLine(t.body_md)) pools[t.completion_mode === 'countdown' ? 0 : 1].push(t);
       for (const pool of pools) {
         pool.sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
         pool.forEach((t, i) => value.set(t.id, i + 1));
@@ -1787,8 +1787,12 @@ export class Store {
     return this.untitledCache.value.get(id) ?? 0;
   }
 
-  /** 界面上的任务标题：正文第一行；没有就是带编号的占位（untitledLabel）。 */
+  /**
+   * 界面上的任务标题：第一行空着、下面有内容 →「未命名标题 + 创建时间」（blankTitleLabel，Rei 2026-11-22 18:26）；
+   * 否则正文第一行；没有就是带编号的占位（untitledLabel）。
+   */
   titleOfTask(task: Task): string {
+    if (hasBlankTitleLine(task.body_md)) return blankTitleLabel(task.created_at);
     return firstLine(task.body_md) || untitledLabel(task.completion_mode === 'countdown', this.untitledOrdinal(task.id));
   }
 
