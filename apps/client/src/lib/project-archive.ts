@@ -5,6 +5,8 @@
  * 归档以后自己又放进来的（比如用全局搜索（⌘F）搜到再加进今天）照常显示：放进来的时间（added_at）晚于归档时间。
  * 只是不显示，不删我的一天的行，所以取消归档什么都不用补。
  * 自动加进来、现在已经不当前的（过期、没到）也在这里藏起来（Rei 2026-11-08）。
+ * 系统加进来的行（项目自动加、日期设成今天、打卡拖过落成的），项目关了「出现在我的一天」也藏起来（Rei 2026-11-22，Store.isMutedEntry）；
+ * 重新打开开关就回来。手动加的照常。
  */
 import { isStaleAutoEntry, type MyDayEntry, type Store } from '@mindough/core';
 
@@ -15,6 +17,7 @@ export function visibleDayEntries(store: Store, entries: readonly MyDayEntry[]):
     const at = t ? store.get('group', t.group_id)?.archived_at : null;
     // 自动加进来、现在已经不是今天的（过期、没到）也不显示（Rei 2026-11-08，core isStaleAutoEntry）；手动加的照常
     if (isStaleAutoEntry(e, t, store.now())) continue;
+    if (store.isMutedEntry(e)) continue;
     if (!at || e.added_at > at) out.push(e);
   }
   return out;

@@ -117,6 +117,10 @@ export function withPinned(items: readonly MyDayItem[], pinned: readonly MyDayIt
   return [...pinned, ...items.filter((i) => !ids.has(i.task.id))];
 }
 
+/** 我的一天各处用到的项目字段（my_day_auto 没给就算开）。 */
+type DayGroup = Pick<Group, 'deleted' | 'archived_at'> & { my_day_auto?: boolean };
+type DayGroups = readonly (Pick<Group, 'id'> & DayGroup)[] | ReadonlyMap<string, DayGroup>;
+
 /** 今天要打卡的虚拟行 id 前缀（Rei 2026-11-09 01:27）：不在 my_day 表里，拖动时才落成真行（Store.reorderMyDay）。 */
 export const CHECKIN_ENTRY_PREFIX = 'checkin:';
 
@@ -131,11 +135,12 @@ export function isCheckInEntry(e: Pick<MyDayEntry, 'id'>): boolean {
  */
 export function isCheckInDayCandidate(
   task: Task,
-  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  groups: ReadonlyMap<string, DayGroup>,
   date: DateKey,
   pinOf: PinOf = pinnedAtOf,
 ): boolean {
-  return !task.deleted && !pinOf(task) && dueToday(task, date) && !inArchivedGroup(task, groups);
+  // 项目关了「出现在我的一天」的不自己出现（Rei 2026-11-22），到了那天进建议（suggestions）
+  return !task.deleted && !pinOf(task) && dueToday(task, date) && !inArchivedGroup(task, groups) && !inMutedGroup(task, groups);
 }
 
 /**
@@ -146,14 +151,14 @@ export function isCheckInDayCandidate(
  */
 export function checkInDayItems(
   tasks: Iterable<Task>,
-  groups: readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[] | ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  groups: DayGroups,
   checkIns: readonly CheckIn[],
   date: DateKey,
   now: Date,
   seen: ReadonlySet<string>,
   pinOf: PinOf = pinnedAtOf,
 ): MyDayItem[] {
-  const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
+  const gm: ReadonlyMap<string, DayGroup> = groups instanceof Map ? groups : new Map((groups as readonly (Pick<Group, 'id'> & DayGroup)[]).map((g) => [g.id, g]));
   const out: MyDayItem[] = [];
   for (const task of tasks) {
     if (seen.has(task.id) || !isCheckInDayCandidate(task, gm, date, pinOf)) continue;
@@ -166,7 +171,7 @@ export function checkInDayItems(
 /** 这件打卡今天在我的一天里是虚拟行吗（Store.isInMyDay 用）：候选、且这一天 my_day 表里没有它的行（活的、墓碑都没有）。 */
 export function isVirtualCheckInToday(
   task: Task,
-  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  groups: ReadonlyMap<string, DayGroup>,
   allEntries: Iterable<Pick<MyDayEntry, 'task_id' | 'date'>>,
   date: DateKey,
   pinOf: PinOf = pinnedAtOf,
@@ -184,7 +189,7 @@ export function isVirtualCheckInToday(
  */
 export function makeupDayItems(
   tasks: Iterable<Task>,
-  groups: readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[] | ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  groups: DayGroups,
   entries: Iterable<Pick<MyDayEntry, 'task_id' | 'date' | 'deleted'>>,
   checkIns: readonly CheckIn[],
   date: DateKey,
@@ -192,11 +197,12 @@ export function makeupDayItems(
   seen: ReadonlySet<string>,
   pinOf: PinOf = pinnedAtOf,
 ): MyDayItem[] {
-  const gm = groups instanceof Map ? groups : new Map((groups as readonly Pick<Group, 'id' | 'deleted' | 'archived_at'>[]).map((g) => [g.id, g]));
+  const gm: ReadonlyMap<string, DayGroup> = groups instanceof Map ? groups : new Map((groups as readonly (Pick<Group, 'id'> & DayGroup)[]).map((g) => [g.id, g]));
   const list = [...entries];
   const out: MyDayItem[] = [];
   for (const task of tasks) {
-    if (seen.has(task.id) || pinOf(task) || inArchivedGroup(task, gm)) continue;
+    // 项目关了「出现在我的一天」的不带（Rei 2026-11-22）；点补打卡那天写的真行是手动的，照常在
+    if (seen.has(task.id) || pinOf(task) || inArchivedGroup(task, gm) || inMutedGroup(task, gm)) continue;
     const st = makeupState(task, checkIns, date, now);
     if (!st || !makeupStarted(task.id, list, st.node, addDays(date, -1))) continue;
     // 补完了：只在补完那天（有这一天记的事件）留在「已完成」段，之后不再出现
@@ -210,7 +216,7 @@ export function makeupDayItems(
 /** 这件打卡今天在我的一天里是补打卡的虚拟行吗（Store.isInMyDay / reorderMyDay 用）。 */
 export function isVirtualMakeupToday(
   task: Task,
-  groups: ReadonlyMap<string, Pick<Group, 'deleted' | 'archived_at'>>,
+  groups: ReadonlyMap<string, DayGroup>,
   allEntries: Iterable<Pick<MyDayEntry, 'task_id' | 'date' | 'deleted'>>,
   checkIns: readonly CheckIn[],
   date: DateKey,
@@ -339,6 +345,30 @@ export function groupAutoMyDay(group: Pick<Group, 'my_day_auto'> | null | undefi
   return !!group && group.my_day_auto !== false;
 }
 
+/**
+ * 任务在关了「出现在我的一天」的项目里吗（Rei 2026-11-22「项目中我关闭了"出现在我的一天"后，我的一天中还有这个项目的任务」）。
+ * 不在项目里的、项目删了的不算；没有 my_day_auto 字段的老数据算开。
+ */
+export function inMutedGroup(task: { group_id: string | null }, groups: ReadonlyMap<string, { deleted?: boolean; my_day_auto?: boolean }>): boolean {
+  if (!task.group_id) return false;
+  const g = groups.get(task.group_id);
+  return !!g && !g.deleted && g.my_day_auto === false;
+}
+
+/**
+ * 系统自己放进来的行（isAutoEntry：项目自动加、日期设成今天、打卡虚拟行拖过落成的），任务所在项目关了「出现在我的一天」：
+ * 不显示、不算在我的一天里（Rei 2026-11-22）。只在读的时候藏，不删行、不写墓碑，项目重新打开开关就回来；各设备读同样的数据，结果一样。
+ * 用户手动加的（added_at 是真实时刻）照常显示；置顶的不走 my_day 表，也不受影响。
+ */
+export function isMutedAutoEntry(e: Pick<MyDayEntry, 'added_at' | 'date'>, task: { group_id: string | null } | undefined, groups: ReadonlyMap<string, { deleted?: boolean; my_day_auto?: boolean }>): boolean {
+  return !!task && isAutoEntry(e) && inMutedGroup(task, groups);
+}
+
+/** 自动行的 added_at：那天 00:00Z 的字面值（isAutoEntry 靠它认）。 */
+export function autoAddedAt(date: DateKey): string {
+  return `${date}T00:00:00.000Z`;
+}
+
 /** 任务在开着「出现在我的一天」的项目里（项目删了的、归档了的不算）。 */
 function inAutoGroup(task: Task, groups: ReadonlyMap<string, Group>): boolean {
   if (!task.group_id) return false;
@@ -383,7 +413,7 @@ export function isCurrentFor(task: Pick<Task, 'scheduled_date' | 'end_date' | 't
 
 /** 自动加进来的行（syncAutoMyDay 写的：added_at 是那天 00:00Z 的字面值；拖过排序也不变）。手动加的 added_at 是真实时刻。 */
 export function isAutoEntry(e: Pick<MyDayEntry, 'added_at' | 'date'>): boolean {
-  return e.added_at === `${e.date}T00:00:00.000Z`;
+  return e.added_at === autoAddedAt(e.date);
 }
 
 /**

@@ -9,7 +9,7 @@ import { normalizeIconColor } from './icon-color';
 import { normalizeRange } from './date-range';
 import { backlogTasks } from './backlog';
 import { overdueBacklogTasks } from './overdue-backlog';
-import { AUTO_MY_DAY_HLC, type PinOf, autoMyDayTasks, autoSort, groupAutoMyDay, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
+import { AUTO_MY_DAY_HLC, type PinOf, autoAddedAt, autoMyDayTasks, autoSort, groupAutoMyDay, inMutedGroup, isAutoEntry, isVirtualCheckInToday, isVirtualMakeupToday, keepsMyDayAfterDate, myDayEntryId, recentlyUnlocked, topSort } from './myday';
 import { taskToday } from './timezone';
 import { makeupNode as makeupNodeOf } from './makeup';
 import { countdownRecordDepId, countdownRecordId, bodyFirstLine, fillCountdownTarget, isAutoRecordDoneAt, isCountdownRecordEdge, normalizeCountdownRepeat, planCountdownRoll, recordDoneAt } from './countdown-repeat';
@@ -1625,7 +1625,8 @@ export class Store {
   }
 
   /**
-   * 日期设成今天就放进今天的我的一天，排「未完成」最上面（addToMyDay → topSort），和手动加入一样。
+   * 日期设成今天就放进今天的我的一天，排「未完成」最上面（addToMyDay → topSort）。
+   * 2026-11-22 起行写成系统加的样子（isAutoEntry），项目关了「出现在我的一天」时不加、已加的藏起来。
    * 只在本机写入（createTask / updateTask）时调；applyRemote 不经过这里，别的设备只收到这一行。
    * - 新的日期（段）要含设备的今天或任务时区的今天；改之前已经含今天的不算（只改了结束日、换了时区），不再加。
    * - 不处理：没日期、重复（打卡）、完成 / 关闭、置顶（本来就在）、打卡归档、归档项目里的、已经在今天的。
@@ -1634,12 +1635,15 @@ export class Store {
   private joinMyDayOnToday(task: Task, before: Task | null): void {
     if (task.deleted || !task.scheduled_date || task.recurrence) return;
     if (isFinished(task.status) || this.pinnedAt(task) || task.archived_at || this.inArchivedGroup(task)) return;
+    // 项目关了「出现在我的一天」：日期设成今天也不自己进去，到了那天在建议里（Rei 2026-11-22）
+    if (this.inMutedGroup(task)) return;
     const now = this.now();
     const deviceToday = this.today(now);
     const covers = (t: Task) => !!t.scheduled_date && keepsMyDayAfterDate(t.scheduled_date, t.end_date ?? null, [deviceToday, taskToday(t, now, deviceToday)]);
     if (!covers(task) || (before && covers(before))) return;
     if (this.isInMyDay(task.id, deviceToday)) return;
-    this.addToMyDay(task.id, deviceToday);
+    // 写成系统加的样子（added_at 那天 00:00Z，isAutoEntry）：之后项目关了开关就藏起来、再打开回来（Rei 2026-11-22）。排序照旧在最上面
+    this.addToMyDay(task.id, deviceToday, { auto: true });
   }
 
   /**
@@ -2597,13 +2601,23 @@ export class Store {
 
   // ───────────── 我的一天 ─────────────
 
-  /** 加进那天的我的一天（排最上面）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。 */
-  addToMyDay(taskId: string, date: string = this.today()): TableMap['my_day'] {
+  /**
+   * 加进那天的我的一天（排最上面）。行 id 由任务 + 日期算（myDayEntryId），移出过的把墓碑翻回来。
+   * opts.auto：系统替用户加的（日期设成今天），added_at 写那天 00:00Z（isAutoEntry）；不给就是用户手动加的，写真实时刻。
+   * 手动加时已经有一条系统加的行：改成手动的（Rei 2026-11-22）——项目关了开关、藏起来的那条翻出来排最上面，看得见的那条位置不动。
+   */
+  addToMyDay(taskId: string, date: string = this.today(), opts: { auto?: boolean } = {}): TableMap['my_day'] {
     const existing = this.list('my_day').find((e) => e.task_id === taskId && e.date === date);
-    if (existing) return existing;
+    if (existing) {
+      if (opts.auto || !isAutoEntry(existing)) return existing;
+      const muted = this.isMutedEntry(existing);
+      const sort = muted ? topSort(this.tables.my_day.values(), date, this.now().getTime()) : existing.sort;
+      this.write([{ table: 'my_day', row: { ...existing, sort, added_at: this.now().toISOString() } as BaseRow }]);
+      return this.tables.my_day.get(existing.id)!;
+    }
     // 新加的排最上面（Rei 2026-11-08，见 myday.ts topSort）
     const id = myDayEntryId(taskId, date);
-    const row: TableMap['my_day'] = { id, updated_at: '', deleted: false, task_id: taskId, date, sort: topSort(this.tables.my_day.values(), date, this.now().getTime()), added_at: this.now().toISOString() };
+    const row: TableMap['my_day'] = { id, updated_at: '', deleted: false, task_id: taskId, date, sort: topSort(this.tables.my_day.values(), date, this.now().getTime()), added_at: opts.auto ? autoAddedAt(date) : this.now().toISOString() };
     this.write([{ table: 'my_day', row }]);
     return this.tables.my_day.get(id)!;
   }
@@ -2659,8 +2673,25 @@ export class Store {
     return stamped.length;
   }
 
+  /** 任务在关了「出现在我的一天」的项目里吗（Rei 2026-11-22，myday.ts inMutedGroup）。 */
+  inMutedGroup(task: Pick<Task, 'group_id'>): boolean {
+    const g = task.group_id ? this.tables.group.get(task.group_id) : undefined;
+    return !!g && inMutedGroup(task, new Map([[g.id, g]]));
+  }
+
+  /** 这一行是系统加的、任务所在项目关了「出现在我的一天」：藏起来，不算在我的一天里（Rei 2026-11-22，myday.ts isMutedAutoEntry）。 */
+  isMutedEntry(e: Pick<TableMap['my_day'], 'task_id' | 'added_at' | 'date'>): boolean {
+    const t = this.tables.task.get(e.task_id);
+    return !!t && !t.deleted && isAutoEntry(e) && this.inMutedGroup(t);
+  }
+
+  /** 那天我的一天里看得见的行（活的、去掉 isMutedEntry 藏起来的）。 */
+  visibleMyDayRows(date?: string): TableMap['my_day'][] {
+    return this.list('my_day').filter((e) => (date === undefined || e.date === date) && !this.isMutedEntry(e));
+  }
+
   isInMyDay(taskId: string, date: string = this.today()): boolean {
-    if (this.list('my_day').some((e) => e.task_id === taskId && e.date === date)) return true;
+    if (this.list('my_day').some((e) => e.task_id === taskId && e.date === date && !this.isMutedEntry(e))) return true;
     // 今天要打的打卡是虚拟行（Rei 2026-11-09，myday.ts checkInDayItems）：没移出过就算在
     const t = this.get('task', taskId);
     if (!t) return false;
@@ -2698,7 +2729,8 @@ export class Store {
         const t = this.get('task', tid);
         const gm = new Map(this.list('group').map((g) => [g.id, g]));
         if (t && (isVirtualCheckInToday(t, gm, this.tables.my_day.values(), date, this.pinnedAt) || isVirtualMakeupToday(t, gm, this.tables.my_day.values(), this.list('check_in'), date, this.now(), this.pinnedAt)))
-          rows.push({ table: 'my_day', row: { id: myDayEntryId(tid, date), updated_at: '', deleted: false, task_id: tid, date, sort: i + 1, added_at: this.now().toISOString() } as BaseRow });
+          // 落成的行还是系统加的样子（isAutoEntry）：项目关了「出现在我的一天」照样藏起来（Rei 2026-11-22）
+          rows.push({ table: 'my_day', row: { id: myDayEntryId(tid, date), updated_at: '', deleted: false, task_id: tid, date, sort: i + 1, added_at: autoAddedAt(date) } as BaseRow });
       }
     });
     this.write(rows);
@@ -2710,7 +2742,8 @@ export class Store {
   backlog(today: string = this.today()): Task[] {
     // 归档了的项目里的任务不进待安排（Rei 2026-11-05）
     // 置顶的任务每天都在我的一天里，不进待安排（Rei 2026-11-08）
-    return backlogTasks(this.activeTasks().filter((t) => !this.pinnedAt(t)), this.list('my_day'), today);
+    // 藏起来的自动行（项目关了「出现在我的一天」，Rei 2026-11-22）不算在今天里，任务回到待安排
+    return backlogTasks(this.activeTasks().filter((t) => !this.pinnedAt(t)), this.visibleMyDayRows(today), today);
   }
 
   /** 过期积压：定了日期、没做完、已经过期的任务，最近过期在上；没到期的不放（见 overdue-backlog.ts，Rei 2026-11-11）。 */

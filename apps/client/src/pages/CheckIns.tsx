@@ -65,7 +65,8 @@ export function CheckInsPage() {
       menu.props.onPointerDownCapture(e);
     },
   });
-  const dayIds = new Set(entriesFor(store.list('my_day'), today).map((e) => e.task_id));
+  // 项目关了「出现在我的一天」藏起来的自动行不算（Rei 2026-11-22，Store.visibleMyDayRows）
+  const dayIds = new Set(entriesFor(store.visibleMyDayRows(today), today).map((e) => e.task_id));
   const menuItems = (): MenuAction[] => {
     const id = menuTask.current;
     const t = id ? store.get('task', id) : undefined;

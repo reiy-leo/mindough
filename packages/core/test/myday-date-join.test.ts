@@ -39,7 +39,8 @@ describe('日期设成今天：放进我的一天', () => {
     expect(order(store)).toEqual([c.id, b.id, a.id, x.id]);
     const row = store.list('my_day').find((e) => e.task_id === a.id)!;
     expect(row.sort).toBeLessThan(0);
-    expect(row.added_at).not.toBe(`${today(store)}T00:00:00.000Z`); // 手动加入的样子，不是自动行
+    // 2026-11-22 起写成系统加的样子（isAutoEntry）：项目关了「出现在我的一天」时能藏起来
+    expect(row.added_at).toBe(`${today(store)}T00:00:00.000Z`);
   });
 
   it('日期段从不含今天变成含今天：加；本来就含今天、只改结束日：不加', async () => {

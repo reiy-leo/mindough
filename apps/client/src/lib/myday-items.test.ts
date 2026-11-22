@@ -55,4 +55,23 @@ describe('我的一天的清单带上置顶的任务', () => {
     advance(DAY);
     expect(buildWidgetSnapshot(store).myDay.map((x) => x.id)).toEqual([a.id]);
   });
+
+  it('项目关了「出现在我的一天」：系统加的、今天要打的打卡不出，手动加的、置顶的照常；再打开都回来（Rei 2026-11-22）', async () => {
+    const { store } = await setup();
+    const g = store.insert('group', { name: 'document-render', icon: '📁', start_at: null, end_at: null, category_id: null, default_type_id: null, my_day_auto: true });
+    const today = '2026-11-08';
+    const auto = store.createTask({ body_md: '今天到期', group_id: g.id, scheduled_date: today });
+    const habit = store.createTask({ body_md: '每天', group_id: g.id, recurrence: 'FREQ=DAILY' });
+    const manual = store.createTask({ body_md: '手动', group_id: g.id });
+    store.addToMyDay(manual.id);
+    const pinned = store.createTask({ body_md: '置顶', group_id: g.id });
+    store.pinTask(pinned.id);
+    store.syncAutoMyDay();
+    expect(new Set(ids(store))).toEqual(new Set([auto.id, habit.id, manual.id, pinned.id]));
+    store.updateGroup(g.id, { my_day_auto: false });
+    expect(new Set(ids(store))).toEqual(new Set([manual.id, pinned.id]));
+    expect(buildWidgetSnapshot(store).myDay.map((x) => x.id).sort()).toEqual([manual.id, pinned.id].sort());
+    store.updateGroup(g.id, { my_day_auto: true });
+    expect(new Set(ids(store))).toEqual(new Set([auto.id, habit.id, manual.id, pinned.id]));
+  });
 });

@@ -1172,6 +1172,15 @@ Rei 2026-11-02 原话：「新建项目的弹窗需要优化，删掉默认资�
 - 自动加的排在手动加的前面（sort 0）；拖动排序后照常存。导出时关着的项目写 `my_day: false`，导入读回来。
 - 测试：core `test/myday-auto.test.ts`（各条件、不在项目里的不加、只加一次、移出后当天不再加、第二天再加、老随机 id 行移出也算、开关关了回建议、老数据当成开、刚解锁、两台设备不重复、离线自动加被墓碑盖掉）。
 
+**关了开关以后已经进来的也不显示 ✅（2026-11-22）**
+Rei 2026-11-22 20:29：「项目中我关闭了"出现在我的一天"后，我的一天中还有这个项目的任务」。
+- 原因：`syncAutoMyDay` 只在开着时加行，关掉后已加的不撤；「日期设成今天就加入」（`joinMyDayOnToday`）根本不看开关，写的还是手动行的样子；打卡虚拟行（`checkInDayItems`）、补打卡虚拟行（`makeupDayItems`）也不看开关。Rei 生产库里看到的是第二条：项目 18:30 关了开关，之后新建带今天日期 / 把日期改成今天的 4 件被 `joinMyDayOnToday` 写成了手动行。
+- 做法（读的时候藏，不删、不写墓碑）：系统加的行都认 `isAutoEntry`（added_at 是那天 00:00Z）。`joinMyDayOnToday` 改成关着开关不加、开着时写系统行（`addToMyDay(..., { auto: true })`）；打卡虚拟行拖过落成的行也写系统行。`isMutedAutoEntry` / `Store.isMutedEntry`：系统行 + 任务所在项目关了开关 → 不显示（client `visibleDayEntries`、`Store.isInMyDay` / `visibleMyDayRows` / `backlog`、打卡页菜单），「昨天没做完」用的是同一份可见行。`isCheckInDayCandidate` 和 `makeupDayItems` 跳过关了开关的项目，这些打卡转进建议（和开关提示「到了那天只放在建议里」一致，提示没改）。
+- 重新打开：行还在，马上回来；当天没行的由 `syncAutoMyDay` 补，同一个行 id，不重复。开关跟着项目同步，各设备读同样的数据、藏的一样。
+- 藏着的那件用户手动「加入我的一天」：`addToMyDay` 把系统行改成手动行（added_at 写现在、排最上面），之后不受开关影响。
+- 代定、待 Rei 确认：补打卡后面几天的虚拟行也藏（点补打卡那天的真行是手动的，照常在）；手动加的行不管开关；以前已经写成手动样子的行（包括这次生产库那 4 件）认不出是系统加的，照常显示，要么手动移出，要么改一次数据。
+- 测试：core `test/myday-muted.test.ts`（9 例）、`myday-date-join.test.ts` 改一条断言；client `lib/myday-items.test.ts` 加一例。
+
 **添加框固定在列表顶上**
 - `QuickAddBar` 外面包一层 `.add-bar-sticky`（sticky、top 0），框下面那行日期、件数（`meta`）放进同一层。我的一天、待安排、可做、项目页四处都是它。打卡、倒数日页没有这种添加框。
 - 底色用页面底色（WinUI 的渐变也照样铺），列表滚过去不会透出来。顶上放一个 1px 的哨兵，看不见了（滚动了）就加 `is-stuck`，底下出一条细分隔线。
