@@ -11,6 +11,21 @@
   min-height: 1.6em;
   caret-color: var(--accent);
 }
+/* 空隙光标（表格、分割线前后那种没法放文字的地方）：画成和文字光标一样的竖线，不要 ProseMirror 默认的横线（Rei 2026-11-22）。
+ * 颜色跟文字光标（caret-color: var(--accent)），三皮肤亮暗都跟着令牌走；粗细 1px，WebKit（Mac / iOS 的 App 和 Safari）的文字光标是 2px。
+ * 方向键跳出表格时不会出它（插空段落，见 editor/block-exit.ts），剩下的是点表格下面空白之类。 */
+.md-editor-root .ProseMirror-gapcursor:after {
+  top: 0.2em;
+  width: 1px;
+  height: 1.2em;
+  border-top: 0;
+  background: var(--accent);
+}
+@supports (font: -apple-system-body) {
+  .md-editor-root .ProseMirror-gapcursor:after {
+    width: 2px;
+  }
+}
 .md-editor-root .ProseMirror-selectednode {
   outline: 2px solid var(--accent);
   outline-offset: 1px;

@@ -1967,7 +1967,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "在 {label} 打开{title}": "Открыть {title} в {label}",
   "豆瓣单季已并进「{name}」": "Сезоны с Douban объединены с «{name}»",
   "豆瓣链接记到了「{name}」{season}": "Ссылка Douban сохранена: «{name}», {season}",
-  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。": "В таблице нажмите {enter}, чтобы добавить строку, {shiftEnter} — чтобы добавить столбец, и {move} — чтобы переместить строку.",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行，在最后一行按 ↓ 跳出表格。": "В таблице нажмите {enter}, чтобы добавить строку, {shiftEnter} — чтобы добавить столбец, {move} — чтобы переместить строку, и ↓ в последней строке — чтобы выйти из таблицы.",
 };
 
 export const DATA: Record<string, string> = {

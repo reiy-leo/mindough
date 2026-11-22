@@ -42,8 +42,8 @@ describe('快捷键的写法', () => {
     expect(formatChord(['mod', 'shift', 'H'], false)).toBe('Ctrl+Shift+H');
     expect(shortcutTexts(true).highlight).toBe('点一下高亮，可以换颜色或去掉。');
     expect(shortcutTexts(true).quote).toBe('点引用左边的竖条，可以换颜色。');
-    expect(shortcutTexts(true).table).toBe('表格里按 ↩ 加一行，按 ⇧↩ 加一列，按 ⌥↑↓ 移动这一行。');
-    expect(shortcutTexts(false).table).toBe('表格里按 Enter 加一行，按 Shift+Enter 加一列，按 Ctrl+↑↓ 移动这一行。');
+    expect(shortcutTexts(true).table).toBe('表格里按 ↩ 加一行，按 ⇧↩ 加一列，按 ⌥↑↓ 移动这一行，在最后一行按 ↓ 跳出表格。');
+    expect(shortcutTexts(false).table).toBe('表格里按 Enter 加一行，按 Shift+Enter 加一列，按 Ctrl+↑↓ 移动这一行，在最后一行按 ↓ 跳出表格。');
   });
 
   it('⌘? / ⌘/ / Ctrl+? 都算，带 ⌥ 或不带 ⌘ 不算', () => {

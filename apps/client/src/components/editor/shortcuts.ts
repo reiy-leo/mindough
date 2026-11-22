@@ -113,8 +113,8 @@ export const shortcutTexts = (mac: boolean) => ({
   highlight: tr('点一下高亮，可以换颜色或去掉。'),
   /** 引用换颜色（Rei 2026-11-22，见 quote-color.ts）。 */
   quote: tr('点引用左边的竖条，可以换颜色。'),
-  /** 表格里回车加行、Shift+回车加列（Rei 2026-11-22，见 extensions.ts tableKeys）；⌥↑↓ / Ctrl+↑↓ 挪数据行（Rei 2026-11-22，见 move-block.ts tableRowMoveTr）。 */
-  table: tr('表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。', {
+  /** 表格里回车加行、Shift+回车加列（Rei 2026-11-22，见 extensions.ts tableKeys）；⌥↑↓ / Ctrl+↑↓ 挪数据行（Rei 2026-11-22，见 move-block.ts tableRowMoveTr）；最后一行按 ↓ 跳出表格（Rei 2026-11-22，见 block-exit.ts）。 */
+  table: tr('表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行，在最后一行按 ↓ 跳出表格。', {
     enter: formatChord(['Enter'], mac),
     shiftEnter: formatChord(['shift', 'Enter'], mac),
     move: formatChord(['move', '↑↓'], mac),

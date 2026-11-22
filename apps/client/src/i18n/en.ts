@@ -1647,5 +1647,5 @@ export const EN: Record<string, EnValue> = {
   "在 {label} 打开{title}": "Open {title} in {label}",
   "豆瓣单季已并进「{name}」": "Douban season entries merged into “{name}”",
   "豆瓣链接记到了「{name}」{season}": "Douban link saved to {season} of “{name}”",
-  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。": "In a table, press {enter} to add a row, {shiftEnter} to add a column, and {move} to move the row.",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行，在最后一行按 ↓ 跳出表格。": "In a table, press {enter} to add a row, {shiftEnter} to add a column, {move} to move the row, and ↓ on the last row to leave the table.",
 };

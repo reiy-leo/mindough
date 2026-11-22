@@ -1967,7 +1967,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "在 {label} 打开{title}": "Buka {title} di {label}",
   "豆瓣单季已并进「{name}」": "Musim dari Douban digabung ke “{name}”",
   "豆瓣链接记到了「{name}」{season}": "Tautan Douban disimpan ke {season} “{name}”",
-  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。": "Di tabel, tekan {enter} untuk menambah baris, {shiftEnter} untuk menambah kolom, dan {move} untuk memindahkan baris.",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行，在最后一行按 ↓ 跳出表格。": "Di tabel, tekan {enter} untuk menambah baris, {shiftEnter} untuk menambah kolom, {move} untuk memindahkan baris, dan ↓ di baris terakhir untuk keluar dari tabel.",
 };
 
 export const DATA: Record<string, string> = {

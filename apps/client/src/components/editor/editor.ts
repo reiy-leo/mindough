@@ -20,6 +20,7 @@ import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
 import { moveBlockExtension } from './move-block';
+import { blockExitExtension, withoutExitParas } from './block-exit';
 import { quoteColorExtension, quoteColorSerialize, remarkQuoteColor, setQuoteColorTr, type QuoteColor, type QuoteHit } from './quote-color';
 import { highlightExtension, highlightHandler, recolorHighlightTr, type HighlightColor, highlightParse, highlightSafeText, highlightSerialize, remarkHighlight, type HighlightRange } from './highlight';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
@@ -255,6 +256,7 @@ export class MdController {
       ...(o.plainTitle ? guardTitleInputRules(schemaExtensions()) : schemaExtensions()),
       imeGuardExtension(),
       moveBlockExtension(),
+      blockExitExtension(),
       highlightExtension(() => ({ onClick: (r) => this.get().onHighlightClick?.(r) })),
       quoteColorExtension(() => ({ onBarClick: (h) => this.get().onQuoteBarClick?.(h) })),
       ...(o.mention ? [mentionExtension(() => this.get().mention ?? { onState: () => {}, onKey: () => false })] : []),
@@ -305,6 +307,8 @@ export class MdController {
   /** 文档写成 markdown；任务的第一行按字面文字写（title.ts）。 */
   write(doc: PMNode) {
     const io = markdownIO(this.editor?.schema ?? baseSchema());
+    // 方向键跳出表格插的空段落，还空着就不写（block-exit.ts）
+    if (this.editor && doc === this.editor.state.doc) doc = withoutExitParas(this.editor.state, doc);
     return this.get().plainTitle ? serializeWithTitle(io, doc) : io.serialize(doc);
   }
 
