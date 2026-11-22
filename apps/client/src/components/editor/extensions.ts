@@ -52,6 +52,7 @@ import { Highlight } from './highlight';
 import { quoteColorOf } from './quote-color';
 import { isHelpShortcut } from './shortcuts';
 import { guardTitleRules } from './title';
+import { tableDeleteKeys } from './table-delete';
 
 // ───────── 链接的小工具（MdEditor 和测试也用）─────────
 
@@ -783,7 +784,7 @@ export function imageFiles(data: DataTransfer | null): File[] {
   return files;
 }
 
-/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、表格回车加行加列、不收新图片、剪贴板。优先级高于 StarterKit。
+/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、表格回车加行加列、退格删空行空列（table-delete.ts）、不收新图片、剪贴板。优先级高于 StarterKit。
  * 中文输入法选词的回车、组字时 WebKit 删掉清单项的毛病在 ime-guard.ts（优先级更高，先过它）。 */
 export function behaviorExtension(opts: BehaviorOptions) {
   return Extension.create({
@@ -828,7 +829,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
                 if (!event.repeat) opts.onLinkShortcut?.();
                 return true;
               }
-              return tableKeys(view, event) || tableOnEnter(view, event);
+              return tableKeys(view, event) || tableDeleteKeys(view, event) || tableOnEnter(view, event);
             },
           },
         }),

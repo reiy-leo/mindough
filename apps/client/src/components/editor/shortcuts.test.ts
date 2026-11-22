@@ -32,6 +32,12 @@ describe('快捷键的写法', () => {
     expect(formatChord(['mod', 'shift', 'B'], false)).toBe('Ctrl+Shift+B');
     expect(formatChord(['shift', 'Enter'], true)).toBe('⇧↩');
     expect(formatChord(['shift', 'Enter'], false)).toBe('Shift+Enter');
+    // 表格删空行、空列（Rei 2026-11-22 21:05）：退格 Mac 写 ⌫，别的写 Backspace
+    expect(formatChord(['shift', 'Backspace'], true)).toBe('⇧⌫');
+    expect(formatChord(['shift', 'Backspace'], false)).toBe('Shift+Backspace');
+    const del = shortcutRows().filter((r) => r.label === '删掉表格空行' || r.label === '删掉表格空列');
+    expect(del.map((r) => r.keys)).toEqual([[['Backspace']], [['shift', 'Backspace']]]);
+    expect(shortcutRows({ touch: true }).map((r) => r.label)).not.toContain('删掉表格空行');
     // 上下移动当前行：所有系统都是 Ctrl，Mac 上写 ⌃，不换成 ⌘
     expect(formatChord(['ctrl', '↑↓'], true)).toBe('⌃↑↓');
     expect(formatChord(['ctrl', '↑↓'], false)).toBe('Ctrl+↑↓');
@@ -57,7 +63,7 @@ describe('快捷键的写法', () => {
   it('列的写法和快捷键都是编辑器真有的', () => {
     const rows = shortcutRows();
     const keys = rows.flatMap((r) => r.keys.map((c) => formatChord(c, true)));
-    expect(keys).toEqual(['⌘B', '⌘I', '⌘U', '⌘U', '1', '⌘U', '2', '⌘⌥X', '⌘⇧H', '⌘E', '⌘K', '⌘⌥1–6', '⌘⌥8', '⌘⌥7', '⌘⇧B', '⌘⌥C', '⇧↩', '⌥↑↓']);
+    expect(keys).toEqual(['⌘B', '⌘I', '⌘U', '⌘U', '1', '⌘U', '2', '⌘⌥X', '⌘⇧H', '⌘E', '⌘K', '⌘⌥1–6', '⌘⌥8', '⌘⌥7', '⌘⇧B', '⌘⌥C', '⇧↩', '⌥↑↓', '⌫', '⇧⌫']);
     expect(rows.map((r) => r.md).filter(Boolean)).toEqual(['**文字**', '*文字*', '~~文字~~', '==文字==', '`代码`', '[文字](网址)', '# ', '- ', '1. ', '[] ', '> ', '```', '---', '|3x2| ', '>> ', '$x^2$']);
   });
 });

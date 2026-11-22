@@ -37,9 +37,9 @@ const MAC: Record<Mod, string> = { mod: '⌘', ctrl: '⌃', alt: '⌥', shift: '
 const PC: Record<Mod, string> = { mod: 'Ctrl', ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift', move: 'Ctrl' };
 const isMod = (k: string): k is Mod => k === 'mod' || k === 'ctrl' || k === 'alt' || k === 'shift' || k === 'move';
 
-/** 一下按键写成文字：Mac「⌘⌥X」，别的「Ctrl+Alt+X」。回车 Mac 写 ↩，别的写 Enter。 */
+/** 一下按键写成文字：Mac「⌘⌥X」，别的「Ctrl+Alt+X」。回车 Mac 写 ↩，别的写 Enter；退格 Mac 写 ⌫，别的写 Backspace。 */
 export function formatChord(chord: Chord, mac: boolean): string {
-  const names = chord.map((k) => (isMod(k) ? (mac ? MAC : PC)[k] : k === 'Enter' ? (mac ? '↩' : 'Enter') : k));
+  const names = chord.map((k) => (isMod(k) ? (mac ? MAC : PC)[k] : k === 'Enter' ? (mac ? '↩' : 'Enter') : k === 'Backspace' ? (mac ? '⌫' : 'Backspace') : k));
   return mac ? names.join('') : names.join('+');
 }
 
@@ -100,6 +100,9 @@ function baseRows(): ShortcutRow[] {
     { label: trc('格式', '换行'), md: null, keys: [['shift', 'Enter']] },
     // Rei 2026-11-20：上下移动当前行，Mac ⌥↑↓（12:36 改），别的系统 Ctrl+↑↓（见 move-block.ts）
     { label: trc('格式', '上下移动这一行'), md: null, keys: [['move', '↑↓']] },
+    // Rei 2026-11-22 21:05：表格里整行都空按退格删行、整列都空按 Shift+退格删列（见 table-delete.ts）；手机格式栏不列（没有写法）
+    { label: trc('格式', '删掉表格空行'), md: null, keys: [['Backspace']] },
+    { label: trc('格式', '删掉表格空列'), md: null, keys: [['shift', 'Backspace']] },
   ];
 }
 

@@ -95,6 +95,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|公式": "Fórmula",
   "格式|换行": "Salto de línea",
   "格式|上下移动这一行": "Mover línea arriba / abajo",
+  "格式|删掉表格空行": "Eliminar fila vacía de la tabla",
+  "格式|删掉表格空列": "Eliminar columna vacía de la tabla",
   "格式|高亮": "Resaltado",
   "文字格式": "Formato",
   "格式|提到任务或日期": "Mencionar una tarea o fecha",

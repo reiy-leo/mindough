@@ -95,6 +95,8 @@ export const MESSAGES: Record<string, MessageValue> = {
   "格式|公式": "Rumus",
   "格式|换行": "Ganti baris",
   "格式|上下移动这一行": "Pindahkan baris ke atas / bawah",
+  "格式|删掉表格空行": "Hapus baris tabel kosong",
+  "格式|删掉表格空列": "Hapus kolom tabel kosong",
   "格式|高亮": "Sorot",
   "文字格式": "Format",
   "格式|提到任务或日期": "Sebut tugas atau tanggal",

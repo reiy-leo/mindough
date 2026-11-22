@@ -541,6 +541,8 @@ export const EN: Record<string, EnValue> = {
   "格式|公式": "Formula",
   "格式|换行": "Line Break",
   "格式|上下移动这一行": "Move Line Up / Down",
+  "格式|删掉表格空行": "Delete Empty Table Row",
+  "格式|删掉表格空列": "Delete Empty Table Column",
   "格式|高亮": "Highlight",
   "文字格式": "Formatting",
   "格式|提到任务或日期": "Mention a Task or Date",
