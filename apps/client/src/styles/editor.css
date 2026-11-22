@@ -824,13 +824,8 @@
   --qc-pink: #d15796;
   --qc-red: #df5452;
 }
-.md blockquote[data-color] {
-  /* 左内边距不动（手机上编辑器另加宽了，见下面） */
-  padding-top: 4px;
-  padding-right: 10px;
-  padding-bottom: 4px;
-  border-radius: 0 6px 6px 0;
-}
+/* 带颜色的引用只换竖条颜色和底色，不加内边距、不改外边距，和默认引用一样高（Rei 2026-11-22 17:47「高度不改变」）。
+   加了上下内边距的话，最后一段的下外边距就不再和引用的外边距合并，整块会高出一截。 */
 .md blockquote[data-color='gray'] { border-left-color: var(--qc-gray); background: var(--hl-gray); }
 .md blockquote[data-color='brown'] { border-left-color: var(--qc-brown); background: var(--hl-brown); }
 .md blockquote[data-color='orange'] { border-left-color: var(--qc-orange); background: var(--hl-orange); }
