@@ -2,6 +2,7 @@
 /** Ctrl+↑ / Ctrl+↓（Mac ⌥↑↓）上下移动当前行（Rei 2026-11-20）：顶层块、列表项连子项、多块选区、到头不动、光标跟着走、一步撤销、标题不动、组字不管。 */
 import { describe, expect, it } from 'vitest';
 import { TextSelection } from '@tiptap/pm/state';
+import { CellSelection } from '@tiptap/pm/tables';
 import { undo } from '@tiptap/pm/history';
 import type { EditorView } from '@tiptap/pm/view';
 import { createMdEditor, type MdEditorOptions } from './editor';
@@ -83,8 +84,8 @@ describe('顶层块', () => {
     caretIn(b.view, '引用');
     up(b.view);
     expect(blocks(b.view)).toEqual(['paragraph:甲', 'codeBlock:x = 1', 'blockquote:引用', 'table:ab12']);
-    // 光标在表格格子里：整个表格挪
-    caretIn(b.view, '2', 0);
+    // 光标在表头格子里：整个表格挪（数据行改成挪这一行，见「表格数据行」）
+    caretIn(b.view, 'b', 0);
     up(b.view);
     expect(blocks(b.view)).toEqual(['paragraph:甲', 'codeBlock:x = 1', 'table:ab12', 'blockquote:引用']);
     // 光标在代码块里：整块挪
@@ -219,6 +220,117 @@ describe('撤销、标题、组字、只读', () => {
     caretIn(b.view, '二');
     expect(up(b.view)).toBe(false);
     expect(b.md()).toBe('一\n\n二');
+    b.done();
+  });
+});
+
+describe('表格数据行（Rei 2026-11-22）', () => {
+  const T = '前\n\n| a | b |\n| - | - |\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n\n后';
+  /** 表格每行的文字。 */
+  const rows = (view: EditorView) => {
+    const out: string[] = [];
+    view.state.doc.descendants((n) => {
+      if (n.type.name === 'tableRow') out.push(n.textContent);
+      return n.type.name !== 'tableRow';
+    });
+    return out;
+  };
+  /** 写回的表格去掉格子里补齐用的空格。 */
+  const tight = (md: string) => md.split('\n').map((l) => l.split('|').map((x) => x.trim().replace(/^-+$/, '-')).join('|')).join('\n');
+
+  it('数据行和上一行 / 下一行对调，光标留在同一列同一位置，写回合法表格', () => {
+    const a = setup('| a | b |\n| - | - |\n| 1 | 二二 |\n| 3 | 4 |\n| 5 | 6 |');
+    caretIn(a.view, '二二', 1);
+    expect(down(a.view)).toBe(true);
+    expect(rows(a.view)).toEqual(['ab', '34', '1二二', '56']);
+    expect(caretText(a.view)).toBe('二');
+    down(a.view);
+    expect(rows(a.view)).toEqual(['ab', '34', '56', '1二二']);
+    expect(caretText(a.view)).toBe('二');
+    up(a.view);
+    expect(rows(a.view)).toEqual(['ab', '34', '1二二', '56']);
+    expect(tight(a.md())).toBe('|a|b|\n|-|-|\n|3|4|\n|1|二二|\n|5|6|');
+    // 光标在第二列：$from.parent 是那一格的段落
+    expect(a.view.state.selection.$from.node(-1).type.name).toBe('tableCell');
+    expect(a.view.state.selection.$from.index(-2)).toBe(1);
+    a.done();
+  });
+
+  it('第一条数据行往上、最后一行往下：不动，按键吃掉，表格不整块挪', () => {
+    const a = setup(T);
+    caretIn(a.view, '1', 0);
+    expect(up(a.view)).toBe(true);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    expect(blocks(a.view)[0]).toBe('paragraph:前');
+    caretIn(a.view, '6', 0);
+    expect(down(a.view)).toBe(true);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    expect(blocks(a.view)[2]).toBe('paragraph:后');
+    a.done();
+  });
+
+  it('光标在表头：还是整个表格一起挪', () => {
+    const a = setup(T);
+    caretIn(a.view, 'a', 0);
+    up(a.view);
+    expect(blocks(a.view)).toEqual(['table:ab123456', 'paragraph:前', 'paragraph:后']);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    a.done();
+  });
+
+  it('选了几格跨几行：这几行一起挪；碰到表头就整表挪', () => {
+    const a = setup(T);
+    const cellAt = (text: string) => {
+      let pos = -1;
+      a.view.state.doc.descendants((n, p) => {
+        if (pos < 0 && (n.type.name === 'tableCell' || n.type.name === 'tableHeader') && n.textContent === text) pos = p;
+      });
+      return pos;
+    };
+    a.view.dispatch(a.view.state.tr.setSelection(CellSelection.create(a.view.state.doc, cellAt('3'), cellAt('6'))));
+    expect(up(a.view)).toBe(true);
+    expect(rows(a.view)).toEqual(['ab', '34', '56', '12']);
+    expect(a.view.state.selection).toBeInstanceOf(CellSelection);
+    up(a.view);
+    expect(rows(a.view)).toEqual(['ab', '34', '56', '12']);
+    down(a.view);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    // 文字选区从一格拖到另一格（跨两行）也算
+    const s = caretIn(a.view, '1', 0);
+    const e = caretIn(a.view, '4', 1);
+    a.view.dispatch(a.view.state.tr.setSelection(TextSelection.create(a.view.state.doc, s, e)));
+    down(a.view);
+    expect(rows(a.view)).toEqual(['ab', '56', '12', '34']);
+    // 选区含表头：整表挪
+    a.view.dispatch(a.view.state.tr.setSelection(CellSelection.create(a.view.state.doc, cellAt('a'), cellAt('5'))));
+    down(a.view);
+    expect(blocks(a.view).map((b) => b.split(':')[0])).toEqual(['paragraph', 'paragraph', 'table']);
+    a.done();
+  });
+
+  it('一次挪一行是一步撤销，不和前面打的字合并', () => {
+    const a = setup(T);
+    caretIn(a.view, '3', 1);
+    a.view.dispatch(a.view.state.tr.insertText('x'));
+    down(a.view);
+    expect(rows(a.view)).toEqual(['ab', '12', '56', '3x4']);
+    undo(a.view.state, a.view.dispatch);
+    expect(rows(a.view)).toEqual(['ab', '12', '3x4', '56']);
+    undo(a.view.state, a.view.dispatch);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    a.done();
+  });
+
+  it('组字时、只读时不管', () => {
+    const a = setup(T);
+    caretIn(a.view, '1', 0);
+    expect(key(a.view, 'ArrowDown', { ctrlKey: true, isComposing: true })).toBe(false);
+    expect(rows(a.view)).toEqual(['ab', '12', '34', '56']);
+    a.done();
+    const b = setup(T, { readOnly: true });
+    caretIn(b.view, '1', 0);
+    expect(down(b.view)).toBe(false);
+    expect(rows(b.view)).toEqual(['ab', '12', '34', '56']);
     b.done();
   });
 });

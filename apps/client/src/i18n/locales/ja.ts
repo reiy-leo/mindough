@@ -1952,7 +1952,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "在 {label} 打开{title}": "{label} で{title}を開く",
   "豆瓣单季已并进「{name}」": "豆瓣のシーズンを「{name}」にまとめました",
   "豆瓣链接记到了「{name}」{season}": "豆瓣のリンクを「{name}」{season}に保存しました",
-  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列。": "表の中で {enter} を押すと行、{shiftEnter} を押すと列を追加します。",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。": "表の中で {enter} を押すと行、{shiftEnter} を押すと列を追加し、{move} で行を移動します。",
 };
 
 export const DATA: Record<string, string> = {
