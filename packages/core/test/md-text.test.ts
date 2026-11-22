@@ -57,4 +57,9 @@ describe('高亮（Rei 2026-11-20）', () => {
     expect(firstLine('看 ==重点==')).toBe('看 重点');
     expect(firstLine('\\=\\=字\\=\\=')).toBe('==字==');
   });
+
+  it('引用的颜色注释 <!-- color: red --> 在片段、搜索里去掉', () => {
+    expect(stripUnderlineTags('> <!-- color: red -->\n> 引用的话')).toBe('> \n> 引用的话');
+    expect(stripUnderlineTags('<!-- 别的注释 -->')).toBe('<!-- 别的注释 -->');
+  });
 });

@@ -20,6 +20,7 @@ import { ghParse, ghSerialize, mathSafeText, remarkGh } from './gh-syntax';
 import { detailsParse, detailsSerialize, remarkDetails } from './details';
 import { imeGuardExtension } from './ime-guard';
 import { moveBlockExtension } from './move-block';
+import { quoteColorExtension, quoteColorSerialize, remarkQuoteColor, setQuoteColorTr, type QuoteColor, type QuoteHit } from './quote-color';
 import { highlightExtension, highlightHandler, recolorHighlightTr, type HighlightColor, highlightParse, highlightSafeText, highlightSerialize, remarkHighlight, type HighlightRange } from './highlight';
 import { hasSchemeBody, isAppSchemeHref, isBlockedHref, opaqueSchemeOf, schemeOf } from '../../lib/link-scheme';
 import { remarkUnderline, underlineHandler, underlineKeysExtension, underlineParse, underlineSerialize } from './underline';
@@ -41,9 +42,9 @@ export function markdownIO(schema: Schema | null | undefined): MarkdownIO {
   let io = ios.get(schema);
   if (!io) {
     io = createMarkdownIO(schema, {
-      remark: [remarkGh, remarkDetails, remarkUnderline, remarkHighlight, remarkTaskMentions, remarkDateMentions],
+      remark: [remarkQuoteColor, remarkGh, remarkDetails, remarkUnderline, remarkHighlight, remarkTaskMentions, remarkDateMentions],
       parse: [...ghParse, ...detailsParse, ...underlineParse, ...highlightParse, ...mentionParse, ...dateMentionParse],
-      serialize: { ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...highlightSerialize, ...mentionSerialize, ...dateMentionSerialize },
+      serialize: { ...quoteColorSerialize, ...ghSerialize, ...detailsSerialize, ...underlineSerialize, ...highlightSerialize, ...mentionSerialize, ...dateMentionSerialize },
       // 文字里的 $ 不像公式、== 不像高亮（Rei 2026-11-20）
       wrapText: ((prev: never) => highlightSafeText(mathSafeText(prev) as never)) as never,
       handlers: { underline: underlineHandler, highlight: highlightHandler },
@@ -191,6 +192,8 @@ export interface MdEditorHandle {
   insertDate(range: { from: number; to: number }, d: DateMention): void;
   /** 把一段高亮换成 color（null = 去掉）。 */
   recolorHighlight(range: { from: number; to: number }, color: HighlightColor | null): void;
+  /** pos 处的引用块换成 color（null = 默认）。 */
+  recolorQuote(pos: number, color: QuoteColor | null): void;
   /** 一段的纯文字（链接框预填）。 */
   textOf(range: { from: number; to: number }): string;
   /** 当前选区（链接框新加时用）。 */
@@ -226,6 +229,8 @@ export interface MdEditorOptions {
   onImageBlocked?: () => void;
   /** 点了一段高亮（能编辑时）：弹色板换颜色（highlight.ts，Rei 2026-11-20）。 */
   onHighlightClick?: (range: HighlightRange) => void;
+  /** 点了引用块左边的竖条（能编辑时）：弹色板换颜色（quote-color.ts，Rei 2026-11-22）。 */
+  onQuoteBarClick?: (hit: QuoteHit) => void;
   /** 给了就能打 @ 提及任务（mention.ts）：正在打的 @ 变了、浮层开着时的按键。 */
   mention?: MentionHooks;
 }
@@ -251,6 +256,7 @@ export class MdController {
       imeGuardExtension(),
       moveBlockExtension(),
       highlightExtension(() => ({ onClick: (r) => this.get().onHighlightClick?.(r) })),
+      quoteColorExtension(() => ({ onBarClick: (h) => this.get().onQuoteBarClick?.(h) })),
       ...(o.mention ? [mentionExtension(() => this.get().mention ?? { onState: () => {}, onKey: () => false })] : []),
       ...(o.plainTitle ? [plainTitleExtension({ io })] : []),
       underlineKeysExtension(),
@@ -385,6 +391,11 @@ function makeHandle(editor: Editor, ctl: MdController): MdEditorHandle {
       const size = v.state.doc.content.size;
       if (range.from < 0 || range.to > size || range.from >= range.to) return;
       v.dispatch(recolorHighlightTr(v.state, range, color));
+    },
+    recolorQuote(pos, color) {
+      const v = view();
+      const t = setQuoteColorTr(v.state, pos, color);
+      if (t) v.dispatch(t);
     },
     textOf(range) {
       try {

@@ -83,6 +83,9 @@ const blockMath: TokenizerAndRendererExtension = {
 };
 
 /** 引用块第一段以 [!NOTE] 开头：变成提示块（标记那行去掉，换成图标 + 标题）。 */
+/** 引用第一行的颜色注释（编辑器 quote-color.ts 的 QUOTE_COLOR_COMMENT_RE，这里不引编辑器的包）。 */
+const QUOTE_COLOR_RE = /^<!--\s*color\s*[:=]\s*([a-z]+)\s*-->$/i;
+const QUOTE_COLOR_NAMES = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'] as const;
 const ALERT_HTML_RE = /^<p>\\?\[!(note|tip|important|warning|caution)\\?\][ \t]*(?:<br>\n?|\n|(?=<\/p>))/i;
 
 function build() {
@@ -113,6 +116,11 @@ function build() {
         return false;
       },
       blockquote(this: { parser: { parse: (t: Tokens.Blockquote['tokens']) => string } }, token: Tokens.Blockquote) {
+        // 带颜色的引用（Rei 2026-11-22，和编辑器 quote-color.ts 一样）：第一块是 `<!-- color: red -->`，去掉它，画成 data-color
+        const first = token.tokens[0];
+        const qc = first?.type === 'html' ? QUOTE_COLOR_RE.exec(String((first as Tokens.HTML).text ?? '').trim()) : null;
+        const color = qc && (QUOTE_COLOR_NAMES as readonly string[]).includes(qc[1]!.toLowerCase()) ? qc[1]!.toLowerCase() : null;
+        if (color) return `<blockquote data-color="${color}">\n${this.parser.parse(token.tokens.slice(1))}</blockquote>\n`;
         if (!ALERT_MARKER_RE.test(token.text)) return false;
         const body = this.parser.parse(token.tokens);
         const m = ALERT_HTML_RE.exec(body);

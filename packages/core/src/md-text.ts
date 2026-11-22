@@ -53,8 +53,10 @@ export const UNDERLINE_TAG_RE = /<\/?u(?:\s+class=(["'])(?:wavy|double)\1)?\s*>/
 export const MARK_TAG_RE = /<\/?mark(?:\s+data-color=(["'])[a-z]+\1)?\s*>/gi;
 /** `==字==`：两个等号紧贴着字（前后不是空白），不是三个以上的等号。转义过的 `\=\=` 在 stripWithLiterals 里已经换成占位符，碰不到。 */
 export const HIGHLIGHT_MARKS_RE = /(?<!=)==(?!=)(?=\S)([\s\S]*?\S)(?<!=)==(?!=)/g;
-/** 去掉下划线、高亮的标签和 `==` 记号（标题、搜索、片段用），字留下。 */
-export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '').replace(MARK_TAG_RE, '').replace(HIGHLIGHT_MARKS_RE, '$1');
+/** 引用块的颜色注释（Rei 2026-11-22：带颜色的引用第一行存 `> <!-- color: red -->`）。 */
+export const QUOTE_COLOR_TAG_RE = /<!--\s*color\s*[:=]\s*[a-z]+\s*-->/gi;
+/** 去掉下划线、高亮的标签和 `==` 记号、引用的颜色注释（标题、搜索、片段用），字留下。 */
+export const stripUnderlineTags = (s: string) => s.replace(UNDERLINE_TAG_RE, '').replace(MARK_TAG_RE, '').replace(QUOTE_COLOR_TAG_RE, '').replace(HIGHLIGHT_MARKS_RE, '$1');
 
 /**
  * 任务标题（正文第一行）存成字面文字（Rei 2026-11-03「任务标题是纯文本不渲染md」）。

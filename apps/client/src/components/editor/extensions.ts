@@ -49,6 +49,7 @@ import { detailsExtensions } from './details';
 import type { MarkdownIO } from './markdown';
 import { Underline } from './underline';
 import { Highlight } from './highlight';
+import { quoteColorOf } from './quote-color';
 import { isHelpShortcut } from './shortcuts';
 import { guardTitleRules } from './title';
 
@@ -134,8 +135,21 @@ const MdStrike = Strike.extend({
   },
 });
 
-/** 引用：多认一个全角「》 」（同 `> `；空引用里再打「》 」变折叠块，见 details.ts，那条优先级更高）。 */
+/**
+ * 引用：多认一个全角「》 」（同 `> `；空引用里再打「》 」变折叠块，见 details.ts，那条优先级更高）。
+ * color：九色之一或 null（默认），画成 data-color，存法和点竖条换色见 quote-color.ts（Rei 2026-11-22）。
+ */
 const MdBlockquote = Blockquote.extend({
+  addAttributes: () => ({
+    color: {
+      default: null,
+      parseHTML: (el: HTMLElement) => quoteColorOf(el.getAttribute('data-color')),
+      renderHTML: (a: Record<string, unknown>) => {
+        const c = quoteColorOf(a.color);
+        return c ? { 'data-color': c } : {};
+      },
+    },
+  }),
   addInputRules() {
     return [...(this.parent?.() ?? []), wrappingInputRule({ find: FW_QUOTE_RE, type: this.type })];
   },

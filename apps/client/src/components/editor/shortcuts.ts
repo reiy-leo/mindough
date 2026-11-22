@@ -111,6 +111,8 @@ export const shortcutTexts = (mac: boolean) => ({
   combo: tr('波浪线、双线：按住 {mod}，先按 U，再按 1 或 2；同样再按一遍就去掉。', { mod: modName(mac) }),
   /** 高亮换颜色（Rei 2026-11-20 12:16「高亮的点击直接切换颜色就好」）。 */
   highlight: tr('点一下高亮，可以换颜色或去掉。'),
+  /** 引用换颜色（Rei 2026-11-22，见 quote-color.ts）。 */
+  quote: tr('点引用左边的竖条，可以换颜色。'),
   /** 表格里回车加行、Shift+回车加列（Rei 2026-11-22，见 extensions.ts tableKeys）；⌥↑↓ / Ctrl+↑↓ 挪数据行（Rei 2026-11-22，见 move-block.ts tableRowMoveTr）。 */
   table: tr('表格里按 {enter} 加一行，按 {shiftEnter} 加一列，按 {move} 移动这一行。', {
     enter: formatChord(['Enter'], mac),

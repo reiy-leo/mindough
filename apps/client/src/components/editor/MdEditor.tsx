@@ -50,6 +50,7 @@ import { useUiOptional } from '../../lib/ui';
 import { MdController, normalizeHref, stopTab, type LinkRange, type MdEditorHandle, type MdEditorOptions, type MentionState } from './editor';
 import { mentionAnchor, placeMentionPop, type Coords } from './mention-place';
 import { HIGHLIGHT_COLORS, type HighlightColor, type HighlightRange } from './highlight';
+import { inBar, type QuoteHit } from './quote-color';
 import { FormatBar } from './FormatBar';
 import type { FormatResult } from './format-bar';
 import { watchKeyboard, type KeyboardState } from '../../lib/soft-keyboard';
@@ -167,9 +168,19 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   toggleHelpRef.current = toggleHelp;
 
   /** 点了的那段高亮：旁边弹小色板换颜色（Rei 2026-11-20 12:16「高亮的点击直接切换颜色就好」）。 */
-  const [hl, setHl] = useState<HighlightRange | null>(null);
+  const [hl, setHlRaw] = useState<HighlightRange | null>(null);
+  /** 点了竖条的那个引用块：同一个色板换引用颜色（Rei 2026-11-22）。和高亮色板同时只开一个。 */
+  const [qc, setQc] = useState<QuoteHit | null>(null);
+  const setHl = (r: HighlightRange | null) => {
+    setHlRaw(r);
+    setQc(null);
+  };
+  const openQuotePalette = (h: QuoteHit | null) => {
+    setHlRaw(null);
+    setQc(h);
+  };
   const hlRef = useRef(false);
-  hlRef.current = !!hl;
+  hlRef.current = !!hl || !!qc;
 
   /** 正在打的 @（mention.ts 报上来的）、候选里选中第几条、手指 / 鼠标正按在浮层上（这时编辑器失焦不收）。 */
   const [mq, setMq] = useState<MentionState | null>(null);
@@ -296,6 +307,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     // 快捷键浮层开着：Esc 先关它，不收起编辑器 / 关详情
     onEscape: () => (hlRef.current ? setHl(null) : helpRef.current ? setHelp(null) : cb.current.onEscape?.()),
     onHighlightClick: (r) => setHl(r),
+    onQuoteBarClick: (h) => openQuotePalette(h),
     onHelpShortcut: () => toggleHelpRef.current(),
     onLinkShortcut: () => openRef.current(undefined, true),
     ...(onModEnter ? { onModEnter: () => cb.current.onModEnter?.() } : {}),
@@ -540,6 +552,7 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
             {plainTitle && <p className="md-keys-note">{t.title1}</p>}
             {!sheet && <p className="md-keys-note">{t.combo}</p>}
             <p className="md-keys-note">{t.highlight}</p>
+            <p className="md-keys-note">{t.quote}</p>
             {!sheet && <p className="md-keys-note">{t.table}</p>}
             {!sheet && <p className="md-keys-note">{t.clipLink}</p>}
             {mention && <p className="md-keys-note">{t.mention}</p>}
@@ -682,8 +695,9 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
   useLayoutEffect(() => {
     const el = hlEl.current;
     const h = handle.current;
-    if (!hl || !el || !h) return setHlPos(null);
-    const c = h.coordsOf({ from: hl.from, to: hl.from }, 1) ?? h.coordsOf(h.selection());
+    if ((!hl && !qc) || !el || !h) return setHlPos(null);
+    // 引用：贴着点竖条的地方放；高亮：贴着那段高亮
+    const c = qc ? qc.anchor : hl ? (h.coordsOf({ from: hl.from, to: hl.from }, 1) ?? h.coordsOf(h.selection())) : null;
     if (!c) return;
     const vv = window.visualViewport;
     const vTop = vv ? vv.offsetTop : 0;
@@ -698,14 +712,17 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     el.style.left = prevL;
     el.style.top = prevT;
     setHlPos({ left: p.left - o.left, top: p.top - o.top });
-  }, [hl]);
+  }, [hl, qc]);
   // 点别处、滚动收起（Esc 走编辑器的 onEscape）
   useEffect(() => {
-    if (!hl) return;
+    if (!hl && !qc) return;
     const down = (e: PointerEvent) => {
       if (hlEl.current?.contains(e.target as Node)) return;
-      // 点在别的高亮上：编辑器的点击会换成那一段，这里先不收
-      if ((e.target as HTMLElement | null)?.closest?.('.ProseMirror mark') && wrap.current?.contains(e.target as Node)) return;
+      const t = e.target as HTMLElement | null;
+      // 点在别的高亮上、别的引用竖条上：编辑器的点击会换成那一个，这里先不收
+      if (t?.closest?.('.ProseMirror mark') && wrap.current?.contains(t)) return;
+      const bq = t?.closest?.('.ProseMirror blockquote') as HTMLElement | null;
+      if (bq && wrap.current?.contains(bq) && inBar(e.clientX, bq.getBoundingClientRect().left, e.pointerType !== 'mouse')) return;
       setHl(null);
     };
     const close = () => setHl(null);
@@ -717,11 +734,13 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
       window.removeEventListener('scroll', close, true);
       window.removeEventListener('resize', close);
     };
-  }, [hl]);
+  }, [hl, qc]);
   const pickHighlight = (color: HighlightColor | null) => {
-    if (hl) handle.current?.recolorHighlight(hl, color);
+    if (qc) handle.current?.recolorQuote(qc.pos, color);
+    else if (hl) handle.current?.recolorHighlight(hl, color);
     setHl(null);
   };
+  const palColor = qc ? qc.color : hl ? hl.color : null;
   const hlNames: Record<HighlightColor, () => string> = {
     gray: () => trc('高亮颜色', '灰'),
     brown: () => trc('高亮颜色', '棕'),
@@ -733,12 +752,14 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
     pink: () => trc('高亮颜色', '粉'),
     red: () => trc('高亮颜色', '红'),
   };
-  const hlPop = hl && !readOnly && (
+  const clearLabel = qc ? tr('去掉颜色') : tr('去掉高亮');
+  const hlPop = (hl || qc) && !readOnly && (
     <div
       ref={hlEl}
       className="md-hl-pop"
+      data-kind={qc ? 'quote' : 'highlight'}
       role="toolbar"
-      aria-label={tr('高亮颜色')}
+      aria-label={qc ? tr('引用颜色') : tr('高亮颜色')}
       style={hlPos ? { left: hlPos.left, top: hlPos.top } : { left: 0, top: 0, visibility: 'hidden' }}
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -749,14 +770,14 @@ export function MdEditor({ value, onChange, label, placeholder = '', autoFocus, 
           className="md-hl-dot"
           data-color={c}
           aria-label={hlNames[c]()}
-          aria-pressed={hl.color === c}
+          aria-pressed={palColor === c}
           title={hlNames[c]()}
           onClick={() => pickHighlight(c)}
         >
-          {hl.color === c && <Check size={14} aria-hidden />}
+          {palColor === c && <Check size={14} aria-hidden />}
         </button>
       ))}
-      <button type="button" className="md-hl-clear" aria-label={tr('去掉高亮')} title={tr('去掉高亮')} onClick={() => pickHighlight(null)}>
+      <button type="button" className="md-hl-clear" aria-label={clearLabel} title={clearLabel} aria-pressed={qc ? qc.color == null : undefined} onClick={() => pickHighlight(null)}>
         <Eraser size={15} aria-hidden />
       </button>
     </div>

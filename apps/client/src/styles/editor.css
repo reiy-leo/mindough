@@ -800,6 +800,72 @@
 :is(.ProseMirror, .md) mark[data-color='pink'] { background: var(--hl-pink); }
 :is(.ProseMirror, .md) mark[data-color='red'] { background: var(--hl-red); }
 
+/* 引用块的颜色（Rei 2026-11-22，quote-color.ts）：底用高亮那组浅色，左边竖条用同色的浓色（照 Notion 的文字色）。
+   亮暗各一套固定值，三皮肤、素净档共用（和高亮一样，是用户自己挑的颜色）。没颜色的引用不变（app.css 的 .md blockquote）。 */
+:root {
+  --qc-gray: #9b9a97;
+  --qc-brown: #9f6b53;
+  --qc-orange: #d9730d;
+  --qc-yellow: #cb912f;
+  --qc-green: #448361;
+  --qc-blue: #337ea9;
+  --qc-purple: #9065b0;
+  --qc-pink: #c14c8a;
+  --qc-red: #d44c47;
+}
+[data-theme='dark'] {
+  --qc-gray: #8f8f8f;
+  --qc-brown: #ba856f;
+  --qc-orange: #c77d48;
+  --qc-yellow: #ca9849;
+  --qc-green: #529e72;
+  --qc-blue: #379ad3;
+  --qc-purple: #9d68d3;
+  --qc-pink: #d15796;
+  --qc-red: #df5452;
+}
+.md blockquote[data-color] {
+  /* 左内边距不动（手机上编辑器另加宽了，见下面） */
+  padding-top: 4px;
+  padding-right: 10px;
+  padding-bottom: 4px;
+  border-radius: 0 6px 6px 0;
+}
+.md blockquote[data-color='gray'] { border-left-color: var(--qc-gray); background: var(--hl-gray); }
+.md blockquote[data-color='brown'] { border-left-color: var(--qc-brown); background: var(--hl-brown); }
+.md blockquote[data-color='orange'] { border-left-color: var(--qc-orange); background: var(--hl-orange); }
+.md blockquote[data-color='yellow'] { border-left-color: var(--qc-yellow); background: var(--hl-yellow); }
+.md blockquote[data-color='green'] { border-left-color: var(--qc-green); background: var(--hl-green); }
+.md blockquote[data-color='blue'] { border-left-color: var(--qc-blue); background: var(--hl-blue); }
+.md blockquote[data-color='purple'] { border-left-color: var(--qc-purple); background: var(--hl-purple); }
+.md blockquote[data-color='pink'] { border-left-color: var(--qc-pink); background: var(--hl-pink); }
+.md blockquote[data-color='red'] { border-left-color: var(--qc-red); background: var(--hl-red); }
+/* 引用里的高亮和底同色时看不出来：不处理，Notion 也是这样 */
+
+/* 编辑器里点竖条换色：点击区比竖条宽（往外那一截靠 ::before 接住点击，位置和 quote-color.ts 的 barHitZone 对应）。
+   电脑：竖条外沿往外 4px、往里 12px；手机（粗指针）：往外 12px、往里 16px，左内边距加到 14px，免得点不到第一个字。 */
+.md-editor-content blockquote {
+  position: relative;
+}
+.md-editor-content[contenteditable='true'] blockquote::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  width: 16px;
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .md-editor-content blockquote {
+    padding-left: 14px;
+  }
+  .md-editor-content[contenteditable='true'] blockquote::before {
+    left: -15px;
+    width: 28px;
+  }
+}
+
 /* 点高亮弹的小色板：一排九个色点 + 去掉高亮 */
 .md-hl-pop {
   position: fixed;

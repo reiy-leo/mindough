@@ -608,7 +608,8 @@ const coreParse: ParseSpec[] = [
     },
   },
   { name: 'heading', match: (n) => n.type === 'heading', run: (s, n, t) => void s.openNode(t, { level: n.depth }).next(n.children).closeNode() },
-  { name: 'blockquote', match: (n) => n.type === 'blockquote', run: (s, n, t) => void s.openNode(t).next(n.children).closeNode() },
+  // color：quote-color.ts 的 remark 插件从第一行的 `<!-- color: red -->` 读出来的（没有就是默认）
+  { name: 'blockquote', match: (n) => n.type === 'blockquote', run: (s, n, t) => void s.openNode(t, n.color ? { color: n.color } : null).next(n.children).closeNode() },
   {
     name: 'codeBlock',
     match: (n) => n.type === 'code',
