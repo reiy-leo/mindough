@@ -1489,6 +1489,30 @@
 .season-source {
   margin-top: 12px;
 }
+/* 「季」标题旁的刷新按钮（Rei 2026-11-22）：紧跟标题，不推到最右；手机上点的地方放大到 40px */
+.lib-seasons .section-head {
+  justify-content: flex-start;
+}
+.icon-btn.season-refresh {
+  width: 28px;
+  height: 28px;
+}
+.icon-btn.season-refresh[data-disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+[data-skin='material'] .icon-btn.season-refresh {
+  border-radius: 50%;
+}
+[data-layout='mobile'] .icon-btn.season-refresh {
+  width: 40px;
+  height: 40px;
+}
+.season-empty {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
 /* 每季的豆瓣、IMDb 链接（Rei 2026-11-21）：跟资料的链接标签同一套样子，缩小、不带箭头，不抢海报；手机上高一点好点 */
 .season-links {
   display: flex;

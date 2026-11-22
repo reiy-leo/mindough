@@ -289,6 +289,28 @@ describe('剧集的季（Rei 2026-11-11）', () => {
     expect(await b.json()).toEqual({ tv: null, seasons: [] });
   });
 
+  it('fresh=1（手动刷新，Rei 2026-11-22）：不读缓存，直接问 TMDB，新结果写回缓存', async () => {
+    const store = new Map<string, Response>();
+    vi.stubGlobal('caches', {
+      default: {
+        match: async (r: Request) => store.get(r.url)?.clone(),
+        put: async (r: Request, res: Response) => {
+          store.set(r.url, res);
+        },
+      },
+    });
+    let tv = { id: 1399, seasons: [TV.seasons[1]!] };
+    const calls = mockFetch({ 'https://api.themoviedb.org/3/tv/1399': () => Response.json(tv) });
+    const env = baseEnv({ TMDB_API_KEY: V3 });
+    const seasonsOf = async (q: string) => ((await (await call(`/api/lookup/seasons?id=tv/1399${q}`, env)).json()) as { seasons: unknown[] }).seasons.length;
+    expect(await seasonsOf('')).toBe(1);
+    tv = { id: 1399, seasons: [TV.seasons[1]!, { ...TV.seasons[1]!, season_number: 2 }] };
+    expect(await seasonsOf('')).toBe(1); // 缓存着
+    expect(await seasonsOf('&fresh=1')).toBe(2);
+    expect(await seasonsOf('')).toBe(2); // 缓存换成新的了
+    expect(calls).toHaveLength(2);
+  });
+
   it('编号不对 400，没配置 503，方法不对 405', async () => {
     mockFetch({});
     expect((await call('/api/lookup/seasons?id=movie/550', baseEnv({ TMDB_API_KEY: V3 }))).status).toBe(400);

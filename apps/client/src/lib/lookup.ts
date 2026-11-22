@@ -120,10 +120,13 @@ export function searchDoubanMovies(q: string, signal?: AbortSignal, fetcher?: ty
   return getJson(`/api/lookup/search?kind=movie&source=douban&q=${encodeURIComponent(q)}&lang=zh`, signal, fetcher);
 }
 
-/** 剧集的季（TMDB）：ref 是「tv/1399」或 IMDb 编号（Rei 2026-11-11）。 */
-export function fetchSeasons(ref: string, signal?: AbortSignal, fetcher?: typeof fetch): Promise<SeasonsResponse> {
-  return getJson(`/api/lookup/seasons?id=${encodeURIComponent(ref)}&lang=${lang()}`, signal, fetcher);
+/** 剧集的季（TMDB）：ref 是「tv/1399」或 IMDb 编号（Rei 2026-11-11）。fresh：手动刷新，让 Worker 不读它那 1 天的缓存（Rei 2026-11-22）。 */
+export function fetchSeasons(ref: string, signal?: AbortSignal, fetcher?: typeof fetch, fresh = false): Promise<SeasonsResponse> {
+  return getJson(`/api/lookup/seasons?id=${encodeURIComponent(ref)}&lang=${lang()}${fresh ? '&fresh=1' : ''}`, signal, fetcher);
 }
+
+/** 手动刷新季用：同 fetchSeasons，但不要 Worker 的缓存。 */
+export const fetchSeasonsFresh = (ref: string, signal?: AbortSignal): Promise<SeasonsResponse> => fetchSeasons(ref, signal, undefined, true);
 
 /**
  * 把选中结果的封面存进 R2，返回 asset id；不行就 null（不退回热链）。

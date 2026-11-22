@@ -2,7 +2,7 @@
  * 剧集的季（Rei 2026-11-11「影视库里的剧集显示 seasons」）。
  */
 import { describe, expect, it } from 'vitest';
-import { encodeSeasons, isShowItem, needsSeasonsFetch, readSeasons, seasonMeta, seasonPosterUrl, seasonsOf, seasonsRef, seasonSubtitle, seasonTitle, SEASONS_KEY, SEASONS_MAX_AGE_MS, sortSeasons } from '../src/seasons';
+import { encodeSeasons, isShowItem, needsSeasonsFetch, readSeasons, seasonMeta, seasonPosterUrl, seasonsOf, seasonsRef, seasonSubtitle, seasonTitle, SEASONS_KEY, sortSeasons, hasStoredSeasons, sameSeasons } from '../src/seasons';
 import { BUILTIN_TYPE_IDS } from '../src/seed/builtin-types';
 import { setLocale } from '../src/i18n';
 
@@ -51,13 +51,21 @@ describe('存和读', () => {
     const raw = encodeSeasons('tv/1', { tv: 'tv/1', seasons: [{ number: -1, episodes: 1 }, { number: 1, episodes: 3, poster: 'https://x/a.jpg' }] as never });
     expect(readSeasons({ [SEASONS_KEY]: raw })!.seasons).toEqual([{ number: 1, episodes: 3 }]);
   });
-  it('没存过、来源换了、超过 30 天才重拉', () => {
-    const t = now.getTime();
-    expect(needsSeasonsFetch(movie, item({ _source: 'tmdb:tv/1399' }), t)).toBe('tv/1399');
-    expect(needsSeasonsFetch(movie, item(stored()), t + 1000)).toBeNull();
-    expect(needsSeasonsFetch(movie, item(stored()), t + SEASONS_MAX_AGE_MS + 1)).toBe('tv/1399');
-    expect(needsSeasonsFetch(movie, item({ ...stored(), _source: 'tmdb:tv/42' }), t)).toBe('tv/42');
-    expect(needsSeasonsFetch(movie, item({ ...stored(), kind: '电影' }), t)).toBeNull();
+  it('只在没存过、来源换了时补拉；存了再久也不自动重拉（Rei 2026-11-22）', () => {
+    expect(needsSeasonsFetch(movie, item({ _source: 'tmdb:tv/1399' }))).toBe('tv/1399');
+    expect(needsSeasonsFetch(movie, item(stored()))).toBeNull();
+    expect(needsSeasonsFetch(movie, item(stored('tv/1399', new Date('2020-01-01T00:00:00Z'))))).toBeNull();
+    expect(needsSeasonsFetch(movie, item({ ...stored(), _source: 'tmdb:tv/42' }))).toBe('tv/42');
+    expect(needsSeasonsFetch(movie, item({ ...stored(), kind: '电影' }))).toBeNull();
+  });
+  it('拉过（列表可能是空的）才算有；比较不看拉的时间', () => {
+    expect(hasStoredSeasons(movie, item({ _source: 'tmdb:tv/1399' }))).toBe(false);
+    expect(hasStoredSeasons(movie, item({ _source: 'tmdb:tv/1399', [SEASONS_KEY]: encodeSeasons('tv/1399', { tv: 'tv/1399', seasons: [] }) }))).toBe(true);
+    expect(hasStoredSeasons(movie, item({ ...stored(), _source: 'tmdb:tv/42' }))).toBe(false);
+    expect(sameSeasons(stored('tv/1399', new Date('2020-01-01T00:00:00Z')), 'tv/1399', RES)).toBe(true);
+    expect(sameSeasons(stored(), 'tv/1399', { ...RES, seasons: [...RES.seasons, { number: 3, episodes: 8 }] })).toBe(false);
+    expect(sameSeasons(stored(), 'tv/42', RES)).toBe(false);
+    expect(sameSeasons({}, 'tv/1399', RES)).toBe(false);
   });
   it('来源换了还没重拉：不显示旧的季', () => {
     expect(seasonsOf(movie, item({ ...stored(), _source: 'tmdb:tv/42' }))).toEqual([]);

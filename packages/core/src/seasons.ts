@@ -2,7 +2,8 @@
  * 剧集的季（Rei 2026-11-11「影视库里的剧集显示 seasons」）：影视库里的剧集在资料页列出各季
  * （海报小图、第 N 季 / 特别篇、首播年份、集数），数据来自 TMDB（Worker GET /api/lookup/seasons）。
  * - 存在资料的保留键 `_seasons`（JSON 文字），跟着资料同步，不加列；打开资料页不每次都拉：
- *   没有、来源换了、或者超过 30 天才补拉一次。
+ *   没存过、或者来源换了才补拉一次。TMDB 后来补了季，点「季」标题旁的刷新按钮手动重拉（Rei 2026-11-22，
+ *   原来存满 30 天自动重拉，同时去掉）。
  * - 只认 TMDB 剧集编号（来源「tmdb:tv/1399」）或 IMDb 编号；只有豆瓣编号的剧集不显示季。
  * - 电影不显示；只显示，不记每季看到哪（看到哪还是任务上的 episode 字段）。
  */
@@ -12,8 +13,6 @@ import { tr } from './i18n';
 import type { FieldValue, LibraryItem, TaskType } from './types';
 
 export const SEASONS_KEY = '_seasons';
-/** 存下来的季多久算旧（播出中的剧会加季）。 */
-export const SEASONS_MAX_AGE_MS = 30 * 24 * 3600 * 1000;
 
 /** Worker 返回的一季。number 0 是特别篇。 */
 export interface SeasonInfo {
@@ -30,7 +29,7 @@ export interface SeasonsResponse {
   seasons: SeasonInfo[];
 }
 
-/** 存在 `_seasons` 里的样子。ref：按什么编号拉的（来源变了就重拉）；at：拉的时间（ISO）。 */
+/** 存在 `_seasons` 里的样子。ref：按什么编号拉的（来源变了就重拉）；at：拉的时间（ISO，只记着，不再按它重拉）。 */
 export interface StoredSeasons {
   v: 1;
   ref: string;
@@ -91,15 +90,27 @@ export function encodeSeasons(ref: string, res: SeasonsResponse, at: Date = new 
   return JSON.stringify(data);
 }
 
-/** 要不要（补）拉：是剧集、有编号，而且没存过、编号换了、或存了超过 30 天。 */
-export function needsSeasonsFetch(type: Pick<TaskType, 'id'> | null | undefined, item: Pick<LibraryItem, 'fields'>, now: number = Date.now()): string | null {
+/** 要不要（补）拉：是剧集、有编号，而且没存过或编号换了。存了多久不管（要新的就手动刷新）。 */
+export function needsSeasonsFetch(type: Pick<TaskType, 'id'> | null | undefined, item: Pick<LibraryItem, 'fields'>): string | null {
   const ref = seasonsRef(type, item);
   if (!ref) return null;
   const cur = readSeasons(item.fields);
-  if (!cur || cur.ref !== ref) return ref;
-  const at = Date.parse(cur.at);
-  if (!Number.isFinite(at) || now - at > SEASONS_MAX_AGE_MS || at - now > 24 * 3600 * 1000) return ref;
-  return null;
+  return !cur || cur.ref !== ref ? ref : null;
+}
+
+/** 拉过、而且编号对得上（列表可能是空的：TMDB 上还没有季）。资料页按这个决定「季」一节显示什么。 */
+export function hasStoredSeasons(type: Pick<TaskType, 'id'> | null | undefined, item: Pick<LibraryItem, 'fields'>): boolean {
+  const ref = seasonsRef(type, item);
+  const cur = ref ? readSeasons(item.fields) : null;
+  return !!cur && cur.ref === ref;
+}
+
+/** 新拉到的和存着的一样吗（不比拉的时间）。一样就不写，免得白白同步一次。 */
+export function sameSeasons(fields: Record<string, FieldValue> | null | undefined, ref: string, res: SeasonsResponse): boolean {
+  const cur = readSeasons(fields);
+  if (!cur || cur.ref !== ref) return false;
+  const next = readSeasons({ [SEASONS_KEY]: encodeSeasons(ref, res) })!;
+  return cur.tv === next.tv && JSON.stringify(sortSeasons(cur.seasons)) === JSON.stringify(sortSeasons(next.seasons));
 }
 
 /** 显示顺序：第 1 季、第 2 季……特别篇（第 0 季）放最后。 */

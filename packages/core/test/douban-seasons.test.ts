@@ -149,6 +149,10 @@ describe('自动搜各季', () => {
     const more = { ...f, [SEASONS_KEY]: encodeSeasons('tv/119051', { tv: 'tv/119051', seasons: [...SEASONS.seasons, { number: 3, year: 2027, episodes: 8 }] }, NOW) };
     expect(doubanSeasonsToSearch(movie, { name: '星期三', fields: more }, NOW.getTime() + 1000)).toEqual([3]);
   });
+  it('手动刷新季时：搜过的也再搜，有编号的不动（Rei 2026-11-22）', () => {
+    const f = recordDoubanSearch(wed().fields as never, [1, 2], { 1: '35364243' }, NOW);
+    expect(doubanSeasonsToSearch(movie, { name: '星期三', fields: f }, NOW.getTime() + 1000, true)).toEqual([2]);
+  });
   it('从搜索结果配：名字、季号、年份都要对上；电影《星期三》（2012）、TMDB 没有的第三季不配', () => {
     expect(matchDoubanSeasons(wed(), SEASONS.seasons, [1, 2], SUGGEST)).toEqual({ 1: '35364243', 2: '36208369' });
     expect(matchDoubanSeasons(wed(), SEASONS.seasons, [2], SUGGEST)).toEqual({ 2: '36208369' });

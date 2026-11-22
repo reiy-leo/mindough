@@ -2,16 +2,19 @@
  * 剧集每季的豆瓣链接（Rei 2026-11-21）：「季」一节显示时，还没有豆瓣编号的季在后台按「剧名」「剧名 第N季」去豆瓣搜，
  * 名字、季号、年份都对得上、又只有一条候选的才记下（写进资料的 `_douban_seasons`，跟着同步）。配不上就不显示。
  * 规则在 core douban-seasons.ts，这里只管什么时候搜。同一条资料一次会话只试一次；30 天内搜过的季不再搜。
+ * 手动刷新季（Rei 2026-11-22）时传 all：没编号的季不管搜没搜过都再搜一遍，已有的编号不动。
  */
 import { useEffect } from 'react';
 import { DOUBAN_SEASON_QUERIES, doubanSeasonQuery, doubanSeasonsToSearch, matchDoubanSeasons, recordDoubanSearch, seasonsOf, type LibraryItem, type LookupResult, type LookupSearchResponse, type Store, type TaskType } from '@mindough/core';
 import { searchDoubanMovies, useLookupAvailable } from './lookup';
 
 const tried = new Set<string>();
+const forcing = new Set<string>();
 
 /** 测试用：清掉「这次会话已经试过」的记录。 */
 export function resetDoubanSeasonsTried(): void {
   tried.clear();
+  forcing.clear();
 }
 
 type Search = (q: string, signal?: AbortSignal) => Promise<LookupSearchResponse>;
@@ -23,14 +26,29 @@ const answered = (res: LookupSearchResponse) => (res.sources ?? []).some((s) => 
  * 需要就搜一轮，搜完把配上的编号、搜过的季写进资料；返回有没有写。search 给测试换掉网络。
  * 先按剧名搜一次（豆瓣常把各季一起列出来），没配上的季再按「剧名 第N季」逐个搜，一轮最多 DOUBAN_SEASON_QUERIES 次。
  */
-export async function refreshDoubanSeasons(store: Store, type: TaskType, itemId: string, search: Search = searchDoubanMovies, signal?: AbortSignal): Promise<boolean> {
+export async function refreshDoubanSeasons(store: Store, type: TaskType, itemId: string, search: Search = searchDoubanMovies, signal?: AbortSignal, opts: { all?: boolean } = {}): Promise<boolean> {
   const item = store.get('library_item', itemId);
   if (!item || item.deleted) return false;
-  const want = doubanSeasonsToSearch(type, item);
+  const want = doubanSeasonsToSearch(type, item, Date.now(), !!opts.all);
   if (!want.length) return false;
   const key = `${itemId}|${want.join(',')}`;
-  if (tried.has(key)) return false;
-  tried.add(key);
+  if (opts.all) {
+    // 手动的不看「这次会话试过没有」，但同一条资料同时只搜一轮；后台那一轮（新冒出来的季）也不用再搜了
+    if (forcing.has(itemId)) return false;
+    forcing.add(itemId);
+    tried.add(`${itemId}|${doubanSeasonsToSearch(type, item).join(',')}`);
+  } else {
+    if (tried.has(key)) return false;
+    tried.add(key);
+  }
+  try {
+    return await searchRound(store, type, itemId, item, want, search, signal, key);
+  } finally {
+    if (opts.all) forcing.delete(itemId);
+  }
+}
+
+async function searchRound(store: Store, type: TaskType, itemId: string, item: LibraryItem, want: number[], search: Search, signal: AbortSignal | undefined, key: string): Promise<boolean> {
   const seasons = seasonsOf(type, item);
   const results: LookupResult[] = [];
   const searched = new Set<number>();

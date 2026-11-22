@@ -23,6 +23,7 @@
  * - GET  /api/lookup/seasons?id=tv/1399|tt0903747&lang=zh|en → { tv: 'tv/1399' | null, seasons: [{ number, name?, year?, episodes, poster? }] }
  *        剧集的季（TMDB /tv/{id}，Rei 2026-11-11）：id 是 TMDB 剧集编号或 IMDb 编号；IMDb 查到的是电影 → tv null、没有季。
  *        poster 是 TMDB 图片路径（/abc.jpg），客户端拼 image.tmdb.org/t/p/w154 小图。缓存 1 天（播出中的剧会加季）。
+ *        &fresh=1：资料页「季」的刷新按钮（Rei 2026-11-22）用，不读缓存、直接问 TMDB，拿到的新结果再写回缓存。
  * 缓存：Cache API（caches.default），每个来源的搜索结果 1 天、详情 7 天；只缓存成功的。对外请求 8 秒超时（504 网关超时）。
  */
 import { requestUser, storeAsset, MAX_ASSET_BYTES, type AssetEnv } from '../assets';
@@ -52,10 +53,10 @@ interface CacheLike {
 }
 const cacheOf = (): CacheLike | null => (globalThis as { caches?: { default?: CacheLike } }).caches?.default ?? null;
 
-async function cached<T>(key: string, ttl: number, fn: () => Promise<T>): Promise<T> {
+async function cached<T>(key: string, ttl: number, fn: () => Promise<T>, fresh = false): Promise<T> {
   const cache = cacheOf();
   const req = new Request(`https://lookup-cache.mindough.internal/v1/${key}`);
-  if (cache) {
+  if (cache && !fresh) {
     const hit = await cache.match(req).catch(() => undefined);
     if (hit) return (await hit.json()) as T;
   }
@@ -305,7 +306,8 @@ export async function handleLookup(req: Request, env: LookupWorkerEnv, url: URL)
     const id = (url.searchParams.get('id') ?? '').trim().toLowerCase();
     if (!id) return json({ error: '400 请求有误：id 不能为空' }, 400);
     try {
-      return json(await cached(`seasons/${lang}/${encodeURIComponent(id)}`, SEARCH_TTL, () => tmdbSeasons(env, id, lang)));
+      const fresh = url.searchParams.get('fresh') === '1';
+      return json(await cached(`seasons/${lang}/${encodeURIComponent(id)}`, SEARCH_TTL, () => tmdbSeasons(env, id, lang), fresh));
     } catch (e) {
       if (e instanceof LookupError) return json({ error: e.message, state: e.state }, e.status);
       return json({ error: '500 服务器出错' }, 500);

@@ -93,6 +93,23 @@ describe('每季自动配豆瓣链接', () => {
     expect(await refreshDoubanSeasons(store, type, it1.id, search)).toBe(false);
     expect(store.get('library_item', it1.id)!.fields._douban_seasons).toBeUndefined();
   });
+  it('手动刷新季（all）：没编号的季再搜一遍，已有的编号不丢（Rei 2026-11-22）', async () => {
+    const { store, type, it1 } = await show();
+    const first = vi.fn(async (q: string) => ok(q === '星期三' ? [S1] : []));
+    expect(await refreshDoubanSeasons(store, type, it1.id, first)).toBe(true);
+    expect(readDoubanSeasons(store.get('library_item', it1.id)!.fields)).toMatchObject({ ids: { '1': '35364243' }, tried: [1, 2] });
+    // 平常再来不搜（30 天内搜过）；手动的不管，只搜第 2 季，第 1 季的编号留着
+    resetDoubanSeasonsTried();
+    const again = vi.fn(async () => ok([{ ...S1, sourceId: '99999999' }, S2]));
+    expect(await refreshDoubanSeasons(store, type, it1.id, again)).toBe(false);
+    expect(again).not.toHaveBeenCalled();
+    expect(await refreshDoubanSeasons(store, type, it1.id, again, undefined, { all: true })).toBe(true);
+    expect(again).toHaveBeenCalledTimes(1);
+    expect(readDoubanSeasons(store.get('library_item', it1.id)!.fields).ids).toEqual({ '1': '35364243', '2': '36208369' });
+    // 都有编号了：手动的也不搜
+    expect(await refreshDoubanSeasons(store, type, it1.id, again, undefined, { all: true })).toBe(false);
+    expect(again).toHaveBeenCalledTimes(1);
+  });
   it('没有季数据、电影：不搜', async () => {
     const { store, type } = await open();
     const a = store.createLibraryItem(type.id, { name: '星期三', fields: { kind: '剧集', _source: 'tmdb:tv/119051' } });

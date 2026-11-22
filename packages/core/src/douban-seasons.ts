@@ -262,12 +262,15 @@ export function chineseNumber(n: number): string {
 /** 按季搜的字：「星期三 第二季」。 */
 export const doubanSeasonQuery = (name: string, season: number) => `${name.trim()} 第${chineseNumber(season)}季`; // i18n-ignore 豆瓣的季名写法（搜索用）
 
-/** 要自动搜的季：有首播年份、还没有豆瓣编号；30 天内搜过的不再搜（新冒出来的季照搜）。不用搜 → 空数组。 */
-export function doubanSeasonsToSearch(type: Pick<TaskType, 'id'> | null | undefined, item: Pick<LibraryItem, 'name' | 'fields'>, now: number = Date.now()): number[] {
+/**
+ * 要自动搜的季：有首播年份、还没有豆瓣编号；30 天内搜过的不再搜（新冒出来的季照搜）。不用搜 → 空数组。
+ * all：手动刷新季时（Rei 2026-11-22）不管搜没搜过，没编号的都再搜一遍；有编号的照样不动。
+ */
+export function doubanSeasonsToSearch(type: Pick<TaskType, 'id'> | null | undefined, item: Pick<LibraryItem, 'name' | 'fields'>, now: number = Date.now(), all = false): number[] {
   if (!isSeasonHost(type, item)) return [];
   const d = readDoubanSeasons(item.fields);
   const at = d.at ? Date.parse(d.at) : NaN;
-  const fresh = Number.isFinite(at) && now - at <= DOUBAN_SEASONS_MAX_AGE_MS && at - now <= 24 * 3600 * 1000;
+  const fresh = !all && Number.isFinite(at) && now - at <= DOUBAN_SEASONS_MAX_AGE_MS && at - now <= 24 * 3600 * 1000;
   const tried = new Set(fresh ? d.tried : []);
   return seasonsOf(type, item)
     .filter((s) => s.number > 0 && !!s.year && !d.ids[String(s.number)] && !tried.has(s.number))
