@@ -41,6 +41,8 @@ describe('快捷键的写法', () => {
     expect(shortcutTexts(false).clipLink).toContain('Ctrl+K');
     expect(formatChord(['mod', 'shift', 'H'], false)).toBe('Ctrl+Shift+H');
     expect(shortcutTexts(true).highlight).toBe('点一下高亮，可以换颜色或去掉。');
+    expect(shortcutTexts(true).table).toBe('表格里按 ↩ 加一行，按 ⇧↩ 加一列。');
+    expect(shortcutTexts(false).table).toBe('表格里按 Enter 加一行，按 Shift+Enter 加一列。');
   });
 
   it('⌘? / ⌘/ / Ctrl+? 都算，带 ⌥ 或不带 ⌘ 不算', () => {

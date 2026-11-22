@@ -1952,6 +1952,7 @@ export const MESSAGES: Record<string, MessageValue> = {
   "在 {label} 打开{title}": "Ouvrir {title} dans {label}",
   "豆瓣单季已并进「{name}」": "Saisons Douban fusionnées dans « {name} »",
   "豆瓣链接记到了「{name}」{season}": "Lien Douban enregistré pour « {name} », {season}",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列。": "Dans un tableau, appuyez sur {enter} pour ajouter une ligne et sur {shiftEnter} pour ajouter une colonne.",
 };
 
 export const DATA: Record<string, string> = {

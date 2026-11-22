@@ -37,7 +37,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import { InputRule, inputRules } from '@tiptap/pm/inputrules';
 import { liftListItem, sinkListItem } from '@tiptap/pm/schema-list';
 import { findWrapping } from '@tiptap/pm/transform';
-import { goToNextCell } from '@tiptap/pm/tables';
+import { addColumn, addRow, goToNextCell, isInTable, selectedRect, TableMap } from '@tiptap/pm/tables';
 import { Fragment, Slice, type Node as PMNode, type NodeType, type Schema } from '@tiptap/pm/model';
 import { Plugin, PluginKey, TextSelection, type EditorState } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
@@ -141,7 +141,7 @@ const MdBlockquote = Blockquote.extend({
   },
 });
 
-/** 单换行（isInline）显示成一个空格；Shift+Enter 才是真的换行。表格里不换行，代码块里换成 \n。 */
+/** 单换行（isInline）显示成一个空格；Shift+Enter 才是真的换行。表格里 Shift+Enter 加一列（tableKeys，先过它），代码块里换成 \n。 */
 /** 行内代码外面可以再套粗体 / 链接（`**\`x\`**`），和 markdown 一样；Tiptap 默认不让。 */
 const MdCode = Code.extend({ excludes: '' });
 
@@ -335,7 +335,7 @@ const cellContent = { content: 'paragraph' };
 const MdTableCell = TableCell.extend(cellContent);
 const MdTableHeader = TableHeader.extend(cellContent);
 const MdTable = Table.extend({
-  // Tab 在 editorKeys 里处理（和以前一样：只在格子间跳，不自动加行）
+  // Tab 在 editorKeys 里处理（和以前一样：只在格子间跳，不自动加行）；加行、加列用回车、Shift+回车（tableKeys）
   addKeyboardShortcuts() {
     const parent = this.parent?.() ?? {};
     const { Tab: _t, 'Shift-Tab': _s, ...rest } = parent as Record<string, () => boolean>;
@@ -653,6 +653,51 @@ function tableOnEnter(view: EditorView, event: KeyboardEvent): boolean {
   return true;
 }
 
+/**
+ * 表格里回车加行、Shift+回车加列（Rei 2026-11-22「在任何单元格 回车 下方添加一行空行；shift+回车 右侧添加一列空列」）。
+ * - 回车：在当前行下面插一行空行，光标进新行的同一列；表头那行回车，新行就是第一行数据。新行每格的对齐跟着这一列（表头格上的 align）。
+ * - Shift+回车：在当前列右边插一列空列，光标进当前行的新格；新列不设对齐（和「新插表格每列不设对齐」一样）。
+ * - 选了好几格（CellSelection）：回车插在选区最下面一行下面、光标进选区最左一列；Shift+回车插在选区最右一列右边、光标进选区最上一行。
+ * - ⌘ / Ctrl / Alt 加回车不管（⌘↩ 是日记发送）；输入法组字的回车不管。
+ */
+function tableKeys(view: EditorView, event: KeyboardEvent): boolean {
+  if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.keyCode === 229 || view.composing) return false;
+  const { state } = view;
+  if (!view.editable || !isInTable(state)) return false;
+  const rect = selectedRect(state);
+  const tr = state.tr;
+  let row: number;
+  let col: number;
+  if (event.shiftKey) {
+    addColumn(tr, rect, rect.right);
+    row = rect.top;
+    col = rect.right;
+  } else {
+    addRow(tr, rect, rect.bottom);
+    row = rect.bottom;
+    col = rect.left;
+  }
+  const table = tr.doc.nodeAt(rect.tableStart - 1);
+  if (!table) return false;
+  const map = TableMap.get(table);
+  if (!event.shiftKey) {
+    // 新行每格跟着这一列的对齐（表头格上的 align；markdown 写回只看表头那行）
+    for (let c = 0; c < map.width; c++) {
+      const head = table.nodeAt(map.map[c]!);
+      const pos = map.map[row * map.width + c]!;
+      const cell = table.nodeAt(pos);
+      const align = head?.attrs.align ?? null;
+      if (cell && align && cell.attrs.align !== align) tr.setNodeMarkup(rect.tableStart + pos, null, { ...cell.attrs, align });
+    }
+  }
+  // 格子开头 + 段落开头
+  const cellPos = rect.tableStart + map.map[row * map.width + col]!;
+  tr.setSelection(TextSelection.create(tr.doc, cellPos + 2));
+  view.dispatch(tr.scrollIntoView());
+  event.preventDefault();
+  return true;
+}
+
 /** Tab / Shift+Tab：列表缩进、表格跳格、代码块插两个空格；别的情况也吃掉，免得焦点跑出编辑器。 */
 function handleTab(view: EditorView, event: KeyboardEvent): boolean {
   if (event.key !== 'Tab' || event.metaKey || event.ctrlKey || event.altKey) return false;
@@ -724,7 +769,7 @@ export function imageFiles(data: DataTransfer | null): File[] {
   return files;
 }
 
-/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、不收新图片、剪贴板。优先级高于 StarterKit。
+/** 编辑器的行为扩展：占位、清单勾、链接、手打语法、Tab / Esc / ⌘K / ⌘↩、表格回车加行加列、不收新图片、剪贴板。优先级高于 StarterKit。
  * 中文输入法选词的回车、组字时 WebKit 删掉清单项的毛病在 ime-guard.ts（优先级更高，先过它）。 */
 export function behaviorExtension(opts: BehaviorOptions) {
   return Extension.create({
@@ -769,7 +814,7 @@ export function behaviorExtension(opts: BehaviorOptions) {
                 if (!event.repeat) opts.onLinkShortcut?.();
                 return true;
               }
-              return tableOnEnter(view, event);
+              return tableKeys(view, event) || tableOnEnter(view, event);
             },
           },
         }),

@@ -1632,4 +1632,5 @@ export const EN: Record<string, EnValue> = {
   "在 {label} 打开{title}": "Open {title} in {label}",
   "豆瓣单季已并进「{name}」": "Douban season entries merged into “{name}”",
   "豆瓣链接记到了「{name}」{season}": "Douban link saved to {season} of “{name}”",
+  "表格里按 {enter} 加一行，按 {shiftEnter} 加一列。": "In a table, press {enter} to add a row and {shiftEnter} to add a column.",
 };
