@@ -62,6 +62,11 @@ interface Section {
   rows: Row[];
 }
 
+/** 主要输入是触屏、没有悬停（手机、平板）。 */
+function isTouchOnly() {
+  return typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
 /**
  * 类型列表（下拉面板的内容）。multiple = false 时是单选：点一下就选上并 onDone。
  * value：已选的 id（按顺序）。onChange 给出新的整组。
@@ -134,7 +139,8 @@ export function CategoryList({
   const rows = sections.flatMap((s) => s.rows);
   useEffect(() => setActive(0), [term]);
   useEffect(() => {
-    if (!autoFocus) return;
+    // 手机（触屏）打开选类型不自动聚焦搜索框，免得一打开就弹键盘挡住列表（Rei 2026-11-24）
+    if (!autoFocus || isTouchOnly()) return;
     const t = setTimeout(() => inputRef.current?.focus(), 30);
     return () => clearTimeout(t);
   }, [autoFocus]);
@@ -164,7 +170,8 @@ export function CategoryList({
       }
     }
     if (term && multiple) setQ('');
-    inputRef.current?.focus();
+    // 触屏上只在搜索框本来就聚焦时才保持，点选不会把键盘叫出来
+    if (!isTouchOnly() || document.activeElement === inputRef.current) inputRef.current?.focus();
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (imeBusy(e.nativeEvent) || ime.isImeEnter(e.nativeEvent)) return;
